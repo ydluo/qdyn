@@ -28,6 +28,7 @@ module solver_1d
   use problem_class
   use ode_bs
   use fftsg
+  use constants, only : YEAR
   
   type(problem_type) :: pb
 
@@ -189,7 +190,7 @@ module solver_1d
     !WRITE_6---------------- Print step to screen START--------------------
         if(mod(it-1,pb%output%ntout) == 0 .or. it == pb%itstop) then
      ! Print info
-        write(6,'(i7,x,3(e11.3,x),i5)') it, dt_did, pb%time/pb%const%year, vmax
+        write(6,'(i7,x,3(e11.3,x),i5)') it, dt_did, pb%time/YEAR, vmax
     !WRITE_6---------------- Print step to screen END----------------------
 
     !WRITE_ox--------------- Export snapshots START------------------------

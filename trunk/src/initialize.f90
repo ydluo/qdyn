@@ -17,15 +17,12 @@ contains
   subroutine init_field(pb)
   
   use problem_class
+  use constants, only : PI
+
   type(problem_type) :: pb
   
   write(6,*) 'Intializing Parameters: ...'
   
-  pb%const%day = 3600.d0*24.d0
-  pb%const%week = pb%const%day*7.d0
-  pb%const%year = pb%const%day*365.d0
-  pb%const%pi = 4.d0*datan(1.d0)
-
   if (pb%mesh%kind == 0) then  ! 1D fault, uniform grid
      write(6,*) '1D fault, uniform grid' 
      pb%mesh%dx = pb%mesh%Lfault/pb%mesh%nn
@@ -39,7 +36,7 @@ contains
        endif
      endif
      if (pb%Tper > 0.d0) then
-       pb%Omper = 2.d0*pb%const%pi/pb%Tper
+       pb%Omper = 2.d0*PI/pb%Tper
      else
        pb%Omper = 0.d0
      endif
@@ -71,11 +68,11 @@ contains
      i = pb%mesh%nn/2
      if (i == 0) i = 1
      if (pb%kernel%k2f%finite == 1 .or. pb%mesh%nn == 1) then
-        write(6,*) 'K/Kc = ',(pb%const%pi*pb%smu/pb%mesh%Lfault)/(pb%sigma(i)*(pb%b(i)-pb%a(i))/pb%dc(i))
-        write(6,*) 'K/Kb = ',(pb%const%pi*pb%smu/pb%mesh%Lfault)/(pb%sigma(i)*pb%b(i)/pb%dc(i))
+        write(6,*) 'K/Kc = ',(PI*pb%smu/pb%mesh%Lfault)/(pb%sigma(i)*(pb%b(i)-pb%a(i))/pb%dc(i))
+        write(6,*) 'K/Kb = ',(PI*pb%smu/pb%mesh%Lfault)/(pb%sigma(i)*pb%b(i)/pb%dc(i))
       else
-        write(6,*) 'K/Kc = ',(pb%const%pi*pb%smu/pb%mesh%W)/(pb%sigma(i)*(pb%b(i)-pb%a(i))/pb%dc(i))
-        write(6,*) 'K/Kb = ',(pb%const%pi*pb%smu/pb%mesh%W)/(pb%sigma(i)*pb%b(i)/pb%dc(i))
+        write(6,*) 'K/Kc = ',(PI*pb%smu/pb%mesh%W)/(pb%sigma(i)*(pb%b(i)-pb%a(i))/pb%dc(i))
+        write(6,*) 'K/Kb = ',(PI*pb%smu/pb%mesh%W)/(pb%sigma(i)*pb%b(i)/pb%dc(i))
      endif
      write(6,*)
 
@@ -127,7 +124,7 @@ contains
        if (pb%kernel%k2f%finite == 0) then
          pb%kernel%k2f%nnfft = pb%mesh%nn
          allocate (pb%kernel%k2f%kernel(pb%kernel%k2f%nnfft))
-         tau_co = pb%const%pi*pb%smu/pb%mesh%Lfault *2.d0/dble(pb%mesh%nn)
+         tau_co = PI*pb%smu/pb%mesh%Lfault *2.d0/dble(pb%mesh%nn)
          wl2 = (pb%mesh%Lfault/pb%mesh%W)**2
             do i=0,pb%mesh%nn/2-1
             pb%kernel%k2f%kernel(2*i+1) = tau_co*dsqrt(dble(i*i)+wl2)
@@ -147,7 +144,7 @@ contains
            read(57,*) pb%kernel%k2f%kernel(2) ! Nyquist
          close(57)
          ! The factor 2/N comes from the inverse FFT convention
-         tau_co = pb%const%pi*pb%smu / (2d0*pb%mesh%Lfault) *2.d0/dble(pb%kernel%k2f%nnfft)
+         tau_co = PI*pb%smu / (2d0*pb%mesh%Lfault) *2.d0/dble(pb%kernel%k2f%nnfft)
          pb%kernel%k2f%kernel(1) = 0d0
          pb%kernel%k2f%kernel(2) = tau_co*dble(pb%kernel%k2f%nnfft/2)*pb%kernel%k2f%kernel(2)
          do i = 1,pb%kernel%k2f%nnfft/2-1

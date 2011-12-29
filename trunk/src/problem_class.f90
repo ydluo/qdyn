@@ -1,6 +1,6 @@
 !define problem 
 
- module problem_class
+module problem_class
  
   implicit none
 
@@ -14,12 +14,12 @@
 
   type mesh_type
     integer :: kind = 0
-    integer :: nn;
+    integer :: nn
     double precision :: dx, Lfault, W 
   end type mesh_type
 
+ ! working arrays for Ooura's fft
   type OouraFFT_type
-    !     working arrays for Ooura's fft
     integer :: nwfft
     integer,allocatable :: iworkfft(:)
     double precision,allocatable :: rworkfft(:)
@@ -36,13 +36,6 @@
     integer :: kind = 0
     type (kernel_2D_fft) :: k2f
   end type kernel_type
-
-
-
-
-  type constant_type
-    double precision :: day, week, month, year, pi   
-  end type constant_type
 
 
   type problem_type
@@ -62,7 +55,6 @@
     type (mesh_type) :: mesh
     type (output_type) :: output
     type (kernel_type) :: kernel
-    type (constant_type) :: const
   end type problem_type
 
 end module problem_class

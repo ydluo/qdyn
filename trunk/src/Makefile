@@ -1,20 +1,55 @@
-# Make qdyn
-EXEC = $(HOME)/qdyn_nm/qdyn
+#== BEGIN USER SETTINGS =============================================
 
-F95  = ifort
-OPT  = -O3 -ip -ipo
+# 1. Modify next line if you need to place the executable elsewhere:
+EXEC = $(HOME)/bin/qdyn
 
+# 2. Uncomment/add/modify the lines corresponding to your compiler:
 
-OBJS = qdyn.o
-SS_Main = fftsg.f90 ode_bs.f90 problem_class.f90 input.f90 initialize.f90 solver_1d.f90 solve_master.f90 main.f90 
+# GNU 
+#F90 = g95
+#OPT = 
+#F90 = gfortran
+#OPT = -O3 -Wall
+#OPT = -O3 
 
-        
+#-- Intel Fortran --
+F90 = ifort
+#OPT = -O3 -ip -ipo -unroll
+#-no-inline-factor
+#OPT = -O3
+OPT = -O0 -warn all -C
+#OPT = -O0 -g
 
-qdyn:	 
-	$(F95) $(OPT) $(SS_Main) -o $(EXEC) 
+#OPT = -O3 -ip -ipo -arch SSE2 -tpp7 -xN # pablo.ethz.ch
+#OPT = -O3 -ip -ipo -xB   # lapfabio
+#OPT = -O3 -ip -ipo -unroll
 
-qdyn.o: $(SS_Main)
-	$(F95) $(OPT) -c $(SS_Main)
+#-- Lahey Fortran95 --
+#F90 = lf95
+#OPT = -O
+#OPT = --chk aesux
+
+#-- Digital --
+#F90 = f95
+#OPT = -fast
+
+#== END USER SETTINGS =============================================
+
+OBJS := $(patsubst %.f90,%.o,$(wildcard *.f90)) 
+#OBJS := $($(wildcard *.f90):.f90=.o) 
+
+all: $(EXEC)
+
+$(EXEC): $(OBJS)
+	$(F90) $(OPT) -o $@ $(OBJS) $(LIBS)
 
 clean:
 	rm -f $(EXEC) $(OBJS) *.M *.mod 
+
+.SUFFIXES: 
+.SUFFIXES: .f90 .o
+
+%.o: %.f90
+	$(F90) $(OPT) -c $<
+
+include Makefile.depend
