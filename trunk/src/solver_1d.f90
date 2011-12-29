@@ -27,7 +27,6 @@ module solver_1d
 
   use problem_class
   use ode_bs
-  use fftsg
   use constants, only : YEAR
   
   type(problem_type) :: pb
@@ -67,11 +66,8 @@ module solver_1d
       allocate (yt(pb%neqs*pb%mesh%nn))
       allocate (dydt(pb%neqs*pb%mesh%nn))
       allocate (yt_scale(pb%neqs*pb%mesh%nn))
-      do i = 1,pb%mesh%nn
-        ip = pb%neqs*i
-        yt(ip-1) = pb%v(i)
-        yt(ip) = pb%theta(i)
-      enddo
+      yt(1:pb%neqs:) = pb%v
+      yt(2:pb%neqs:) = pb%theta
       
       
   ! Time loop
@@ -82,26 +78,17 @@ module solver_1d
         it=it+1
 
         call derivs(pb)
-      
         
-        do i = 1,pb%mesh%nn
-          ip = pb%neqs*i
-          yt(ip-1) = pb%v(i)
-          yt(ip) = pb%theta(i)
-          dydt(ip-1) = pb%dv_dt(i)
-          dydt(ip) = pb%dtheta_dt(i)
-        enddo
-
+        yt(1:pb%neqs:) = pb%v
+        yt(2:pb%neqs:) = pb%theta
+        dydt(1:pb%neqs:) = pb%dv_dt
+        dydt(2:pb%neqs:) = pb%dtheta_dt
    
     ! One step
-
-
  
     !--------Call EXT routine bsstep [Bulirsch-Stoer Method] --------------
     !-------- 
-        do i=1,pb%neqs*pb%mesh%nn
-          yt_scale(i)=dabs(yt(i))+dabs(pb%dt_try*dydt(i))
-        enddo
+        yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
         call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,   &
                     dt_did,dt_next,derivs)
         if (pb%dt_max >  0.d0) then
@@ -109,14 +96,11 @@ module solver_1d
         else
           pb%dt_try=dt_next
         endif
-    !        theta is ip-1, slip rate is ip
-        do i=1,pb%mesh%nn
-          ip=pb%neqs*i
-          pb%v(i) = yt(ip)
-          pb%theta(i) = yt(ip-1)
-          pb%dv_dt(i) = dydt(ip-1)
-          pb%dtheta_dt(i) = dydt(ip) 
-        enddo
+
+        pb%v = yt(1:pb%neqs:)
+        pb%theta = yt(2:pb%neqs:)
+        pb%dv_dt = dydt(1:pb%neqs:)
+        pb%dtheta_dt = dydt(2:pb%neqs:) 
 
     ! Update slip, stress. 
     ! potency and potency rate
@@ -220,69 +204,62 @@ module solver_1d
  !-------|                                               |-------|
  !---------------------------------------------------------------|
  
-   subroutine derivs(pb)
+  subroutine derivs(pb)
    
-     
-     use problem_class
-     use fftsg
+    use problem_class
+    use fftsg
   
-     type(problem_type) :: pb
-     double precision :: dtau_per, omega
+    type(problem_type), intent(inout) :: pb
 
+    double precision :: omega(pb%mesh%nn)
+    double precision :: dtau_per
+    integer :: i
 
    ! compute shear stress rate from elastic interactions
-     if (pb%mesh%nn > 1) then
-       do i = 1,pb%mesh%nn
-         pb%dtau_dt(i) = pb%v_star(i)-pb%v(i)
-       enddo
-       do i = pb%mesh%nn+1,pb%kernel%k2f%nnfft
-         pb%dtau_dt(i) = 0d0 
-       enddo
-       call rdft(pb%kernel%k2f%nnfft,1,pb%dtau_dt,pb%kernel%k2f%m_fft%iworkfft,pb%kernel%k2f%m_fft%rworkfft)
-         do i = 1,pb%kernel%k2f%nnfft
-           pb%dtau_dt(i) = pb%kernel%k2f%kernel(i)*pb%dtau_dt(i)
-         enddo
-       call rdft(pb%kernel%k2f%nnfft,-1,pb%dtau_dt,pb%kernel%k2f%m_fft%iworkfft,pb%kernel%k2f%m_fft%rworkfft)
-     else
-       pb%dtau_dt(1) = pb%kernel%k2f%kernel(1)*( pb%v_star(1)-pb%v(1) )
-     endif
+   !JPA: this should be replaced by "call compute_stress" which depends on dimension (0D, 1D, 2D fault)
+   ! the rest of this subroutine does not depend on dimension
+    if (pb%mesh%nn > 1) then
+      pb%dtau_dt = pb%v_star-pb%v
+      pb%dtau_dt( pb%mesh%nn+1 : pb%kernel%k2f%nnfft ) = 0d0 
+      call rdft(pb%kernel%k2f%nnfft,1,pb%dtau_dt,pb%kernel%k2f%m_fft%iworkfft,pb%kernel%k2f%m_fft%rworkfft)
+      pb%dtau_dt = pb%kernel%k2f%kernel * pb%dtau_dt
+      call rdft(pb%kernel%k2f%nnfft,-1,pb%dtau_dt,pb%kernel%k2f%m_fft%iworkfft,pb%kernel%k2f%m_fft%rworkfft)
+    else
+      pb%dtau_dt(1) = pb%kernel%k2f%kernel(1)*( pb%v_star(1)-pb%v(1) )
+    endif
 
    ! periodic loading
-     dtau_per = pb%Omper * pb%Aper * dcos(pb%Omper*pb%time)     
-
-
-     do i=1,pb%mesh%nn
+    dtau_per = pb%Omper * pb%Aper * dcos(pb%Omper*pb%time)     
 
    !--------State evolution law START--------------------------------
-      omega = pb%v(i)*pb%theta(i) / pb%dc(i)
+    omega = pb%v * pb%theta / pb%dc
 
    !      "aging" law
-        if (pb%itheta_law == 1) then
-          pb%dtheta_dt(i) = 1.d0-omega
+    if (pb%itheta_law == 1) then
+      pb%dtheta_dt = 1.d0-omega
 
    !      "slip" law
-        elseif (pb%itheta_law== 2) then
-          if (omega /= 0d0) then
-            pb%dtheta_dt(i) = -omega*dlog(omega)
-          else
-            pb%dtheta_dt(i) = 0d0
-          endif
+    elseif (pb%itheta_law== 2) then
+      do i=1,pb%mesh%nn
+        if (omega > 0d0) then
+          pb%dtheta_dt(i) = -omega*dlog(omega)
+        else
+          pb%dtheta_dt(i) = 0d0
+        endif
+      enddo
 
    !      "aging" in the no-healing approximation
-        elseif (pb%itheta_law == 0) then
-          pb%dtheta_dt(i) = -omega
-        endif
+    elseif (pb%itheta_law == 0) then
+      pb%dtheta_dt = -omega
+
+    endif
    !--------State evolution law END----------------------------------
 
-
-        pb%dv_dt(i) = (dtau_per+pb%dtau_dt(i) - pb%sigma(i)*pb%b(i)*pb%v2(i)*pb%dtheta_dt(i)/(pb%v2(i)*pb%theta(i)+pb%dc(i)) )    &
-                  /( pb%sigma(i)*pb%a(i)*(1.d0/pb%v(i)-1.d0/(pb%v1(i)+pb%v(i))) + pb%zimpedance )
+    pb%dv_dt = (dtau_per+pb%dtau_dt - pb%sigma*pb%b*pb%v2*pb%dtheta_dt/(pb%v2*pb%theta+pb%dc) )    &
+                  /( pb%sigma*pb%a*(1.d0/pb%v-1.d0/(pb%v1+pb%v)) + pb%zimpedance )
     
-    enddo
-
-      return
-   end subroutine derivs
-   !C====================Subroutine derivs END=============================
+  end subroutine derivs
+  !C====================Subroutine derivs END=============================
 
 
 
