@@ -1,0 +1,17 @@
+Some rules and advice for new developers:
+
+DEVELOPING:
+-----------
+
+  + Do "svn update" regularly, very often 
+  + Learn from other developer's modifications
+  + Run "devel_tools/mymakedepend.perl" if you have added a new module or a new "use" command
+    (this perl script update the list of module dependencies in the file Makefile.depend)
+
+
+CODE STYLE CONVENTIONS :
+------------------------
+
+  + Indentation by two spaces
+  + Names of variables must be short but meaningful
+  + Name of constants are capitalized
