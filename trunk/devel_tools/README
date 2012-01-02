@@ -3,8 +3,11 @@ Some rules and advice for new developers:
 DEVELOPING:
 -----------
 
-  + Do "svn update" regularly, very often 
-  + Learn from other developer's modifications
+  + Do "svn update" regularly, very often
+  + Do "svn update" before any "svn commit"
+  + Look often for comment lines in the code that contain the keyword "JPA". These are questions, issues 
+    or suggestions noted by J.-P. Ampuero. They need to be addressed.
+  + Learn from other developer's modifications: browse code changes online
   + Run "devel_tools/mymakedepend.perl" if you have added a new module or a new "use" command
     (this perl script update the list of module dependencies in the file Makefile.depend)
 
