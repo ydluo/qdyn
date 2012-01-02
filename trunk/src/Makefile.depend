@@ -2,5 +2,4 @@ initialize.o: constants.o problem_class.o
 input.o: problem_class.o
 main.o: initialize.o input.o problem_class.o solve_master.o
 qdyn.o: qdyn.h
-solve_master.o: problem_class.o solver_1d.o
-solver_1d.o: constants.o fftsg.o ode_bs.o problem_class.o
+solve_master.o: constants.o fftsg.o ode_bs.o problem_class.o
