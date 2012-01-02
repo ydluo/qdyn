@@ -11,22 +11,193 @@ module solve_master
 
 contains
   
-  subroutine solve(pb)
-  
-
-  use solver_1d
+subroutine solve(pb)
   
   use problem_class
+  use ode_bs
+  use constants, only : YEAR
   
   type(problem_type) :: pb
+
+  integer :: it,ic,i,ip,ivmax,nxout_count
+  double precision :: dt_next, dt_did,  &
+                      pot, pot_rate, xvmax, vmax, vmax_old, vmax_older, &
+                      xloc, omega, dtau_per
+  double precision, dimension(:), allocatable ::  yt, dydt, yt_scale
   
-  if (pb%mesh%kind == 0 .and. pb%kernel%kind == 0 .and. pb%kernel%k2f%kind == 0) then     ! solve 1D
-      call solve_1D_fft(pb)
-  end if
+  !=======================Time loop. START============================
+  write(6,*) '    it,  dt (secs), time (yrs), vmax (m/s)'
 
-  end subroutine solve
+  pb%time = 0.d0
+  pb%itstop = -1
+  vmax_old = 0d0
+  vmax_older = 0d0
 
+  pb%kernel%k2f%m_fft%iworkfft(0) = 0
+  allocate (yt(pb%neqs*pb%mesh%nn))
+  allocate (dydt(pb%neqs*pb%mesh%nn))
+  allocate (yt_scale(pb%neqs*pb%mesh%nn))
+  yt(1:pb%neqs:) = pb%v
+  yt(2:pb%neqs:) = pb%theta
+      
+  ! Time loop
 
+  it=0
+  do while (it /= pb%itstop)
+
+    it=it+1
+
+    call derivs(pb)
+        
+    yt(1:pb%neqs:) = pb%v
+    yt(2:pb%neqs:) = pb%theta
+    dydt(1:pb%neqs:) = pb%dv_dt
+    dydt(2:pb%neqs:) = pb%dtheta_dt
+   
+    ! One step
+ 
+    !--------Call EXT routine bsstep [Bulirsch-Stoer Method] --------------
+    !-------- 
+    yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
+    call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,   &
+                dt_did,dt_next,derivs)
+    if (pb%dt_max >  0.d0) then
+      pb%dt_try=min(dt_next,pb%dt_max)
+    else
+      pb%dt_try=dt_next
+    endif
+
+    pb%v = yt(1:pb%neqs:)
+    pb%theta = yt(2:pb%neqs:)
+    pb%dv_dt = dydt(1:pb%neqs:)
+    pb%dtheta_dt = dydt(2:pb%neqs:) 
+
+    ! Update slip, stress. 
+    pb%slip = pb%slip + pb%v*dt_did
+    pb%tau  = ( pb%mu_star - pb%a*log(pb%v1/pb%v+1d0) +pb%b*log(pb%theta/pb%theta_star)+1d0 ) * pb%sigma
+    
+    ! update potency and potency rate
+    pot = sum(pb%slip) * pb%mesh%dx
+    pot_rate = sum(pb%v) * pb%mesh%dx
+
+    ! update crack size
+    pb%ot%lcold = pb%ot%lcnew
+    pb%ot%lcnew = crack_size(pb%slip,pb%mesh%nn)
+
+    pb%ot%llocold = pb%ot%llocnew
+    pb%ot%llocnew = crack_size(pb%dtau_dt,pb%mesh%nn)
+
+    ! Output time series at max(v) location
+    ivmax = maxloc(pb%v)
+    vmax = pb%v(ivmax)
+    xvmax = pb%mesh%x(ivmax)
+
+    call ot_write()
+
+    if (pb%itstop == 0) then
+      !         STOP soon after end of slip localization 
+      if (pb%NSTOP == 1) then
+        if (pb%output%llocnew > pb%output%llocold) pb%itstop=it+2*pb%output%ntout
+
+      ! STOP soon after maximum slip rate
+      elseif (pb%NSTOP == 2) then
+
+        if (it > 2 .and. vmax_old > vmax_older    &
+           .and. vmax < vmax_old) pb%itstop = it+10*pb%output%ntout
+        vmax_older = vmax_old
+        vmax_old = vmax
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+!!! ???????????????????????????????
+        !         STOP at a slip rate threshold
+      elseif (pb%NSTOP == 3) then    
+        if (vmax > pb%tmax) pb%itstop = it
+!!! ??????????????????????????????
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !         STOP if time > tmax
+      else
+        write(121,*) pb%time, pb%tmax
+        if (pb%tmax > 0.d0 .and. pb%time > pb%tmax) pb%itstop = it
+      endif
+    endif
+
+    !WRITE_6---------------- Print step to screen START--------------------
+    if(mod(it-1,pb%output%ntout) == 0 .or. it == pb%itstop) then
+    ! Print info
+      write(6,'(i7,x,3(e11.3,x),i5)') it, dt_did, pb%time/YEAR, vmax
+    !WRITE_6---------------- Print step to screen END----------------------21--------------: Command not found.
+      call ox_write()
+
+    endif
+  enddo
+
+end subroutine solve
+
+!C====================Subroutine derivs START===========================
+ !-------Compute thata,vslip and time deriv for one time step------------
+ !-------CALL rdft: real DFT---------------------------------------------
+ !---------------------------------------------------------------|
+ !-------|     in:pb                                     |-------|
+ !-------|    out:pb                                     |-------|
+ !-------|                                               |-------|
+ !---------------------------------------------------------------|
+ 
+subroutine derivs(pb)
+   
+  use problem_class
+  use fftsg
+  
+  type(problem_type), intent(inout) :: pb
+
+  double precision :: omega(pb%mesh%nn)
+  double precision :: dtau_per
+  integer :: i
+
+  ! compute shear stress rate from elastic interactions
+  !JPA: this should be replaced by "call compute_stress" which depends on dimension (0D, 1D, 2D fault)
+  ! the rest of this subroutine does not depend on dimension
+  if (pb%mesh%nn > 1) then
+    pb%dtau_dt = pb%v_star-pb%v
+    pb%dtau_dt( pb%mesh%nn+1 : pb%kernel%k2f%nnfft ) = 0d0 
+    call rdft(pb%kernel%k2f%nnfft,1,pb%dtau_dt,pb%kernel%k2f%m_fft%iworkfft,pb%kernel%k2f%m_fft%rworkfft)
+    pb%dtau_dt = pb%kernel%k2f%kernel * pb%dtau_dt
+    call rdft(pb%kernel%k2f%nnfft,-1,pb%dtau_dt,pb%kernel%k2f%m_fft%iworkfft,pb%kernel%k2f%m_fft%rworkfft)
+  else
+    pb%dtau_dt(1) = pb%kernel%k2f%kernel(1)*( pb%v_star(1)-pb%v(1) )
+  endif
+
+  ! periodic loading
+  dtau_per = pb%Omper * pb%Aper * dcos(pb%Omper*pb%time)     
+
+  !--------State evolution law START--------------------------------
+  omega = pb%v * pb%theta / pb%dc
+
+  !      "aging" law
+  if (pb%itheta_law == 1) then
+    pb%dtheta_dt = 1.d0-omega
+
+  !      "slip" law
+  elseif (pb%itheta_law== 2) then
+    do i=1,pb%mesh%nn
+      if (omega > 0d0) then
+        pb%dtheta_dt(i) = -omega*dlog(omega)
+      else
+        pb%dtheta_dt(i) = 0d0
+      endif
+    enddo
+
+  !      "aging" in the no-healing approximation
+  elseif (pb%itheta_law == 0) then
+    pb%dtheta_dt = -omega
+
+  endif
+  !--------State evolution law END----------------------------------
+
+  pb%dv_dt = (dtau_per+pb%dtau_dt - pb%sigma*pb%b*pb%v2*pb%dtheta_dt/(pb%v2*pb%theta+pb%dc) )    &
+             /( pb%sigma*pb%a*(1.d0/pb%v-1.d0/(pb%v1+pb%v)) + pb%zimpedance )
+    
+end subroutine derivs
 
 
 end module solve_master
+

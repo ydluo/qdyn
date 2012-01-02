@@ -6,12 +6,6 @@ module problem_class
 
   public
 
-
-  type output_type
-    integer :: ntout,nxout
-    double precision :: lcold,lcnew,llocnew,llocold
-  end type output_type
-
   type mesh_type
     integer :: kind = 0
     integer :: nn
@@ -53,7 +47,8 @@ module problem_class
     integer :: NSTOP,itstop
 
     type (mesh_type) :: mesh
-    type (output_type) :: output
+    type (ot_type) :: ot
+    type (ox_type) :: ox
     type (kernel_type) :: kernel
   end type problem_type
 
