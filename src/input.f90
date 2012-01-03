@@ -39,7 +39,7 @@ contains
     read(15,*)pb%Tper, pb%Aper
     read(15,*)pb%dt_try, pb%dt_max, &
               pb%tmax, pb%acc
-    read(15,*)pb%NSTOP, pb%itstop
+    read(15,*)pb%NSTOP
 
     allocate (pb%tau(pb%mesh%nn), pb%dtau_dt(pb%mesh%nn),    &
              pb%tau_init(pb%mesh%nn), pb%sigma(pb%mesh%nn), &
