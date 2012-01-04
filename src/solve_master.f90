@@ -28,7 +28,6 @@ subroutine solve(pb)
   double precision, dimension(:), allocatable ::  yt, dydt, yt_scale
   
   !=======================Time loop. START============================
-  write(6,*) '    it,  dt (secs), time (yrs), vmax (m/s)'
 
 
   !--------Allocate working space for yt... and init--------------------- 
