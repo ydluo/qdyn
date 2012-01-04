@@ -15,6 +15,7 @@ contains
   
   use problem_class
   use constants, only : PI
+  use output
 
   type(problem_type), intent(inout) :: pb
   
@@ -69,24 +70,9 @@ contains
   
 
 
-    !---------------------- output field to screen -----------------
-    write(6,*) '**Field Initialized.**'
-    write(6,*) 'Values at center of the fault:'
-    i = pb%mesh%nn/2
-    if (i == 0) i = 1
-    if (pb%kernel%k2f%finite == 1 .or. pb%mesh%nn == 1) then
-      write(6,*) 'K/Kc = ',(PI*pb%smu/pb%mesh%Lfault)/(pb%sigma(i)*(pb%b(i)-pb%a(i))/pb%dc(i))
-      write(6,*) 'K/Kb = ',(PI*pb%smu/pb%mesh%Lfault)/(pb%sigma(i)*pb%b(i)/pb%dc(i))
-    else
-      write(6,*) 'K/Kc = ',(PI*pb%smu/pb%mesh%W)/(pb%sigma(i)*(pb%b(i)-pb%a(i))/pb%dc(i))
-      write(6,*) 'K/Kb = ',(PI*pb%smu/pb%mesh%W)/(pb%sigma(i)*pb%b(i)/pb%dc(i))
-    endif
-    write(6,*)
-
-    !---------------------- output field to screen -----------------
-
-    call ot_init(ot)
-    call ox_init(ox,pb%mesh%nn,pb%output%nxout)
+    call screen_init(pb)
+    call ot_init(pb)
+    call ox_init(pb)
 
   end if
 
