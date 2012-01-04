@@ -2,10 +2,13 @@
 
 module problem_class
  
+  use output
+
   implicit none
 
   public
 
+ 
   type mesh_type
     integer :: kind = 0
     integer :: nn
