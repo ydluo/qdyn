@@ -33,6 +33,7 @@ subroutine screen_init(pb)
         (pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
     endif
     write(6,*)
+    write(6,*) '    it,  dt (secs), time (yrs), vmax (m/s)'
 
 end subroutine screen_init
 

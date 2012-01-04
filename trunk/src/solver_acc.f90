@@ -4,7 +4,7 @@ module solver_acc
 
   implicit none
 
-  private
+  private 
 
   public :: stop_check
 
@@ -48,6 +48,50 @@ subroutine stop_check(pb,it)
     
 end subroutine stop_check
 
+!=====================================================================
+! do bs_step, pack and unpack 
+!
+subroutine do_bsstep(pb)
+
+  use problem_class
+  type(problem_type), intent(inout) :: pb
+
+  double precision, dimension(:), allocatable ::  yt, dydt, yt_scale
+
+  allocate (yt(pb%neqs*pb%mesh%nn))
+  allocate (dydt(pb%neqs*pb%mesh%nn))
+  allocate (yt_scale(pb%neqs*pb%mesh%nn))
+
+
+  !-------Pack v, theta into yt---------------------------------    
+  yt(1:pb%neqs:) = pb%v
+  yt(2:pb%neqs:) = pb%theta
+  dydt(1:pb%neqs:) = pb%dv_dt
+  dydt(2:pb%neqs:) = pb%dtheta_dt
+  !-------Pack v, theta into yt--------------------------------- 
+
+  ! One step
+ 
+  !--------Call EXT routine bsstep [Bulirsch-Stoer Method] --------------
+  !-------- 
+  yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
+  call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%acc,yt_scale,derivs,pb)
+  if (pb%dt_max >  0.d0) then
+    pb%dt_try = min(pb%dt_next,pb%dt_max)
+  else
+    pb%dt_try = pb%dt_next
+  endif
+
+  !-------Unpack yt into v, theta--------------------------------- 
+  pb%v = yt(1:pb%neqs:)
+  pb%theta = yt(2:pb%neqs:)
+  pb%dv_dt = dydt(1:pb%neqs:)
+  pb%dtheta_dt = dydt(2:pb%neqs:) 
+  !-------Unpack yt into v, theta--------------------------------- 
+
+
+  deallocate(yt,dydt,yt_scale)
+end subroutine do_bsstep
 
 
 end module solver_acc

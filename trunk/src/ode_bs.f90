@@ -8,32 +8,33 @@
       contains
 
 
-      SUBROUTINE bsstep(y,dydx,nv,x,htry,eps,yscal,hdid,hnext,derivs,pb)
+      SUBROUTINE bsstep(y,dydx,nv,x,eps,yscal,derivs,pb)
       implicit double precision (a-h,o-z)
       
       use problem_class
       use derivs_all
       type(problem_type), intent(inout)  :: pb
     
-      INTEGER nv,NMAX,KMAXX,IMAX
-      REAL*8 eps,hdid,hnext,htry,dydx(nv),y(nv),yscal(nv),          &
+      INTEGER :: nv,NMAX,KMAXX,IMAX
+      DOUBLE PRECISION :: eps,dydx(nv),y(nv),yscal(nv),          &
                 SAFE1,SAFE2,REDMAX,REDMIN,TINY,SCALMX
-      real*8 x,xnew
+      double precision :: xnew
+      double precision, intent(inout) :: x
       PARAMETER (NMAX=262144,KMAXX=8,IMAX=KMAXX+1,SAFE1=.25d0,      &
                 SAFE2=.7d0,REDMAX=1.d-5,REDMIN=.7d0,TINY=1.d-30,    &
                 SCALMX=.5d0) !SCALMX=.1d0
 !     USES derivs,mmid,pzextr
-      INTEGER i,iq,k,kk,km,kmax,kopt,nseq(IMAX)
-      REAL*8 eps1,epsold,errmax,fact,red,h,scale,work,wrkmin,xest,  &
+      INTEGER :: i,iq,k,kk,km,kmax,kopt,nseq(IMAX)
+      DOUBLE PRECISION :: eps1,epsold,errmax,fact,red,h,scale,work,wrkmin,xest,  &
                 a(IMAX),alf(KMAXX,KMAXX),err(KMAXX),yerr(NMAX),     &
                 ysav(NMAX),yseq(NMAX)
-      LOGICAL first,reduct
+      LOGICAL ::first,reduct
       SAVE a,alf,epsold,first,kmax,kopt,nseq,xnew
       EXTERNAL derivs
       DATA first/.true./,epsold/-1.d0/
       DATA nseq /2,4,6,8,10,12,14,16,18/
       if(eps.ne.epsold)then
-        hnext=-1.d29
+        pb%dt_next=-1.d29
         xnew=-1.d29
         eps1=SAFE1*eps
         a(1)=nseq(1)+1
@@ -52,11 +53,11 @@
 14      continue
 1       kmax=kopt
       endif
-      h=htry
+      h=pb%dt_try
       do 15 i=1,nv
         ysav(i)=y(i)
 15    continue
-      if(h.ne.hnext.or.x.ne.xnew)then
+      if(h.ne.pb%dt_next.or.x.ne.xnew)then
         first=.true.
         kopt=kmax
       endif
@@ -107,7 +108,7 @@
       reduct=.true.
       goto 2
 4     x=xnew
-      hdid=h
+      pb%dt_did=h
       first=.false.
       wrkmin=1.d35
       do 18 kk=1,km
@@ -119,11 +120,11 @@
           kopt=kk+1
         endif
 18    continue
-      hnext=h/scale
+      pb%dt_next=h/scale
       if(kopt.ge.k.and.kopt.ne.kmax.and..not.reduct)then
         fact=max(scale/alf(kopt-1,kopt),SCALMX)
         if(a(kopt+1)*fact.le.wrkmin)then
-          hnext=h/fact
+          pb%dt_next=h/fact
           kopt=kopt+1
         endif
       endif
@@ -137,13 +138,13 @@
       use problem_class
       type(problem_type), intent(inout)  :: pb
     
-      INTEGER nstep,nvar,NMAX
-      REAL*8 htot,dydx(nvar),y(nvar),yout(nvar)
-      real*8 xs,x
+      INTEGER :: nstep,nvar,NMAX
+      DOUBLE PRECISION :: htot,dydx(nvar),y(nvar),yout(nvar)
+      double precision :: xs,x
       EXTERNAL derivs
       PARAMETER (NMAX=262144)
       INTEGER i,n
-      REAL*8 h,h2,swap,ym(NMAX),yn(NMAX)
+      DOUBLE PRECISION :: h,h2,swap,ym(NMAX),yn(NMAX)
       h=htot/nstep
       do 11 i=1,nvar
         ym(i)=y(i)
@@ -171,10 +172,10 @@
       SUBROUTINE pzextr(iest,xest,yest,yz,dy,nv)
       implicit double precision (a-h,o-z)
       INTEGER iest,nv,IMAX,NMAX
-      REAL*8 xest,dy(nv),yest(nv),yz(nv)
+      DOUBLE PRECISION :: xest,dy(nv),yest(nv),yz(nv)
       PARAMETER (IMAX=13,NMAX=262144)
-      INTEGER j,k1
-      REAL*8 delta,f1,f2,q,d(NMAX),qcol(NMAX,IMAX),x(IMAX)
+      INTEGER :: j,k1
+      DOUBLE PRECISION :: delta,f1,f2,q,d(NMAX),qcol(NMAX,IMAX),x(IMAX)
       SAVE qcol,x
       x(iest)=xest
       do 11 j=1,nv
