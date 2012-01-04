@@ -29,18 +29,18 @@ subroutine solve(pb)
   !=======================Time loop. START============================
   write(6,*) '    it,  dt (secs), time (yrs), vmax (m/s)'
 
-  pb%time = 0.d0
-  pb%itstop = -1
-  vmax_old = 0d0
-  vmax_older = 0d0
 
- 
+  !--------Allocate working space for yt... and init--------------------- 
   allocate (yt(pb%neqs*pb%mesh%nn))
   allocate (dydt(pb%neqs*pb%mesh%nn))
   allocate (yt_scale(pb%neqs*pb%mesh%nn))
   yt(1:pb%neqs:) = pb%v
   yt(2:pb%neqs:) = pb%theta
-      
+  !--------Allocate working space for yt... and init--------------------- 
+
+
+
+     
   ! Time loop
 
   it=0
@@ -49,12 +49,14 @@ subroutine solve(pb)
     it=it+1
 
     call derivs(pb)
-        
+
+    !-------Pack v, theta into yt---------------------------------    
     yt(1:pb%neqs:) = pb%v
     yt(2:pb%neqs:) = pb%theta
     dydt(1:pb%neqs:) = pb%dv_dt
     dydt(2:pb%neqs:) = pb%dtheta_dt
-   
+    !-------Pack v, theta into yt--------------------------------- 
+
     ! One step
  
     !--------Call EXT routine bsstep [Bulirsch-Stoer Method] --------------
@@ -68,10 +70,13 @@ subroutine solve(pb)
       pb%dt_try=dt_next
     endif
 
+    !-------Unpack yt into v, theta--------------------------------- 
     pb%v = yt(1:pb%neqs:)
     pb%theta = yt(2:pb%neqs:)
     pb%dv_dt = dydt(1:pb%neqs:)
     pb%dtheta_dt = dydt(2:pb%neqs:) 
+    !-------Unpack yt into v, theta--------------------------------- 
+
 
     ! Update slip, stress. 
     pb%slip = pb%slip + pb%v*dt_did

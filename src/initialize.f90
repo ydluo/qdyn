@@ -55,7 +55,19 @@ contains
     pb%tau_init = pb%sigma*(pb%mu_star- pb%a*log(pb%v1/pb%v+1d0)+ pb%b*log(pb%theta/pb%theta_star+1d0))
     pb%tau = pb%tau_init
     pb%slip = 0d0 
-    !---------------------- ref_value -----------------
+    !---------------------- ref_value ----------------- 
+
+
+
+    !---------------------- init_value for solver ----------------- 
+    pb%time = 0.d0
+    pb%itstop = -1
+    vmax_old = 0d0
+    vmax_older = 0d0
+    !---------------------- init_value for solver ----------------- 
+   
+  
+
 
     !---------------------- output field to screen -----------------
     write(6,*) '**Field Initialized.**'
@@ -74,7 +86,7 @@ contains
     !---------------------- output field to screen -----------------
 
     call ot_init(ot)
-    call ox_init(ox,,pb%mesh%nn,pb%output%nxout)
+    call ox_init(ox,pb%mesh%nn,pb%output%nxout)
 
   end if
 
