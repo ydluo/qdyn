@@ -25,6 +25,7 @@ subroutine derivs(pb)
    
   use problem_class
   use fftsg
+  use calc
   
   type(problem_type), intent(inout) :: pb
 
@@ -33,17 +34,9 @@ subroutine derivs(pb)
   integer :: i
 
   ! compute shear stress rate from elastic interactions
-  !JPA: this should be replaced by "call compute_stress" which depends on dimension (0D, 1D, 2D fault)
-  ! the rest of this subroutine does not depend on dimension
-  if (pb%mesh%nn > 1) then
-    pb%dtau_dt = pb%v_star-pb%v
-    pb%dtau_dt( pb%mesh%nn+1 : pb%kernel%k2f%nnfft ) = 0d0 
-    call rdft(pb%kernel%k2f%nnfft,1,pb%dtau_dt,pb%kernel%k2f%m_fft%iworkfft,pb%kernel%k2f%m_fft%rworkfft)
-    pb%dtau_dt = pb%kernel%k2f%kernel * pb%dtau_dt
-    call rdft(pb%kernel%k2f%nnfft,-1,pb%dtau_dt,pb%kernel%k2f%m_fft%iworkfft,pb%kernel%k2f%m_fft%rworkfft)
-  else
-    pb%dtau_dt(1) = pb%kernel%k2f%kernel(1)*( pb%v_star(1)-pb%v(1) )
-  endif
+ 
+  call compute_stress(pb)
+  
 
   ! periodic loading
   dtau_per = pb%Omper * pb%Aper * dcos(pb%Omper*pb%time)     
