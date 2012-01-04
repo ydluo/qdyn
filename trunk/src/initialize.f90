@@ -85,7 +85,7 @@ end subroutine init_field
 subroutine init_kernel(pb)
    
   use problem_class
-  type(problem_type) :: pb
+  type(problem_type), intent(inout) :: pb
 
   if (pb%mesh%kind == 0) then      ! 1D
     pb%kernel%k2f%nnfft = (pb%kernel%k2f%finite+1)*pb%mesh%nn 

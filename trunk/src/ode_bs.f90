@@ -13,7 +13,7 @@
       
       use problem_class
       use derivs_all
-      type(problem_type) :: pb
+      type(problem_type), intent(inout)  :: pb
     
       INTEGER nv,NMAX,KMAXX,IMAX
       REAL*8 eps,hdid,hnext,htry,dydx(nv),y(nv),yscal(nv),          &
@@ -135,7 +135,7 @@
       implicit double precision (a-h,o-z)
       use derivs_all
       use problem_class
-      type(problem_type) :: pb
+      type(problem_type), intent(inout)  :: pb
     
       INTEGER nstep,nvar,NMAX
       REAL*8 htot,dydx(nvar),y(nvar),yout(nvar)

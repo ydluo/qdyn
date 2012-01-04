@@ -18,7 +18,7 @@ subroutine solve(pb)
   use derivs_all
   use constants, only : YEAR
   
-  type(problem_type) :: pb
+  type(problem_type), intent(inout)  :: pb
 
   integer :: it,ic,i,ip,ivmax,nxout_count
   double precision :: dt_next, dt_did,  &
