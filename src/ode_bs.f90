@@ -12,6 +12,7 @@
       implicit double precision (a-h,o-z)
       
       use problem_class
+      use derivs_all
       type(problem_type) :: pb
     
       INTEGER nv,NMAX,KMAXX,IMAX
@@ -132,7 +133,7 @@
 
       SUBROUTINE mmid(y,dydx,nvar,xs,htot,nstep,yout,derivs,pb)
       implicit double precision (a-h,o-z)
-      
+      use derivs_all
       use problem_class
       type(problem_type) :: pb
     
