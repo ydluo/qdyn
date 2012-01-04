@@ -6,6 +6,7 @@ module output
 !  use some_module_1
 
   implicit none
+  public ot_type, ox_type
   private
 
  ! timeseries outputs: at every time step, but only macroscopic quantities
