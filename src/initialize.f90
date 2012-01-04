@@ -134,6 +134,8 @@ subroutine init_kernel(pb)
       end if
     end if
 
+    pb%kernel%k2f%m_fft%iworkfft(0) = 0
+
   end if
   
 end subroutine init_kernel     
