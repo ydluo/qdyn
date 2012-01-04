@@ -12,7 +12,7 @@ contains
 subroutine compute_stress(pb)
 
   use problem_class
-  type(problem_type) :: pb
+  type(problem_type), intent(inout)  :: pb
 
   ! compute shear stress rate from elastic interactions
   ! compute_stress depends on dimension (0D, 1D, 2D fault)

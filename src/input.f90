@@ -18,7 +18,7 @@ contains
   
   use problem_class
   
-  type(problem_type) :: pb
+  type(problem_type), , intent(inout)  :: pb
 
   open(unit=15,FILE= 'qdyn.in') 
   read(15,*)pb%mesh%kind
