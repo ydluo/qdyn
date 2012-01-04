@@ -8,8 +8,12 @@
       contains
 
 
-      SUBROUTINE bsstep(y,dydx,nv,x,htry,eps,yscal,hdid,hnext,derivs)
+      SUBROUTINE bsstep(y,dydx,nv,x,htry,eps,yscal,hdid,hnext,derivs,pb)
       implicit double precision (a-h,o-z)
+      
+      use problem_class
+      type(problem_type) :: pb
+    
       INTEGER nv,NMAX,KMAXX,IMAX
       REAL*8 eps,hdid,hnext,htry,dydx(nv),y(nv),yscal(nv),          &
                 SAFE1,SAFE2,REDMAX,REDMIN,TINY,SCALMX
@@ -63,7 +67,7 @@
           write(6,*)'dt_did,t= ',h,x
           pause 'step size underflow in bsstep'
         endif
-        call mmid(ysav,dydx,nv,x,h,nseq(k),yseq,derivs)
+        call mmid(ysav,dydx,nv,x,h,nseq(k),yseq,derivs,pb)
         xest=(h/nseq(k))**2
         call pzextr(k,xest,yseq,y,yerr,nv)
         if(k.ne.1)then
@@ -126,8 +130,12 @@
       END SUBROUTINE bsstep
 
 
-      SUBROUTINE mmid(y,dydx,nvar,xs,htot,nstep,yout,derivs)
+      SUBROUTINE mmid(y,dydx,nvar,xs,htot,nstep,yout,derivs,pb)
       implicit double precision (a-h,o-z)
+      
+      use problem_class
+      type(problem_type) :: pb
+    
       INTEGER nstep,nvar,NMAX
       REAL*8 htot,dydx(nvar),y(nvar),yout(nvar)
       real*8 xs,x
@@ -141,7 +149,7 @@
         yn(i)=y(i)+h*dydx(i)
 11    continue
       x=xs+h
-      call derivs(x,yn,yout)
+      call derivs(pb)
       h2=2.d0*h
       do 13 n=2,nstep
         do 12 i=1,nvar
@@ -150,7 +158,7 @@
           yn(i)=swap
 12      continue
         x=x+h
-        call derivs(x,yn,yout)
+        call derivs(pb)
 13    continue
       do 14 i=1,nvar
         yout(i)=0.5d0*(ym(i)+yn(i)+h*yout(i))
