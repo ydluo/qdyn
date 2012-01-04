@@ -134,6 +134,7 @@ VS = 3000; 	% shear wave velocity (if VS=0: turn off radiation damping)
 
 %-- numerical settings
 N=1024; 	% number of grid cells
+IC=512;         %output ot coordinate
 TMAX = 6*month;  % total simulation time
 NSTOP = 0;	% stop at (0) tmax, (1) end of localization or (2) max slip rate
 DTTRY = 1e2;   % first trial timestep
@@ -178,6 +179,8 @@ fpars = who;
 for k= find( strcmp(fpars,upper(fpars)) )' ,
   pars.(fpars{k}) = eval(fpars{k}) ;
 end
+
+
 
 switch mode
 
@@ -224,7 +227,7 @@ switch mode
           fprintf(fid,'%u   finite\n', FINITE);
           fprintf(fid,'%u   itheta_law\n', THETA_LAW);
           fprintf(fid,'%u   n_equations\n', NEQS);
-          fprintf(fid,'%u %u   ntout, nxout\n', NTOUT,NXOUT);     
+          fprintf(fid,'%u %u %u   ntout, nt_coord, nxout\n', NTOUT,IC,NXOUT);     
           fprintf(fid,'%.15g %.15g   beta, smu\n', VS, MU);
           fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
           fprintf(fid,'%.15g %.15g %.15g %.15g    dt_try, dtmax, tmax, accuracy\n',DTTRY,DTMAX,TMAX,ACC);

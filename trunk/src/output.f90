@@ -6,103 +6,142 @@ module output
 !  use some_module_1
 
   implicit none
-  public ot_type, ox_type
-  private
-
- ! timeseries outputs: at every time step, but only macroscopic quantities
-  type ot_type
-    private
-    double precision, pointer ::
-    integer, pointer ::
-    logical, pointer ::
-    double precision :: lcold,lcnew,llocnew,llocold
-    integer :: unit,ic
-    logical ::
-  end type ot_type
-
- ! snapshot outputs: at every fault point, but only at few selected times
-  type ox_type
-    private
-    double precision, pointer ::
-    integer, pointer ::
-    logical, pointer ::
-    double precision ::
-    integer :: count,unit,nx
-    logical ::
-  end type ox_type
-
-  public :: ot_type, ox_type, ot_init, ox_init
+  private :: ixout
+  public :: ot_init, ox_init, ot_write, ox_write
 
 contains
 
 !=====================================================================
+!output initilized field to screen
+subroutine screen_init(pb)
+
+  use problem_class
+  type (problem_type), intent(inout) :: pb
+  
+  write(6,*) '**Field Initialized.**'
+  write(6,*) 'Values at selected point of the fault:'
+    
+    if (pb%kernel%k2f%finite == 1 .or. pb%mesh%nn == 1) then
+      write(6,*) 'K/Kc = ',(PI*pb%smu/pb%mesh%Lfault)/   &
+        (pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
+      write(6,*) 'K/Kb = ',(PI*pb%smu/pb%mesh%Lfault)/   &
+        (pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
+    else
+      write(6,*) 'K/Kc = ',(PI*pb%smu/pb%mesh%W)/   &
+        (pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
+      write(6,*) 'K/Kb = ',(PI*pb%smu/pb%mesh%W)/   &
+        (pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
+    endif
+    write(6,*)
+
+end subroutine screen_init
+
+
+
+!=====================================================================
+!output one step to screen
+subroutine screen_write(pb,it,dt_did)
+  
+  use constant, only : YEAR
+  use problem_class
+  type (problem_type), intent(inout) :: pb
+  integer :: it
+  double precision :: dt_did
+
+  write(6,'(i7,x,3(e11.3,x),i5)') it, dt_did, pb%time/YEAR, pb%v(pb%it%ivmax)
+
+end subroutine screen_write
+
+
+!=====================================================================
+! write time of every step
+subroutine time_write(pb)
+ 
+  use problem_class
+  type (problem_type), intent(inout) :: pb
+
+  write(121,*) pb%time, pb%tmax
+
+end subroutine time_write
+
+
+!=====================================================================
 ! write ot file header
-subroutine ot_init(ot,nn)
+subroutine ot_init(pb)
 
-  type (ot_type), intent(inout) :: ot
+  use problem_class
+  type (problem_type), intent(inout) :: pb
+
+  pb%ot%lcnew = dble(pb%mesh%nn)
+  pb%ot%llocnew = dble(pb%mesh%nn)
+
+  pb%ot%unit = 18
  
-  ot%ic = nn/2
-  if (ot%ic == 0) ot%ic = 1
-
-  ot%lcnew = dble(nn)
-  ot%llocnew = dble(nn)
-
-  ot%unit = 18
- 
-  write(ot%unit,'(a)')'# macroscopic values:'
-  write(ot%unit,'(a)')'# 1=t,2=loc_size,3=crack_size,4=potcy,5=pot_rate'
-  write(ot%unit,'(a)')'# values at center:'
-  write(ot%unit,'(a)')'# 6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip'
-  write(ot%unit,'(a)')'# values at max(V) location:'
-  write(ot%unit,'(a)')'# 11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip'
+  write(pb%ot%unit,'(a)')'# macroscopic values:'
+  write(pb%ot%unit,'(a)')'# 1=t,2=loc_size,3=crack_size,4=potcy,5=pot_rate'
+  write(pb%ot%unit,'(a)')'# values at center:'
+  write(pb%ot%unit,'(a)')'# 6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip'
+  write(pb%ot%unit,'(a)')'# values at max(V) location:'
+  write(pb%ot%unit,'(a)')'# 11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip'
 
 end subroutine ot_init
 
 
+
 !=====================================================================
 ! write ox file header
-subroutine ox_init(ox,nn)
+subroutine ox_init(pb)
  
-  type (ox_type), intent(inout) :: ox
-  integer, intent(in) :: nn
+  use problem_class
+  type (problem_type), intent(inout) :: pb
 
-  ox%unit = 19
+  pb%ox%unit = 19
 
-  ox%count=0
-  do i=1,nn,ox%nx
-    ox%count = ox%count+1
+  pb%ox%count=0
+  do i=1,pb%mesh%nn,pb%ox%nxout
+    pb%ox%count = pb%ox%count+1
   enddo
-  write(ox%unit,'(a,2i5)')'# nx= ',ox%count
+  write(pb%ox%unit,'(a,2i5)')'# nx= ',pb%ox%count
 
 subroutine ox_init
 
+
+
 !=====================================================================
 ! Export timeseries
-subroutine ot_write(ot)
+subroutine ot_write(pb)
  
-  type (ot_type), intent(inout) :: ot
+  use problem_class
+  type (problem_type), intent(inout) :: pb
 
   write(ot%unit,'(e24.16,15e14.6)') pb%time, pb%output%llocnew*pb%mesh%dx,  &
     pb%output%lcnew*pb%mesh%dx, pot, pot_rate,    &
-    pb%v(ot%ic), pb%theta(ot%ic), pb%v(ot%ic)*pb%theta(ot%ic)/pb%dc(ot%ic), &
-    pb%tau(ot%ic), pb%slip(ot%ic),    &
-    xvmax, vmax, pb%theta(ivmax), vmax*pb%theta(ivmax)/pb%dc(ivmax),    &
-    pb%tau(ivmax), pb%slip(ivmax)
+    pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
+    pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
+    pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
+    pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
+    pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
+    pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax)
 
 end subroutine ot_write
 
+
+
+
 !=====================================================================
 ! Export snapshots
-subroutine ox_write(ox,it,ivmax,pb)
+subroutine ox_write(it,pb)
  
-  type (ox_type), intent(inout) :: ox
+  use problem_class
+  type (problem_type), intent(inout) :: pb
 
-  integer :: i
+  integer :: it,ixout
 
-  write(ox%unit,'(2a,2i5,e14.6)')'# x v theta V./V dtau tau_dot slip ',it,ivmax,pb%time
-  do i=1,pb%mesh%nn,ox%nx
-    write(19,'(8e15.7)') pb%mesh%x(i),pb%time,pb%v(i), &
-      pb%theta(i),pb%dvdt(i)/pb%v(i),pb%tau(i),pb%dtau_dt(i),pb%slip(i)
+  write(ox%unit,'(2a,2i5,e14.6)')'# x v theta V./V dtau tau_dot slip ',it,pb%ot%ivmax,pb%time
+  do ixout=1,pb%mesh%nn,pb%ox%nxout
+    write(19,'(8e15.7)') pb%mesh%x(ixout),pb%time,pb%v(ixout),   &
+      pb%theta(ixout),pb%dvdt(ixout)/pb%v(ixout),pb%tau(ixout),   &
+      pb%dtau_dt(ixout),pb%slip(ixout)
   enddo
 
 end subroutine ox_write

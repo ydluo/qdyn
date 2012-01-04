@@ -8,6 +8,31 @@ module problem_class
 
   public
 
+
+ ! timeseries outputs: at every time step, but only macroscopic quantities
+  type ot_type
+    private
+    double precision, pointer ::
+    integer, pointer ::
+    logical, pointer ::
+    double precision :: lcold,lcnew,llocnew,llocold
+    integer :: unit,ic,ntout,ivmax
+    logical ::
+  end type ot_type
+
+ ! snapshot outputs: at every fault point, but only at few selected times
+  type ox_type
+    private
+    double precision, pointer ::
+    integer, pointer ::
+    logical, pointer ::
+    double precision ::
+    integer :: count,unit,nxout
+    logical ::
+  end type ox_type
+
+
+
  
   type mesh_type
     integer :: kind = 0

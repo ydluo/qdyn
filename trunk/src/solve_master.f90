@@ -16,11 +16,12 @@ subroutine solve(pb)
   use problem_class
   use ode_bs
   use derivs_all
+  use output
   use constants, only : YEAR
   
   type(problem_type), intent(inout)  :: pb
 
-  integer :: it,ic,i,ip,ivmax,nxout_count
+  integer :: it
   double precision :: dt_next, dt_did,  &
                       pot, pot_rate, xvmax, vmax, vmax_old, vmax_older, &
                       xloc, omega, dtau_per
@@ -94,47 +95,20 @@ subroutine solve(pb)
     pb%ot%llocnew = crack_size(pb%dtau_dt,pb%mesh%nn)
 
     ! Output time series at max(v) location
-    ivmax = maxloc(pb%v)
-    vmax = pb%v(ivmax)
-    xvmax = pb%mesh%x(ivmax)
+    pb%ot%ivmax = maxloc(pb%v)
 
-    call ot_write()
+    call ot_write(pb)
 
-    if (pb%itstop == 0) then
-      !         STOP soon after end of slip localization 
-      if (pb%NSTOP == 1) then
-        if (pb%output%llocnew > pb%output%llocold) pb%itstop=it+2*pb%output%ntout
+    call stop_check(pb,it)
 
-      ! STOP soon after maximum slip rate
-      elseif (pb%NSTOP == 2) then
 
-        if (it > 2 .and. vmax_old > vmax_older    &
-           .and. vmax < vmax_old) pb%itstop = it+10*pb%output%ntout
-        vmax_older = vmax_old
-        vmax_old = vmax
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-!!! ???????????????????????????????
-        !         STOP at a slip rate threshold
-      elseif (pb%NSTOP == 3) then    
-        if (vmax > pb%tmax) pb%itstop = it
-!!! ??????????????????????????????
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        !         STOP if time > tmax
-      else
-        write(121,*) pb%time, pb%tmax
-        if (pb%tmax > 0.d0 .and. pb%time > pb%tmax) pb%itstop = it
-      endif
-    endif
-
-    !WRITE_6---------------- Print step to screen START--------------------
+    !----------------Output onestep to screen and ox file(snap_shot)--------------------
     if(mod(it-1,pb%output%ntout) == 0 .or. it == pb%itstop) then
-    ! Print info
-      write(6,'(i7,x,3(e11.3,x),i5)') it, dt_did, pb%time/YEAR, vmax
-    !WRITE_6---------------- Print step to screen END----------------------21--------------: Command not found.
-      call ox_write()
-
+      call screen_write(pb,it,dt_did)
+      call ox_write(pb)
     endif
+
+
   enddo
 
 end subroutine solve

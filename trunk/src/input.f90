@@ -34,7 +34,7 @@ contains
    
     read(15,*)pb%itheta_law
     read(15,*)pb%neqs
-    read(15,*)pb%output%ntout, pb%output%nxout
+    read(15,*)pb%ot%ntout, pb%ot%ic, pb%ox%nxout
     read(15,*)pb%beta, pb%smu
     read(15,*)pb%Tper, pb%Aper
     read(15,*)pb%dt_try, pb%dt_max, &
@@ -58,6 +58,8 @@ contains
 
 
   end if
+
+  close(15)
   end subroutine read_main
 
 
