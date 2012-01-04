@@ -61,7 +61,7 @@ subroutine solve(pb)
     !-------- 
     yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
     call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,   &
-                dt_did,dt_next,derivs)
+                dt_did,dt_next,derivs,pb)
     if (pb%dt_max >  0.d0) then
       pb%dt_try=min(dt_next,pb%dt_max)
     else
