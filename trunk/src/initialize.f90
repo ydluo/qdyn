@@ -3,6 +3,7 @@
 module initialize
   
   implicit none
+  private
 
   public :: init_field, init_kernel 
 
