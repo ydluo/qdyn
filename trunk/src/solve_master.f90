@@ -34,7 +34,7 @@ subroutine solve(pb)
   vmax_old = 0d0
   vmax_older = 0d0
 
-  pb%kernel%k2f%m_fft%iworkfft(0) = 0
+ 
   allocate (yt(pb%neqs*pb%mesh%nn))
   allocate (dydt(pb%neqs*pb%mesh%nn))
   allocate (yt_scale(pb%neqs*pb%mesh%nn))
