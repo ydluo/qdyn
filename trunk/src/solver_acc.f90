@@ -18,7 +18,9 @@ subroutine check_stop(pb)
 
   use problem_class
   use output, only : time_write
+
   type(problem_type), intent(inout) :: pb
+
   double precision :: vmax_old = 0d0, vmax_older = 0d0
   save vmax_old, vmax_older
 
@@ -58,6 +60,7 @@ subroutine do_bsstep(pb)
 
   use problem_class
   use ode_bs
+
   type(problem_type), intent(inout) :: pb
 
   double precision, dimension(:), allocatable ::  yt, dydt, yt_scale
@@ -76,6 +79,7 @@ subroutine do_bsstep(pb)
   !--------Call EXT routine bsstep [Bulirsch-Stoer Method] --------------
   !-------- 
   yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
+
   if (pb%it == 1 .or. pb%it == 2 .or. pb%it == 10) then
   write(6,*) 'BEGIN==================================================='
   write(6,*) 'it=', pb%it 

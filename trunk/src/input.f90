@@ -11,7 +11,7 @@ contains
 !=====================================================================
 ! read in all parameters
 ! 
-  subroutine read_main(pb)
+subroutine read_main(pb)
   
   use problem_class
   
@@ -34,12 +34,16 @@ contains
     end if
    
     read(15,*)pb%itheta_law
-    read(15,*)pb%neqs
+    read(15,*)pb%neqs 
+!JPA neqs should not be setup explicitly by the user
+!    It should be inferred from the type of problem:
+!    neq=2 if problem in homogeneous medium without free surface
+!    neq=3 if bimaterial problem, or with free surface (for which normal stress changes
+!          are coupled to slip, the 3rd variable is the normal stress)
     read(15,*)pb%ot%ntout, pb%ot%ic, pb%ox%nxout
     read(15,*)pb%beta, pb%smu
     read(15,*)pb%Tper, pb%Aper
-    read(15,*)pb%dt_try, pb%dt_max, &
-              pb%tmax, pb%acc
+    read(15,*)pb%dt_try, pb%dt_max,pb%tmax, pb%acc
     read(15,*)pb%NSTOP
 
     allocate (pb%tau(pb%mesh%nn), pb%dtau_dt(pb%mesh%nn),    &
@@ -63,8 +67,7 @@ contains
   close(15)
   write(6,*) 'Input complete'
 
-
-  end subroutine read_main
+end subroutine read_main
 
 
 end module input
