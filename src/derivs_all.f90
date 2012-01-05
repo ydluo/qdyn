@@ -21,7 +21,9 @@ contains
  !-------|                                               |-------|
  !---------------------------------------------------------------|
  
-subroutine derivs(pb)
+subroutine derivs(pb) 
+!JPA this subroutine should have yout with intent(out)
+!    and put there the derivatives
    
   use problem_class
   use calc

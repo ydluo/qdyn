@@ -153,7 +153,7 @@ contains
         yn(i)=y(i)+h*dydx(i)
 11    continue
       xx=xs+h
-      call derivs(pb)
+      call derivs(pb) !JPA this call should modify yout
       h2=2.d0*h
       do 13 n=2,nstep
         do 12 i=1,nvar
@@ -162,7 +162,7 @@ contains
           yn(i)=swap
 12      continue
         xx=xx+h
-        call derivs(pb)
+        call derivs(pb) !JPA this call should modify yout
 13    continue
       do 14 i=1,nvar
         yout(i)=0.5d0*(ym(i)+yn(i)+h*yout(i))
