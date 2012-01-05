@@ -21,6 +21,7 @@ contains
   use problem_class
   
   type(problem_type), intent(inout)  :: pb
+  write(6,*) 'Start reading input: ...'
 
   open(unit=15,FILE= 'qdyn.in') 
   read(15,*)pb%mesh%kind
@@ -46,9 +47,9 @@ contains
     allocate (pb%tau(pb%mesh%nn), pb%dtau_dt(pb%mesh%nn),    &
              pb%tau_init(pb%mesh%nn), pb%sigma(pb%mesh%nn), &
              pb%slip(pb%mesh%nn), pb%v(pb%mesh%nn), pb%dv_dt(pb%mesh%nn), &
-             pb%theta(pb%mesh%nn),  &
-             pb%dtheta_dt(pb%mesh%nn),&
+             pb%theta(pb%mesh%nn),  pb%dtheta_dt(pb%mesh%nn),  &
              pb%a(pb%mesh%nn), pb%b(pb%mesh%nn), pb%dc(pb%mesh%nn),   &
+             pb%mesh%x(pb%mesh%nn),  &
              pb%v1(pb%mesh%nn), pb%v2(pb%mesh%nn), pb%mu_star(pb%mesh%nn),& 
              pb%v_star(pb%mesh%nn), pb%theta_star(pb%mesh%nn))
  
@@ -62,6 +63,9 @@ contains
   end if
 
   close(15)
+  write(6,*) 'Input complete'
+
+
   end subroutine read_main
 
 

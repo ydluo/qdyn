@@ -221,6 +221,7 @@ switch mode
     fid=fopen('qdyn.in','w');
     if MESHKIND == 0;
       fprintf(fid,'%u     meshkind\n' , MESHKIND);
+      fprintf(fid,'%u     NN\n' , N);      
       fprintf(fid,'%.15g %.15g      L, W\n', L, W);
       if KERNELKIND ==0;
           fprintf(fid,'%u   kernelkind\n', KERNELKIND);
@@ -240,7 +241,7 @@ switch mode
     fclose(fid);
     
     % solve
-    status = system('~/qdyn_co/qdyn');
+    status = system('~/qdyn_svn/trunk/src/qdyn');
     
     % rename input and output files
     if length(NAME)

@@ -15,7 +15,7 @@ contains
   
   use problem_class
   use constants, only : PI
-  use output, only : screen_init, ot_init, ox_init
+  use output, only : ot_init, ox_init
 
   type(problem_type), intent(inout) :: pb
   
@@ -68,7 +68,7 @@ contains
     !---------------------- init_value for solver ----------------- 
    
  
-    call screen_init(pb)
+
     call ot_init(pb)
     call ox_init(pb)
 
@@ -86,6 +86,7 @@ subroutine init_kernel(pb)
   type(problem_type), intent(inout) :: pb
   double precision :: tau_co, wl2
   integer :: i
+  write(6,*) 'Intializing kernel: ...'
   if (pb%mesh%kind == 0) then      ! 1D
     pb%kernel%k2f%nnfft = (pb%kernel%k2f%finite+1)*pb%mesh%nn 
     if (pb%mesh%nn == 1) then      ! single degree-of-freedom spring-block system
@@ -133,7 +134,7 @@ subroutine init_kernel(pb)
     end if
 
     pb%kernel%k2f%m_fft%iworkfft(0) = 0
-
+  write(6,*) 'Kernel intialized'
   end if
   
 end subroutine init_kernel     
