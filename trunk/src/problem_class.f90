@@ -2,8 +2,6 @@
 
 module problem_class
  
-  use output
-
   implicit none
 
   public
@@ -17,14 +15,14 @@ module problem_class
 
  ! snapshot outputs: at every fault point, but only at few selected times
   type ox_type
-    private
     integer :: count,unit,nxout
   end type ox_type
 
   type mesh_type
     integer :: kind = 0
     integer :: nn
-    double precision :: dx, Lfault, W 
+    double precision :: dx, Lfault, W
+    double precision , allocatable :: x(:) 
   end type mesh_type
 
  ! working arrays for Ooura's fft

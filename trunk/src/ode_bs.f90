@@ -8,7 +8,7 @@
       contains
 
 
-      SUBROUTINE bsstep(y,dydx,nv,x,eps,yscal,derivs,pb)
+      SUBROUTINE bsstep(y,dydx,nv,x,eps,yscal,pb)
       implicit double precision (a-h,o-z)
       
       use problem_class
@@ -30,7 +30,7 @@
                 ysav(NMAX),yseq(NMAX)
       LOGICAL ::first,reduct
       SAVE a,alf,epsold,first,kmax,kopt,nseq,xnew
-      EXTERNAL derivs
+ !     EXTERNAL derivs
       DATA first/.true./,epsold/-1.d0/
       DATA nseq /2,4,6,8,10,12,14,16,18/
       if(eps.ne.epsold)then
@@ -69,7 +69,7 @@
           write(6,*)'dt_did,t= ',h,x
           pause 'step size underflow in bsstep'
         endif
-        call mmid(ysav,dydx,nv,x,h,nseq(k),yseq,derivs,pb)
+        call mmid(ysav,dydx,nv,x,h,nseq(k),yseq,pb)
         xest=(h/nseq(k))**2
         call pzextr(k,xest,yseq,y,yerr,nv)
         if(k.ne.1)then
@@ -132,7 +132,7 @@
       END SUBROUTINE bsstep
 
 
-      SUBROUTINE mmid(y,dydx,nvar,xs,htot,nstep,yout,derivs,pb)
+      SUBROUTINE mmid(y,dydx,nvar,xs,htot,nstep,yout,pb)
       implicit double precision (a-h,o-z)
       use derivs_all
       use problem_class
@@ -141,7 +141,7 @@
       INTEGER :: nstep,nvar,NMAX
       DOUBLE PRECISION :: htot,dydx(nvar),y(nvar),yout(nvar)
       double precision :: xs,x
-      EXTERNAL derivs
+!      EXTERNAL derivs
       PARAMETER (NMAX=262144)
       INTEGER i,n
       DOUBLE PRECISION :: h,h2,swap,ym(NMAX),yn(NMAX)

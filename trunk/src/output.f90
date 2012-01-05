@@ -6,7 +6,7 @@ module output
 !  use some_module_1
 
   implicit none
-  private :: ixout
+  private  
   public :: screen_init, ot_init, ox_init, &
             screen_write, ot_write, ox_write,  &
             time_write, crack_size
@@ -18,6 +18,7 @@ contains
 subroutine screen_init(pb)
 
   use problem_class
+  use constants, only : PI
   type (problem_type), intent(inout) :: pb
   
   write(6,*) '**Field Initialized.**'
@@ -45,7 +46,7 @@ end subroutine screen_init
 !output one step to screen
 subroutine screen_write(pb)
   
-  use constant, only : YEAR
+  use constants, only : YEAR
   use problem_class
   type (problem_type), intent(inout) :: pb
 
@@ -95,7 +96,7 @@ subroutine ox_init(pb)
  
   use problem_class
   type (problem_type), intent(inout) :: pb
-
+  integer :: i
   pb%ox%unit = 19
 
   pb%ox%count=0
@@ -104,7 +105,7 @@ subroutine ox_init(pb)
   enddo
   write(pb%ox%unit,'(a,2i5)')'# nx= ',pb%ox%count
 
-subroutine ox_init
+end subroutine ox_init
 
 
 
@@ -115,8 +116,8 @@ subroutine ot_write(pb)
   use problem_class
   type (problem_type), intent(inout) :: pb
   
-  write(pb%ot%unit,'(e24.16,15e14.6)') pb%time, pb%output%llocnew*pb%mesh%dx,  &
-    pb%output%lcnew*pb%mesh%dx, pb%pot, pb%pot_rate,    &
+  write(pb%ot%unit,'(e24.16,15e14.6)') pb%time, pb%ot%llocnew*pb%mesh%dx,  &
+    pb%ot%lcnew*pb%mesh%dx, pb%pot, pb%pot_rate,    &
     pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
     pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
     pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
@@ -138,10 +139,10 @@ subroutine ox_write(pb)
 
   integer :: ixout
 
-  write(ox%unit,'(2a,2i5,e14.6)')'# x v theta V./V dtau tau_dot slip ',pb%it,pb%ot%ivmax,pb%time
+  write(pb%ox%unit,'(2a,2i5,e14.6)')'# x v theta V./V dtau tau_dot slip ',pb%it,pb%ot%ivmax,pb%time
   do ixout=1,pb%mesh%nn,pb%ox%nxout
     write(19,'(8e15.7)') pb%mesh%x(ixout),pb%time,pb%v(ixout),   &
-      pb%theta(ixout),pb%dvdt(ixout)/pb%v(ixout),pb%tau(ixout),   &
+      pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
       pb%dtau_dt(ixout),pb%slip(ixout)
   enddo
 
@@ -154,7 +155,7 @@ function crack_size(s,n)
        
   integer :: n
   double precision ::  s(n)
-  double precision ::  smin,smax,s1,s2,xL,xR
+  double precision ::  stemp,smax,s1,s2,xL,xR
   integer :: i,iL,iR,imin
   double precision :: crack_size
 
@@ -175,7 +176,26 @@ function crack_size(s,n)
   ! WARNING: assumes one peak on x<0 and one peak on x>0
   imin=n/2
 
-  iL = maxloc(s(1:imin))
+  iL=1
+  stemp=0d0;
+  do i=1,imin
+    if (s(i) > stemp) then
+      iL = i
+      stemp = s(i)
+    end if
+  end do
+
+  iR=imin
+  stemp=0d0
+  do i=imin,n
+    if (s(i) >= stemp) then
+      iR = i
+      stemp = s(i)
+    end if
+  end do
+
+   
+  !iL = maxloc(s(1:imin))
   smax=s(iL)
   xL = dble(iL);
   if (iL > 1) then
@@ -184,7 +204,7 @@ function crack_size(s,n)
     if (s2 /= 0d0) xL = xL-s1/s2
   endif
       
-  iR = maxloc(s(imin:n)
+  !iR = maxloc(s(imin:n))
   smax=s(iR)
   xR = dble(iR);
   if (iR < n) then
@@ -198,4 +218,4 @@ function crack_size(s,n)
 end function crack_size
 
 
-end module mod_name
+end module output

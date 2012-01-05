@@ -24,7 +24,7 @@ subroutine solve(pb)
   use output
   
   type(problem_type), intent(inout)  :: pb
-  integer :: it
+
   !=======================Time loop. START===========================
   ! Time loop
 
@@ -35,9 +35,9 @@ subroutine solve(pb)
     call do_bsstep(pb)
     call update_field(pb)
     call ot_write(pb)
-    call stop_check(pb)   ! here itstop will change
+    call check_stop(pb)   ! here itstop will change
     !--------Output onestep to screen and ox file(snap_shot)
-    if(mod(pb%it-1,pb%output%ntout) == 0 .or. pb%it == pb%itstop) then
+    if(mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
       call screen_write(pb)
       call ox_write(pb)
     endif

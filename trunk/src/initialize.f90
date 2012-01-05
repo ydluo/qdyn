@@ -26,7 +26,9 @@ contains
   if (pb%mesh%kind == 0) then  ! 1D fault, uniform grid
     write(6,*) '1D fault, uniform grid' 
     pb%mesh%dx = pb%mesh%Lfault/pb%mesh%nn
-
+    do i=1,pb%mesh%nn,pb%ox%nxout
+      pb%mesh%x(i) = (i-pb%mesh%nn*0.5d0-0.5d0)*pb%mesh%dx
+    enddo
     !---------------------- dt_max & perturbation------------------
     if (pb%Aper /= 0.d0 .and. pb%Tper > 0.d0) then
       if (pb%dt_max > 0.d0) then
@@ -79,10 +81,11 @@ end subroutine init_field
  
 subroutine init_kernel(pb)
   
-  use constant, only : PI 
+  use constants, only : PI 
   use problem_class
   type(problem_type), intent(inout) :: pb
   double precision :: tau_co, wl2
+  integer :: i
   if (pb%mesh%kind == 0) then      ! 1D
     pb%kernel%k2f%nnfft = (pb%kernel%k2f%finite+1)*pb%mesh%nn 
     if (pb%mesh%nn == 1) then      ! single degree-of-freedom spring-block system
