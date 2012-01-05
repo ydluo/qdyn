@@ -9,10 +9,12 @@
 
 
       SUBROUTINE bsstep(y,dydx,nv,x,eps,yscal,pb)
-      implicit double precision (a-h,o-z)
-      
+       
       use problem_class
-      use derivs_all
+      use derivs_all  
+
+      implicit double precision (a-h,o-z)
+
       type(problem_type), intent(inout)  :: pb
     
       INTEGER :: nv,NMAX,KMAXX,IMAX
@@ -133,9 +135,10 @@
 
 
       SUBROUTINE mmid(y,dydx,nvar,xs,htot,nstep,yout,pb)
-      implicit double precision (a-h,o-z)
       use derivs_all
       use problem_class
+      implicit double precision (a-h,o-z)
+
       type(problem_type), intent(inout)  :: pb
     
       INTEGER :: nstep,nvar,NMAX
