@@ -2,10 +2,11 @@
 
 module problem_class
  
+  use fftsg, only : OouraFFT_type
+
   implicit none
 
   public
-
 
  ! timeseries outputs: at every time step, but only macroscopic quantities
   type ot_type
@@ -22,15 +23,8 @@ module problem_class
     integer :: kind = 0
     integer :: nn
     double precision :: dx, Lfault, W
-    double precision , allocatable :: x(:) 
+    double precision, allocatable :: x(:) 
   end type mesh_type
-
- ! working arrays for Ooura's fft
-  type OouraFFT_type
-    integer :: nwfft
-    integer,allocatable :: iworkfft(:)
-    double precision,allocatable :: rworkfft(:)
-  end type OouraFFT_type
 
   type kernel_2D_fft
     integer :: kind = 0

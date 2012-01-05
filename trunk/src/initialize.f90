@@ -96,10 +96,6 @@ subroutine init_kernel(pb)
     if (pb%mesh%nn > 1 .and. pb%kernel%kind == 0) then
       write(6,*) 'OouraFFT Selected'
 
-      pb%kernel%k2f%m_fft%nwfft = 2+ceiling(dsqrt(dble(pb%kernel%k2f%nnfft/2.d0)))
-      allocate (pb%kernel%k2f%m_fft%iworkfft(0:pb%kernel%k2f%m_fft%nwfft-1))
-      allocate (pb%kernel%k2f%m_fft%rworkfft(0:pb%kernel%k2f%nnfft/2-1))
-  
       if (pb%kernel%k2f%finite == 0) then
         pb%kernel%k2f%nnfft = pb%mesh%nn
         allocate (pb%kernel%k2f%kernel(pb%kernel%k2f%nnfft))
@@ -133,7 +129,6 @@ subroutine init_kernel(pb)
       end if
     end if
 
-    pb%kernel%k2f%m_fft%iworkfft(0) = 0
   write(6,*) 'Kernel intialized'
   end if
   
