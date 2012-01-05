@@ -6,4 +6,4 @@ main.o: initialize.o input.o problem_class.o solve_master.o
 ode_bs.o: derivs_all.o problem_class.o
 output.o: constants.o problem_class.o
 solve_master.o: derivs_all.o output.o problem_class.o solver_acc.o
-solver_acc.o: output.o problem_class.o
+solver_acc.o: ode_bs.o output.o problem_class.o

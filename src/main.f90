@@ -7,7 +7,7 @@
  use initialize
  use solve_master
 
- type(problem_type), intent(inout)  :: pb
+ type(problem_type) :: pb
 
  call read_main(pb)
  call init_field(pb)

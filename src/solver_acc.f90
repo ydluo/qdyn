@@ -6,13 +6,13 @@ module solver_acc
 
   private 
 
-  public :: check_stop, do_bsstep
+  public :: check_stop, do_bsstep, update_field
 
 contains
 
 
 !=====================================================================
-! stop_check: 
+! check stop: 
 !
 subroutine check_stop(pb)
 
@@ -57,6 +57,7 @@ end subroutine check_stop
 subroutine do_bsstep(pb)
 
   use problem_class
+  use ode_bs
   type(problem_type), intent(inout) :: pb
 
   double precision, dimension(:), allocatable ::  yt, dydt, yt_scale

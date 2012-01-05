@@ -6,7 +6,7 @@ module solve_master
  
   private
 
-  public   solve 
+  public  :: solve 
   
 
 contains
