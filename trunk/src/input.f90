@@ -3,7 +3,7 @@
 module input
 
   implicit none
-  private  iinput
+  private 
 
   public   read_main
 
@@ -13,7 +13,9 @@ module input
   integer :: iinput
   
 contains
- 
+!=====================================================================
+! read in all parameters
+! 
   subroutine read_main(pb)
   
   use problem_class

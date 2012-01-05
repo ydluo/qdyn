@@ -12,9 +12,9 @@ module derivs_all
 contains
 
 
-!C====================Subroutine derivs START===========================
- !-------Compute thata,vslip and time deriv for one time step------------
- !-------CALL rdft: real DFT---------------------------------------------
+!====================Subroutine derivs===========================
+ !-------Compute thata,vslip and time deriv for one time step-----
+ !-------CALL rdft in compute_stress : real DFT-------------------
  !---------------------------------------------------------------|
  !-------|     in:pb                                     |-------|
  !-------|    out:pb                                     |-------|
@@ -24,14 +24,12 @@ contains
 subroutine derivs(pb)
    
   use problem_class
-  use fftsg
   use calc
   
   type(problem_type), intent(inout) :: pb
 
   double precision :: omega(pb%mesh%nn)
   double precision :: dtau_per
-  integer :: i
 
   ! compute shear stress rate from elastic interactions, for 0D, 1D & 2D
  
@@ -51,8 +49,8 @@ subroutine derivs(pb)
   !      "slip" law
   elseif (pb%itheta_law== 2) then
     do i=1,pb%mesh%nn
-      if (omega > 0d0) then
-        pb%dtheta_dt(i) = -omega*dlog(omega)
+      if (omega(i) > 0d0) then
+        pb%dtheta_dt(i) = -omega(i)*dlog(omega(i))
       else
         pb%dtheta_dt(i) = 0d0
       endif

@@ -7,7 +7,9 @@ module output
 
   implicit none
   private :: ixout
-  public :: ot_init, ox_init, ot_write, ox_write
+  public :: screen_init, ot_init, ox_init, &
+            screen_write, ot_write, ox_write,  &
+            time_write, crack_size
 
 contains
 
@@ -41,15 +43,13 @@ end subroutine screen_init
 
 !=====================================================================
 !output one step to screen
-subroutine screen_write(pb,it,dt_did)
+subroutine screen_write(pb)
   
   use constant, only : YEAR
   use problem_class
   type (problem_type), intent(inout) :: pb
-  integer :: it
-  double precision :: dt_did
 
-  write(6,'(i7,x,3(e11.3,x),i5)') it, dt_did, pb%time/YEAR, pb%v(pb%it%ivmax)
+  write(6,'(i7,x,3(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR, pb%v(pb%ot%ivmax)
 
 end subroutine screen_write
 
@@ -114,8 +114,8 @@ subroutine ot_write(pb)
  
   use problem_class
   type (problem_type), intent(inout) :: pb
-
-  write(ot%unit,'(e24.16,15e14.6)') pb%time, pb%output%llocnew*pb%mesh%dx,  &
+  
+  write(pb%ot%unit,'(e24.16,15e14.6)') pb%time, pb%output%llocnew*pb%mesh%dx,  &
     pb%output%lcnew*pb%mesh%dx, pb%pot, pb%pot_rate,    &
     pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
     pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
@@ -131,14 +131,14 @@ end subroutine ot_write
 
 !=====================================================================
 ! Export snapshots
-subroutine ox_write(it,pb)
+subroutine ox_write(pb)
  
   use problem_class
   type (problem_type), intent(inout) :: pb
 
-  integer :: it,ixout
+  integer :: ixout
 
-  write(ox%unit,'(2a,2i5,e14.6)')'# x v theta V./V dtau tau_dot slip ',it,pb%ot%ivmax,pb%time
+  write(ox%unit,'(2a,2i5,e14.6)')'# x v theta V./V dtau tau_dot slip ',pb%it,pb%ot%ivmax,pb%time
   do ixout=1,pb%mesh%nn,pb%ox%nxout
     write(19,'(8e15.7)') pb%mesh%x(ixout),pb%time,pb%v(ixout),   &
       pb%theta(ixout),pb%dvdt(ixout)/pb%v(ixout),pb%tau(ixout),   &
