@@ -143,7 +143,8 @@
     
       INTEGER :: nstep,nvar,NMAX
       DOUBLE PRECISION :: htot,dydx(nvar),y(nvar),yout(nvar)
-      double precision :: xs,x
+      double precision :: xx
+      double precision, intent(inout) :: xs
 !      EXTERNAL derivs
       PARAMETER (NMAX=262144)
       INTEGER i,n
@@ -153,7 +154,7 @@
         ym(i)=y(i)
         yn(i)=y(i)+h*dydx(i)
 11    continue
-      x=xs+h
+      xx=xs+h
       call derivs(pb)
       h2=2.d0*h
       do 13 n=2,nstep
@@ -162,7 +163,7 @@
           ym(i)=yn(i)
           yn(i)=swap
 12      continue
-        x=x+h
+        xx=xx+h
         call derivs(pb)
 13    continue
       do 14 i=1,nvar
