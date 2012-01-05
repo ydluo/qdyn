@@ -11,7 +11,7 @@ contains
 
 subroutine compute_stress(pb)
 
-  use fftsg, only : rdft
+  use fftsg, only : my_rdft
   use problem_class
   type(problem_type), intent(inout)  :: pb
 
@@ -22,9 +22,9 @@ subroutine compute_stress(pb)
     if (pb%mesh%nn > 1) then   ! 1D fault
       pb%dtau_dt = pb%v_star-pb%v
       pb%dtau_dt( pb%mesh%nn+1 : pb%kernel%k2f%nnfft ) = 0d0 
-      call rdft(pb%kernel%k2f%nnfft,1,pb%dtau_dt,pb%kernel%k2f%m_fft%iworkfft,pb%kernel%k2f%m_fft%rworkfft)
+      call my_rdft(1,pb%dtau_dt,pb%kernel%k2f%m_fft) 
       pb%dtau_dt = pb%kernel%k2f%kernel * pb%dtau_dt
-      call rdft(pb%kernel%k2f%nnfft,-1,pb%dtau_dt,pb%kernel%k2f%m_fft%iworkfft,pb%kernel%k2f%m_fft%rworkfft)
+      call my_rdft(-1,pb%dtau_dt,pb%kernel%k2f%m_fft)
     else
       pb%dtau_dt(1) = pb%kernel%k2f%kernel(1)*( pb%v_star(1)-pb%v(1) )   !0D fault
     endif

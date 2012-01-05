@@ -1,8 +1,22 @@
 module fftsg
 
+! This module is a f90 wrapper for Takuya Ooura's FFT routines 
+! General Purpose FFT (Fast Fourier/Cosine/Sine Transform) Package
+! Copyright(C) 1996-2001 Takuya OOURA
+! email: ooura@kurims.kyoto-u.ac.jp
+! download: http://www.kurims.kyoto-u.ac.jp/~ooura/fft.html
+
   private 
 
-  public :: cdft,rdft,ddct,ddst,dfct,dfst
+ ! working arrays for Ooura's fft
+  type OouraFFT_type
+    private
+    integer :: n=-1, nw=-1
+    integer, allocatable :: iw(:)
+    double precision, allocatable :: rw(:)
+  end type OouraFFT_type
+
+  public :: cdft,rdft,ddct,ddst,dfct,dfst, my_rdft, OouraFFT_type
 
 contains
 
@@ -275,6 +289,37 @@ contains
 !
 !
 
+subroutine my_rdft(isgn, a, m_fft)
+
+  integer, intent(in) :: isgn
+  real*8, intent(inout) :: a(:)
+  type (OouraFFT_type), intent(inout) :: m_fft
+
+  integer :: n
+
+  n = size(a)
+
+  ! Initialize or re-initialize working arrays if needed
+  ! Handle 2 possible states:
+  !   1. m_fft has never been intialized yet. This is indicated by m_fft%n<0 
+  !      (by default m_fft%n= -1, see the definition of OouraFFT_type)
+  !   2. m_fft has been initialized before but for a different length n.
+  if (m_fft%n /= n) then
+    if (m_fft%n >0) deallocate(m_fft%iw, m_fft%rw)
+    m_fft%n = n 
+    m_fft%nw = 2+ceiling(dsqrt(dble(m_fft%n/2.d0)))
+    allocate (m_fft%iw(0:m_fft%nw-1))
+    allocate (m_fft%rw(0:m_fft%n/2-1))
+    m_fft%iw = 0
+    m_fft%rw = 0d0
+  endif
+  
+  ! compute fft
+  call rdft(n,isgn,a,m_fft%iw,m_fft%rw)
+
+end subroutine my_rdft
+
+!_________________________________________________________
 
       subroutine cdft(n, isgn, a, ip, w)
       integer n, isgn, ip(0 : *), nw

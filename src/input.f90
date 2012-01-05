@@ -17,7 +17,7 @@ contains
   
   type(problem_type), intent(inout)  :: pb
 
-  integer :: iinput
+  integer :: i
   
   write(6,*) 'Start reading input: ...'
 
@@ -51,10 +51,10 @@ contains
              pb%v1(pb%mesh%nn), pb%v2(pb%mesh%nn), pb%mu_star(pb%mesh%nn),& 
              pb%v_star(pb%mesh%nn), pb%theta_star(pb%mesh%nn))
  
-    do iinput=1,pb%mesh%nn
-      read(15,*)pb%sigma(iinput), pb%v(iinput), pb%theta(iinput),  &
-                pb%a(iinput), pb%b(iinput), pb%dc(iinput), pb%v1(iinput), &
-                pb%v2(iinput), pb%mu_star(iinput), pb%v_star(iinput)                 
+    do i=1,pb%mesh%nn
+      read(15,*)pb%sigma(i), pb%v(i), pb%theta(i),  &
+                pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
+                pb%v2(i), pb%mu_star(i), pb%v_star(i)                 
     end do
 
 
