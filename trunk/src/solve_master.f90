@@ -21,13 +21,13 @@ subroutine solve(pb)
   use problem_class
   use derivs_all
   use solver_acc
-  use output
+  use output, only : screen_init, screen_write, ox_write, ot_write
   
   type(problem_type), intent(inout)  :: pb
 
   !=======================Time loop. START===========================
   ! Time loop
-
+    call screen_init(pb)
   do while (pb%it /= pb%itstop)
 
     pb%it = pb%it + 1
