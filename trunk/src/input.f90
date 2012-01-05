@@ -5,13 +5,8 @@ module input
   implicit none
   private 
 
-  public   read_main
+  public :: read_main
 
-
-
-
-  integer :: iinput
-  
 contains
 !=====================================================================
 ! read in all parameters
@@ -21,6 +16,9 @@ contains
   use problem_class
   
   type(problem_type), intent(inout)  :: pb
+
+  integer :: iinput
+  
   write(6,*) 'Start reading input: ...'
 
   open(unit=15,FILE= 'qdyn.in') 
