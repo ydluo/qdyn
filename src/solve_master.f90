@@ -16,19 +16,17 @@ contains
 subroutine solve(pb)
   
   use problem_class
-  use derivs_all
   use solver_acc
   use output, only : screen_init, screen_write, ox_write, ot_write
   
   type(problem_type), intent(inout)  :: pb
 
-  !=======================Time loop. START===========================
+  call screen_init(pb)
+
   ! Time loop
-    call screen_init(pb)
   do while (pb%it /= pb%itstop)
 
     pb%it = pb%it + 1
-    call derivs(pb)
     call do_bsstep(pb)
     call update_field(pb)
     call ot_write(pb)
