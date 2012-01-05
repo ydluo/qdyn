@@ -1,13 +1,10 @@
-      module fftsg
+module fftsg
 
-      public
+  private 
 
+  public :: cdft,rdft,ddct,ddst,dfct,dfst
 
-
-
-      contains
-
-
+contains
 
 ! Fast Fourier/Cosine/Sine Transform
 !     dimension   :one
@@ -2978,5 +2975,5 @@
       a(m) = c(0) * a(m)
       end subroutine dstsub
 !
-      end module fftsg 
+end module fftsg 
 
