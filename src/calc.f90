@@ -18,7 +18,7 @@ subroutine compute_stress(pb)
   ! compute shear stress rate from elastic interactions
   ! compute_stress depends on dimension (0D, 1D, 2D fault)
 
-  if pb%mesh%kind == 0 then  ! 0D or 1D fault 
+  if (pb%mesh%kind == 0) then  ! 0D or 1D fault 
     if (pb%mesh%nn > 1) then   ! 1D fault
       pb%dtau_dt = pb%v_star-pb%v
       pb%dtau_dt( pb%mesh%nn+1 : pb%kernel%k2f%nnfft ) = 0d0 

@@ -30,7 +30,7 @@ subroutine derivs(pb)
 
   double precision :: omega(pb%mesh%nn)
   double precision :: dtau_per
-
+  integer :: i
   ! compute shear stress rate from elastic interactions, for 0D, 1D & 2D
  
   call compute_stress(pb)
