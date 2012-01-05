@@ -59,15 +59,15 @@ end subroutine check_stop
 subroutine do_bsstep(pb)
 
   use problem_class
+  use derivs_all
   use ode_bs
 
   type(problem_type), intent(inout) :: pb
 
-  double precision, dimension(:), allocatable ::  yt, dydt, yt_scale
+  double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
   
-  allocate (yt(pb%neqs*pb%mesh%nn))
-  allocate (dydt(pb%neqs*pb%mesh%nn))
-  allocate (yt_scale(pb%neqs*pb%mesh%nn))
+  ! this update of derivatives is only needed to set up the scaling (yt_scale)
+  call derivs(pb)
 
   !-------Pack v, theta into yt---------------------------------    
   yt(2::pb%neqs) = pb%v
@@ -75,6 +75,7 @@ subroutine do_bsstep(pb)
   dydt(2::pb%neqs) = pb%dv_dt
   dydt(1::pb%neqs) = pb%dtheta_dt
   !-------Pack v, theta into yt--------------------------------- 
+
   ! One step 
   !--------Call EXT routine bsstep [Bulirsch-Stoer Method] --------------
   !-------- 
@@ -97,11 +98,13 @@ subroutine do_bsstep(pb)
   end if
   
   call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%acc,yt_scale,pb)
+
   if (pb%dt_max >  0.d0) then
     pb%dt_try = min(pb%dt_next,pb%dt_max)
   else
     pb%dt_try = pb%dt_next
   endif
+
   !-------Unpack yt into v, theta--------------------------------- 
   pb%v = yt(2::pb%neqs)
   pb%theta = yt(1::pb%neqs)
@@ -125,9 +128,6 @@ subroutine do_bsstep(pb)
   write(6,*) 'END==================================================='
   end if
   
-
-  deallocate(yt,dydt,yt_scale)
-
 end subroutine do_bsstep
 
 

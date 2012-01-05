@@ -8,7 +8,6 @@ contains
       SUBROUTINE bsstep(y,dydx,nv,eps,yscal,pb)
        
       use problem_class
-      use derivs_all  
 
       implicit double precision (a-h,o-z)
 
@@ -132,8 +131,10 @@ contains
 
 
       SUBROUTINE mmid(y,dydx,nvar,xs,htot,nstep,yout,pb)
+
       use derivs_all
       use problem_class
+
       implicit double precision (a-h,o-z)
 
       type(problem_type), intent(inout)  :: pb
