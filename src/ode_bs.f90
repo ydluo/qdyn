@@ -1,12 +1,9 @@
 ! Bulirsch-Stoer ODE solver from Numerical Recipes
-      module ode_bs
+module ode_bs
 
-      public
+  public
 
-      
-
-      contains
-
+contains
 
       SUBROUTINE bsstep(y,dydx,nv,eps,yscal,pb)
        
@@ -214,4 +211,4 @@
       return
       END SUBROUTINE pzextr
 
-      end module ode_bs
+end module ode_bs

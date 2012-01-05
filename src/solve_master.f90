@@ -7,11 +7,8 @@ module solve_master
   private
 
   public  :: solve 
-  
 
 contains
-
-
 
 !=====================================================================
 ! Master Solver    

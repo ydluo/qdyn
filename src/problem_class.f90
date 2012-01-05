@@ -45,12 +45,12 @@ module problem_class
       slip, v, dv_dt, theta, dtheta_dt,  &
       a, b, dc, v1, v2, mu_star, v_star, theta_star
     double precision :: pot, pot_rate
-    double precision :: beta, smu, zimpedance
-    double precision :: Tper, Aper, Omper
-    double precision :: time
+    double precision :: beta=0d0, smu=0d0, zimpedance=0d0
+    double precision :: Tper=0d0, Aper=0d0, Omper=0d0
+    double precision :: time=0d0
     integer :: itheta_law, neqs
 
-    double precision :: dt_try, dt_did, dt_next, dt_max, tmax, acc
+    double precision :: dt_try, dt_did, dt_next, dt_max=0d0, tmax, acc
     integer :: NSTOP,itstop,it
 
     type (mesh_type) :: mesh
