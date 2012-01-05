@@ -15,7 +15,7 @@ contains
   
   use problem_class
   use constants, only : PI
-  use output
+  use output, only : screen_init, ot_init, ox_init
 
   type(problem_type), intent(inout) :: pb
   
@@ -53,23 +53,19 @@ contains
      
     !---------------------- ref_value ------------------        
     pb%theta_star = pb%dc/pb%v2
-    pb%tau_init = pb%sigma*(pb%mu_star- pb%a*log(pb%v1/pb%v+1d0)+ pb%b*log(pb%theta/pb%theta_star+1d0))
+    pb%tau_init = pb%sigma *   &
+      (pb%mu_star- pb%a*log(pb%v1/pb%v+1d0)+ pb%b*log(pb%theta/pb%theta_star+1d0))
     pb%tau = pb%tau_init
     pb%slip = 0d0 
     !---------------------- ref_value ----------------- 
 
-
-
     !---------------------- init_value for solver ----------------- 
     pb%time = 0.d0
     pb%itstop = -1
-    vmax_old = 0d0
-    vmax_older = 0d0
+    pb%it = 0
     !---------------------- init_value for solver ----------------- 
    
-  
-
-
+ 
     call screen_init(pb)
     call ot_init(pb)
     call ox_init(pb)
@@ -82,10 +78,11 @@ end subroutine init_field
 !=============================================================
  
 subroutine init_kernel(pb)
-   
+  
+  use constant, only : PI 
   use problem_class
   type(problem_type), intent(inout) :: pb
-
+  double precision :: tau_co, wl2
   if (pb%mesh%kind == 0) then      ! 1D
     pb%kernel%k2f%nnfft = (pb%kernel%k2f%finite+1)*pb%mesh%nn 
     if (pb%mesh%nn == 1) then      ! single degree-of-freedom spring-block system

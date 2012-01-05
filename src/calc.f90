@@ -11,6 +11,7 @@ contains
 
 subroutine compute_stress(pb)
 
+  use fftsg, only : rdft
   use problem_class
   type(problem_type), intent(inout)  :: pb
 

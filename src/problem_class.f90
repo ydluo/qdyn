@@ -11,29 +11,16 @@ module problem_class
 
  ! timeseries outputs: at every time step, but only macroscopic quantities
   type ot_type
-    private
-    double precision, pointer ::
-    integer, pointer ::
-    logical, pointer ::
     double precision :: lcold,lcnew,llocnew,llocold
     integer :: unit,ic,ntout,ivmax
-    logical ::
   end type ot_type
 
  ! snapshot outputs: at every fault point, but only at few selected times
   type ox_type
     private
-    double precision, pointer ::
-    integer, pointer ::
-    logical, pointer ::
-    double precision ::
     integer :: count,unit,nxout
-    logical ::
   end type ox_type
 
-
-
- 
   type mesh_type
     integer :: kind = 0
     integer :: nn
@@ -59,7 +46,6 @@ module problem_class
     type (kernel_2D_fft) :: k2f
   end type kernel_type
 
-
   type problem_type
     double precision, dimension(:), allocatable :: &
       tau, dtau_dt, tau_init, &
@@ -73,7 +59,7 @@ module problem_class
     integer :: itheta_law, neqs
 
     double precision :: dt_try, dt_did, dt_next, dt_max, tmax, acc
-    integer :: NSTOP,itstop
+    integer :: NSTOP,itstop,it
 
     type (mesh_type) :: mesh
     type (ot_type) :: ot
