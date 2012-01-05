@@ -66,6 +66,7 @@ module problem_class
       sigma, &
       slip, v, dv_dt, theta, dtheta_dt,  &
       a, b, dc, v1, v2, mu_star, v_star, theta_star
+    double precision :: pot, pot_rate
     double precision :: beta, smu, zimpedance
     double precision :: Tper, Aper, Omper
     double precision :: time

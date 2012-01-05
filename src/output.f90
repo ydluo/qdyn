@@ -116,7 +116,7 @@ subroutine ot_write(pb)
   type (problem_type), intent(inout) :: pb
 
   write(ot%unit,'(e24.16,15e14.6)') pb%time, pb%output%llocnew*pb%mesh%dx,  &
-    pb%output%lcnew*pb%mesh%dx, pot, pot_rate,    &
+    pb%output%lcnew*pb%mesh%dx, pb%pot, pb%pot_rate,    &
     pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
     pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
     pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
