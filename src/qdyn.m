@@ -241,8 +241,8 @@ switch mode
     fclose(fid);
     
     % solve
-    status = system('~/qdyn_svn/trunk/src/qdyn');
-    
+%     status = system('~/qdyn_svn/trunk/src/qdyn');
+    status = system('~/bin/qdyn');
     % rename input and output files
     if length(NAME)
       movefile('fort.18',[NAME '.ot']); 

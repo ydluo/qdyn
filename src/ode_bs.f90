@@ -8,7 +8,7 @@
       contains
 
 
-      SUBROUTINE bsstep(y,dydx,nv,x,eps,yscal,pb)
+      SUBROUTINE bsstep(y,dydx,nv,eps,yscal,pb)
        
       use problem_class
       use derivs_all  
@@ -21,7 +21,7 @@
       DOUBLE PRECISION :: eps,dydx(nv),y(nv),yscal(nv),          &
                 SAFE1,SAFE2,REDMAX,REDMIN,TINY,SCALMX
       double precision :: xnew
-      double precision, intent(inout) :: x
+!      double precision, intent(inout) :: x
       PARAMETER (NMAX=262144,KMAXX=8,IMAX=KMAXX+1,SAFE1=.25d0,      &
                 SAFE2=.7d0,REDMAX=1.d-5,REDMIN=.7d0,TINY=1.d-30,    &
                 SCALMX=.5d0) !SCALMX=.1d0
@@ -59,19 +59,19 @@
       do 15 i=1,nv
         ysav(i)=y(i)
 15    continue
-      if(h.ne.pb%dt_next.or.x.ne.xnew)then
+      if(h.ne.pb%dt_next.or.pb%time.ne.xnew)then
         first=.true.
         kopt=kmax
       endif
       reduct=.false.
 2     do 17 k=1,kmax
-        xnew=x+h
-!       if(xnew.eq.x)then
-        if(x+1.e10*h.eq.x)then
-          write(6,*)'dt_did,t= ',h,x
+        xnew=pb%time+h
+!       if(xnew.eq.pb%time)then
+        if(pb%time+1.e10*h.eq.pb%time)then
+          write(6,*)'dt_did,t= ',h,pb%time
           pause 'step size underflow in bsstep'
         endif
-        call mmid(ysav,dydx,nv,x,h,nseq(k),yseq,pb)
+        call mmid(ysav,dydx,nv,pb%time,h,nseq(k),yseq,pb)
         xest=(h/nseq(k))**2
         call pzextr(k,xest,yseq,y,yerr,nv)
         if(k.ne.1)then
@@ -109,7 +109,7 @@
       h=h*red
       reduct=.true.
       goto 2
-4     x=xnew
+4     pb%time=xnew
       pb%dt_did=h
       first=.false.
       wrkmin=1.d35
@@ -143,8 +143,8 @@
     
       INTEGER :: nstep,nvar,NMAX
       DOUBLE PRECISION :: htot,dydx(nvar),y(nvar),yout(nvar)
-      double precision :: xx
-      double precision, intent(inout) :: xs
+      double precision :: xx,xs
+!      double precision, intent(inout) :: xs
 !      EXTERNAL derivs
       PARAMETER (NMAX=262144)
       INTEGER i,n

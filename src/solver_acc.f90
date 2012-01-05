@@ -67,27 +67,60 @@ subroutine do_bsstep(pb)
   allocate (yt_scale(pb%neqs*pb%mesh%nn))
 
   !-------Pack v, theta into yt---------------------------------    
-  yt(1::pb%neqs) = pb%v
-  yt(2::pb%neqs) = pb%theta
-  dydt(1::pb%neqs) = pb%dv_dt
-  dydt(2::pb%neqs) = pb%dtheta_dt
+  yt(2::pb%neqs) = pb%v
+  yt(1::pb%neqs) = pb%theta
+  dydt(2::pb%neqs) = pb%dv_dt
+  dydt(1::pb%neqs) = pb%dtheta_dt
   !-------Pack v, theta into yt--------------------------------- 
   ! One step 
   !--------Call EXT routine bsstep [Bulirsch-Stoer Method] --------------
   !-------- 
   yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
-  call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%acc,yt_scale,pb)
+  if (pb%it == 1 .or. pb%it == 2 .or. pb%it == 10) then
+  write(6,*) 'BEGIN==================================================='
+  write(6,*) 'it=', pb%it 
+  write(6,*) 'yt'
+  write(6,*) yt
+  write(6,*) 'dydt'
+  write(6,*) dydt
+  write(6,*) 'pb%neqs*pb%mesh%nn,pb%time,pb%acc'
+  write(6,*) pb%neqs*pb%mesh%nn,pb%time,pb%acc
+  write(6,*) 'yt_scale'
+  write(6,*) yt_scale
+  write(6,*) 'pb%dt_try,pb%dt_did,pb%dt_next'
+  write(6,*) pb%dt_try,pb%dt_did,pb%dt_next
+  write(6,*) 'BEGIN==================================================='
+  end if
+  
+  call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%acc,yt_scale,pb)
   if (pb%dt_max >  0.d0) then
     pb%dt_try = min(pb%dt_next,pb%dt_max)
   else
     pb%dt_try = pb%dt_next
   endif
   !-------Unpack yt into v, theta--------------------------------- 
-  pb%v = yt(1::pb%neqs)
-  pb%theta = yt(2::pb%neqs)
-  pb%dv_dt = dydt(1::pb%neqs)
-  pb%dtheta_dt = dydt(2::pb%neqs) 
+  pb%v = yt(2::pb%neqs)
+  pb%theta = yt(1::pb%neqs)
+  pb%dv_dt = dydt(2::pb%neqs)
+  pb%dtheta_dt = dydt(1::pb%neqs) 
   !-------Unpack yt into v, theta--------------------------------- 
+
+  if (pb%it == 1 .or. pb%it == 2 .or. pb%it == 10) then
+  write(6,*) 'END==================================================='
+  write(6,*) 'it=', pb%it 
+  write(6,*) 'yt'
+  write(6,*) yt
+  write(6,*) 'dydt'
+  write(6,*) dydt
+  write(6,*) 'pb%neqs*pb%mesh%nn,pb%time,pb%acc'
+  write(6,*) pb%neqs*pb%mesh%nn,pb%time,pb%acc
+  write(6,*) 'yt_scale'
+  write(6,*) yt_scale
+  write(6,*) 'pb%dt_try,pb%dt_did,pb%dt_next'
+  write(6,*) pb%dt_try,pb%dt_did,pb%dt_next
+  write(6,*) 'END==================================================='
+  end if
+  
 
   deallocate(yt,dydt,yt_scale)
 

@@ -5,7 +5,7 @@ clc;
 rand(1,floor(sum(100*clock)));
 %------------------------------
 
-RESOLUTION = 500;
+RESOLUTION = 5;
 
 
 %randlow=0.5;
@@ -20,11 +20,12 @@ p.FINITE=0;
 p.SIGMA=0.5e6;
 p.V_SS=1e-9;
 
+
 p.V2=0.8e-7;
 
 p.L=4e3;
 p.W=110e3;
-twm=2;
+twm=0.2;
 ts=2;
 p.ACC = 1e-14;
 %p.A=p.A*.8;
@@ -38,6 +39,7 @@ Lnuc = 1.3774*Lb;
 %------------------------------
 
 p.N = 2^nextpow2(RESOLUTION*p.L/Lb); 
+p.IC=ceil(p.N);
 dx=p.L/p.N;
 Lb_over_dx = Lb/dx
 
@@ -66,19 +68,20 @@ p.TMAX=twm*year;
 p.NTOUT=100;
 p.NXOUT=1;
 p.NSTOP=0;
+
 [p,ot1,ox1]  = qdyn('run',p);
 semilogy(ot1.t/year,ot1.v)
 xlabel('Time (years)');
 ylabel('Vmax');
-
-  p.TMAX = ts*year;  
-  p.NTOUT=1;
-
-  p.V_0 = ox1.v(:,end);
-  p.TH_0= ox1.th(:,end);
-  %p.V_0 =  (ox1.v(:,end)+ox1.v(end:-1:1,end))/2;
-  %p.TH_0=  (ox1.th(:,end)+ox1.th(end:-1:1,end))/2;
-  [p,ot,ox]=qdyn('run',p);
+% 
+%   p.TMAX = ts*year;  
+%   p.NTOUT=1;
+% 
+%   p.V_0 = ox1.v(:,end);
+%   p.TH_0= ox1.th(:,end);
+%   %p.V_0 =  (ox1.v(:,end)+ox1.v(end:-1:1,end))/2;
+%   %p.TH_0=  (ox1.th(:,end)+ox1.th(end:-1:1,end))/2;
+%   [p,ot,ox]=qdyn('run',p);
 
 save(filename)  
 
