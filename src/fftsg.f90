@@ -2017,7 +2017,7 @@
       end subroutine cftb1st
 !
       subroutine cftrec4(n, a, nw, w)
-      integer n, nw, cfttree, isplt, j, k, m
+      integer n, nw, isplt, j, k, m
       real*8 a(0 : n - 1), w(0 : nw - 1)
       m = n
       do while (m .gt. 512)

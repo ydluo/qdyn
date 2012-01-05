@@ -1,7 +1,10 @@
 #== BEGIN USER SETTINGS =============================================
 
 # 1. Modify next line if you need to place the executable elsewhere:
-EXEC = $(HOME)/qdyn_svn/trunk/src/qdyn
+# yingdi
+#EXEC = $(HOME)/qdyn_svn/trunk/src/qdyn 
+# pablo
+EXEC = $(HOME)/bin/qdyn 
 
 # 2. Uncomment/add/modify the lines corresponding to your compiler:
 
