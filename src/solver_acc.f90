@@ -51,8 +51,6 @@ subroutine check_stop(pb)
 end subroutine check_stop
 
 
-
-
 !=====================================================================
 ! do bs_step, pack and unpack 
 !
@@ -65,9 +63,6 @@ subroutine do_bsstep(pb)
   type(problem_type), intent(inout) :: pb
 
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
-  
-
-  
 
   !-------Pack v, theta into yt---------------------------------    
   yt(2::pb%neqs) = pb%v
@@ -75,9 +70,9 @@ subroutine do_bsstep(pb)
   dydt(2::pb%neqs) = pb%dv_dt
   dydt(1::pb%neqs) = pb%dtheta_dt
   !-------Pack v, theta into yt--------------------------------- 
-  !!!====================NOTE:: IMORTANT: ==========================!!!
+  !!!====================NOTE:: IMPORTANT: ==========================!!!
   !!!======BETWEEN PACK/UNPACK v & theta in pb is not up-to-date====!!!
-  !!!====================NOTE:: IMORTANT: ==========================!!!
+  !!!====================NOTE:: IMPORTANT: ==========================!!!
 
   ! this update of derivatives is only needed to set up the scaling (yt_scale)
   call derivs(pb,yt,dydt)

@@ -30,6 +30,7 @@ subroutine derivs(pb,yt,dydt)
   
   type(problem_type), intent(inout) :: pb
   double precision , intent(inout) :: yt(pb%neqs*pb%mesh%nn), dydt(pb%neqs*pb%mesh%nn)
+
   double precision :: omega(pb%mesh%nn)
   double precision :: dtau_per
   integer :: i

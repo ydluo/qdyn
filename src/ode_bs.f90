@@ -11,13 +11,11 @@ contains
 
       implicit double precision (a-h,o-z)
 
+      double precision, dimension(pb%neqs*pb%mesh%nn), intent(inout) :: y,dydx,yscal
       type(problem_type), intent(inout)  :: pb
     
       INTEGER :: NMAX,KMAXX,IMAX
       DOUBLE PRECISION ::  SAFE1,SAFE2,REDMAX,REDMIN,TINY,SCALMX 
-      double precision, intent(inout) ::  & 
-         y(pb%neqs*pb%mesh%nn),dydx(pb%neqs*pb%mesh%nn),yscal(pb%neqs*pb%mesh%nn)
-               
       double precision :: xnew
 !      double precision, intent(inout) :: x
       PARAMETER (NMAX=262144,KMAXX=8,IMAX=KMAXX+1,SAFE1=.25d0,      &
@@ -146,8 +144,8 @@ contains
 
       type(problem_type), intent(inout)  :: pb
       double precision :: htot 
-      double precision, intent(inout) ::  & 
-        y(pb%neqs*pb%mesh%nn),dydx(pb%neqs*pb%mesh%nn),yout(pb%neqs*pb%mesh%nn)
+      double precision, dimension(pb%neqs*pb%mesh%nn), intent(inout) :: y,dydx,yout
+
       INTEGER :: nstep,NMAX
 
       double precision :: xx,t_temp
