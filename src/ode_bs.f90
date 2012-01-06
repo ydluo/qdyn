@@ -13,7 +13,7 @@ contains
 
       type(problem_type), intent(inout)  :: pb
     
-      INTEGER :: nv,NMAX,KMAXX,IMAX
+      INTEGER :: NMAX,KMAXX,IMAX
       DOUBLE PRECISION ::  SAFE1,SAFE2,REDMAX,REDMIN,TINY,SCALMX 
       double precision, intent(inout) ::  & 
          y(pb%neqs*pb%mesh%nn),dydx(pb%neqs*pb%mesh%nn),yscal(pb%neqs*pb%mesh%nn)
@@ -54,7 +54,7 @@ contains
 1       kmax=kopt
       endif
       h=pb%dt_try
-      do 15 i=1,nv
+      do 15 i=1,pb%neqs*pb%mesh%nn
         ysav(i)=y(i)
 15    continue
       if(h.ne.pb%dt_next.or.pb%time.ne.xnew)then
@@ -74,7 +74,7 @@ contains
         call pzextr(k,xest,yseq,y,yerr,pb%neqs*pb%mesh%nn)
         if(k.ne.1)then
           errmax=TINY
-          do 16 i=1,nv
+          do 16 i=1,pb%neqs*pb%mesh%nn
             errmax=max(errmax,dabs(yerr(i)/yscal(i)))
 16        continue
           errmax=errmax/pb%acc
