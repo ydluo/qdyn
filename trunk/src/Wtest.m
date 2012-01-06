@@ -56,8 +56,8 @@ p.TMAX=twm*year;
 %for i=floor(p.N*0.05)+1:1:p.N
 %    p.V_0(i)=p.V_SS;
 %end
- p.V_0 = ( 1.+0.01*exp( -(p.X/(p.L/20)*2).^6 ) )*p.V_SS ;
- p.V_0 = p.V_0/mean(p.V_0)*p.V_SS;
+ p.V_0 = 1.01*p.V_SS ;
+% p.V_0 = p.V_0/mean(p.V_0)*p.V_SS;
  p.V_00=p.V_0;
 %   for i=1:1:p.N
 %       p.V_0(i) = p.V_00(mod((i+1024),p.N)+1);

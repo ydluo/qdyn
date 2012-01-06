@@ -36,6 +36,11 @@ subroutine derivs(pb,yt,dydt)
 
   ! compute shear stress rate from elastic interactions, for 0D, 1D & 2D
   call compute_stress(pb,yt)
+
+!YD This part we may want to modify it later to be able to
+!impose more complicated loading/pertubation
+!functions involved: problem_class/problem_type; input/read_main 
+!                    initialize/init_field;  derivs_all/derivs 
   
   ! periodic loading
   dtau_per = pb%Omper * pb%Aper * dcos(pb%Omper*pb%time)     

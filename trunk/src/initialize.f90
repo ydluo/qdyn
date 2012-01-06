@@ -31,6 +31,10 @@ subroutine init_field(pb)
       pb%mesh%x(i) = (i-pb%mesh%nn*0.5d0-0.5d0)*pb%mesh%dx
     enddo
 
+!YD This part we may want to modify it later to be able to
+!impose more complicated loading/pertubation
+!functions involved: problem_class/problem_type; input/read_main 
+!                    initialize/init_field;  derivs_all/derivs 
     !---------------------- dt_max & perturbation------------------
     if (pb%Aper /= 0.d0 .and. pb%Tper > 0.d0) then
       if (pb%dt_max > 0.d0) then
