@@ -66,8 +66,8 @@ subroutine do_bsstep(pb)
 
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
   
-  ! this update of derivatives is only needed to set up the scaling (yt_scale)
-  call derivs(pb)
+
+  
 
   !-------Pack v, theta into yt---------------------------------    
   yt(2::pb%neqs) = pb%v
@@ -75,7 +75,12 @@ subroutine do_bsstep(pb)
   dydt(2::pb%neqs) = pb%dv_dt
   dydt(1::pb%neqs) = pb%dtheta_dt
   !-------Pack v, theta into yt--------------------------------- 
+  !!!====================NOTE:: IMORTANT: ==========================!!!
+  !!!======BETWEEN PACK/UNPACK v & theta in pb is not up-to-date====!!!
+  !!!====================NOTE:: IMORTANT: ==========================!!!
 
+  ! this update of derivatives is only needed to set up the scaling (yt_scale)
+  call derivs(pb,yt,dydt)
   ! One step 
   !--------Call EXT routine bsstep [Bulirsch-Stoer Method] --------------
   !-------- 
@@ -97,13 +102,16 @@ subroutine do_bsstep(pb)
   write(6,*) 'BEGIN==================================================='
   end if
   
-  call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%acc,yt_scale,pb)
+  call bsstep(yt,dydt,yt_scale,pb)
 
   if (pb%dt_max >  0.d0) then
     pb%dt_try = min(pb%dt_next,pb%dt_max)
   else
     pb%dt_try = pb%dt_next
   endif
+  !!!====================NOTE:: IMORTANT: ==========================!!!
+  !!!======BETWEEN PACK/UNPACK v & theta in pb is not up-to-date====!!!
+  !!!====================NOTE:: IMORTANT: ==========================!!!
 
   !-------Unpack yt into v, theta--------------------------------- 
   pb%v = yt(2::pb%neqs)

@@ -5,7 +5,7 @@ module ode_bs
 
 contains
 
-      SUBROUTINE bsstep(y,dydx,nv,eps,yscal,pb)
+      SUBROUTINE bsstep(y,dydx,yscal,pb)
        
       use problem_class
 
@@ -14,8 +14,10 @@ contains
       type(problem_type), intent(inout)  :: pb
     
       INTEGER :: nv,NMAX,KMAXX,IMAX
-      DOUBLE PRECISION :: eps,dydx(nv),y(nv),yscal(nv),          &
-                SAFE1,SAFE2,REDMAX,REDMIN,TINY,SCALMX
+      DOUBLE PRECISION ::  SAFE1,SAFE2,REDMAX,REDMIN,TINY,SCALMX 
+      double precision, intent(inout) ::  & 
+         y(pb%neqs*pb%mesh%nn),dydx(pb%neqs*pb%mesh%nn),yscal(pb%neqs*pb%mesh%nn)
+               
       double precision :: xnew
 !      double precision, intent(inout) :: x
       PARAMETER (NMAX=262144,KMAXX=8,IMAX=KMAXX+1,SAFE1=.25d0,      &
@@ -31,10 +33,10 @@ contains
  !     EXTERNAL derivs
       DATA first/.true./,epsold/-1.d0/
       DATA nseq /2,4,6,8,10,12,14,16,18/
-      if(eps.ne.epsold)then
+      if(pb%acc .ne. epsold)then
         pb%dt_next=-1.d29
         xnew=-1.d29
-        eps1=SAFE1*eps
+        eps1=SAFE1*pb%acc
         a(1)=nseq(1)+1
         do 11 k=1,KMAXX
           a(k+1)=a(k)+nseq(k+1)
@@ -45,7 +47,7 @@ contains
             ((a(iq+1)-a(1)+1.d0)*(2*k+1)))
 12        continue
 13      continue
-        epsold=eps
+        epsold=pb%acc
         do 14 kopt=2,KMAXX-1
           if(a(kopt+1).gt.a(kopt)*alf(kopt-1,kopt))goto 1
 14      continue
@@ -67,15 +69,15 @@ contains
           write(6,*)'dt_did,t= ',h,pb%time
           pause 'step size underflow in bsstep'
         endif
-        call mmid(ysav,dydx,nv,pb%time,h,nseq(k),yseq,pb)
+        call mmid(ysav,dydx,h,nseq(k),yseq,pb)
         xest=(h/nseq(k))**2
-        call pzextr(k,xest,yseq,y,yerr,nv)
+        call pzextr(k,xest,yseq,y,yerr,pb%neqs*pb%mesh%nn)
         if(k.ne.1)then
           errmax=TINY
           do 16 i=1,nv
             errmax=max(errmax,dabs(yerr(i)/yscal(i)))
 16        continue
-          errmax=errmax/eps
+          errmax=errmax/pb%acc
           km=k-1
           err(km)=(errmax/SAFE1)**(1.d0/(2*km+1))
         endif
@@ -130,7 +132,7 @@ contains
       END SUBROUTINE bsstep
 
 
-      SUBROUTINE mmid(y,dydx,nvar,xs,htot,nstep,yout,pb)
+      SUBROUTINE mmid(y,dydx,htot,nstep,yout,pb)
 
       use derivs_all
       use problem_class
@@ -138,33 +140,56 @@ contains
       implicit double precision (a-h,o-z)
 
       type(problem_type), intent(inout)  :: pb
-    
-      INTEGER :: nstep,nvar,NMAX
-      DOUBLE PRECISION :: htot,dydx(nvar),y(nvar),yout(nvar)
-      double precision :: xx,xs
+      double precision :: htot 
+      double precision, intent(inout) ::  & 
+        y(pb%neqs*pb%mesh%nn),dydx(pb%neqs*pb%mesh%nn),yout(pb%neqs*pb%mesh%nn)
+      INTEGER :: nstep,NMAX
+
+      double precision :: xx,t_temp
 !      double precision, intent(inout) :: xs
 !      EXTERNAL derivs
       PARAMETER (NMAX=262144)
       INTEGER i,n
       DOUBLE PRECISION :: h,h2,swap,ym(NMAX),yn(NMAX)
       h=htot/nstep
-      do 11 i=1,nvar
+      do 11 i=1,pb%neqs*pb%mesh%nn
         ym(i)=y(i)
         yn(i)=y(i)+h*dydx(i)
 11    continue
-      xx=xs+h
-      call derivs(pb) !JPA this call should modify yout
+      xx=pb%time+h
+
+!------save pb%time----------------------
+      t_temp = pb%time  
+      pb%time = xx
+!------save pb%time----------------------
+      call derivs(pb,yn,yout)
+!------restore pb%time-------------------
+      xx = pb%time
+      pb%time = t_temp
+!------restore pb%time-------------------
+
       h2=2.d0*h
       do 13 n=2,nstep
-        do 12 i=1,nvar
+        do 12 i=1,pb%neqs*pb%mesh%nn
           swap=ym(i)+h2*yout(i)
           ym(i)=yn(i)
           yn(i)=swap
 12      continue
         xx=xx+h
-        call derivs(pb) !JPA this call should modify yout
+
+!------save pb%time----------------------
+      t_temp = pb%time  
+      pb%time = xx
+!------save pb%time----------------------
+      call derivs(pb,yn,yout)
+!------restore pb%time-------------------
+      xx = pb%time
+      pb%time = t_temp
+!------restore pb%time-------------------
+
+
 13    continue
-      do 14 i=1,nvar
+      do 14 i=1,pb%neqs*pb%mesh%nn
         yout(i)=0.5d0*(ym(i)+yn(i)+h*yout(i))
 14    continue
       return
@@ -174,7 +199,8 @@ contains
       SUBROUTINE pzextr(iest,xest,yest,yz,dy,nv)
       implicit double precision (a-h,o-z)
       INTEGER iest,nv,IMAX,NMAX
-      DOUBLE PRECISION :: xest,dy(nv),yest(nv),yz(nv)
+      DOUBLE PRECISION :: xest
+      double precision, intent(inout) ::  dy(nv),yest(nv),yz(nv)
       PARAMETER (IMAX=13,NMAX=262144)
       INTEGER :: j,k1
       DOUBLE PRECISION :: delta,f1,f2,q,d(NMAX),qcol(NMAX,IMAX),x(IMAX)
