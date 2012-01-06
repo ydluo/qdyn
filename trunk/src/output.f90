@@ -51,7 +51,7 @@ subroutine screen_write(pb)
   type (problem_type), intent(inout) :: pb
 
   write(6,'(i7,x,3(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR, pb%v(pb%ot%ivmax)
-  write(6,*) pb%dt_try, pb%v(pb%ot%ivmax)
+
 end subroutine screen_write
 
 

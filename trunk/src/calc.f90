@@ -26,7 +26,7 @@ subroutine compute_stress(pb,yt)
       pb%dtau_dt = pb%kernel%k2f%kernel * pb%dtau_dt
       call my_rdft(-1,pb%dtau_dt,pb%kernel%k2f%m_fft)
     else
-      pb%dtau_dt(1) = pb%kernel%k2f%kernel(1)*( pb%v_star(1)-pb%v(1) )   !0D fault
+      pb%dtau_dt(1) = pb%kernel%k2f%kernel(1)*( pb%v_star(1)-yt(2) )   !0D fault
     endif
   endif
   
