@@ -46,6 +46,12 @@ module problem_class
       a, b, dc, v1, v2, mu_star, v_star, theta_star
     double precision :: pot, pot_rate
     double precision :: beta=0d0, smu=0d0, zimpedance=0d0
+
+!YD This part we may want to modify it later to be able to
+!impose more complicated loading/pertubation
+!functions involved: problem_class/problem_type; input/read_main 
+!                    initialize/init_field;  derivs_all/derivs 
+
     double precision :: Tper=0d0, Aper=0d0, Omper=0d0
     double precision :: time=0d0
     integer :: itheta_law, neqs
