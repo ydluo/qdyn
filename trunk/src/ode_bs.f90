@@ -33,6 +33,7 @@ contains
  !     EXTERNAL derivs
       DATA first/.true./,epsold/-1.d0/
       DATA nseq /2,4,6,8,10,12,14,16,18/
+      yseq = 0d0 
       if(pb%acc .ne. epsold)then
         pb%dt_next=-1.d29
         xnew=-1.d29
@@ -70,6 +71,10 @@ contains
           pause 'step size underflow in bsstep'
         endif
         call mmid(ysav,dydx,h,nseq(k),yseq,pb)
+        if (pb%dt_try == 100d0 ) then
+          write(6,*) 'yseq in bsstep'
+          write(6,*) yseq(1:pb%neqs*pb%mesh%nn)
+        end if
         xest=(h/nseq(k))**2
         call pzextr(k,xest,yseq,y,yerr,pb%neqs*pb%mesh%nn)
         if(k.ne.1)then
