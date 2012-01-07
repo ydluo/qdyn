@@ -10,9 +10,9 @@ contains
       use problem_class
 
       implicit double precision (a-h,o-z)
-
-      double precision, dimension(pb%neqs*pb%mesh%nn), intent(inout) :: y,dydx,yscal
       type(problem_type), intent(inout)  :: pb
+      double precision, dimension(pb%neqs*pb%mesh%nn), intent(inout) :: y,dydx,yscal
+      
     
       INTEGER :: NMAX,KMAXX,IMAX
       DOUBLE PRECISION ::  SAFE1,SAFE2,REDMAX,REDMIN,TINY,SCALMX 
@@ -68,11 +68,23 @@ contains
           write(6,*)'dt_did,t= ',h,pb%time
           pause 'step size underflow in bsstep'
         endif
-        call mmid(ysav,dydx,h,nseq(k),yseq,pb)
+
         if (pb%dt_try == 100d0 ) then
-          write(6,*) 'yseq in bsstep'
+          write(6,*) 'input ysav in bsstep'
+          write(6,*) ysav(1:pb%neqs*pb%mesh%nn)
+          write(6,*) 'input dydx in bsstep'
+          write(6,*) dydx(1:pb%neqs*pb%mesh%nn)
+          write(6,*) 'input h, nseq(k) in bsstep'
+          write(6,*) h,nseq(k)
+          write(6,*) 'input yseq in bsstep'
           write(6,*) yseq(1:pb%neqs*pb%mesh%nn)
         end if
+        call mmid(ysav,dydx,h,nseq(k),yseq,pb)
+        if (pb%dt_try == 100d0 ) then
+          write(6,*) 'output yseq in bsstep'
+          write(6,*) yseq(1:pb%neqs*pb%mesh%nn)
+        end if
+
         xest=(h/nseq(k))**2
         call pzextr(k,xest,yseq,y,yerr,pb%neqs*pb%mesh%nn)
         if(k.ne.1)then
@@ -165,7 +177,19 @@ contains
       t_temp = pb%time  
       pb%time = xx
 !------save pb%time----------------------
+      if (pb%it == 1) then
+       write(6,*) 'yn in mmid before'
+       write(6,*) yn(1:pb%neqs*pb%mesh%nn)
+       write(6,*) 'yout in mmid '
+       write(6,*) yout(1:pb%neqs*pb%mesh%nn) 
+      end if      
       call derivs(pb,yn,yout)
+      if (pb%it == 1) then
+       write(6,*) 'yn in mmid after'
+       write(6,*) yn(1:pb%neqs*pb%mesh%nn)
+       write(6,*) 'yout in mmid '
+       write(6,*) yout(1:pb%neqs*pb%mesh%nn) 
+      end if      
 !------restore pb%time-------------------
       xx = pb%time
       pb%time = t_temp
