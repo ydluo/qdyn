@@ -88,6 +88,8 @@ subroutine do_bsstep(pb)
   write(6,*) yt
   write(6,*) 'dydt'
   write(6,*) dydt
+  write(6,*) 'dau_dt'
+  write(6,*) pb%dtau_dt
   write(6,*) 'pb%neqs*pb%mesh%nn,pb%time,pb%acc'
   write(6,*) pb%neqs*pb%mesh%nn,pb%time,pb%acc
   write(6,*) 'yt_scale'
@@ -122,6 +124,8 @@ subroutine do_bsstep(pb)
   write(6,*) yt
   write(6,*) 'dydt'
   write(6,*) dydt
+  write(6,*) 'dau_dt'
+  write(6,*) pb%dtau_dt
   write(6,*) 'pb%neqs*pb%mesh%nn,pb%time,pb%acc'
   write(6,*) pb%neqs*pb%mesh%nn,pb%time,pb%acc
   write(6,*) 'yt_scale'
