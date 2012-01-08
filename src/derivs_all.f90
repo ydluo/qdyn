@@ -47,7 +47,7 @@ subroutine derivs(pb,yt,dydt)
   dtau_per = pb%Omper * pb%Aper * dcos(pb%Omper*pb%time)     
 
   !--------State evolution law START--------------------------------
-  omega = yt(2::pb%neqs) * pb%theta / pb%dc
+  omega = yt(2::pb%neqs) *  yt(1::pb%neqs) / pb%dc
 
   !      "aging" law
   if (pb%itheta_law == 1) then
