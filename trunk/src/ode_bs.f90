@@ -21,14 +21,12 @@ contains
       PARAMETER (NMAX=262144,KMAXX=8,IMAX=KMAXX+1,SAFE1=.25d0,      &
                 SAFE2=.7d0,REDMAX=1.d-5,REDMIN=.7d0,TINY=1.d-30,    &
                 SCALMX=.5d0) !SCALMX=.1d0
-!     USES derivs,mmid,pzextr
       INTEGER :: i,iq,k,kk,km,kmax,kopt,nseq(IMAX)
       DOUBLE PRECISION :: eps1,epsold,errmax,fact,red,h,scale,work,wrkmin,xest,  &
                 a(IMAX),alf(KMAXX,KMAXX),err(KMAXX),yerr(NMAX),     &
                 ysav(NMAX),yseq(NMAX)
       LOGICAL ::first,reduct
       SAVE a,alf,epsold,first,kmax,kopt,nseq,xnew
- !     EXTERNAL derivs
       DATA first/.true./,epsold/-1.d0/
       DATA nseq /2,4,6,8,10,12,14,16,18/
       yseq = 0d0 
@@ -162,7 +160,6 @@ contains
 
       double precision :: xx,t_temp
 !      double precision, intent(inout) :: xs
-!      EXTERNAL derivs
       PARAMETER (NMAX=262144)
       INTEGER i,n
       DOUBLE PRECISION :: h,h2,swap,ym(NMAX),yn(NMAX)
