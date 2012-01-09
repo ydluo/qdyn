@@ -15,17 +15,17 @@ contains
 
       type(problem_type), intent(inout)  :: pb
       
-      INTEGER nv,NMAX,KMAXX,IMAX
+      INTEGER nv,KMAXX,IMAX
       REAL*8 eps,hdid,hnext,htry,dydx(nv),y(nv),yscal(nv),          &
                 SAFE1,SAFE2,REDMAX,REDMIN,TINY,SCALMX
       real*8 x,xnew
-      PARAMETER (NMAX=262144,KMAXX=8,IMAX=KMAXX+1,SAFE1=.25d0,      &
+      PARAMETER (KMAXX=8,IMAX=KMAXX+1,SAFE1=.25d0,      &
                 SAFE2=.7d0,REDMAX=1.d-5,REDMIN=.7d0,TINY=1.d-30,    &
                 SCALMX=.5d0) !SCALMX=.1d0
       INTEGER i,iq,k,kk,km,kmax,kopt,nseq(IMAX)
       REAL*8 eps1,epsold,errmax,fact,red,h,scale,work,wrkmin,xest,  &
-                a(IMAX),alf(KMAXX,KMAXX),err(KMAXX),yerr(NMAX),     &
-                ysav(NMAX),yseq(NMAX)
+                a(IMAX),alf(KMAXX,KMAXX),err(KMAXX),yerr(nv),     &
+                ysav(nv),yseq(nv)
       LOGICAL first,reduct
       SAVE a,alf,epsold,first,kmax,kopt,nseq,xnew
       DATA first/.true./,epsold/-1.d0/
@@ -138,12 +138,11 @@ contains
 
       type(problem_type), intent(inout)  :: pb
 
-      INTEGER nstep,nvar,NMAX
+      INTEGER nstep,nvar
       REAL*8 htot,dydx(nvar),y(nvar),yout(nvar)
       real*8 xs,x
-      PARAMETER (NMAX=262144)
       INTEGER i,n
-      REAL*8 h,h2,swap,ym(NMAX),yn(NMAX)
+      REAL*8 h,h2,swap,ym(nvar),yn(nvar)
       h=htot/nstep
       do 11 i=1,nvar
         ym(i)=y(i)
@@ -170,12 +169,21 @@ contains
 
       SUBROUTINE pzextr(iest,xest,yest,yz,dy,nv)
       implicit double precision (a-h,o-z)
-      INTEGER iest,nv,IMAX,NMAX
+      INTEGER iest,nv,IMAX
       REAL*8 xest,dy(nv),yest(nv),yz(nv)
-      PARAMETER (IMAX=13,NMAX=262144)
+      PARAMETER (IMAX=13)
       INTEGER j,k1
-      REAL*8 delta,f1,f2,q,d(NMAX),qcol(NMAX,IMAX),x(IMAX)
+      REAL*8 delta,f1,f2,q,d(nv),x(IMAX)
+      REAL*8, allocatable :: qcol(:,:)
       SAVE qcol,x
+
+      if (.not.allocated(qcol)) then
+        allocate(qcol(nv,IMAX))
+      elseif (size(qcol,1)/=nv) then
+        deallocate(qcol)
+        allocate(qcol(nv,IMAX))
+      endif
+        
       x(iest)=xest
       do 11 j=1,nv
         dy(j)=yest(j)
