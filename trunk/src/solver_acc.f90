@@ -24,7 +24,7 @@ subroutine check_stop(pb)
   double precision :: vmax_old = 0d0, vmax_older = 0d0
   save vmax_old, vmax_older
 
-  if (pb%itstop == 0) then
+  if (pb%itstop == -1) then
       !         STOP soon after end of slip localization 
     if (pb%NSTOP == 1) then
       if (pb%ot%llocnew > pb%ot%llocold) pb%itstop=pb%it+2*pb%ot%ntout
