@@ -1,14 +1,18 @@
 ! Bulirsch-Stoer ODE solver from Numerical Recipes
-      module ode_bs
+module ode_bs
 
-      public
+  private
 
-      contains
+  public :: bsstep
 
+contains
 
-      SUBROUTINE bsstep(y,dydx,nv,x,htry,eps,yscal,hdid,hnext,derivs,pb)
-      use problem_class
+      SUBROUTINE bsstep(y,dydx,nv,x,htry,eps,yscal,hdid,hnext,pb)
+
+      use problem_class, only : problem_type
+
       implicit double precision (a-h,o-z)
+
       type(problem_type), intent(inout)  :: pb
       
       INTEGER nv,NMAX,KMAXX,IMAX
@@ -18,14 +22,12 @@
       PARAMETER (NMAX=262144,KMAXX=8,IMAX=KMAXX+1,SAFE1=.25d0,      &
                 SAFE2=.7d0,REDMAX=1.d-5,REDMIN=.7d0,TINY=1.d-30,    &
                 SCALMX=.5d0) !SCALMX=.1d0
-!     USES derivs,mmid,pzextr
       INTEGER i,iq,k,kk,km,kmax,kopt,nseq(IMAX)
       REAL*8 eps1,epsold,errmax,fact,red,h,scale,work,wrkmin,xest,  &
                 a(IMAX),alf(KMAXX,KMAXX),err(KMAXX),yerr(NMAX),     &
                 ysav(NMAX),yseq(NMAX)
       LOGICAL first,reduct
       SAVE a,alf,epsold,first,kmax,kopt,nseq,xnew
-      EXTERNAL derivs
       DATA first/.true./,epsold/-1.d0/
       DATA nseq /2,4,6,8,10,12,14,16,18/
       if(eps.ne.epsold)then
@@ -64,7 +66,7 @@
           write(6,*)'dt_did,t= ',h,x
           pause 'step size underflow in bsstep'
         endif
-        call mmid(ysav,dydx,nv,x,h,nseq(k),yseq,derivs,pb)
+        call mmid(ysav,dydx,nv,x,h,nseq(k),yseq,pb)
         xest=(h/nseq(k))**2
         call pzextr(k,xest,yseq,y,yerr,nv)
         if(k.ne.1)then
@@ -127,14 +129,18 @@
       END SUBROUTINE bsstep
 
 
-      SUBROUTINE mmid(y,dydx,nvar,xs,htot,nstep,yout,derivs,pb)
-      use problem_class
+      SUBROUTINE mmid(y,dydx,nvar,xs,htot,nstep,yout,pb)
+
+      use problem_class, only : problem_type
+      use derivs_all, only : derivs
+
       implicit double precision (a-h,o-z)
+
       type(problem_type), intent(inout)  :: pb
+
       INTEGER nstep,nvar,NMAX
       REAL*8 htot,dydx(nvar),y(nvar),yout(nvar)
       real*8 xs,x
-      EXTERNAL derivs
       PARAMETER (NMAX=262144)
       INTEGER i,n
       REAL*8 h,h2,swap,ym(NMAX),yn(NMAX)
@@ -203,5 +209,5 @@
       return
       END SUBROUTINE pzextr
 
-      end module ode_bs
+end module ode_bs
 
