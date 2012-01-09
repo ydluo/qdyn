@@ -75,7 +75,7 @@ subroutine do_bsstep(pb)
   !!!====================NOTE:: IMPORTANT: ==========================!!!
 
   ! this update of derivatives is only needed to set up the scaling (yt_scale)
-  call derivs(pb,yt,dydt)
+  call derivs(pb%time,yt,dydt,pb)
   ! One step 
   !--------Call EXT routine bsstep [Bulirsch-Stoer Method] --------------
   !-------- 
@@ -99,7 +99,7 @@ subroutine do_bsstep(pb)
   write(6,*) 'BEGIN==================================================='
   end if
   
-  call bsstep(yt,dydt,yt_scale,pb)
+  call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,derivs,pb)
 
   if (pb%dt_max >  0.d0) then
     pb%dt_try = min(pb%dt_next,pb%dt_max)
