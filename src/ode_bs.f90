@@ -1,39 +1,37 @@
 ! Bulirsch-Stoer ODE solver from Numerical Recipes
-module ode_bs
+      module ode_bs
 
-  public
+      public
 
-contains
+      contains
 
-      SUBROUTINE bsstep(y,dydx,yscal,pb)
-       
+
+      SUBROUTINE bsstep(y,dydx,nv,x,htry,eps,yscal,hdid,hnext,derivs,pb)
       use problem_class
-
       implicit double precision (a-h,o-z)
       type(problem_type), intent(inout)  :: pb
-      double precision, dimension(pb%neqs*pb%mesh%nn), intent(inout) :: y,dydx,yscal
       
-    
-      INTEGER :: NMAX,KMAXX,IMAX
-      DOUBLE PRECISION ::  SAFE1,SAFE2,REDMAX,REDMIN,TINY,SCALMX 
-      double precision :: xnew
-!      double precision, intent(inout) :: x
+      INTEGER nv,NMAX,KMAXX,IMAX
+      REAL*8 eps,hdid,hnext,htry,dydx(nv),y(nv),yscal(nv),          &
+                SAFE1,SAFE2,REDMAX,REDMIN,TINY,SCALMX
+      real*8 x,xnew
       PARAMETER (NMAX=262144,KMAXX=8,IMAX=KMAXX+1,SAFE1=.25d0,      &
                 SAFE2=.7d0,REDMAX=1.d-5,REDMIN=.7d0,TINY=1.d-30,    &
                 SCALMX=.5d0) !SCALMX=.1d0
-      INTEGER :: i,iq,k,kk,km,kmax,kopt,nseq(IMAX)
-      DOUBLE PRECISION :: eps1,epsold,errmax,fact,red,h,scale,work,wrkmin,xest,  &
+!     USES derivs,mmid,pzextr
+      INTEGER i,iq,k,kk,km,kmax,kopt,nseq(IMAX)
+      REAL*8 eps1,epsold,errmax,fact,red,h,scale,work,wrkmin,xest,  &
                 a(IMAX),alf(KMAXX,KMAXX),err(KMAXX),yerr(NMAX),     &
                 ysav(NMAX),yseq(NMAX)
-      LOGICAL ::first,reduct
+      LOGICAL first,reduct
       SAVE a,alf,epsold,first,kmax,kopt,nseq,xnew
+      EXTERNAL derivs
       DATA first/.true./,epsold/-1.d0/
       DATA nseq /2,4,6,8,10,12,14,16,18/
-      yseq = 0d0 
-      if(pb%acc .ne. epsold)then
-        pb%dt_next=-1.d29
+      if(eps.ne.epsold)then
+        hnext=-1.d29
         xnew=-1.d29
-        eps1=SAFE1*pb%acc
+        eps1=SAFE1*eps
         a(1)=nseq(1)+1
         do 11 k=1,KMAXX
           a(k+1)=a(k)+nseq(k+1)
@@ -44,53 +42,37 @@ contains
             ((a(iq+1)-a(1)+1.d0)*(2*k+1)))
 12        continue
 13      continue
-        epsold=pb%acc
+        epsold=eps
         do 14 kopt=2,KMAXX-1
           if(a(kopt+1).gt.a(kopt)*alf(kopt-1,kopt))goto 1
 14      continue
 1       kmax=kopt
       endif
-      h=pb%dt_try
-      do 15 i=1,pb%neqs*pb%mesh%nn
+      h=htry
+      do 15 i=1,nv
         ysav(i)=y(i)
 15    continue
-      if(h.ne.pb%dt_next.or.pb%time.ne.xnew)then
+      if(h.ne.hnext.or.x.ne.xnew)then
         first=.true.
         kopt=kmax
       endif
       reduct=.false.
 2     do 17 k=1,kmax
-        xnew=pb%time+h
-!       if(xnew.eq.pb%time)then
-        if(pb%time+1.e10*h.eq.pb%time)then
-          write(6,*)'dt_did,t= ',h,pb%time
+        xnew=x+h
+!       if(xnew.eq.x)then
+        if(x+1.e10*h.eq.x)then
+          write(6,*)'dt_did,t= ',h,x
           pause 'step size underflow in bsstep'
         endif
-
-        if (pb%dt_try == 100d0 ) then
-          write(6,*) 'input ysav in bsstep'
-          write(6,*) ysav(1:pb%neqs*pb%mesh%nn)
-          write(6,*) 'input dydx in bsstep'
-          write(6,*) dydx(1:pb%neqs*pb%mesh%nn)
-          write(6,*) 'input h, nseq(k) in bsstep'
-          write(6,*) h,nseq(k)
-          write(6,*) 'input yseq in bsstep'
-          write(6,*) yseq(1:pb%neqs*pb%mesh%nn)
-        end if
-        call mmid(ysav,dydx,h,nseq(k),yseq,pb)
-        if (pb%dt_try == 100d0 ) then
-          write(6,*) 'output yseq in bsstep'
-          write(6,*) yseq(1:pb%neqs*pb%mesh%nn)
-        end if
-
+        call mmid(ysav,dydx,nv,x,h,nseq(k),yseq,derivs,pb)
         xest=(h/nseq(k))**2
-        call pzextr(k,xest,yseq,y,yerr,pb%neqs*pb%mesh%nn)
+        call pzextr(k,xest,yseq,y,yerr,nv)
         if(k.ne.1)then
           errmax=TINY
-          do 16 i=1,pb%neqs*pb%mesh%nn
+          do 16 i=1,nv
             errmax=max(errmax,dabs(yerr(i)/yscal(i)))
 16        continue
-          errmax=errmax/pb%acc
+          errmax=errmax/eps
           km=k-1
           err(km)=(errmax/SAFE1)**(1.d0/(2*km+1))
         endif
@@ -120,8 +102,8 @@ contains
       h=h*red
       reduct=.true.
       goto 2
-4     pb%time=xnew
-      pb%dt_did=h
+4     x=xnew
+      hdid=h
       first=.false.
       wrkmin=1.d35
       do 18 kk=1,km
@@ -133,11 +115,11 @@ contains
           kopt=kk+1
         endif
 18    continue
-      pb%dt_next=h/scale
+      hnext=h/scale
       if(kopt.ge.k.and.kopt.ne.kmax.and..not.reduct)then
         fact=max(scale/alf(kopt-1,kopt),SCALMX)
         if(a(kopt+1)*fact.le.wrkmin)then
-          pb%dt_next=h/fact
+          hnext=h/fact
           kopt=kopt+1
         endif
       endif
@@ -145,75 +127,35 @@ contains
       END SUBROUTINE bsstep
 
 
-      SUBROUTINE mmid(y,dydx,htot,nstep,yout,pb)
-
-      use derivs_all
+      SUBROUTINE mmid(y,dydx,nvar,xs,htot,nstep,yout,derivs,pb)
       use problem_class
-
       implicit double precision (a-h,o-z)
-
       type(problem_type), intent(inout)  :: pb
-      double precision :: htot 
-      double precision, dimension(pb%neqs*pb%mesh%nn), intent(inout) :: y,dydx,yout
-
-      INTEGER :: nstep,NMAX
-
-      double precision :: xx,t_temp
-!      double precision, intent(inout) :: xs
+      INTEGER nstep,nvar,NMAX
+      REAL*8 htot,dydx(nvar),y(nvar),yout(nvar)
+      real*8 xs,x
+      EXTERNAL derivs
       PARAMETER (NMAX=262144)
       INTEGER i,n
-      DOUBLE PRECISION :: h,h2,swap,ym(NMAX),yn(NMAX)
+      REAL*8 h,h2,swap,ym(NMAX),yn(NMAX)
       h=htot/nstep
-      do 11 i=1,pb%neqs*pb%mesh%nn
+      do 11 i=1,nvar
         ym(i)=y(i)
         yn(i)=y(i)+h*dydx(i)
 11    continue
-      xx=pb%time+h
-
-!------save pb%time----------------------
-      t_temp = pb%time  
-      pb%time = xx
-!------save pb%time----------------------
-      if (pb%it == 1) then
-       write(6,*) 'yn in mmid before'
-       write(6,*) yn(1:pb%neqs*pb%mesh%nn)
-       write(6,*) 'yout in mmid '
-       write(6,*) yout(1:pb%neqs*pb%mesh%nn) 
-      end if      
-      call derivs(pb,yn,yout)
-      if (pb%it == 1) then
-       write(6,*) 'yn in mmid after'
-       write(6,*) yn(1:pb%neqs*pb%mesh%nn)
-       write(6,*) 'yout in mmid '
-       write(6,*) yout(1:pb%neqs*pb%mesh%nn) 
-      end if      
-!------restore pb%time-------------------
-      xx = pb%time
-      pb%time = t_temp
-!------restore pb%time-------------------
-
+      x=xs+h
+      call derivs(x,yn,yout,pb)
       h2=2.d0*h
       do 13 n=2,nstep
-        do 12 i=1,pb%neqs*pb%mesh%nn
+        do 12 i=1,nvar
           swap=ym(i)+h2*yout(i)
           ym(i)=yn(i)
           yn(i)=swap
 12      continue
-        xx=xx+h
-
-!------save pb%time----------------------
-      t_temp = pb%time  
-      pb%time = xx
-!------save pb%time----------------------
-      call derivs(pb,yn,yout)
-!------restore pb%time-------------------
-      xx = pb%time
-      pb%time = t_temp
-!------restore pb%time-------------------
-
-
+        x=x+h
+        call derivs(x,yn,yout,pb)
 13    continue
-      do 14 i=1,pb%neqs*pb%mesh%nn
+      do 14 i=1,nvar
         yout(i)=0.5d0*(ym(i)+yn(i)+h*yout(i))
 14    continue
       return
@@ -223,11 +165,10 @@ contains
       SUBROUTINE pzextr(iest,xest,yest,yz,dy,nv)
       implicit double precision (a-h,o-z)
       INTEGER iest,nv,IMAX,NMAX
-      DOUBLE PRECISION :: xest
-      double precision, intent(inout) ::  dy(nv),yest(nv),yz(nv)
+      REAL*8 xest,dy(nv),yest(nv),yz(nv)
       PARAMETER (IMAX=13,NMAX=262144)
-      INTEGER :: j,k1
-      DOUBLE PRECISION :: delta,f1,f2,q,d(NMAX),qcol(NMAX,IMAX),x(IMAX)
+      INTEGER j,k1
+      REAL*8 delta,f1,f2,q,d(NMAX),qcol(NMAX,IMAX),x(IMAX)
       SAVE qcol,x
       x(iest)=xest
       do 11 j=1,nv
@@ -262,4 +203,5 @@ contains
       return
       END SUBROUTINE pzextr
 
-end module ode_bs
+      end module ode_bs
+

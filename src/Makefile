@@ -20,7 +20,8 @@ F90 = ifort
 #OPT = -O3 -ip -ipo -unroll
 #-no-inline-factor
 #OPT = -O3
-OPT = -O0 -warn all -C
+ OPT = -O0 -warn all -C
+#OPT = -O0 -warn all -parallel -par-report3  -C
 #OPT = -O0 -g
 
 #OPT = -O3 -ip -ipo -arch SSE2 -tpp7 -xN # pablo.ethz.ch

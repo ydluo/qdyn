@@ -21,7 +21,7 @@ contains
  !-------|                                               |-------|
  !---------------------------------------------------------------|
  
-subroutine derivs(pb,yt,dydt) 
+subroutine derivs(time,yt,dydt,pb) 
 !JPA this subroutine should have yout with intent(out)
 !    and put there the derivatives
    
@@ -29,7 +29,7 @@ subroutine derivs(pb,yt,dydt)
   use calc
   
   type(problem_type), intent(inout) :: pb
-  double precision , intent(inout) :: yt(pb%neqs*pb%mesh%nn), dydt(pb%neqs*pb%mesh%nn)
+  double precision , intent(inout) :: time, yt(pb%neqs*pb%mesh%nn), dydt(pb%neqs*pb%mesh%nn)
 
   double precision :: omega(pb%mesh%nn)
   double precision :: dtau_per
@@ -44,7 +44,7 @@ subroutine derivs(pb,yt,dydt)
 !                    initialize/init_field;  derivs_all/derivs 
   
   ! periodic loading
-  dtau_per = pb%Omper * pb%Aper * dcos(pb%Omper*pb%time)     
+  dtau_per = pb%Omper * pb%Aper * dcos(pb%Omper*time)     
 
   !--------State evolution law START--------------------------------
   omega = yt(2::pb%neqs) *  yt(1::pb%neqs) / pb%dc
