@@ -81,23 +81,6 @@ subroutine do_bsstep(pb)
   !-------- 
   yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
 
-  if (pb%it == 1 .or. pb%it == 2 .or. pb%it == 10) then
-  write(6,*) 'BEGIN==================================================='
-  write(6,*) 'it=', pb%it 
-  write(6,*) 'yt'
-  write(6,*) yt
-  write(6,*) 'dydt'
-  write(6,*) dydt
-  write(6,*) 'dau_dt'
-  write(6,*) pb%dtau_dt
-  write(6,*) 'pb%neqs*pb%mesh%nn,pb%time,pb%acc'
-  write(6,*) pb%neqs*pb%mesh%nn,pb%time,pb%acc
-  write(6,*) 'yt_scale'
-  write(6,*) yt_scale
-  write(6,*) 'pb%dt_try,pb%dt_did,pb%dt_next'
-  write(6,*) pb%dt_try,pb%dt_did,pb%dt_next
-  write(6,*) 'BEGIN==================================================='
-  end if
   
   call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,derivs,pb)
 
@@ -117,23 +100,6 @@ subroutine do_bsstep(pb)
   pb%dtheta_dt = dydt(1::pb%neqs) 
   !-------Unpack yt into v, theta--------------------------------- 
 
-  if (pb%it == 1 .or. pb%it == 2 .or. pb%it == 10) then
-  write(6,*) 'END==================================================='
-  write(6,*) 'it=', pb%it 
-  write(6,*) 'yt'
-  write(6,*) yt
-  write(6,*) 'dydt'
-  write(6,*) dydt
-  write(6,*) 'dau_dt'
-  write(6,*) pb%dtau_dt
-  write(6,*) 'pb%neqs*pb%mesh%nn,pb%time,pb%acc'
-  write(6,*) pb%neqs*pb%mesh%nn,pb%time,pb%acc
-  write(6,*) 'yt_scale'
-  write(6,*) yt_scale
-  write(6,*) 'pb%dt_try,pb%dt_did,pb%dt_next'
-  write(6,*) pb%dt_try,pb%dt_did,pb%dt_next
-  write(6,*) 'END==================================================='
-  end if
   
 end subroutine do_bsstep
 
