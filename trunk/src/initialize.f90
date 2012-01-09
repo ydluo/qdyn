@@ -100,6 +100,7 @@ subroutine init_kernel(pb)
 
     pb%kernel%k2f%nnfft = (pb%kernel%k2f%finite+1)*pb%mesh%nn 
     allocate (pb%kernel%k2f%kernel(pb%kernel%k2f%nnfft))
+    allocate (pb%dtau_dt(pb%kernel%k2f%nnfft))
 
     if (pb%mesh%nn == 1) then      ! single degree-of-freedom spring-block system
       write(6,*) 'Single degree-of-freedom spring-block system'

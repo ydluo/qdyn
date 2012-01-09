@@ -60,7 +60,7 @@ subroutine read_main(pb)
     read(15,*)pb%dt_try, pb%dt_max,pb%tmax, pb%acc
     read(15,*)pb%NSTOP
 
-    allocate (pb%tau(pb%mesh%nn), pb%dtau_dt(pb%mesh%nn),    &
+    allocate (pb%tau(pb%mesh%nn),     &
              pb%tau_init(pb%mesh%nn), pb%sigma(pb%mesh%nn), &
              pb%slip(pb%mesh%nn), pb%v(pb%mesh%nn), pb%dv_dt(pb%mesh%nn), &
              pb%theta(pb%mesh%nn),  pb%dtheta_dt(pb%mesh%nn),  &
