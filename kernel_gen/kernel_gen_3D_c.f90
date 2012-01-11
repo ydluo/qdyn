@@ -15,7 +15,7 @@ program main
   end type mesh_type
   
 !kernel(i,j): response at i of source at j
-  double precision, allocatable :: kernel(:,:), temp(:)  ! 3d bruteforce kernel (nx*nw)^2 count
+  double precision, allocatable :: kernel(:,:), temp(:)  ! 2d compact kernel (nx*nw*nw) count
 
   double precision :: tau = 0d0   ! return kernel from compute_kernel
   double precision :: PI = 3.1415926535897932384626d0
