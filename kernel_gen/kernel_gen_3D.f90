@@ -34,7 +34,7 @@ program main
   mesh%w_kind = 0
   mesh%L = 100d3
   mesh%W = 30d3
-  mesh%nx = 5
+  mesh%nx = 4
   mesh%nw = 3
   mesh%Z_CORNER = -30d3
   
@@ -101,22 +101,20 @@ program main
       end if
     end do
   end do
-
-
-
-
-
  
-write(6,*) 'x'
-write(6,*) mesh%x 
-write(6,*) 'y'
-write(6,*) mesh%y 
-write(6,*) 'z'
-write(6,*) mesh%z 
-write(6,*) 'dip'
-write(6,*) mesh%dip 
-write(6,*) 'kernel(i,j): response at i of source at j'
-write(6,*) kernel
+  write(6,*) 'x'
+  write(6,*) mesh%x 
+  write(6,*) 'y'
+  write(6,*) mesh%y 
+  write(6,*) 'z'
+  write(6,*) mesh%z 
+  write(6,*) 'dip'
+  write(6,*) mesh%dip 
+  write(6,*) 'kernel(i,j): response at i of source at j'
+  do i = 1,mesh%nw*mesh%nx
+    write(6,*) 'i=',i 
+    write(6,*) kernel(i,:)
+  end do
 
 
 end program main
