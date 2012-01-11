@@ -1,4 +1,4 @@
-!  test a finite fault response
+! computer_kernel
 
 module calc_kernel
 
@@ -9,8 +9,8 @@ module calc_kernel
 
 contains
 !=====================================================================
-! read in all parameters
-! 
+! read in S... Source; O... Observation
+! unit response: U=1, return tau
 subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau)
   double precision :: SX,SY,SZ,OX,OY,OZ
   double precision :: LAM, MU, ALPHA,   & 

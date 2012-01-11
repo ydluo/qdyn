@@ -6,18 +6,18 @@ program main
 
   implicit none
   type mesh_type
-    integer :: w_kind     ! w_kind = 0 
-    integer :: nx, nw
-    double precision :: L, W, Z_CORNER
-    double precision :: dx
-    double precision, allocatable :: dw(:), DIP_W(:)
-    double precision, allocatable :: x(:), y(:), z(:), dip(:)
+    integer :: w_kind     ! w_kind = 0 uniform grid along-dip 
+    integer :: nx, nw     ! along-strike, along-dip grid number
+    double precision :: L, W, Z_CORNER ! fault length, width, lower-left corner z (follow Okada's convension)
+    double precision :: dx   !along-strike grid size(constant)
+    double precision, allocatable :: dw(:), DIP_W(:) !along-dip grid size and dip (adjustable)
+    double precision, allocatable :: x(:), y(:), z(:), dip(:) !coordinates and dip of every grid (nx*nw count)
   end type mesh_type
   
 !kernel(i,j): response at i of source at j
-  double precision, allocatable :: kernel(:,:)
+  double precision, allocatable :: kernel(:,:)   ! 3d bruteforce kernel (nx*nw)^2 count
 
-  double precision :: tau = 0d0
+  double precision :: tau = 0d0   ! return kernel from compute_kernel
   double precision :: PI = 3.1415926535897932384626d0
   double precision :: dz0, dip0, cd, sd, cd0, sd0
   double precision :: MU, LAM
@@ -87,6 +87,7 @@ program main
 
 !------ calculate kernel -----------------
 !kernel(i,j): response at i of source at j
+!because dx = constant, only need to calculate i at first column
   do i = 1,mesh%nw*mesh%nx
     do j = 1,mesh%nw*mesh%nx
       call compute_kernel(LAM,MU,mesh%x(j),mesh%y(j),mesh%z(j),  &
