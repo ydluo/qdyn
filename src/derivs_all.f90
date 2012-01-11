@@ -36,7 +36,7 @@ subroutine derivs(time,yt,dydt,pb)
   integer :: i
 
   ! compute shear stress rate from elastic interactions, for 0D, 1D & 2D
-  call compute_stress(pb%dtau_dt,pb%kernel,yt(2::pb%neqs),pb%vstar)
+  call compute_stress(pb%dtau_dt,pb%kernel,yt(2::pb%neqs),pb%v_star)
 
 !YD This part we may want to modify it later to be able to
 !impose more complicated loading/pertubation
