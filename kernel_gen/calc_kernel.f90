@@ -60,9 +60,10 @@ subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau)
   n_dir(2) = -1d0*dcos(O_DIP/180d0*PI)
   n_dir(3) = -1d0*dsin(O_DIP/180d0*PI)
  
-  tau_n(1) = STRESS(1,1)*n_f(1)+STRESS(1,2)*n_f(2)+STRESS(1,3)*n_f(3)
-  tau_n(2) = STRESS(2,1)*n_f(1)+STRESS(2,2)*n_f(2)+STRESS(2,3)*n_f(3)
-  tau_n(3) = STRESS(3,1)*n_f(1)+STRESS(3,2)*n_f(2)+STRESS(3,3)*n_f(3)
+  tau_n = matmul(STRESS,n_f)
+!  tau_n(1) = STRESS(1,1)*n_f(1)+STRESS(1,2)*n_f(2)+STRESS(1,3)*n_f(3)
+!  tau_n(2) = STRESS(2,1)*n_f(1)+STRESS(2,2)*n_f(2)+STRESS(2,3)*n_f(3)
+!  tau_n(3) = STRESS(3,1)*n_f(1)+STRESS(3,2)*n_f(2)+STRESS(3,3)*n_f(3)
 
   tau = tau_n(1)*n_DIR(1)+tau_n(2)*n_DIR(2)+tau_n(3)*n_DIR(3)
   

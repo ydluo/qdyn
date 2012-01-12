@@ -41,8 +41,9 @@ module problem_class
 
   type kernel_type
     integer :: kind = 0
-    type (kernel_2D_fft) :: k2f
-    type (kernel_2D_fft) :: k3
+    double precision :: k1
+    type (kernel_2D_fft), pointer :: k2f
+    type (kernel_3D), pointer :: k3
   end type kernel_type
 
   type problem_type
