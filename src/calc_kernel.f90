@@ -13,7 +13,8 @@ contains
 ! unit response: U=1, return tau
 subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau)
 
-  use constants, only : PI 
+  use constants, only : PI
+  use dc3d_all 
 
   double precision :: SX,SY,SZ,OX,OY,OZ
   double precision :: LAM, MU, ALPHA,   & 
