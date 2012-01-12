@@ -189,7 +189,7 @@ subroutine init_kernel(pb)
                       pb%mesh%x(1+(i-1)*mesh%nx),pb%mesh%y(1+(i-1)*mesh%nx),   &
                       pb%mesh%z(1+(i-1)*mesh%nx),pb%mesh%dip(1+(i-1)*mesh%nx),IRET,tau)
         if (IRET == 0) then
-          pb%kernel%k3%kernel(i,j) = tau
+          pb%kernel%k3%kernel(i,j) = -1d0*tau
         else
           write(6,*) 'Kernel Singular, set value to 0'
           pb%kernel%k3%kernel(i,j) = 0d0
