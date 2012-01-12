@@ -12,11 +12,16 @@ contains
 
       SUBROUTINE  UA0(X,Y,D,POT1,POT2,POT3,POT4,U)                      
 
-      IMPLICIT REAL*8 (A-H,O-Z)                                         
-      IMPLICIT INTEGER (I-N)
+      DOUBLE PRECISION :: X,Y,D,POT1,POT2,POT3,POT4,U 
+      DOUBLE PRECISION :: F0,F1,F3,PI2                                       
+      INTEGER :: I
+      DOUBLE PRECISION :: DU
+      DOUBLE PRECISION :: ALP1,ALP2,ALP3,ALP4,ALP5,SD,CD,SDSD,  &
+                          CDCD,SDCD,S2D,C2D
+      DOUBLE PRECISION :: P,Q,S,T,XY,X2,Y2,D2,R,R2,R3,R5,QR,QRX,  &
+                          A3,A5,B3,C3,UY,VY,WY,UZ,VZ,WZ
       DIMENSION U(12),DU(12) 
-
-      INTEGER :: I                                           
+                                          
 
 !                                                                       
 
@@ -215,11 +220,17 @@ contains
       END SUBROUTINE  UA0                                                              
 
       SUBROUTINE  UB0(X,Y,D,Z,POT1,POT2,POT3,POT4,U)                    
-
-      IMPLICIT REAL*8 (A-H,O-Z)                                         
-      IMPLICIT INTEGER (I-N)
+      INTEGER :: I
+      DOUBLE PRECISION :: X,Y,D,Z,POT1,POT2,POT3,POT4,U,DU  
+      DOUBLE PRECISION :: F0,F1,F2,F3,F4,F5,F8,F9,PI2                                    
+      DOUBLE PRECISION :: ALP1,ALP2,ALP3,ALP4,ALP5,SD,CD,SDSD,  &
+                          CDCD,SDCD,S2D,C2D
+      DOUBLE PRECISION :: P,Q,S,T,XY,X2,Y2,D2,R,R2,R3,R5,QR,QRX,  &
+                          A3,A5,B3,C3,UY,VY,WY,UZ,VZ,WZ
       DIMENSION U(12),DU(12)                                            
-
+      DOUBLE PRECISION :: C, RD, D12, D32, D33, D53, D54
+      DOUBLE PRECISION :: FI1, FI2, FI3, FI4, FI5, &
+                          FJ1, FJ2, FJ3, FJ4, FK1, FK2, FK3
 !                                                                      
 
 !********************************************************************   
@@ -461,11 +472,15 @@ contains
       END  SUBROUTINE  UB0                                                             
 
       SUBROUTINE  UC0(X,Y,D,Z,POT1,POT2,POT3,POT4,U)                    
-
-      IMPLICIT REAL*8 (A-H,O-Z)                                         
-      IMPLICIT INTEGER (I-N)
+      INTEGER :: I      
+      DOUBLE PRECISION :: X,Y,D,Z,POT1,POT2,POT3,POT4,U,DU
+      DOUBLE PRECISION :: F0,F1,F2,F3,F5,F7,F10,F15,PI2                                        
+      DOUBLE PRECISION :: ALP1,ALP2,ALP3,ALP4,ALP5,SD,CD,SDSD,  &
+                          CDCD,SDCD,S2D,C2D
+      DOUBLE PRECISION :: P,Q,S,T,XY,X2,Y2,D2,R,R2,R3,R5,QR,QRX,  &
+                          A3,A5,B3,C3
       DIMENSION U(12),DU(12)                                            
-
+      DOUBLE PRECISION :: C,Q2,R7,A7,B5,B7,C5,C7,D7,QR5,QR7,DR5 
 !                                                                       
 
 !********************************************************************   
@@ -712,12 +727,15 @@ contains
 
                     UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)  
 
-      IMPLICIT REAL*8 (A-H,O-Z)                                         
-      IMPLICIT INTEGER (I-N) 
-      REAL*8   ALPHA,X,Y,Z,DEPTH,DIP,AL1,AL2,AW1,AW2,DISL1,DISL2,DISL3, &
 
-               UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ             
-
+      DOUBLE PRECISION ::  ALPHA,X,Y,Z,DEPTH,DIP,AL1,AL2,AW1,AW2,  &
+                           DISL1,DISL2,DISL3,UX,UY,UZ,UXX,UYX,  &
+                           UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ             
+      INTEGER :: I,IRET,KXI,KET,K,J
+      DOUBLE PRECISION ::  F0,EPS 
+      DOUBLE PRECISION :: ALP1,ALP2,ALP3,ALP4,ALP5,SD,CD
+      DOUBLE PRECISION :: U,DUA,DUB,DUC,AALPHA,DDIP,ZZ,DD1,DD2,DD3,  &
+                          XI,D,P,Q,ET,R12,R21,R22,DU
 !                                                                       
 
 !********************************************************************   
@@ -770,7 +788,7 @@ contains
 
 !                                                                       
 
-      COMMON /C0/DUMMY(5),SD,CD                                         
+      COMMON /C0/ALP1,ALP2,ALP3,ALP4,ALP5,SD,CD                                         
 
       DIMENSION  XI(2),ET(2),KXI(2),KET(2)                              
 
@@ -1104,10 +1122,16 @@ contains
 
       END  SUBROUTINE  DC3D                                                             
 
-      SUBROUTINE  UA(XI,ET,Q,DISL1,DISL2,DISL3,U)                       
-
-      IMPLICIT REAL*8 (A-H,O-Z)                                         
-      IMPLICIT INTEGER (I-N)
+      SUBROUTINE  UA(XI,ET,Q,DISL1,DISL2,DISL3,U) 
+  
+      INTEGER :: I                
+      DOUBLE PRECISION :: XI,ET,Q,DISL1,DISL2,DISL3,U
+      DOUBLE PRECISION :: F0,F2,PI2
+      DOUBLE PRECISION :: ALP1,ALP2,ALP3,ALP4,ALP5,SD,CD,SDSD,  &
+                          CDCD,SDCD,S2D,C2D
+      DOUBLE PRECISION :: XI2,ET2,Q2,R,R2,R3,R5,Y,D,TT,ALX,ALE,X11,  &
+                          Y11,X32,Y32,EY,EZ,FY,FZ,GY,GZ,HY,HZ
+      DOUBLE PRECISION :: XY,QX,QY,DU
       DIMENSION U(12),DU(12)                                            
  
 !                                                                       
@@ -1273,9 +1297,15 @@ contains
       END   SUBROUTINE  UA                                                            
 
       SUBROUTINE  UB(XI,ET,Q,DISL1,DISL2,DISL3,U)                       
-
-      IMPLICIT REAL*8 (A-H,O-Z)                                         
-      IMPLICIT INTEGER (I-N)
+      INTEGER :: I
+      DOUBLE PRECISION :: XI,ET,Q,DISL1,DISL2,DISL3,U
+      DOUBLE PRECISION :: F0,F1,F2,PI2
+      DOUBLE PRECISION :: ALP1,ALP2,ALP3,ALP4,ALP5,SD,CD,SDSD,  &
+                          CDCD,SDCD,S2D,C2D
+      DOUBLE PRECISION :: XI2,ET2,Q2,R,R2,R3,R5,Y,D,TT,ALX,ALE,X11,  &
+                          Y11,X32,Y32,EY,EZ,FY,FZ,GY,GZ,HY,HZ 
+      DOUBLE PRECISION :: RD,D11,AJ2,AJ5,AI4,X,AI3,AK1,AK3,AJ3,AJ6,   &
+                          RD2,XY,AI1,AI2,AK2,AK4,AJ1,AJ4,QX,QY,DU 
       DIMENSION U(12),DU(12)                                            
 
 !                                                                       
@@ -1509,9 +1539,15 @@ contains
       END  SUBROUTINE  UB                                                             
 
       SUBROUTINE  UC(XI,ET,Q,Z,DISL1,DISL2,DISL3,U)                     
-
-      IMPLICIT REAL*8 (A-H,O-Z)                                         
-      IMPLICIT INTEGER (I-N)
+      INTEGER :: I
+      DOUBLE PRECISION :: XI,ET,Q,Z,DISL1,DISL2,DISL3,U
+      DOUBLE PRECISION :: F0,F1,F2,F3,PI2
+      DOUBLE PRECISION :: ALP1,ALP2,ALP3,ALP4,ALP5,SD,CD,SDSD,  &
+                          CDCD,SDCD,S2D,C2D
+      DOUBLE PRECISION :: XI2,ET2,Q2,R,R2,R3,R5,Y,D,TT,ALX,ALE,X11,  &
+                          Y11,X32,Y32,EY,EZ,FY,FZ,GY,GZ,HY,HZ
+      DOUBLE PRECISION :: C,X53,Y53,H,Z32,Z53,Y0,Z0,PPY,PPZ,   &
+                          QQ,QQY,QQZ,XY,QX,QY,QR,CQX,CDR,YY0,DU 
       DIMENSION U(12),DU(12)                                            
 
 !                                                                       
@@ -1722,10 +1758,13 @@ contains
 
       END   SUBROUTINE  UC                                                            
 
-      SUBROUTINE  DCCON0(ALPHA,DIP)                                     
+      SUBROUTINE  DCCON0(ALPHA,DIP) 
 
-      IMPLICIT REAL*8 (A-H,O-Z)                                         
-      IMPLICIT INTEGER (I-N) 
+      DOUBLE PRECISION :: ALPHA,DIP                                    
+      DOUBLE PRECISION :: F0,F1,F2,PI2,EPS
+      DOUBLE PRECISION :: ALP1,ALP2,ALP3,ALP4,ALP5,SD,CD,SDSD,  &
+                          CDCD,SDCD,S2D,C2D
+      DOUBLE PRECISION :: P18
 !                                                                       
 
 !*******************************************************************    
@@ -1789,10 +1828,17 @@ contains
       S2D=F2*SDCD                                                       
       C2D=CDCD-SDSD                                                     
       RETURN                                                            
-      END SUBROUTINE DCCON0                                                            
-      SUBROUTINE  DCCON1(X,Y,D)                                         
-      IMPLICIT REAL*8 (A-H,O-Z)  
-      IMPLICIT INTEGER (I-N)                                       
+      END SUBROUTINE DCCON0  
+
+                                                          
+      SUBROUTINE  DCCON1(X,Y,D)  
+                                       
+      DOUBLE PRECISION :: X,Y,D
+      DOUBLE PRECISION :: F0,F1,F3,F5,EPS
+      DOUBLE PRECISION :: ALP1,ALP2,ALP3,ALP4,ALP5,SD,CD
+      DOUBLE PRECISION :: P,Q,S,T,XY,X2,Y2,D2,R,R2,R3,R5,QR,QRX,  &
+                          A3,A5,B3,C3,UY,VY,WY,UZ,VZ,WZ 
+      DOUBLE PRECISION :: R7                                      
 !                                                                       
 !********************************************************************** 
 !*****   CALCULATE STATION GEOMETRY CONSTANTS FOR POINT SOURCE    ***** 
@@ -1802,7 +1848,7 @@ contains
 !*****   X,Y,D : STATION COORDINATES IN FAULT SYSTEM                    
 !### CAUTION ### IF X,Y,D ARE SUFFICIENTLY SMALL, THEY ARE SET TO ZERO  
 !                                                                       
-      COMMON /C0/DUMMY(5),SD,CD                                         
+      COMMON /C0/ALP1,ALP2,ALP3,ALP4,ALP5,SD,CD                                         
       COMMON /C1/P,Q,S,T,XY,X2,Y2,D2,R,R2,R3,R5,QR,QRX,A3,A5,B3,C3,  &    
                  UY,VY,WY,UZ,VZ,WZ                                      
       DATA  F0,F1,F3,F5,EPS/0.D0,1.D0,3.D0,5.D0,1.D-6/                  
@@ -1840,10 +1886,17 @@ contains
       WY=UY+SD                                                          
       WZ=UZ+CD                                                          
       RETURN                                                            
-      END  SUBROUTINE  DCCON1                                                             
-      SUBROUTINE  DCCON2(XI,ET,Q,SD,CD,KXI,KET)                         
-      IMPLICIT REAL*8 (A-H,O-Z) 
-      IMPLICIT INTEGER (I-N)                                        
+      END  SUBROUTINE  DCCON1
+
+
+                                                             
+      SUBROUTINE  DCCON2(XI,ET,Q,SD,CD,KXI,KET) 
+                        
+      DOUBLE PRECISION :: XI,ET,Q,SD,CD
+      DOUBLE PRECISION :: F0,F1,F2,EPS
+      DOUBLE PRECISION :: XI2,ET2,Q2,R2,R,R3,R5,Y,D,TT,ALX,X11,X32,   &
+                          RXI,ALE,Y11,Y32,RET,EY,EZ,FY,FZ,GY,GZ,HY,HZ
+      INTEGER :: KXI,KET                                       
 !                                                                       
 !********************************************************************** 
 !*****   CALCULATE STATION GEOMETRY CONSTANTS FOR FINITE SOURCE   ***** 

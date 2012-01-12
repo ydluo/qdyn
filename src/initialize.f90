@@ -59,13 +59,13 @@ subroutine init_field(pb)
       sd0 = dsin(pb%mesh%DIP_W(i-1)/180d0*PI)
       cd = dcos(pb%mesh%DIP_W(i)/180d0*PI)
       sd = dsin(pb%mesh%DIP_W(i)/180d0*PI)
-      do j = 1,mesh%nx
-        pb%mesh%x((i-1)*mesh%nx+j) = 0d0+(0.5d0+dble(j-1))*pb%mesh%dx
-        pb%mesh%y((i-1)*mesh%nx+j) = pb%mesh%y((i-2)*mesh%nx+j)    &
+      do j = 1,pb%mesh%nx
+        pb%mesh%x((i-1)*pb%mesh%nx+j) = 0d0+(0.5d0+dble(j-1))*pb%mesh%dx
+        pb%mesh%y((i-1)*pb%mesh%nx+j) = pb%mesh%y((i-2)*pb%mesh%nx+j)    &
                           +0.5d0*pb%mesh%dw(i-1)*cd0+0.5d0*pb%mesh%dw(i)*cd
-        pb%mesh%z((i-1)*mesh%nx+j) = pb%mesh%z((i-2)*mesh%nx+j)    &
+        pb%mesh%z((i-1)*pb%mesh%nx+j) = pb%mesh%z((i-2)*pb%mesh%nx+j)    &
                           +0.5d0*pb%mesh%dw(i-1)*sd0+0.5d0*pb%mesh%dw(i)*sd
-        pb%mesh%dip((i-1)*mesh%nx+j) = pb%mesh%DIP_W(i)
+        pb%mesh%dip((i-1)*pb%mesh%nx+j) = pb%mesh%DIP_W(i)
       end do
     end do
     !------ give value to x, y, z , dip of row 2 to nw------------------- 
@@ -185,9 +185,9 @@ subroutine init_kernel(pb)
     do i = 1,pb%mesh%nw
       do j = 1,pb%mesh%nn
         call compute_kernel(pb%lam,pb%smu,pb%mesh%x(j),pb%mesh%y(j),pb%mesh%z(j),  &
-                      pb%mesh%dip(j),pb%mesh%dx,pb%mesh%dw((j-1)/mesh%nx+1),   &
-                      pb%mesh%x(1+(i-1)*mesh%nx),pb%mesh%y(1+(i-1)*mesh%nx),   &
-                      pb%mesh%z(1+(i-1)*mesh%nx),pb%mesh%dip(1+(i-1)*mesh%nx),IRET,tau)
+               pb%mesh%dip(j),pb%mesh%dx,pb%mesh%dw((j-1)/pb%mesh%nx+1),   &
+               pb%mesh%x(1+(i-1)*pb%mesh%nx),pb%mesh%y(1+(i-1)*pb%mesh%nx),   &
+               pb%mesh%z(1+(i-1)*pb%mesh%nx),pb%mesh%dip(1+(i-1)*pb%mesh%nx),IRET,tau)
         if (IRET == 0) then
           pb%kernel%k3%kernel(i,j) = -1d0*tau
         else
