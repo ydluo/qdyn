@@ -1,228 +1,14 @@
-      SUBROUTINE  DC3D0(ALPHA,X,Y,Z,DEPTH,DIP,POT1,POT2,POT3,POT4,      
+! dc3d
 
-     *               UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET) 
+module dc3d_all
 
-      IMPLICIT REAL*8 (A-H,O-Z)                                         
+  implicit none
+  private
 
-      REAL*8   ALPHA,X,Y,Z,DEPTH,DIP,POT1,POT2,POT3,POT4,               
+  public :: DC3D
 
-     *         UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ             
-
-C                                                                       
-
-C********************************************************************   
-
-C*****                                                          *****   
-
-C*****    DISPLACEMENT AND STRAIN AT DEPTH                      *****   
-
-C*****    DUE TO BURIED POINT SOURCE IN A SEMIINFINITE MEDIUM   *****   
-
-C*****                         CODED BY  Y.OKADA ... SEP.1991   *****   
-
-C*****                         REVISED   Y.OKADA ... NOV.1991   *****   
-
-C*****                                                          *****   
-
-C********************************************************************   
-
-C                                                                       
-
-C***** INPUT                                                            
-
-C*****   ALPHA : MEDIUM CONSTANT  (LAMBDA+MYU)/(LAMBDA+2*MYU)           
-
-C*****   X,Y,Z : COORDINATE OF OBSERVING POINT                          
-
-C*****   DEPTH : SOURCE DEPTH                                           
-
-C*****   DIP   : DIP-ANGLE (DEGREE)                                     
-
-C*****   POT1-POT4 : STRIKE-, DIP-, TENSILE- AND INFLATE-POTENCY        
-
-C*****       POTENCY=(  MOMENT OF DOUBLE-COUPLE  )/MYU     FOR POT1,2   
-
-C*****       POTENCY=(INTENSITY OF ISOTROPIC PART)/LAMBDA  FOR POT3     
-
-C*****       POTENCY=(INTENSITY OF LINEAR DIPOLE )/MYU     FOR POT4     
-
-C                                                                       
-
-C***** OUTPUT                                                           
-
-C*****   UX, UY, UZ  : DISPLACEMENT ( UNIT=(UNIT OF POTENCY) /          
-
-C*****               :                     (UNIT OF X,Y,Z,DEPTH)**2  )  
-
-C*****   UXX,UYX,UZX : X-DERIVATIVE ( UNIT= UNIT OF POTENCY) /          
-
-C*****   UXY,UYY,UZY : Y-DERIVATIVE        (UNIT OF X,Y,Z,DEPTH)**3  )  
-
-C*****   UXZ,UYZ,UZZ : Z-DERIVATIVE                                     
-
-C*****   IRET        : RETURN CODE  ( =0....NORMAL,   =1....SINGULAR )  
-
-C                                                                       
-
-      COMMON /C1/DUMMY(8),R                                             
-
-      DIMENSION  U(12),DUA(12),DUB(12),DUC(12)                          
-
-      DATA  F0/0.D0/                                                    
-
-C-----                                                                  
-
-      IF(Z.GT.0.) WRITE(6,'(''0** POSITIVE Z WAS GIVEN IN SUB-DC3D0'')')
-
-      DO 111 I=1,12                                                     
-
-        U(I)=F0                                                         
-
-        DUA(I)=F0                                                       
-
-        DUB(I)=F0                                                       
-
-        DUC(I)=F0                                                       
-
-  111 CONTINUE                                                          
-
-      AALPHA=ALPHA                                                      
-
-      DDIP=DIP                                                          
-
-      CALL DCCON0(AALPHA,DDIP)                                          
-
-C======================================                                 
-
-C=====  REAL-SOURCE CONTRIBUTION  =====                                 
-
-C======================================                                 
-
-      XX=X                                                              
-
-      YY=Y                                                              
-
-      ZZ=Z                                                              
-
-      DD=DEPTH+Z                                                        
-
-      CALL DCCON1(XX,YY,DD)                                             
-
-      IF(R.EQ.F0) GO TO 99                                              
-
-      PP1=POT1                                                          
-
-      PP2=POT2                                                          
-
-      PP3=POT3                                                          
-
-      PP4=POT4                                                          
-
-      CALL UA0(XX,YY,DD,PP1,PP2,PP3,PP4,DUA)                            
-
-C-----                                                                  
-
-      DO 222 I=1,12                                                     
-
-        IF(I.LT.10) U(I)=U(I)-DUA(I)                                    
-
-        IF(I.GE.10) U(I)=U(I)+DUA(I)                                    
-
-  222 CONTINUE                                                          
-
-C=======================================                                
-
-C=====  IMAGE-SOURCE CONTRIBUTION  =====                                
-
-C=======================================                                
-
-      DD=DEPTH-Z                                                        
-
-      CALL DCCON1(XX,YY,DD)                                             
-
-      CALL UA0(XX,YY,DD,PP1,PP2,PP3,PP4,DUA)                            
-
-      CALL UB0(XX,YY,DD,ZZ,PP1,PP2,PP3,PP4,DUB)                         
-
-      CALL UC0(XX,YY,DD,ZZ,PP1,PP2,PP3,PP4,DUC)                         
-
-C-----                                                                  
-
-      DO 333 I=1,12                                                     
-
-        DU=DUA(I)+DUB(I)+ZZ*DUC(I)                                      
-
-        IF(I.GE.10) DU=DU+DUC(I-9)                                      
-
-        U(I)=U(I)+DU                                                    
-
-  333 CONTINUE                                                          
-
-C=====                                                                  
-
-      UX=U(1)                                                           
-
-      UY=U(2)                                                           
-
-      UZ=U(3)                                                           
-
-      UXX=U(4)                                                          
-
-      UYX=U(5)                                                          
-
-      UZX=U(6)                                                          
-
-      UXY=U(7)                                                          
-
-      UYY=U(8)                                                          
-
-      UZY=U(9)                                                          
-
-      UXZ=U(10)                                                         
-
-      UYZ=U(11)                                                         
-
-      UZZ=U(12)                                                         
-
-      IRET=0                                                            
-
-      RETURN                                                            
-
-C=======================================                                
-
-C=====  IN CASE OF SINGULAR (R=0)  =====                                
-
-C=======================================                                
-
-   99 UX=F0                                                             
-
-      UY=F0                                                             
-
-      UZ=F0                                                             
-
-      UXX=F0                                                            
-
-      UYX=F0                                                            
-
-      UZX=F0                                                            
-
-      UXY=F0                                                            
-
-      UYY=F0                                                            
-
-      UZY=F0                                                            
-
-      UXZ=F0                                                            
-
-      UYZ=F0                                                            
-
-      UZZ=F0                                                            
-
-      IRET=1                                                            
-
-      RETURN                                                            
-
-      END                                                               
+contains
+                                                            
 
       SUBROUTINE  UA0(X,Y,D,POT1,POT2,POT3,POT4,U)                      
 
@@ -230,51 +16,51 @@ C=======================================
 
       DIMENSION U(12),DU(12)                                            
 
-C                                                                       
+!                                                                       
 
-C********************************************************************   
+!********************************************************************   
 
-C*****    DISPLACEMENT AND STRAIN AT DEPTH (PART-A)             *****   
+!*****    DISPLACEMENT AND STRAIN AT DEPTH (PART-A)             *****   
 
-C*****    DUE TO BURIED POINT SOURCE IN A SEMIINFINITE MEDIUM   *****   
+!*****    DUE TO BURIED POINT SOURCE IN A SEMIINFINITE MEDIUM   *****   
 
-C********************************************************************   
+!********************************************************************   
 
-C                                                                       
+!                                                                       
 
-C***** INPUT                                                            
+!***** INPUT                                                            
 
-C*****   X,Y,D : STATION COORDINATES IN FAULT SYSTEM                    
+!*****   X,Y,D : STATION COORDINATES IN FAULT SYSTEM                    
 
-C*****   POT1-POT4 : STRIKE-, DIP-, TENSILE- AND INFLATE-POTENCY        
+!*****   POT1-POT4 : STRIKE-, DIP-, TENSILE- AND INFLATE-POTENCY        
 
-C***** OUTPUT                                                           
+!***** OUTPUT                                                           
 
-C*****   U(12) : DISPLACEMENT AND THEIR DERIVATIVES                     
+!*****   U(12) : DISPLACEMENT AND THEIR DERIVATIVES                     
 
-C                                                                       
+!                                                                       
 
       COMMON /C0/ALP1,ALP2,ALP3,ALP4,ALP5,SD,CD,SDSD,CDCD,SDCD,S2D,C2D  
 
-      COMMON /C1/P,Q,S,T,XY,X2,Y2,D2,R,R2,R3,R5,QR,QRX,A3,A5,B3,C3,     
+      COMMON /C1/P,Q,S,T,XY,X2,Y2,D2,R,R2,R3,R5,QR,QRX,A3,A5,B3,C3,   &  
 
-     *           UY,VY,WY,UZ,VZ,WZ                                      
+                UY,VY,WY,UZ,VZ,WZ                                      
 
       DATA F0,F1,F3/0.D0,1.D0,3.D0/                                     
 
       DATA PI2/6.283185307179586D0/                                     
 
-C-----                                                                  
+!-----                                                                  
 
       DO 111  I=1,12                                                    
 
   111 U(I)=F0                                                           
 
-C======================================                                 
+!======================================                                 
 
-C=====  STRIKE-SLIP CONTRIBUTION  =====                                 
+!=====  STRIKE-SLIP CONTRIBUTION  =====                                 
 
-C======================================                                 
+!======================================                                 
 
       IF(POT1.NE.F0) THEN                                               
 
@@ -308,11 +94,11 @@ C======================================
 
       ENDIF                                                             
 
-C===================================                                    
+!===================================                                    
 
-C=====  DIP-SLIP CONTRIBUTION  =====                                    
+!=====  DIP-SLIP CONTRIBUTION  =====                                    
 
-C===================================                                    
+!===================================                                    
 
       IF(POT2.NE.F0) THEN                                               
 
@@ -346,11 +132,11 @@ C===================================
 
       ENDIF                                                             
 
-C========================================                               
+!========================================                               
 
-C=====  TENSILE-FAULT CONTRIBUTION  =====                               
+!=====  TENSILE-FAULT CONTRIBUTION  =====                               
 
-C========================================                               
+!========================================                               
 
       IF(POT3.NE.F0) THEN                                               
 
@@ -384,11 +170,11 @@ C========================================
 
       ENDIF                                                             
 
-C=========================================                              
+!=========================================                              
 
-C=====  INFLATE SOURCE CONTRIBUTION  =====                              
+!=====  INFLATE SOURCE CONTRIBUTION  =====                              
 
-C=========================================                              
+!=========================================                              
 
       IF(POT4.NE.F0) THEN                                               
 
@@ -424,7 +210,7 @@ C=========================================
 
       RETURN                                                            
 
-      END                                                               
+      END SUBROUTINE  UA0                                                              
 
       SUBROUTINE  UB0(X,Y,D,Z,POT1,POT2,POT3,POT4,U)                    
 
@@ -432,43 +218,43 @@ C=========================================
 
       DIMENSION U(12),DU(12)                                            
 
-C                                                                       
+!                                                                      
 
-C********************************************************************   
+!********************************************************************   
 
-C*****    DISPLACEMENT AND STRAIN AT DEPTH (PART-B)             *****   
+!*****    DISPLACEMENT AND STRAIN AT DEPTH (PART-B)             *****   
 
-C*****    DUE TO BURIED POINT SOURCE IN A SEMIINFINITE MEDIUM   *****   
+!*****    DUE TO BURIED POINT SOURCE IN A SEMIINFINITE MEDIUM   *****   
 
-C********************************************************************   
+!********************************************************************   
 
-C                                                                       
+!                                                                       
 
-C***** INPUT                                                            
+!***** INPUT                                                            
 
-C*****   X,Y,D,Z : STATION COORDINATES IN FAULT SYSTEM                  
+!*****   X,Y,D,Z : STATION COORDINATES IN FAULT SYSTEM                  
 
-C*****   POT1-POT4 : STRIKE-, DIP-, TENSILE- AND INFLATE-POTENCY        
+!*****   POT1-POT4 : STRIKE-, DIP-, TENSILE- AND INFLATE-POTENCY        
 
-C***** OUTPUT                                                           
+!***** OUTPUT                                                           
 
-C*****   U(12) : DISPLACEMENT AND THEIR DERIVATIVES                     
+!*****   U(12) : DISPLACEMENT AND THEIR DERIVATIVES                     
 
-C                                                                       
+!                                                                       
 
       COMMON /C0/ALP1,ALP2,ALP3,ALP4,ALP5,SD,CD,SDSD,CDCD,SDCD,S2D,C2D  
 
-      COMMON /C1/P,Q,S,T,XY,X2,Y2,D2,R,R2,R3,R5,QR,QRX,A3,A5,B3,C3,     
+      COMMON /C1/P,Q,S,T,XY,X2,Y2,D2,R,R2,R3,R5,QR,QRX,A3,A5,B3,C3, &    
 
-     *           UY,VY,WY,UZ,VZ,WZ                                      
+                 UY,VY,WY,UZ,VZ,WZ                                      
 
-      DATA F0,F1,F2,F3,F4,F5,F8,F9                                      
+      DATA F0,F1,F2,F3,F4,F5,F8,F9   &                                   
 
-     *        /0.D0,1.D0,2.D0,3.D0,4.D0,5.D0,8.D0,9.D0/                 
+             /0.D0,1.D0,2.D0,3.D0,4.D0,5.D0,8.D0,9.D0/                 
 
       DATA PI2/6.283185307179586D0/                                     
 
-C-----                                                                  
+!-----                                                                  
 
       C=D+Z                                                             
 
@@ -484,7 +270,7 @@ C-----
 
       D54=D12*(F5*R2+F4*R*D+D2)/R3*D12                                  
 
-C-----                                                                  
+!-----                                                                  
 
       FI1= Y*(D12-X2*D33)                                               
 
@@ -510,17 +296,17 @@ C-----
 
       FK3=-F3*X*D/R5-FK2                                                
 
-C-----                                                                  
+!-----                                                                  
 
       DO 111  I=1,12                                                    
 
   111 U(I)=F0                                                           
 
-C======================================                                 
+!======================================                                 
 
-C=====  STRIKE-SLIP CONTRIBUTION  =====                                 
+!=====  STRIKE-SLIP CONTRIBUTION  =====                                 
 
-C======================================                                 
+!======================================                                 
 
       IF(POT1.NE.F0) THEN                                               
 
@@ -554,11 +340,11 @@ C======================================
 
       ENDIF                                                             
 
-C===================================                                    
+!===================================                                    
 
-C=====  DIP-SLIP CONTRIBUTION  =====                                    
+!=====  DIP-SLIP CONTRIBUTION  =====                                    
 
-C===================================                                    
+!===================================                                    
 
       IF(POT2.NE.F0) THEN                                               
 
@@ -592,11 +378,11 @@ C===================================
 
       ENDIF                                                             
 
-C========================================                               
+!========================================                               
 
-C=====  TENSILE-FAULT CONTRIBUTION  =====                               
+!=====  TENSILE-FAULT CONTRIBUTION  =====                               
 
-C========================================                               
+!========================================                               
 
       IF(POT3.NE.F0) THEN                                               
 
@@ -630,11 +416,11 @@ C========================================
 
       ENDIF                                                             
 
-C=========================================                              
+!=========================================                              
 
-C=====  INFLATE SOURCE CONTRIBUTION  =====                              
+!=====  INFLATE SOURCE CONTRIBUTION  =====                              
 
-C=========================================                              
+!=========================================                              
 
       IF(POT4.NE.F0) THEN                                               
 
@@ -670,7 +456,7 @@ C=========================================
 
       RETURN                                                            
 
-      END                                                               
+      END  SUBROUTINE  UB0                                                             
 
       SUBROUTINE  UC0(X,Y,D,Z,POT1,POT2,POT3,POT4,U)                    
 
@@ -678,41 +464,41 @@ C=========================================
 
       DIMENSION U(12),DU(12)                                            
 
-C                                                                       
+!                                                                       
 
-C********************************************************************   
+!********************************************************************   
 
-C*****    DISPLACEMENT AND STRAIN AT DEPTH (PART-B)             *****   
+!*****    DISPLACEMENT AND STRAIN AT DEPTH (PART-B)             *****   
 
-C*****    DUE TO BURIED POINT SOURCE IN A SEMIINFINITE MEDIUM   *****   
+!*****    DUE TO BURIED POINT SOURCE IN A SEMIINFINITE MEDIUM   *****   
 
-C********************************************************************   
+!********************************************************************   
 
-C                                                                       
+!                                                                       
 
-C***** INPUT                                                            
+!***** INPUT                                                            
 
-C*****   X,Y,D,Z : STATION COORDINATES IN FAULT SYSTEM                  
+!*****   X,Y,D,Z : STATION COORDINATES IN FAULT SYSTEM                  
 
-C*****   POT1-POT4 : STRIKE-, DIP-, TENSILE- AND INFLATE-POTENCY        
+!*****   POT1-POT4 : STRIKE-, DIP-, TENSILE- AND INFLATE-POTENCY        
 
-C***** OUTPUT                                                           
+!***** OUTPUT                                                           
 
-C*****   U(12) : DISPLACEMENT AND THEIR DERIVATIVES                     
+!*****   U(12) : DISPLACEMENT AND THEIR DERIVATIVES                     
 
-C                                                                       
+!                                                                       
 
       COMMON /C0/ALP1,ALP2,ALP3,ALP4,ALP5,SD,CD,SDSD,CDCD,SDCD,S2D,C2D  
 
       COMMON /C1/P,Q,S,T,XY,X2,Y2,D2,R,R2,R3,R5,QR,QRX,A3,A5,B3,C3      
 
-      DATA F0,F1,F2,F3,F5,F7,F10,F15                                    
+      DATA F0,F1,F2,F3,F5,F7,F10,F15     &                               
 
-     *        /0.D0,1.D0,2.D0,3.D0,5.D0,7.D0,10.D0,15.D0/               
+              /0.D0,1.D0,2.D0,3.D0,5.D0,7.D0,10.D0,15.D0/               
 
       DATA PI2/6.283185307179586D0/                                     
 
-C-----                                                                  
+!-----                                                                  
 
       C=D+Z                                                             
 
@@ -738,17 +524,17 @@ C-----
 
       DR5=F5*D/R2                                                       
 
-C-----                                                                  
+!-----                                                                  
 
       DO 111  I=1,12                                                    
 
   111 U(I)=F0                                                           
 
-C======================================                                 
+!======================================                                 
 
-C=====  STRIKE-SLIP CONTRIBUTION  =====                                 
+!=====  STRIKE-SLIP CONTRIBUTION  =====                                 
 
-C======================================                                 
+!======================================                                 
 
       IF(POT1.NE.F0) THEN                                               
 
@@ -782,11 +568,11 @@ C======================================
 
       ENDIF                                                             
 
-C===================================                                    
+!===================================                                    
 
-C=====  DIP-SLIP CONTRIBUTION  =====                                    
+!=====  DIP-SLIP CONTRIBUTION  =====                                    
 
-C===================================                                    
+!===================================                                    
 
       IF(POT2.NE.F0) THEN                                               
 
@@ -804,17 +590,17 @@ C===================================
 
         DU( 7)= DU(5)                                                   
 
-        DU( 8)= F3/R5*(ALP4*(F2*Y*C2D+T*B5)                             
+        DU( 8)= F3/R5*(ALP4*(F2*Y*C2D+T*B5)    &                         
 
-     *                               +ALP5*C*(S2D-F10*Y*S/R2-P*QR5*B7)) 
+                                     +ALP5*C*(S2D-F10*Y*S/R2-P*QR5*B7)) 
 
         DU( 9)= F3/R5*(ALP4*Y*A5*SDCD-ALP5*C*((F3+A5)*C2D+Y*P*DR5*QR7)) 
 
         DU(10)= F3*X/R5*(-ALP4*(S2D-T*DR5) -ALP5*F5*C/R2*(T+D*P*QR7))   
 
-        DU(11)= F3/R5*(-ALP4*(D*B5*C2D+Y*C5*S2D)                        
+        DU(11)= F3/R5*(-ALP4*(D*B5*C2D+Y*C5*S2D)    &                    
 
-     *                                -ALP5*C*((F3+A5)*C2D+Y*P*DR5*QR7))
+                                      -ALP5*C*((F3+A5)*C2D+Y*P*DR5*QR7))
 
         DU(12)= F3/R5*(-ALP4*D*A5*SDCD-ALP5*C*(S2D-F10*D*T/R2+P*QR5*C7))
 
@@ -824,11 +610,11 @@ C===================================
 
       ENDIF                                                             
 
-C========================================                               
+!========================================                               
 
-C=====  TENSILE-FAULT CONTRIBUTION  =====                               
+!=====  TENSILE-FAULT CONTRIBUTION  =====                               
 
-C========================================                               
+!========================================                               
 
       IF(POT3.NE.F0) THEN                                               
 
@@ -840,35 +626,35 @@ C========================================
 
         DU( 4)=-ALP4*F3*S/R5*A5 +ALP5*(C*QR*QR5*A7-F3*Z/R5*A5)          
 
-        DU( 5)= F3*X/R5*(-ALP4*(S2D-F5*Y*S/R2)                          
+        DU( 5)= F3*X/R5*(-ALP4*(S2D-F5*Y*S/R2)    &                      
 
-     *                               -ALP5*F5/R2*(C*(T-Y+Y*Q*QR7)-Y*Z)) 
+                                     -ALP5*F5/R2*(C*(T-Y+Y*Q*QR7)-Y*Z)) 
 
-        DU( 6)= F3*X/R5*( ALP4*(F1-(F2+A5)*SDSD)                        
+        DU( 6)= F3*X/R5*( ALP4*(F1-(F2+A5)*SDSD)    &                    
 
-     *                               +ALP5*F5/R2*(C*(S-D+D*Q*QR7)-D*Z)) 
+                                     +ALP5*F5/R2*(C*(S-D+D*Q*QR7)-D*Z)) 
 
         DU( 7)= DU(5)                                                   
 
-        DU( 8)= F3/R5*(-ALP4*(F2*Y*S2D+S*B5)                            
+        DU( 8)= F3/R5*(-ALP4*(F2*Y*S2D+S*B5)    &                        
 
-     *                -ALP5*(C*(F2*SDSD+F10*Y*(T-Y)/R2-Q*QR5*B7)+Z*B5)) 
+                      -ALP5*(C*(F2*SDSD+F10*Y*(T-Y)/R2-Q*QR5*B7)+Z*B5)) 
 
-        DU( 9)= F3/R5*( ALP4*Y*(F1-A5*SDSD)                             
+        DU( 9)= F3/R5*( ALP4*Y*(F1-A5*SDSD)     &                        
 
-     *                +ALP5*(C*(F3+A5)*S2D-Y*DR5*(C*D7+Z)))             
+                      +ALP5*(C*(F3+A5)*S2D-Y*DR5*(C*D7+Z)))             
 
-        DU(10)= F3*X/R5*(-ALP4*(C2D+S*DR5)                              
+        DU(10)= F3*X/R5*(-ALP4*(C2D+S*DR5)       &                       
 
-     *               +ALP5*(F5*C/R2*(S-D+D*Q*QR7)-F1-Z*DR5))            
+                     +ALP5*(F5*C/R2*(S-D+D*Q*QR7)-F1-Z*DR5))            
 
-        DU(11)= F3/R5*( ALP4*(D*B5*S2D-Y*C5*C2D)                        
+        DU(11)= F3/R5*( ALP4*(D*B5*S2D-Y*C5*C2D)    &                    
 
-     *               +ALP5*(C*((F3+A5)*S2D-Y*DR5*D7)-Y*(F1+Z*DR5)))     
+                     +ALP5*(C*((F3+A5)*S2D-Y*DR5*D7)-Y*(F1+Z*DR5)))     
 
-        DU(12)= F3/R5*(-ALP4*D*(F1-A5*SDSD)                             
+        DU(12)= F3/R5*(-ALP4*D*(F1-A5*SDSD)      &                       
 
-     *               -ALP5*(C*(C2D+F10*D*(S-D)/R2-Q*QR5*C7)+Z*(F1+C5))) 
+                     -ALP5*(C*(C2D+F10*D*(S-D)/R2-Q*QR5*C7)+Z*(F1+C5))) 
 
         DO 444 I=1,12                                                   
 
@@ -876,11 +662,11 @@ C========================================
 
       ENDIF                                                             
 
-C=========================================                              
+!=========================================                              
 
-C=====  INFLATE SOURCE CONTRIBUTION  =====                              
+!=====  INFLATE SOURCE CONTRIBUTION  =====                              
 
-C=========================================                              
+!=========================================                              
 
       IF(POT4.NE.F0) THEN                                               
 
@@ -916,71 +702,71 @@ C=========================================
 
       RETURN                                                            
 
-      END                                                               
+      END  SUBROUTINE  UC0                                                             
 
-      SUBROUTINE  DC3D(ALPHA,X,Y,Z,DEPTH,DIP,                           
+      SUBROUTINE  DC3D(ALPHA,X,Y,Z,DEPTH,DIP,    &                       
 
-     *              AL1,AL2,AW1,AW2,DISL1,DISL2,DISL3,                  
+                    AL1,AL2,AW1,AW2,DISL1,DISL2,DISL3,    &              
 
-     *              UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)  
+                    UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)  
 
       IMPLICIT REAL*8 (A-H,O-Z)                                         
 
-      REAL*8   ALPHA,X,Y,Z,DEPTH,DIP,AL1,AL2,AW1,AW2,DISL1,DISL2,DISL3, 
+      REAL*8   ALPHA,X,Y,Z,DEPTH,DIP,AL1,AL2,AW1,AW2,DISL1,DISL2,DISL3, &
 
-     *         UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ             
+               UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ             
 
-C                                                                       
+!                                                                       
 
-C********************************************************************   
+!********************************************************************   
 
-C*****                                                          *****   
+!*****                                                          *****   
 
-C*****    DISPLACEMENT AND STRAIN AT DEPTH                      *****   
+!*****    DISPLACEMENT AND STRAIN AT DEPTH                      *****   
 
-C*****    DUE TO BURIED FINITE FAULT IN A SEMIINFINITE MEDIUM   *****   
+!*****    DUE TO BURIED FINITE FAULT IN A SEMIINFINITE MEDIUM   *****   
 
-C*****              CODED BY  Y.OKADA ... SEP.1991              *****   
+!*****              CODED BY  Y.OKADA ... SEP.1991              *****   
 
-C*****              REVISED ... NOV.1991, APR.1992, MAY.1993,   *****   
+!*****              REVISED ... NOV.1991, APR.1992, MAY.1993,   *****   
 
-C*****                          JUL.1993                        *****   
+!*****                          JUL.1993                        *****   
 
-C********************************************************************   
+!********************************************************************   
 
-C                                                                       
+!                                                                       
 
-C***** INPUT                                                            
+!***** INPUT                                                            
 
-C*****   ALPHA : MEDIUM CONSTANT  (LAMBDA+MYU)/(LAMBDA+2*MYU)           
+!*****   ALPHA : MEDIUM CONSTANT  (LAMBDA+MYU)/(LAMBDA+2*MYU)           
 
-C*****   X,Y,Z : COORDINATE OF OBSERVING POINT                          
+!*****   X,Y,Z : COORDINATE OF OBSERVING POINT                          
 
-C*****   DEPTH : DEPTH OF REFERENCE POINT                               
+!*****   DEPTH : DEPTH OF REFERENCE POINT                               
 
-C*****   DIP   : DIP-ANGLE (DEGREE)                                     
+!*****   DIP   : DIP-ANGLE (DEGREE)                                     
 
-C*****   AL1,AL2   : FAULT LENGTH RANGE                                 
+!*****   AL1,AL2   : FAULT LENGTH RANGE                                 
 
-C*****   AW1,AW2   : FAULT WIDTH RANGE                                  
+!*****   AW1,AW2   : FAULT WIDTH RANGE                                  
 
-C*****   DISL1-DISL3 : STRIKE-, DIP-, TENSILE-DISLOCATIONS              
+!*****   DISL1-DISL3 : STRIKE-, DIP-, TENSILE-DISLOCATIONS              
 
-C                                                                       
+!                                                                       
 
-C***** OUTPUT                                                           
+!***** OUTPUT                                                           
 
-C*****   UX, UY, UZ  : DISPLACEMENT ( UNIT=(UNIT OF DISL)               
+!*****   UX, UY, UZ  : DISPLACEMENT ( UNIT=(UNIT OF DISL)               
 
-C*****   UXX,UYX,UZX : X-DERIVATIVE ( UNIT=(UNIT OF DISL) /             
+!*****   UXX,UYX,UZX : X-DERIVATIVE ( UNIT=(UNIT OF DISL) /             
 
-C*****   UXY,UYY,UZY : Y-DERIVATIVE        (UNIT OF X,Y,Z,DEPTH,AL,AW) )
+!*****   UXY,UYY,UZY : Y-DERIVATIVE        (UNIT OF X,Y,Z,DEPTH,AL,AW) )
 
-C*****   UXZ,UYZ,UZZ : Z-DERIVATIVE                                     
+!*****   UXZ,UYZ,UZZ : Z-DERIVATIVE                                     
 
-C*****   IRET        : RETURN CODE  ( =0....NORMAL,   =1....SINGULAR )  
+!*****   IRET        : RETURN CODE  ( =0....NORMAL,   =1....SINGULAR )  
 
-C                                                                       
+!                                                                       
 
       COMMON /C0/DUMMY(5),SD,CD                                         
 
@@ -990,7 +776,7 @@ C
 
       DATA  F0,EPS/ 0.D0, 1.D-6 /                                       
 
-C-----                                                                  
+!-----                                                                  
 
       IF(Z.GT.0.) WRITE(6,'('' ** POSITIVE Z WAS GIVEN IN SUB-DC3D'')') 
 
@@ -1012,7 +798,7 @@ C-----
 
       CALL DCCON0(AALPHA,DDIP)                                          
 
-C-----                                                                  
+!-----                                                                  
 
       ZZ=Z                                                              
 
@@ -1030,11 +816,11 @@ C-----
 
       IF(DABS(XI(2)).LT.EPS) XI(2)=F0                                   
 
-C======================================                                 
+!======================================                                 
 
-C=====  REAL-SOURCE CONTRIBUTION  =====                                 
+!=====  REAL-SOURCE CONTRIBUTION  =====                                 
 
-C======================================                                 
+!======================================                                 
 
       D=DEPTH+Z                                                         
 
@@ -1052,23 +838,23 @@ C======================================
 
       IF(DABS(ET(2)).LT.EPS) ET(2)=F0                                   
 
-C--------------------------------                                       
+!--------------------------------                                       
 
-C----- REJECT SINGULAR CASE -----                                       
+!----- REJECT SINGULAR CASE -----                                       
 
-C--------------------------------                                       
+!--------------------------------                                       
 
-C----- ON FAULT EDGE                                                    
+!----- ON FAULT EDGE                                                    
 
-      IF(Q.EQ.F0                                                        
+      IF(Q.EQ.F0      &                                                  
 
-     *   .AND.(    (XI(1)*XI(2).LE.F0 .AND. ET(1)*ET(2).EQ.F0)          
+         .AND.(    (XI(1)*XI(2).LE.F0 .AND. ET(1)*ET(2).EQ.F0)    &      
 
-     *         .OR.(ET(1)*ET(2).LE.F0 .AND. XI(1)*XI(2).EQ.F0) ))       
+               .OR.(ET(1)*ET(2).LE.F0 .AND. XI(1)*XI(2).EQ.F0) ))   &    
 
-     *   GO TO 99                                                       
+         GO TO 99                                                       
 
-C----- ON NEGATIVE EXTENSION OF FAULT EDGE                              
+!----- ON NEGATIVE EXTENSION OF FAULT EDGE                              
 
       KXI(1)=0                                                          
 
@@ -1092,7 +878,7 @@ C----- ON NEGATIVE EXTENSION OF FAULT EDGE
 
       IF(ET(1).LT.F0 .AND. R22+ET(2).LT.EPS) KET(2)=1                   
 
-C=====                                                                  
+!=====                                                                  
 
       DO 223 K=1,2                                                      
 
@@ -1102,7 +888,7 @@ C=====
 
         CALL UA(XI(J),ET(K),Q,DD1,DD2,DD3,DUA)                          
 
-C-----                                                                  
+!-----                                                                  
 
         DO 220 I=1,10,3                                                 
 
@@ -1130,17 +916,17 @@ C-----
 
   221   CONTINUE                                                        
 
-C-----                                                                  
+!-----                                                                  
 
   222 CONTINUE                                                          
 
   223 CONTINUE                                                          
 
-C=======================================                                
+!=======================================                                
 
-C=====  IMAGE-SOURCE CONTRIBUTION  =====                                
+!=====  IMAGE-SOURCE CONTRIBUTION  =====                                
 
-C=======================================                                
+!=======================================                                
 
       D=DEPTH-Z                                                         
 
@@ -1158,23 +944,23 @@ C=======================================
 
       IF(DABS(ET(2)).LT.EPS) ET(2)=F0                                   
 
-C--------------------------------                                       
+!--------------------------------                                       
 
-C----- REJECT SINGULAR CASE -----                                       
+!----- REJECT SINGULAR CASE -----                                       
 
-C--------------------------------                                       
+!--------------------------------                                       
 
-C----- ON FAULT EDGE                                                    
+!----- ON FAULT EDGE                                                    
 
-      IF(Q.EQ.F0                                                        
+      IF(Q.EQ.F0        &                                                
 
-     *   .AND.(    (XI(1)*XI(2).LE.F0 .AND. ET(1)*ET(2).EQ.F0)          
+         .AND.(    (XI(1)*XI(2).LE.F0 .AND. ET(1)*ET(2).EQ.F0)     &      
 
-     *         .OR.(ET(1)*ET(2).LE.F0 .AND. XI(1)*XI(2).EQ.F0) ))       
+               .OR.(ET(1)*ET(2).LE.F0 .AND. XI(1)*XI(2).EQ.F0) ))     &  
 
-     *   GO TO 99                                                       
+         GO TO 99                                                       
 
-C----- ON NEGATIVE EXTENSION OF FAULT EDGE                              
+!----- ON NEGATIVE EXTENSION OF FAULT EDGE                              
 
       KXI(1)=0                                                          
 
@@ -1198,7 +984,7 @@ C----- ON NEGATIVE EXTENSION OF FAULT EDGE
 
       IF(ET(1).LT.F0 .AND. R22+ET(2).LT.EPS) KET(2)=1                   
 
-C=====                                                                  
+!=====                                                                  
 
       DO 334 K=1,2                                                      
 
@@ -1212,19 +998,19 @@ C=====
 
         CALL UC(XI(J),ET(K),Q,ZZ,DD1,DD2,DD3,DUC)                       
 
-C-----                                                                  
+!-----                                                                  
 
         DO 330 I=1,10,3                                                 
 
           DU(I)=DUA(I)+DUB(I)+Z*DUC(I)                                  
 
-          DU(I+1)=(DUA(I+1)+DUB(I+1)+Z*DUC(I+1))*CD                     
+          DU(I+1)=(DUA(I+1)+DUB(I+1)+Z*DUC(I+1))*CD        &             
 
-     *           -(DUA(I+2)+DUB(I+2)+Z*DUC(I+2))*SD                     
+                 -(DUA(I+2)+DUB(I+2)+Z*DUC(I+2))*SD                     
 
-          DU(I+2)=(DUA(I+1)+DUB(I+1)-Z*DUC(I+1))*SD                     
+          DU(I+2)=(DUA(I+1)+DUB(I+1)-Z*DUC(I+1))*SD        &             
 
-     *           +(DUA(I+2)+DUB(I+2)-Z*DUC(I+2))*CD                     
+                 +(DUA(I+2)+DUB(I+2)-Z*DUC(I+2))*CD                     
 
           IF(I.LT.10) GO TO 330                                         
 
@@ -1244,13 +1030,13 @@ C-----
 
   331   CONTINUE                                                        
 
-C-----                                                                  
+!-----                                                                  
 
   333 CONTINUE                                                          
 
   334 CONTINUE                                                          
 
-C=====                                                                  
+!=====                                                                  
 
       UX=U(1)                                                           
 
@@ -1280,11 +1066,11 @@ C=====
 
       RETURN                                                            
 
-C===========================================                            
+!===========================================                            
 
-C=====  IN CASE OF SINGULAR (ON EDGE)  =====                            
+!=====  IN CASE OF SINGULAR (ON EDGE)  =====                            
 
-C===========================================                            
+!===========================================                            
 
    99 UX=F0                                                             
 
@@ -1314,7 +1100,7 @@ C===========================================
 
       RETURN                                                            
 
-      END                                                               
+      END  SUBROUTINE  DC3D                                                             
 
       SUBROUTINE  UA(XI,ET,Q,DISL1,DISL2,DISL3,U)                       
 
@@ -1322,39 +1108,39 @@ C===========================================
 
       DIMENSION U(12),DU(12)                                            
 
-C                                                                       
+!                                                                       
 
-C********************************************************************   
+!********************************************************************   
 
-C*****    DISPLACEMENT AND STRAIN AT DEPTH (PART-A)             *****   
+!*****    DISPLACEMENT AND STRAIN AT DEPTH (PART-A)             *****   
 
-C*****    DUE TO BURIED FINITE FAULT IN A SEMIINFINITE MEDIUM   *****   
+!*****    DUE TO BURIED FINITE FAULT IN A SEMIINFINITE MEDIUM   *****   
 
-C********************************************************************   
+!********************************************************************   
 
-C                                                                       
+!                                                                       
 
-C***** INPUT                                                            
+!***** INPUT                                                            
 
-C*****   XI,ET,Q : STATION COORDINATES IN FAULT SYSTEM                  
+!*****   XI,ET,Q : STATION COORDINATES IN FAULT SYSTEM                  
 
-C*****   DISL1-DISL3 : STRIKE-, DIP-, TENSILE-DISLOCATIONS              
+!*****   DISL1-DISL3 : STRIKE-, DIP-, TENSILE-DISLOCATIONS              
 
-C***** OUTPUT                                                           
+!***** OUTPUT                                                           
 
-C*****   U(12) : DISPLACEMENT AND THEIR DERIVATIVES                     
+!*****   U(12) : DISPLACEMENT AND THEIR DERIVATIVES                     
 
-C                                                                       
+!                                                                       
 
       COMMON /C0/ALP1,ALP2,ALP3,ALP4,ALP5,SD,CD,SDSD,CDCD,SDCD,S2D,C2D  
 
-      COMMON /C2/XI2,ET2,Q2,R,R2,R3,R5,Y,D,TT,ALX,ALE,X11,Y11,X32,Y32,  
+      COMMON /C2/XI2,ET2,Q2,R,R2,R3,R5,Y,D,TT,ALX,ALE,X11,Y11,X32,Y32,  &
 
-     *           EY,EZ,FY,FZ,GY,GZ,HY,HZ                                
+                 EY,EZ,FY,FZ,GY,GZ,HY,HZ                                
 
       DATA F0,F2,PI2/0.D0,2.D0,6.283185307179586D0/                     
 
-C-----                                                                  
+!-----                                                                  
 
       DO 111  I=1,12                                                    
 
@@ -1366,11 +1152,11 @@ C-----
 
       QY=Q *Y11                                                         
 
-C======================================                                 
+!======================================                                 
 
-C=====  STRIKE-SLIP CONTRIBUTION  =====                                 
+!=====  STRIKE-SLIP CONTRIBUTION  =====                                 
 
-C======================================                                 
+!======================================                                 
 
       IF(DISL1.NE.F0) THEN                                              
 
@@ -1404,11 +1190,11 @@ C======================================
 
       ENDIF                                                             
 
-C======================================                                 
+!======================================                                 
 
-C=====    DIP-SLIP CONTRIBUTION   =====                                 
+!=====    DIP-SLIP CONTRIBUTION   =====                                 
 
-C======================================                                 
+!======================================                                 
 
       IF(DISL2.NE.F0) THEN                                              
 
@@ -1442,11 +1228,11 @@ C======================================
 
       ENDIF                                                             
 
-C========================================                               
+!========================================                               
 
-C=====  TENSILE-FAULT CONTRIBUTION  =====                               
+!=====  TENSILE-FAULT CONTRIBUTION  =====                               
 
-C========================================                               
+!========================================                               
 
       IF(DISL3.NE.F0) THEN                                              
 
@@ -1482,7 +1268,7 @@ C========================================
 
       RETURN                                                            
 
-      END                                                               
+      END   SUBROUTINE  UA                                                            
 
       SUBROUTINE  UB(XI,ET,Q,DISL1,DISL2,DISL3,U)                       
 
@@ -1490,39 +1276,39 @@ C========================================
 
       DIMENSION U(12),DU(12)                                            
 
-C                                                                       
+!                                                                       
 
-C********************************************************************   
+!********************************************************************   
 
-C*****    DISPLACEMENT AND STRAIN AT DEPTH (PART-B)             *****   
+!*****    DISPLACEMENT AND STRAIN AT DEPTH (PART-B)             *****   
 
-C*****    DUE TO BURIED FINITE FAULT IN A SEMIINFINITE MEDIUM   *****   
+!*****    DUE TO BURIED FINITE FAULT IN A SEMIINFINITE MEDIUM   *****   
 
-C********************************************************************   
+!********************************************************************   
 
-C                                                                       
+!                                                                       
 
-C***** INPUT                                                            
+!***** INPUT                                                            
 
-C*****   XI,ET,Q : STATION COORDINATES IN FAULT SYSTEM                  
+!*****   XI,ET,Q : STATION COORDINATES IN FAULT SYSTEM                  
 
-C*****   DISL1-DISL3 : STRIKE-, DIP-, TENSILE-DISLOCATIONS              
+!*****   DISL1-DISL3 : STRIKE-, DIP-, TENSILE-DISLOCATIONS              
 
-C***** OUTPUT                                                           
+!***** OUTPUT                                                           
 
-C*****   U(12) : DISPLACEMENT AND THEIR DERIVATIVES                     
+!*****   U(12) : DISPLACEMENT AND THEIR DERIVATIVES                     
 
-C                                                                       
+!                                                                       
 
       COMMON /C0/ALP1,ALP2,ALP3,ALP4,ALP5,SD,CD,SDSD,CDCD,SDCD,S2D,C2D  
 
-      COMMON /C2/XI2,ET2,Q2,R,R2,R3,R5,Y,D,TT,ALX,ALE,X11,Y11,X32,Y32,  
+      COMMON /C2/XI2,ET2,Q2,R,R2,R3,R5,Y,D,TT,ALX,ALE,X11,Y11,X32,Y32,  &
 
-     *           EY,EZ,FY,FZ,GY,GZ,HY,HZ                                
+                 EY,EZ,FY,FZ,GY,GZ,HY,HZ                                
 
       DATA  F0,F1,F2,PI2/0.D0,1.D0,2.D0,6.283185307179586D0/            
 
-C-----                                                                  
+!-----                                                                  
 
       RD=R+D                                                            
 
@@ -1542,9 +1328,9 @@ C-----
 
           X=DSQRT(XI2+Q2)                                               
 
-          AI4=F1/CDCD*( XI/RD*SDCD                                      
+          AI4=F1/CDCD*( XI/RD*SDCD          &                            
 
-     *       +F2*DATAN((ET*(X+Q*CD)+X*(R+X)*SD)/(XI*(R+X)*CD)) )        
+             +F2*DATAN((ET*(X+Q*CD)+X*(R+X)*SD)/(XI*(R+X)*CD)) )        
 
         ENDIF                                                           
 
@@ -1576,7 +1362,7 @@ C-----
 
       ENDIF                                                             
 
-C-----                                                                  
+!-----                                                                  
 
       XY=XI*Y11                                                         
 
@@ -1592,7 +1378,7 @@ C-----
 
       AJ4=-XY-AJ2*CD+AJ3*SD                                             
 
-C=====                                                                  
+!=====                                                                  
 
       DO 111  I=1,12                                                    
 
@@ -1602,11 +1388,11 @@ C=====
 
       QY=Q*Y11                                                          
 
-C======================================                                 
+!======================================                                 
 
-C=====  STRIKE-SLIP CONTRIBUTION  =====                                 
+!=====  STRIKE-SLIP CONTRIBUTION  =====                                 
 
-C======================================                                 
+!======================================                                 
 
       IF(DISL1.NE.F0) THEN                                              
 
@@ -1640,11 +1426,11 @@ C======================================
 
       ENDIF                                                             
 
-C======================================                                 
+!======================================                                 
 
-C=====    DIP-SLIP CONTRIBUTION   =====                                 
+!=====    DIP-SLIP CONTRIBUTION   =====                                 
 
-C======================================                                 
+!======================================                                 
 
       IF(DISL2.NE.F0) THEN                                              
 
@@ -1678,11 +1464,11 @@ C======================================
 
       ENDIF                                                             
 
-C========================================                               
+!========================================                               
 
-C=====  TENSILE-FAULT CONTRIBUTION  =====                               
+!=====  TENSILE-FAULT CONTRIBUTION  =====                               
 
-C========================================                               
+!========================================                               
 
       IF(DISL3.NE.F0) THEN                                              
 
@@ -1718,7 +1504,7 @@ C========================================
 
       RETURN                                                            
 
-      END                                                               
+      END  SUBROUTINE  UB                                                             
 
       SUBROUTINE  UC(XI,ET,Q,Z,DISL1,DISL2,DISL3,U)                     
 
@@ -1726,39 +1512,39 @@ C========================================
 
       DIMENSION U(12),DU(12)                                            
 
-C                                                                       
+!                                                                       
 
-C********************************************************************   
+!********************************************************************   
 
-C*****    DISPLACEMENT AND STRAIN AT DEPTH (PART-C)             *****   
+!*****    DISPLACEMENT AND STRAIN AT DEPTH (PART-C)             *****   
 
-C*****    DUE TO BURIED FINITE FAULT IN A SEMIINFINITE MEDIUM   *****   
+!*****    DUE TO BURIED FINITE FAULT IN A SEMIINFINITE MEDIUM   *****   
 
-C********************************************************************   
+!********************************************************************   
 
-C                                                                       
+!                                                                       
 
-C***** INPUT                                                            
+!***** INPUT                                                            
 
-C*****   XI,ET,Q,Z   : STATION COORDINATES IN FAULT SYSTEM              
+!*****   XI,ET,Q,Z   : STATION COORDINATES IN FAULT SYSTEM              
 
-C*****   DISL1-DISL3 : STRIKE-, DIP-, TENSILE-DISLOCATIONS              
+!*****   DISL1-DISL3 : STRIKE-, DIP-, TENSILE-DISLOCATIONS              
 
-C***** OUTPUT                                                           
+!***** OUTPUT                                                           
 
-C*****   U(12) : DISPLACEMENT AND THEIR DERIVATIVES                     
+!*****   U(12) : DISPLACEMENT AND THEIR DERIVATIVES                     
 
-C                                                                       
+!                                                                       
 
       COMMON /C0/ALP1,ALP2,ALP3,ALP4,ALP5,SD,CD,SDSD,CDCD,SDCD,S2D,C2D  
 
-      COMMON /C2/XI2,ET2,Q2,R,R2,R3,R5,Y,D,TT,ALX,ALE,X11,Y11,X32,Y32,  
+      COMMON /C2/XI2,ET2,Q2,R,R2,R3,R5,Y,D,TT,ALX,ALE,X11,Y11,X32,Y32, & 
 
-     *           EY,EZ,FY,FZ,GY,GZ,HY,HZ                                
+                 EY,EZ,FY,FZ,GY,GZ,HY,HZ                                
 
       DATA F0,F1,F2,F3,PI2/0.D0,1.D0,2.D0,3.D0,6.283185307179586D0/     
 
-C-----                                                                  
+!-----                                                                  
 
       C=D+Z                                                             
 
@@ -1800,17 +1586,17 @@ C-----
 
       YY0=Y/R3-Y0*CD                                                    
 
-C=====                                                                  
+!=====                                                                  
 
       DO 111  I=1,12                                                    
 
   111 U(I)=F0                                                           
 
-C======================================                                 
+!======================================                                 
 
-C=====  STRIKE-SLIP CONTRIBUTION  =====                                 
+!=====  STRIKE-SLIP CONTRIBUTION  =====                                 
 
-C======================================                                 
+!======================================                                 
 
       IF(DISL1.NE.F0) THEN                                              
 
@@ -1828,9 +1614,9 @@ C======================================
 
         DU( 7)=-ALP4*XI*PPY*CD    -ALP5*XI*QQY                          
 
-        DU( 8)= ALP4*F2*(D/R3-Y0*SD)*SD-Y/R3*CD                         
+        DU( 8)= ALP4*F2*(D/R3-Y0*SD)*SD-Y/R3*CD      &                   
 
-     *                            -ALP5*(CDR*SD-ET/R3-C*Y*QR)           
+                                  -ALP5*(CDR*SD-ET/R3-C*Y*QR)           
 
         DU( 9)=-ALP4*Q/R3+YY0*SD  +ALP5*(CDR*CD+C*D*QR-(Y0*CD+Q*Z0)*SD) 
 
@@ -1846,11 +1632,11 @@ C======================================
 
       ENDIF                                                             
 
-C======================================                                 
+!======================================                                 
 
-C=====    DIP-SLIP CONTRIBUTION   =====                                 
+!=====    DIP-SLIP CONTRIBUTION   =====                                 
 
-C======================================                                 
+!======================================                                 
 
       IF(DISL2.NE.F0) THEN                                              
 
@@ -1884,11 +1670,11 @@ C======================================
 
       ENDIF                                                             
 
-C========================================                               
+!========================================                               
 
-C=====  TENSILE-FAULT CONTRIBUTION  =====                               
+!=====  TENSILE-FAULT CONTRIBUTION  =====                               
 
-C========================================                               
+!========================================                               
 
       IF(DISL3.NE.F0) THEN                                              
 
@@ -1906,23 +1692,23 @@ C========================================
 
         DU( 7)= ALP4*(Q/R3+Y0*SDCD)   +ALP5*(Z/R3*CD+C*D*QR-Q*Z0*SD)    
 
-        DU( 8)=-ALP4*F2*XI*PPY*SD-Y*D*X32                               
+        DU( 8)=-ALP4*F2*XI*PPY*SD-Y*D*X32      &                         
 
-     *                    +ALP5*C*((Y+F2*Q*SD)*X32-Y*Q2*X53)            
+                          +ALP5*C*((Y+F2*Q*SD)*X32-Y*Q2*X53)            
 
-        DU( 9)=-ALP4*(XI*PPY*CD-X11+Y*Y*X32)                            
+        DU( 9)=-ALP4*(XI*PPY*CD-X11+Y*Y*X32)     &                       
 
-     *                    +ALP5*(C*((D+F2*Q*CD)*X32-Y*ET*Q*X53)+XI*QQY) 
+                          +ALP5*(C*((D+F2*Q*CD)*X32-Y*ET*Q*X53)+XI*QQY) 
 
         DU(10)=  -ET/R3+Y0*CDCD -ALP5*(Z/R3*SD-C*Y*QR-Y0*SDSD+Q*Z0*CD)  
 
-        DU(11)= ALP4*F2*XI*PPZ*SD-X11+D*D*X32                           
+        DU(11)= ALP4*F2*XI*PPZ*SD-X11+D*D*X32    &                       
 
-     *                    -ALP5*C*((D-F2*Q*CD)*X32-D*Q2*X53)            
+                          -ALP5*C*((D-F2*Q*CD)*X32-D*Q2*X53)            
 
-        DU(12)= ALP4*(XI*PPZ*CD+Y*D*X32)                                
+        DU(12)= ALP4*(XI*PPZ*CD+Y*D*X32)     &                           
 
-     *                    +ALP5*(C*((Y-F2*Q*SD)*X32+D*ET*Q*X53)+XI*QQZ) 
+                          +ALP5*(C*((Y-F2*Q*SD)*X32+D*ET*Q*X53)+XI*QQZ) 
 
         DO 444 I=1,12                                                   
 
@@ -1932,31 +1718,31 @@ C========================================
 
       RETURN                                                            
 
-      END                                                               
+      END   SUBROUTINE  UC                                                            
 
       SUBROUTINE  DCCON0(ALPHA,DIP)                                     
 
       IMPLICIT REAL*8 (A-H,O-Z)                                         
 
-C                                                                       
+!                                                                       
 
-C*******************************************************************    
+!*******************************************************************    
 
-C*****   CALCULATE MEDIUM CONSTANTS AND FAULT-DIP CONSTANTS    *****    
+!*****   CALCULATE MEDIUM CONSTANTS AND FAULT-DIP CONSTANTS    *****    
 
-C*******************************************************************    
+!*******************************************************************    
 
-C                                                                       
+!                                                                       
 
-C***** INPUT                                                            
+!***** INPUT                                                            
 
-C*****   ALPHA : MEDIUM CONSTANT  (LAMBDA+MYU)/(LAMBDA+2*MYU)           
+!*****   ALPHA : MEDIUM CONSTANT  (LAMBDA+MYU)/(LAMBDA+2*MYU)           
 
-C*****   DIP   : DIP-ANGLE (DEGREE)                                     
+!*****   DIP   : DIP-ANGLE (DEGREE)                                     
 
-C### CAUTION ### IF COS(DIP) IS SUFFICIENTLY SMALL, IT IS SET TO ZERO   
+!### CAUTION ### IF COS(DIP) IS SUFFICIENTLY SMALL, IT IS SET TO ZERO   
 
-C                                                                       
+!                                                                       
 
       COMMON /C0/ALP1,ALP2,ALP3,ALP4,ALP5,SD,CD,SDSD,CDCD,SDCD,S2D,C2D  
 
@@ -1964,7 +1750,7 @@ C
 
       DATA EPS/1.D-6/                                                   
 
-C-----                                                                  
+!-----                                                                  
 
       ALP1=(F1-ALPHA)/F2                                                
 
@@ -1976,7 +1762,7 @@ C-----
 
       ALP5= ALPHA                                                       
 
-C-----                                                                  
+!-----                                                                  
 
       P18=PI2/360.D0                                                    
 
@@ -2001,23 +1787,23 @@ C-----
       S2D=F2*SDCD                                                       
       C2D=CDCD-SDSD                                                     
       RETURN                                                            
-      END                                                               
+      END    SUBROUTINE  DCCON0                                                            
       SUBROUTINE  DCCON1(X,Y,D)                                         
       IMPLICIT REAL*8 (A-H,O-Z)                                         
-C                                                                       
-C********************************************************************** 
-C*****   CALCULATE STATION GEOMETRY CONSTANTS FOR POINT SOURCE    ***** 1
-C********************************************************************** 
-C                                                                       
-C***** INPUT                                                            
-C*****   X,Y,D : STATION COORDINATES IN FAULT SYSTEM                    
-C### CAUTION ### IF X,Y,D ARE SUFFICIENTLY SMALL, THEY ARE SET TO ZERO  
-C                                                                       
+!                                                                       
+!********************************************************************** 
+!*****   CALCULATE STATION GEOMETRY CONSTANTS FOR POINT SOURCE    ***** 
+!********************************************************************** 
+!                                                                       
+!***** INPUT                                                            
+!*****   X,Y,D : STATION COORDINATES IN FAULT SYSTEM                    
+!### CAUTION ### IF X,Y,D ARE SUFFICIENTLY SMALL, THEY ARE SET TO ZERO  
+!                                                                       
       COMMON /C0/DUMMY(5),SD,CD                                         
-      COMMON /C1/P,Q,S,T,XY,X2,Y2,D2,R,R2,R3,R5,QR,QRX,A3,A5,B3,C3,     
-     *           UY,VY,WY,UZ,VZ,WZ                                      
+      COMMON /C1/P,Q,S,T,XY,X2,Y2,D2,R,R2,R3,R5,QR,QRX,A3,A5,B3,C3,  &    
+                 UY,VY,WY,UZ,VZ,WZ                                      
       DATA  F0,F1,F3,F5,EPS/0.D0,1.D0,3.D0,5.D0,1.D-6/                  
-C-----                                                                  
+!-----                                                                  
       IF(DABS(X).LT.EPS) X=F0                                           
       IF(DABS(Y).LT.EPS) Y=F0                                          
       IF(DABS(D).LT.EPS) D=F0                                           
@@ -2035,15 +1821,15 @@ C-----
       R3=R *R2                                                          
       R5=R3*R2                                                          
       R7=R5*R2                                                          
-C-----                                                                  
+!-----                                                                  
       A3=F1-F3*X2/R2                                                    
       A5=F1-F5*X2/R2                                                    
       B3=F1-F3*Y2/R2                                                    
       C3=F1-F3*D2/R2                                                    
-C-----                                                                  
+!-----                                                                  
       QR=F3*Q/R5                                                        
       QRX=F5*QR*X/R2                                                    
-C-----                                                                  
+!-----                                                                  
       UY=SD-F5*Y*Q/R2                                                   
       UZ=CD+F5*D*Q/R2                                                   
       VY=S -F5*Y*P*Q/R2                                                 
@@ -2051,25 +1837,25 @@ C-----
       WY=UY+SD                                                          
       WZ=UZ+CD                                                          
       RETURN                                                            
-      END                                                               
+      END  SUBROUTINE  DCCON1                                                             
       SUBROUTINE  DCCON2(XI,ET,Q,SD,CD,KXI,KET)                         
       IMPLICIT REAL*8 (A-H,O-Z)                                         
-C                                                                       
-C********************************************************************** 
-C*****   CALCULATE STATION GEOMETRY CONSTANTS FOR FINITE SOURCE   ***** 
-C********************************************************************** 
-C                                                                       
-C***** INPUT                                                            
-C*****   XI,ET,Q : STATION COORDINATES IN FAULT SYSTEM                  
-C*****   SD,CD   : SIN, COS OF DIP-ANGLE                                
-C*****   KXI,KET : KXI=1, KET=1 MEANS R+XI<EPS, R+ET<EPS, RESPECTIVELY  
-C                                                                       
-C### CAUTION ### IF XI,ET,Q ARE SUFFICIENTLY SMALL, THEY ARE SET TO ZER01
-C                                                                       
-      COMMON /C2/XI2,ET2,Q2,R,R2,R3,R5,Y,D,TT,ALX,ALE,X11,Y11,X32,Y32,  
-     *           EY,EZ,FY,FZ,GY,GZ,HY,HZ                                
+!                                                                       
+!********************************************************************** 
+!*****   CALCULATE STATION GEOMETRY CONSTANTS FOR FINITE SOURCE   ***** 
+!********************************************************************** 
+!                                                                       
+!***** INPUT                                                            
+!*****   XI,ET,Q : STATION COORDINATES IN FAULT SYSTEM                  
+!*****   SD,CD   : SIN, COS OF DIP-ANGLE                                
+!*****   KXI,KET : KXI=1, KET=1 MEANS R+XI<EPS, R+ET<EPS, RESPECTIVELY  
+!                                                                       
+!### CAUTION ### IF XI,ET,Q ARE SUFFICIENTLY SMALL, THEY ARE SET TO ZER01
+!                                                                       
+      COMMON /C2/XI2,ET2,Q2,R,R2,R3,R5,Y,D,TT,ALX,ALE,X11,Y11,X32,Y32,  &
+                 EY,EZ,FY,FZ,GY,GZ,HY,HZ                                
       DATA  F0,F1,F2,EPS/0.D0,1.D0,2.D0,1.D-6/                          
-C-----                                                                  
+!-----                                                                  
       IF(DABS(XI).LT.EPS) XI=F0                                         
       IF(DABS(ET).LT.EPS) ET=F0                                         
       IF(DABS( Q).LT.EPS)  Q=F0                                         
@@ -2083,13 +1869,13 @@ C-----
       R5=R3*R2                                                          
       Y =ET*CD+Q*SD                                                     
       D =ET*SD-Q*CD                                                     
-C-----                                                                  
+!-----                                                                  
       IF(Q.EQ.F0) THEN                                                  
         TT=F0                                                           
       ELSE                                                              
         TT=DATAN(XI*ET/(Q*R))                                           
       ENDIF                                                             
-C-----                                                                  
+!-----                                                                  
       IF(KXI.EQ.1) THEN                                                 
         ALX=-DLOG(R-XI)                                                 
         X11=F0                                                          
@@ -2104,7 +1890,7 @@ C-----
 
       ENDIF                                                             
 
-C-----                                                                  
+!-----                                                                  
 
       IF(KET.EQ.1) THEN                                                 
 
@@ -2126,7 +1912,7 @@ C-----
 
       ENDIF                                                             
 
-C-----                                                                  
+!-----                                                                  
 
       EY=SD/R-Y*Q/R3                                                    
 
@@ -2146,5 +1932,6 @@ C-----
 
       RETURN                                                            
 
-      END                                                               
+      END  SUBROUTINE  DCCON2                                                             
 
+end module module dc3d_all
