@@ -96,50 +96,49 @@ subroutine init_kernel(pb)
 
   write(6,*) 'Intializing kernel: ...'
 
-  if (pb%mesh%kind == 0) then      ! 1D
+  if (pb%kernel%kind == 1) then      ! 1D
+    write(6,*) 'Single degree-of-freedom spring-block system'
+    pb%kernel%k1 = pb%smu/pb%mesh%Lfault
 
+  elseif (pb%kernel%kind == 2) then      ! 2D
     pb%kernel%k2f%nnfft = (pb%kernel%k2f%finite+1)*pb%mesh%nn 
     allocate (pb%kernel%k2f%kernel(pb%kernel%k2f%nnfft))
 
-    if (pb%mesh%nn == 1) then      ! single degree-of-freedom spring-block system
-      write(6,*) 'Single degree-of-freedom spring-block system'
-      pb%kernel%k2f%kernel(1) = pb%smu/pb%mesh%Lfault
+    write(6,*) 'OouraFFT Selected'
 
-    elseif (pb%mesh%nn > 1 .and. pb%kernel%kind == 0) then
-      write(6,*) 'OouraFFT Selected'
-
-      if (pb%kernel%k2f%finite == 0) then
-        tau_co = PI*pb%smu/pb%mesh%Lfault *2.d0/pb%mesh%nn
-        wl2 = (pb%mesh%Lfault/pb%mesh%W)**2
-        do i=0,pb%mesh%nn/2-1
-          pb%kernel%k2f%kernel(2*i+1) = tau_co*sqrt(i*i+wl2)
-          pb%kernel%k2f%kernel(2*i+2) = pb%kernel%k2f%kernel(2*i+1)
-        enddo
-        pb%kernel%k2f%kernel(2) = tau_co*sqrt(pb%mesh%nn**2/4.d0+wl2) ! Nyquist
+    if (pb%kernel%k2f%finite == 0) then
+      tau_co = PI*pb%smu/pb%mesh%Lfault *2.d0/pb%mesh%nn
+      wl2 = (pb%mesh%Lfault/pb%mesh%W)**2
+      do i=0,pb%mesh%nn/2-1
+        pb%kernel%k2f%kernel(2*i+1) = tau_co*sqrt(i*i+wl2)
+        pb%kernel%k2f%kernel(2*i+2) = pb%kernel%k2f%kernel(2*i+1)
+      enddo
+      pb%kernel%k2f%kernel(2) = tau_co*sqrt(pb%mesh%nn**2/4.d0+wl2) ! Nyquist
        
-      elseif (pb%kernel%k2f%finite == 1) then
-        !- Read coefficient I(n) from pre-calculated file.
-        open(57,file='~/2D_RUPTURE/STATIC/Matlab/kernel_I_32768.tab')
-        if (pb%kernel%k2f%nnfft/2>32768) stop 'Finite kernel table is too small'
-        do i=1,pb%kernel%k2f%nnfft/2-1
-          read(57,*) pb%kernel%k2f%kernel(2*i+1)
-        enddo
-        read(57,*) pb%kernel%k2f%kernel(2) ! Nyquist
-        close(57)
-        ! The factor 2/N comes from the inverse FFT convention
-        tau_co = PI*pb%smu / (2d0*pb%mesh%Lfault) *2.d0/pb%kernel%k2f%nnfft
-        pb%kernel%k2f%kernel(1) = 0d0
-        pb%kernel%k2f%kernel(2) = tau_co*dble(pb%kernel%k2f%nnfft/2)*pb%kernel%k2f%kernel(2)
-        do i = 1,pb%kernel%k2f%nnfft/2-1
-          pb%kernel%k2f%kernel(2*i+1) = tau_co*dble(i)*pb%kernel%k2f%kernel(2*i+1)
-          pb%kernel%k2f%kernel(2*i+2) = pb%kernel%k2f%kernel(2*i+1)
-        enddo
-      end if
-
+    elseif (pb%kernel%k2f%finite == 1) then
+      !- Read coefficient I(n) from pre-calculated file.
+      open(57,file='~/2D_RUPTURE/STATIC/Matlab/kernel_I_32768.tab')
+      if (pb%kernel%k2f%nnfft/2>32768) stop 'Finite kernel table is too small'
+      do i=1,pb%kernel%k2f%nnfft/2-1
+        read(57,*) pb%kernel%k2f%kernel(2*i+1)
+      enddo
+      read(57,*) pb%kernel%k2f%kernel(2) ! Nyquist
+      close(57)
+      ! The factor 2/N comes from the inverse FFT convention
+      tau_co = PI*pb%smu / (2d0*pb%mesh%Lfault) *2.d0/pb%kernel%k2f%nnfft
+      pb%kernel%k2f%kernel(1) = 0d0
+      pb%kernel%k2f%kernel(2) = tau_co*dble(pb%kernel%k2f%nnfft/2)*pb%kernel%k2f%kernel(2)
+      do i = 1,pb%kernel%k2f%nnfft/2-1
+        pb%kernel%k2f%kernel(2*i+1) = tau_co*dble(i)*pb%kernel%k2f%kernel(2*i+1)
+        pb%kernel%k2f%kernel(2*i+2) = pb%kernel%k2f%kernel(2*i+1)
+      enddo
     end if
 
-    write(6,*) 'Kernel intialized'
+  elseif (pb%kernel%kind == 3) then      ! 3D
+
   end if
+
+  write(6,*) 'Kernel intialized'
   
 end subroutine init_kernel     
 
