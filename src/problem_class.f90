@@ -20,10 +20,12 @@ module problem_class
   end type ox_type
 
   type mesh_type
-    integer :: kind = 0
-    integer :: nn
-    double precision :: dx, Lfault, W
-    double precision, allocatable :: x(:) 
+    integer :: kind = 0  ! kind = 0 0/1D, kind = 1 , 2D
+    integer :: nx, nw, nn ! along-strike, along-dip, total grid number
+    double precision :: dx !along-strike grid size(constant)  
+    double precision :: Lfault, W, Z_CORNER ! fault length, width, lower-left corner z (follow Okada's convention)
+    double precision, allocatable :: dw(:), DIP_W(:) !along-dip grid size and dip (adjustable), nw count
+    double precision, allocatable :: x(:), y(:), z(:), dip(:) !coordinates and dip of every grid (nx*nw count)
   end type mesh_type
 
   type kernel_2D_fft
@@ -33,9 +35,14 @@ module problem_class
     type (OouraFFT_type) :: m_fft
   end type kernel_2D_fft
 
+  type kernel_3D
+    double precision, dimension(:,:), allocatable :: kernel
+  end type kernel_3D
+
   type kernel_type
     integer :: kind = 0
     type (kernel_2D_fft) :: k2f
+    type (kernel_2D_fft) :: k3
   end type kernel_type
 
   type problem_type
