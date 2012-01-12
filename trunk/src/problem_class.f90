@@ -20,7 +20,7 @@ module problem_class
   end type ox_type
 
   type mesh_type
-    integer :: kind = 0  ! kind = 0 0/1D, kind = 1 , 2D
+    integer :: dim = 0  ! dim = 1, 2 ,3 ~xD
     integer :: nx, nw, nn ! along-strike, along-dip, total grid number
     double precision :: dx !along-strike grid size(constant)  
     double precision :: Lfault, W, Z_CORNER ! fault length, width, lower-left corner z (follow Okada's convention)
