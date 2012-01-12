@@ -24,7 +24,7 @@ subroutine read_main(pb)
   open(unit=15,FILE= 'qdyn.in') 
 
   ! problem dimension (1D, 2D or 3D), mesh type
-  read(15,*) pb%mesh%dim, pb%mesh%kind
+  read(15,*) pb%mesh%dim
   pb%kernel%kind = pb%mesh%dim ! JPA remove this variable from the input file
 
   if (pb%mesh%kind==0) then
@@ -34,7 +34,8 @@ subroutine read_main(pb)
   elseif (pb%mesh%kind==1) then
     read(15,*) pb%mesh%nx,pb%mesh%nw,
     pb%mesh%nn = pb%mesh%nx * pb%mesh%nw
-    read(15,*) pb%mesh%Lfault, pb%mesh%W , pb%mesh%Z_CORNER 
+    read(15,*) pb%mesh%Lfault, pb%mesh%W , pb%mesh%Z_CORNER
+    allocate(pb%mesh%dw(pb%mesh%nw), pb%mesh%DIP_W(pb%mesh%nw)) 
     do 1=1,pb%mesh%nw
       read(15,*) pb%mesh%dw(i), pb%mesh%DIP_W(i)
     end do
