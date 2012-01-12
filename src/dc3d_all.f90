@@ -13,8 +13,10 @@ contains
       SUBROUTINE  UA0(X,Y,D,POT1,POT2,POT3,POT4,U)                      
 
       IMPLICIT REAL*8 (A-H,O-Z)                                         
+      IMPLICIT INTEGER (I-N)
+      DIMENSION U(12),DU(12) 
 
-      DIMENSION U(12),DU(12)                                            
+      INTEGER :: I                                           
 
 !                                                                       
 
@@ -215,7 +217,7 @@ contains
       SUBROUTINE  UB0(X,Y,D,Z,POT1,POT2,POT3,POT4,U)                    
 
       IMPLICIT REAL*8 (A-H,O-Z)                                         
-
+      IMPLICIT INTEGER (I-N)
       DIMENSION U(12),DU(12)                                            
 
 !                                                                      
@@ -461,7 +463,7 @@ contains
       SUBROUTINE  UC0(X,Y,D,Z,POT1,POT2,POT3,POT4,U)                    
 
       IMPLICIT REAL*8 (A-H,O-Z)                                         
-
+      IMPLICIT INTEGER (I-N)
       DIMENSION U(12),DU(12)                                            
 
 !                                                                       
@@ -711,7 +713,7 @@ contains
                     UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)  
 
       IMPLICIT REAL*8 (A-H,O-Z)                                         
-
+      IMPLICIT INTEGER (I-N) 
       REAL*8   ALPHA,X,Y,Z,DEPTH,DIP,AL1,AL2,AW1,AW2,DISL1,DISL2,DISL3, &
 
                UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ             
@@ -1105,9 +1107,9 @@ contains
       SUBROUTINE  UA(XI,ET,Q,DISL1,DISL2,DISL3,U)                       
 
       IMPLICIT REAL*8 (A-H,O-Z)                                         
-
+      IMPLICIT INTEGER (I-N)
       DIMENSION U(12),DU(12)                                            
-
+ 
 !                                                                       
 
 !********************************************************************   
@@ -1273,7 +1275,7 @@ contains
       SUBROUTINE  UB(XI,ET,Q,DISL1,DISL2,DISL3,U)                       
 
       IMPLICIT REAL*8 (A-H,O-Z)                                         
-
+      IMPLICIT INTEGER (I-N)
       DIMENSION U(12),DU(12)                                            
 
 !                                                                       
@@ -1509,7 +1511,7 @@ contains
       SUBROUTINE  UC(XI,ET,Q,Z,DISL1,DISL2,DISL3,U)                     
 
       IMPLICIT REAL*8 (A-H,O-Z)                                         
-
+      IMPLICIT INTEGER (I-N)
       DIMENSION U(12),DU(12)                                            
 
 !                                                                       
@@ -1723,7 +1725,7 @@ contains
       SUBROUTINE  DCCON0(ALPHA,DIP)                                     
 
       IMPLICIT REAL*8 (A-H,O-Z)                                         
-
+      IMPLICIT INTEGER (I-N) 
 !                                                                       
 
 !*******************************************************************    
@@ -1787,9 +1789,10 @@ contains
       S2D=F2*SDCD                                                       
       C2D=CDCD-SDSD                                                     
       RETURN                                                            
-      END    SUBROUTINE  DCCON0                                                            
+      END SUBROUTINE DCCON0                                                            
       SUBROUTINE  DCCON1(X,Y,D)                                         
-      IMPLICIT REAL*8 (A-H,O-Z)                                         
+      IMPLICIT REAL*8 (A-H,O-Z)  
+      IMPLICIT INTEGER (I-N)                                       
 !                                                                       
 !********************************************************************** 
 !*****   CALCULATE STATION GEOMETRY CONSTANTS FOR POINT SOURCE    ***** 
@@ -1839,7 +1842,8 @@ contains
       RETURN                                                            
       END  SUBROUTINE  DCCON1                                                             
       SUBROUTINE  DCCON2(XI,ET,Q,SD,CD,KXI,KET)                         
-      IMPLICIT REAL*8 (A-H,O-Z)                                         
+      IMPLICIT REAL*8 (A-H,O-Z) 
+      IMPLICIT INTEGER (I-N)                                        
 !                                                                       
 !********************************************************************** 
 !*****   CALCULATE STATION GEOMETRY CONSTANTS FOR FINITE SOURCE   ***** 
@@ -1934,4 +1938,4 @@ contains
 
       END  SUBROUTINE  DCCON2                                                             
 
-end module module dc3d_all
+end module dc3d_all
