@@ -12,18 +12,18 @@ contains
 ! read in S... Source; O... Observation
 ! unit response: U=1, return tau
 subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau)
+
+  use constants, only : PI 
+
   double precision :: SX,SY,SZ,OX,OY,OZ
   double precision :: LAM, MU, ALPHA,   & 
     S_DEPTH,S_DIP, L, W, U,&
     X, Y, Z, O_DIP, &
     UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ
-  double precision :: STRESS(3,3), STRAIN(3,3),TR, n_f(3), n_dir(3), tau_n(3), PI 
+  double precision :: STRESS(3,3), STRAIN(3,3),TR, n_f(3), n_dir(3), tau_n(3) 
   integer, intent(inout) :: IRET
   double precision, intent(inout) :: tau
   
-  PI = 3.1415926535897932384626d0
-
-
   ALPHA = (LAM+MU)/(LAM+2d0*MU)
   S_DEPTH = -1d0*SZ
 

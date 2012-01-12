@@ -40,28 +40,32 @@ subroutine init_field(pb)
 
   if (pb%mesh%dim == 3) then  ! 2D fault, uniform grid along-strike
     write(6,*) '2D fault, uniform grid along-strike' 
+    allocate(pb%mesh%x(pb%mesh%nn),pb%mesh%y(pb%mesh%nn),   &
+             pb%mesh%z(pb%mesh%nn),pb%mesh%dip(pb%mesh%nn)) 
     !------ give value to x, y, z , dip of first row -------------------
     cd = dcos(pb%mesh%DIP_W(1)/180d0*PI)
     sd = dsin(pb%mesh%DIP_W(1)/180d0*PI)
-    do j = 1,mesh%nx
-      mesh%x(j) = 0d0+(0.5d0+dble(j-1))*mesh%dx
-      mesh%y(j) = 0d0+0.5d0*mesh%dw(1)*cd
-      mesh%z(j) = mesh%Z_CORNER+0.5d0*mesh%dw(1)*sd
-      mesh%dip(j) = mesh%DIP_W(1)
+    do j = 1,pb%mesh%nx
+      pb%mesh%x(j) = 0d0+(0.5d0+dble(j-1))*pb%mesh%dx
+      pb%mesh%y(j) = 0d0+0.5d0*pb%mesh%dw(1)*cd
+      pb%mesh%z(j) = pb%mesh%Z_CORNER+0.5d0*pb%mesh%dw(1)*sd
+      pb%mesh%dip(j) = pb%mesh%DIP_W(1)
     end do
     !------ give value to x, y, z , dip of first row -------------------
 
     !------ give value to x, y, z , dip of row 2 to nw------------------- 
-    do i = 2,mesh%nw
-      cd0 = dcos(mesh%DIP_W(i-1)/180d0*PI)
-      sd0 = dsin(mesh%DIP_W(i-1)/180d0*PI)
-      cd = dcos(mesh%DIP_W(i)/180d0*PI)
-      sd = dsin(mesh%DIP_W(i)/180d0*PI)
+    do i = 2,pb%mesh%nw
+      cd0 = dcos(pb%mesh%DIP_W(i-1)/180d0*PI)
+      sd0 = dsin(pb%mesh%DIP_W(i-1)/180d0*PI)
+      cd = dcos(pb%mesh%DIP_W(i)/180d0*PI)
+      sd = dsin(pb%mesh%DIP_W(i)/180d0*PI)
       do j = 1,mesh%nx
-        mesh%x((i-1)*mesh%nx+j) = 0d0+(0.5d0+dble(j-1))*mesh%dx
-        mesh%y((i-1)*mesh%nx+j) = mesh%y((i-2)*mesh%nx+j)+0.5d0*mesh%dw(i-1)*cd0+0.5d0*mesh%dw(i)*cd
-        mesh%z((i-1)*mesh%nx+j) = mesh%z((i-2)*mesh%nx+j)+0.5d0*mesh%dw(i-1)*sd0+0.5d0*mesh%dw(i)*sd
-        mesh%dip((i-1)*mesh%nx+j) = mesh%DIP_W(i)
+        pb%mesh%x((i-1)*mesh%nx+j) = 0d0+(0.5d0+dble(j-1))*pb%mesh%dx
+        pb%mesh%y((i-1)*mesh%nx+j) = pb%mesh%y((i-2)*mesh%nx+j)    &
+                          +0.5d0*pb%mesh%dw(i-1)*cd0+0.5d0*pb%mesh%dw(i)*cd
+        pb%mesh%z((i-1)*mesh%nx+j) = pb%mesh%z((i-2)*mesh%nx+j)    &
+                          +0.5d0*pb%mesh%dw(i-1)*sd0+0.5d0*pb%mesh%dw(i)*sd
+        pb%mesh%dip((i-1)*mesh%nx+j) = pb%mesh%DIP_W(i)
       end do
     end do
     !------ give value to x, y, z , dip of row 2 to nw------------------- 
@@ -123,11 +127,12 @@ subroutine init_kernel(pb)
   
   use constants, only : PI 
   use problem_class
+  use calc_kernel
 
   type(problem_type), intent(inout) :: pb
 
-  double precision :: tau_co, wl2
-  integer :: i
+  double precision :: tau_co, wl2, tau
+  integer :: i, j , IRET
 
   write(6,*) 'Intializing kernel: ...'
 
@@ -174,20 +179,20 @@ subroutine init_kernel(pb)
   !kernel(i,j): response at i of source at j
   !because dx = constant, only need to calculate i at first column
 
-    write(6,*) 'OouraFFT Selected'
-    allocate (pb%kernel%k3%kernel(nw,nx*nw))
+    write(6,*) 'Generating 3D kernel...'
+    allocate (pb%kernel%k3%kernel(pb%mesh%nw,pb%mesh%nn))
 
-    do i = 1,mesh%nw
-      do j = 1,mesh%nw*mesh%nx
-        call compute_kernel(LAM,MU,mesh%x(j),mesh%y(j),mesh%z(j),  &
-                      mesh%dip(j),mesh%dx,mesh%dw((j-1)/mesh%nx+1),   &
-                      mesh%x(1+(i-1)*mesh%nx),mesh%y(1+(i-1)*mesh%nx),   &
-                      mesh%z(1+(i-1)*mesh%nx),mesh%dip(1+(i-1)*mesh%nx),IRET,tau)
+    do i = 1,pb%mesh%nw
+      do j = 1,pb%mesh%nn
+        call compute_kernel(pb%lam,pb%smu,pb%mesh%x(j),pb%mesh%y(j),pb%mesh%z(j),  &
+                      pb%mesh%dip(j),pb%mesh%dx,pb%mesh%dw((j-1)/mesh%nx+1),   &
+                      pb%mesh%x(1+(i-1)*mesh%nx),pb%mesh%y(1+(i-1)*mesh%nx),   &
+                      pb%mesh%z(1+(i-1)*mesh%nx),pb%mesh%dip(1+(i-1)*mesh%nx),IRET,tau)
         if (IRET == 0) then
-          kernel(i,j) = tau
+          pb%kernel%k3%kernel(i,j) = tau
         else
           write(6,*) 'Kernel Singular, set value to 0'
-          kernel(i,j) = 0
+          pb%kernel%k3%kernel(i,j) = 0d0
         end if
       end do
     end do
