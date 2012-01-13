@@ -113,7 +113,7 @@ function [pars,ot,ox] = qdyn(mode,varargin)
 
 %--------- DEFAULT PARAMETERS ------------------------------------
 
-MESHKIND=0;
+MESHDIM=0;
 KERNELKIND=0;
 NEQS=2;
 
@@ -130,10 +130,14 @@ L= 2e3; 	% fault length (L scales the stiffness for the spring-block case)
 FINITE=0;	% along strike bcs: 1=fixed-length asperity surrounded by steady creep, 0=periodic
 W= 50e3;   	% out-of-plane dimension (ignored in spring-block)
 MU = 30e9;	% shear modulus
+LAM = 30e9;
 VS = 3000; 	% shear wave velocity (if VS=0: turn off radiation damping)
 
 %-- numerical settings
 N=1024; 	% number of grid cells
+NX=100;
+NW=10;
+Z_CORNER=-50e3;
 IC=512;         %output ot coordinate
 TMAX = 6*month;  % total simulation time
 NSTOP = 0;	% stop at (0) tmax, (1) end of localization or (2) max slip rate
@@ -219,25 +223,30 @@ switch mode
  
     % export qdyn.in
     fid=fopen('qdyn.in','w');
-    if MESHKIND == 0;
-      fprintf(fid,'%u     meshkind\n' , MESHKIND);
+    fprintf(fid,'%u     meshdim\n' , MESHDIM); 
+    if MESHDIM == 0 || 1;
       fprintf(fid,'%u     NN\n' , N);      
       fprintf(fid,'%.15g %.15g      L, W\n', L, W);
-      if KERNELKIND ==0;
-          fprintf(fid,'%u   kernelkind\n', KERNELKIND);
-          fprintf(fid,'%u   finite\n', FINITE);
-          fprintf(fid,'%u   itheta_law\n', THETA_LAW);
-          fprintf(fid,'%u   n_equations\n', NEQS);
-          fprintf(fid,'%u %u %u   ntout, nt_coord, nxout\n', NTOUT,IC,NXOUT);     
-          fprintf(fid,'%.15g %.15g   beta, smu\n', VS, MU);
-          fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
-          fprintf(fid,'%.15g %.15g %.15g %.15g    dt_try, dtmax, tmax, accuracy\n',DTTRY,DTMAX,TMAX,ACC);
-          fprintf(fid,'%u   nstop\n',NSTOP);
-          
-          fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',[SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:)]');
-    
-      end
     end
+    if MESHDIM == 2;
+      fprintf(fid,'%u     NX, NW\n' , NX, NW);      
+      fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
+      fprintf(fid,'%.15g %.15g \n', [DW(:), DIP_W(:)]);
+    end
+    if MESHDIM == 1;
+        fprintf(fid,'%u   finite\n', FINITE);
+    end   
+    
+    fprintf(fid,'%u   itheta_law\n', THETA_LAW);
+    fprintf(fid,'%u   n_equations\n', NEQS);
+    fprintf(fid,'%u %u %u   ntout, nt_coord, nxout\n', NTOUT,IC,NXOUT);     
+    fprintf(fid,'%.15g %.15g %.15g   beta, smu, lambda\n', VS, MU, LAM);
+    fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
+    fprintf(fid,'%.15g %.15g %.15g %.15g    dt_try, dtmax, tmax, accuracy\n',DTTRY,DTMAX,TMAX,ACC);
+    fprintf(fid,'%u   nstop\n',NSTOP);
+          
+    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',[SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:)]');
+ 
     fclose(fid);
     
     % solve

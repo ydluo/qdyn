@@ -15,6 +15,7 @@ RESOLUTION = 5;
 year = 3600*24*365;
 p = qdyn('set');
 
+p.MESHDIM=1;
 p.THETA_LAW=2;
 p.FINITE=0;
 p.SIGMA=0.5e6;
