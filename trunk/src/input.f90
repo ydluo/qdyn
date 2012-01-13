@@ -35,8 +35,8 @@ subroutine read_main(pb)
   elseif (pb%mesh%dim==2) then
     read(15,*) pb%mesh%nx,pb%mesh%nw
     pb%mesh%nn = pb%mesh%nx * pb%mesh%nw
-    read(15,*) pb%mesh%Lfault, pb%mesh%W , pb%mesh%Z_CORNER
-    allocate(pb%mesh%dw(pb%mesh%nw), pb%mesh%DIP_W(pb%mesh%nw)) 
+    read(15,*) pb%mesh%Lfault, pb%mesh%W , pb%mesh%Z_CORNER 
+    allocate(pb%mesh%dw(pb%mesh%nw), pb%mesh%DIP_W(pb%mesh%nw))
     do i=1,pb%mesh%nw
       read(15,*) pb%mesh%dw(i), pb%mesh%DIP_W(i)
     end do

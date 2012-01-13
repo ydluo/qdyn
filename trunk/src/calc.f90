@@ -80,7 +80,7 @@ subroutine compute_stress_3d(tau,k3,v)
   nn = size(v)
   nw = size(k3%kernel,1)
   nx = nn/nw
-  
+ ! write(6,*) 'nn,nw,nx', nn, nw, nx
   tau = 0d0
   do i = 1,nn
     ix = mod((i-1),nx)+1          ! find column of obs
@@ -88,14 +88,17 @@ subroutine compute_stress_3d(tau,k3,v)
     if (ix == 1)  then            ! obs at first column, directly stored in kernel (iw,nw*nx)
       do j = 1,nn
         tau(i) = tau(i) - k3%kernel(iw,j) * v(j)
+  !      write(6,*) i,j,k3%kernel(iw,j)
       end do
     else                          ! obs at other column, calculate index to get kernel
       do j = 1,nn
         jx = mod((j-1),nx)+1        ! find column of source
         if (jx >= ix)  then         ! source on the right of ods, shift directly
           tau(i) = tau(i) - k3%kernel(iw,j+1-ix) * v(j)
+   !       write(6,*) i,j,k3%kernel(iw,j+1-ix)
         else                        ! source on the left, use symmetry
           tau(i) = tau(i) - k3%kernel(iw,j+1+ix-2*jx) * v(j)
+   !       write(6,*) i,j,k3%kernel(iw,j+1+ix-2*jx)
         end if
       end do
     end if
