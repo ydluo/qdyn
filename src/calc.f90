@@ -73,7 +73,7 @@ subroutine compute_stress_3d(tau,k3,v)
 
   use problem_class, only : kernel_3D
   type(kernel_3D), intent(in)  :: k3
-  double precision , intent(out) :: tau(1)
+  double precision , intent(out) :: tau(:)
   double precision , intent(in) :: v(:)
   integer :: nn,nw,nx,i,j,ix,iw,jx  
 
