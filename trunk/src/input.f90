@@ -25,13 +25,14 @@ subroutine read_main(pb)
 
   ! problem dimension (1D, 2D or 3D), mesh type
   read(15,*) pb%mesh%dim
-  pb%kernel%kind = pb%mesh%dim 
+  pb%kernel%kind = pb%mesh%dim+1 
 
-  if (pb%mesh%dim==0) then
+  !spring-block or 2d problem
+  elseif (pb%mesh%dim==0 .or. pb%mesh%dim==1) then
     read(15,*) pb%mesh%nn
     read(15,*) pb%mesh%Lfault, pb%mesh%W 
-
-  elseif (pb%mesh%dim==1) then
+  !3d problem
+  elseif (pb%mesh%dim==2) then
     read(15,*) pb%mesh%nx,pb%mesh%nw
     pb%mesh%nn = pb%mesh%nx * pb%mesh%nw
     read(15,*) pb%mesh%Lfault, pb%mesh%W , pb%mesh%Z_CORNER
@@ -39,7 +40,8 @@ subroutine read_main(pb)
     do i=1,pb%mesh%nw
       read(15,*) pb%mesh%dw(i), pb%mesh%DIP_W(i)
     end do
-
+  else
+    write(6,*) 'mesh dimension should be 0, 1 or 2'
   endif
      
   if (pb%kernel%kind==2) then 
