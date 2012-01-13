@@ -28,7 +28,7 @@ subroutine read_main(pb)
   pb%kernel%kind = pb%mesh%dim+1 
 
   !spring-block or 2d problem
-  elseif (pb%mesh%dim==0 .or. pb%mesh%dim==1) then
+  if (pb%mesh%dim==0 .or. pb%mesh%dim==1) then
     read(15,*) pb%mesh%nn
     read(15,*) pb%mesh%Lfault, pb%mesh%W 
   !3d problem
