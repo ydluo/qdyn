@@ -25,7 +25,7 @@ subroutine read_main(pb)
 
   ! problem dimension (1D, 2D or 3D), mesh type
   read(15,*) pb%mesh%dim
-  pb%kernel%kind = pb%mesh%dim ! JPA remove this variable from the input file
+  pb%kernel%kind = pb%mesh%dim 
 
   if (pb%mesh%dim==0) then
     read(15,*) pb%mesh%nn
@@ -42,7 +42,6 @@ subroutine read_main(pb)
 
   endif
      
-  !JPA I changed kernel%kind: 1 is spring-block, 2 is for 2D, 3 is 3D 
   if (pb%kernel%kind==2) then 
     allocate(pb%kernel%k2f)
     read(15,*) pb%kernel%k2f%finite

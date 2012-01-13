@@ -182,8 +182,8 @@ subroutine init_kernel(pb)
     write(6,*) 'Generating 3D kernel...'
     allocate (pb%kernel%k3%kernel(pb%mesh%nw,pb%mesh%nn))
 
-    do i = 1,pb%mesh%nw
-      do j = 1,pb%mesh%nn
+    do j = 1,pb%mesh%nn
+      do i = 1,pb%mesh%nw
         call compute_kernel(pb%lam,pb%smu,pb%mesh%x(j),pb%mesh%y(j),pb%mesh%z(j),  &
                pb%mesh%dip(j),pb%mesh%dx,pb%mesh%dw((j-1)/pb%mesh%nx+1),   &
                pb%mesh%x(1+(i-1)*pb%mesh%nx),pb%mesh%y(1+(i-1)*pb%mesh%nx),   &

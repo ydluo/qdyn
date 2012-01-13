@@ -16,27 +16,22 @@ contains
  !-------Compute thata,vslip and time deriv for one time step-----
  !-------CALL rdft in compute_stress : real DFT-------------------
  !---------------------------------------------------------------|
- !-------|     in:pb, yt, dydt                           |-------|
- !-------|    out:pb, yt, dydt                           |-------|
- !-------|                                               |-------|
- !---------------------------------------------------------------|
  
 subroutine derivs(time,yt,dydt,pb) 
-!JPA this subroutine should have yout with intent(out)
-!    and put there the derivatives
    
   use problem_class
   use calc
   
   type(problem_type), intent(inout) :: pb
-  double precision , intent(inout) :: time, yt(pb%neqs*pb%mesh%nn), dydt(pb%neqs*pb%mesh%nn)
+  double precision , intent(in) :: time, yt(pb%neqs*pb%mesh%nn)
+  double precision , intent(out) :: dydt(pb%neqs*pb%mesh%nn)
 
   double precision :: omega(pb%mesh%nn)
   double precision :: dtau_per
   integer :: i
 
   ! compute shear stress rate from elastic interactions, for 0D, 1D & 2D
-  call compute_stress(pb%dtau_dt,pb%kernel,yt(2::pb%neqs),pb%v_star)
+  call compute_stress(pb%dtau_dt,pb%kernel,yt(2::pb%neqs)-pb%v_star)
 
 !YD This part we may want to modify it later to be able to
 !impose more complicated loading/pertubation
