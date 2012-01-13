@@ -24,13 +24,13 @@ subroutine init_field(pb)
 
   write(6,*) 'Initializing parameters: ...'
   
-  if (pb%mesh%dim == 1) then  ! Spring-block System
+  if (pb%mesh%dim == 0) then  ! Spring-block System
     write(6,*) 'Spring-block System' 
     pb%mesh%dx = pb%mesh%Lfault
     pb%mesh%x = 0d0
   end if
 
-  if (pb%mesh%dim == 2) then  ! 1D fault, uniform grid
+  if (pb%mesh%dim == 1) then  ! 1D fault, uniform grid
     write(6,*) '1D fault, uniform grid' 
     pb%mesh%dx = pb%mesh%Lfault/pb%mesh%nn
     do i=1,pb%mesh%nn
@@ -38,7 +38,7 @@ subroutine init_field(pb)
     enddo
   end if
 
-  if (pb%mesh%dim == 3) then  ! 2D fault, uniform grid along-strike
+  if (pb%mesh%dim == 2) then  ! 2D fault, uniform grid along-strike
     write(6,*) '2D fault, uniform grid along-strike' 
     allocate(pb%mesh%x(pb%mesh%nn),pb%mesh%y(pb%mesh%nn),   &
              pb%mesh%z(pb%mesh%nn),pb%mesh%dip(pb%mesh%nn)) 
@@ -191,7 +191,7 @@ subroutine init_kernel(pb)
         if (IRET == 0) then
           pb%kernel%k3%kernel(i,j) = tau    
         else
-          write(6,*) 'Kernel Singular, set value to 0'
+          write(6,*) '!!WARNING!! : Kernel Singular, set value to 0'
           pb%kernel%k3%kernel(i,j) = 0d0
         end if
       end do
