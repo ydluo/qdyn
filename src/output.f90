@@ -23,18 +23,22 @@ subroutine screen_init(pb)
   
   write(6,*) '**Field Initialized.**'
   write(6,*) 'Values at selected point of the fault:'
-    
-    if (pb%kernel%k2f%finite == 1 .or. pb%mesh%nn == 1) then
-      write(6,*) 'K/Kc = ',(PI*pb%smu/pb%mesh%Lfault)/   &
-        (pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
-      write(6,*) 'K/Kb = ',(PI*pb%smu/pb%mesh%Lfault)/   &
-        (pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
-    else
-      write(6,*) 'K/Kc = ',(PI*pb%smu/pb%mesh%W)/   &
-        (pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
-      write(6,*) 'K/Kb = ',(PI*pb%smu/pb%mesh%W)/   &
-        (pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
-    endif
+    if (pb%mesh%dim == 0 .or.pb%mesh%dim == 1) then   
+      if (pb%kernel%k2f%finite == 1 .or. pb%mesh%nn == 1) then
+        write(6,*) 'K/Kc = ',(PI*pb%smu/pb%mesh%Lfault)/   &
+          (pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
+        write(6,*) 'K/Kb = ',(PI*pb%smu/pb%mesh%Lfault)/   &
+          (pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
+      else
+        write(6,*) 'K/Kc = ',(PI*pb%smu/pb%mesh%W)/   &
+          (pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
+        write(6,*) 'K/Kb = ',(PI*pb%smu/pb%mesh%W)/   &
+          (pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
+      endif
+    end if
+
+! YD:  should we out put 2D mesh K?
+
     write(6,*)
     write(6,*) '    it,  dt (secs), time (yrs), vmax (m/s)'
 

@@ -114,7 +114,7 @@ function [pars,ot,ox] = qdyn(mode,varargin)
 %--------- DEFAULT PARAMETERS ------------------------------------
 
 MESHDIM=0;
-KERNELKIND=0;
+
 NEQS=2;
 
 
@@ -137,6 +137,9 @@ VS = 3000; 	% shear wave velocity (if VS=0: turn off radiation damping)
 N=1024; 	% number of grid cells
 NX=100;
 NW=10;
+DW=1e3;
+DIP_W=30.0;
+
 Z_CORNER=-50e3;
 IC=512;         %output ot coordinate
 TMAX = 6*month;  % total simulation time
@@ -210,6 +213,8 @@ switch mode
 %     end
     
     % make vectors if constants
+    DW(1:NW) =DW;  
+    DIP_W(1:NW) =DIP_W;
     A(1:N)   =A;
     B(1:N)   =B;
     DC(1:N)  =DC;
@@ -224,15 +229,17 @@ switch mode
     % export qdyn.in
     fid=fopen('qdyn.in','w');
     fprintf(fid,'%u     meshdim\n' , MESHDIM); 
-    if MESHDIM == 0 || 1;
+
+    if MESHDIM == 2;
+      disp('MESHDIM =2');
+      fprintf(fid,'%u %u     NX, NW\n' , NX, NW);      
+      fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
+      fprintf(fid,'%.15g %.15g \n', [DW(:), DIP_W(:)]');
+    else  
       fprintf(fid,'%u     NN\n' , N);      
       fprintf(fid,'%.15g %.15g      L, W\n', L, W);
     end
-    if MESHDIM == 2;
-      fprintf(fid,'%u     NX, NW\n' , NX, NW);      
-      fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
-      fprintf(fid,'%.15g %.15g \n', [DW(:), DIP_W(:)]);
-    end
+    
     if MESHDIM == 1;
         fprintf(fid,'%u   finite\n', FINITE);
     end   

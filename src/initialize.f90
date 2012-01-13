@@ -39,8 +39,9 @@ subroutine init_field(pb)
   end if
 
   if (pb%mesh%dim == 2) then  ! 2D fault, uniform grid along-strike
-    write(6,*) '2D fault, uniform grid along-strike' 
-    allocate(pb%mesh%x(pb%mesh%nn),pb%mesh%y(pb%mesh%nn),   &
+    write(6,*) '2D fault, uniform grid along-strike'
+    pb%mesh%dx = pb%mesh%Lfault/pb%mesh%nx
+    allocate(pb%mesh%y(pb%mesh%nn),   &
              pb%mesh%z(pb%mesh%nn),pb%mesh%dip(pb%mesh%nn)) 
     !------ give value to x, y, z , dip of first row -------------------
     cd = dcos(pb%mesh%DIP_W(1)/180d0*PI)
@@ -69,6 +70,10 @@ subroutine init_field(pb)
       end do
     end do
     !------ give value to x, y, z , dip of row 2 to nw------------------- 
+    write(6,*) 'x,y,z,dip'
+    do i = 1,pb%mesh%nn
+      write(6,*) pb%mesh%x(i),pb%mesh%y(i),pb%mesh%z(i),pb%mesh%dip(i)
+    end do 
   end if
 
 !YD This part we may want to modify it later to be able to
@@ -117,7 +122,8 @@ subroutine init_field(pb)
   call ot_init(pb)
   call ox_init(pb)
   write(6,*) 'Field Initialized'
-  
+
+
 end subroutine init_field
 
   
@@ -191,11 +197,13 @@ subroutine init_kernel(pb)
         if (IRET == 0) then
           pb%kernel%k3%kernel(i,j) = tau    
         else
-          write(6,*) '!!WARNING!! : Kernel Singular, set value to 0'
+          write(6,*) '!!WARNING!! : Kernel Singular, set value to 0,(i,j)',i,j
           pb%kernel%k3%kernel(i,j) = 0d0
         end if
       end do
     end do
+    write(6,*) 'kernel(1,j)'
+    write(6,*) pb%kernel%k3%kernel(1,:)
   end if
 
   write(6,*) 'Kernel intialized'
