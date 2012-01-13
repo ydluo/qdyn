@@ -8,14 +8,14 @@ module calc
   public compute_stress
 
 contains
-
+! K is stiffness, different in sign with convention in Diet92
 ! compute shear stress rate from elastic interactions
 !   tau = - K*slip 
 !   dtau_dt = - K*slip_velocity 
 !
 ! To account for steady plate velocity, the input velocity must be v-vpl:
-!   tau = K*( slip - Vpl*t ) 
-!   dtau_dt =  K*( vpl - v )
+!   tau = - K*( slip - Vpl*t ) 
+!   dtau_dt = - K*( v - Vpl )
 !
 ! compute_stress depends on dimension (0D, 1D, 2D fault)
 !

@@ -71,7 +71,7 @@ subroutine do_bsstep(pb)
   dydt(1::pb%neqs) = pb%dtheta_dt
   !-------Pack v, theta into yt--------------------------------- 
   !!!====================NOTE:: IMPORTANT: ==========================!!!
-  !!!======BETWEEN PACK/UNPACK v & theta in pb is not up-to-date====!!!
+  !!!======BETWEEN PACK/UNPACK v & theta in pb is not up-to-date=====!!!
   !!!====================NOTE:: IMPORTANT: ==========================!!!
 
   ! this update of derivatives is only needed to set up the scaling (yt_scale)
