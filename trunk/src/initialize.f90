@@ -70,10 +70,12 @@ subroutine init_field(pb)
       end do
     end do
     !------ give value to x, y, z , dip of row 2 to nw------------------- 
-    write(6,*) 'x,y,z,dip'
+    write(6,*) 'x,y,z'
     do i = 1,pb%mesh%nn
-      write(6,*) pb%mesh%x(i),pb%mesh%y(i),pb%mesh%z(i),pb%mesh%dip(i)
+      write(6,*) pb%mesh%x(i),pb%mesh%y(i),pb%mesh%z(i)
     end do 
+    write(6,*) 'dw'
+    write(6,*) pb%mesh%dw
   end if
 
 !YD This part we may want to modify it later to be able to
@@ -188,12 +190,16 @@ subroutine init_kernel(pb)
     write(6,*) 'Generating 3D kernel...'
     allocate (pb%kernel%k3%kernel(pb%mesh%nw,pb%mesh%nn))
 
-    do j = 1,pb%mesh%nn
-      do i = 1,pb%mesh%nw
+    do i = 1,pb%mesh%nw
+      do j = 1,pb%mesh%nn
         call compute_kernel(pb%lam,pb%smu,pb%mesh%x(j),pb%mesh%y(j),pb%mesh%z(j),  &
                pb%mesh%dip(j),pb%mesh%dx,pb%mesh%dw((j-1)/pb%mesh%nx+1),   &
                pb%mesh%x(1+(i-1)*pb%mesh%nx),pb%mesh%y(1+(i-1)*pb%mesh%nx),   &
                pb%mesh%z(1+(i-1)*pb%mesh%nx),pb%mesh%dip(1+(i-1)*pb%mesh%nx),IRET,tau)
+
+!        write(6,*) 'obs',pb%mesh%x(1+(i-1)*pb%mesh%nx),pb%mesh%y(1+(i-1)*pb%mesh%nx),pb%mesh%z(1+(i-1)*pb%mesh%nx)
+!        write(6,*) 'src',pb%mesh%x(j),pb%mesh%y(j),pb%mesh%z(j) 
+!        write(6,*) 'tau',tau,'IRET',IRET
         if (IRET == 0) then
           pb%kernel%k3%kernel(i,j) = tau    
         else
