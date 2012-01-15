@@ -1,4 +1,5 @@
 !Quasi-Dynamic
+! for 3D problem, kernel instability occurs while L/dw > 100
 
  program main
 
