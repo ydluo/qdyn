@@ -1,10 +1,10 @@
 calc.o: fftsg.o problem_class.o
-calc_kernel.o: constants.o dc3d_all.o
 derivs_all.o: calc.o problem_class.o
-initialize.o: calc_kernel.o constants.o output.o problem_class.o
+initialize.o: constants.o okada.o output.o problem_class.o
 input.o: problem_class.o
 main.o: initialize.o input.o problem_class.o solve_master.o
 ode_bs.o: derivs_all.o problem_class.o
+okada.o: constants.o
 output.o: constants.o problem_class.o
 problem_class.o: fftsg.o
 solve_master.o: output.o problem_class.o solver_acc.o
