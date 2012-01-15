@@ -208,6 +208,24 @@ subroutine init_kernel(pb)
         end if
       end do
     end do
+
+!JPA      
+! note: requires a storage of x,y,z in which the along-dip index runs faster than the along-strike index
+!    do k=0,nx-1 
+!      do n=1,nw
+!        do j=1,nw
+!          call compute_kernel( ... j ... k*nw+n ..., IRET,tau)
+!          pb%kernel%k3%kernel(j,n,k) = tau
+!        enddo
+!      enddo
+!    enddo
+! JPA FFT-along-strike version
+! do n=1,nw
+!   do j=1,nw
+!     pb%kernel%k3%kernel(j,n,:) = fft(pb%kernel%k3%kernel(j,n,:)) 
+!   enddo
+! enddo
+
     write(6,*) 'kernel(1,j)'
     write(6,*) pb%kernel%k3%kernel(1,:)
     do i = 1,pb%mesh%nn

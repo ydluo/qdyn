@@ -72,9 +72,11 @@ end subroutine compute_stress_2d
 subroutine compute_stress_3d(tau,k3,v)
 
   use problem_class, only : kernel_3D
+
   type(kernel_3D), intent(in)  :: k3
   double precision , intent(out) :: tau(:)
   double precision , intent(in) :: v(:)
+
   integer :: nn,nw,nx,i,j,ix,iw,jx  
 
   nn = size(v)
@@ -105,5 +107,46 @@ subroutine compute_stress_3d(tau,k3,v)
   end do
 
 end subroutine compute_stress_3d
+
+!--------------------------------------------------------
+! JPA: try this subroutine instead
+! It requires a different storage: 
+!   v and tau: (nw,nx) reshaped into vector of length nw*nx (note that nw, along-dip, is first)
+!   kernel(1:nw,1:nw,0:(nx-1))
+subroutine compute_stress_3d_JPA(tau,k3,v)
+
+  use problem_class, only : kernel_3D
+
+  type(kernel_3D), intent(in)  :: k3
+  double precision , intent(out) :: tau(:)
+  double precision , intent(in) :: v(:)
+
+  integer :: nw,nx,i,k,ii,mm
+
+  tau = 0d0
+  ii = 0
+  do i = 1,nx
+    mm = 0
+    do m = 1,nx
+      k = abs(i-m)
+      tau(ii+1:ii+nw) = tau(ii+1:ii+nw) + matmul( k3%kernel(:,:,k) , v(mm+1:mm+nw) )
+      mm = mm + nw
+    enddo
+    ii = ii + nw
+  enddo
+
+!JPA FFT-along-strike version, assumes kernel has been FFT'd during initialization
+! Note: requires storage with along-strike index running faster than along-dip
+! do n = 1,nw
+!   vfft(n,:) = fft( v((n-1)*nx+1:n*nx) )
+! enddo
+! do k = 1,nx
+!   taufft(:,k) = matmul( k3%kernel(:,:,k), vfft(:,k) )
+! enddo
+! do j = 1,nw
+!   tau(ii+1:ii+nx) = ifft( taufft(j,(n-1)*nx+1:n*nx) )
+! enddo
+
+end subroutine compute_stress_3d_JPA
 
 end module calc
