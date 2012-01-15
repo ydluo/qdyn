@@ -18,10 +18,10 @@ p.V_SS=1e-9;
 
 p.V2=0.8e-7;
 
-p.L=1000e3;
-p.W=100e3;
-p.NX=100;
-p.NW=100;
+p.L=100e3;
+p.W=1e3;
+p.NX=1000;
+p.NW=1;
 p.Z_CORNER=-50e3;
 p.N=p.NX*p.NW;
 p.DW(1:p.NW)=p.W/p.NW;

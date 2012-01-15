@@ -210,6 +210,9 @@ subroutine init_kernel(pb)
     end do
     write(6,*) 'kernel(1,j)'
     write(6,*) pb%kernel%k3%kernel(1,:)
+    do i = 1,pb%mesh%nn
+      write(99,*) pb%kernel%k3%kernel(1,i)
+    end do
   end if
 
   write(6,*) 'Kernel intialized'
