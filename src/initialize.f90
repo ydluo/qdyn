@@ -135,7 +135,7 @@ subroutine init_kernel(pb)
   
   use constants, only : PI 
   use problem_class
-  use calc_kernel
+  use okada, only : compute_kernel
 
   type(problem_type), intent(inout) :: pb
 

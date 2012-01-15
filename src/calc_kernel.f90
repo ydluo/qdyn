@@ -35,8 +35,6 @@ subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau)
  
   call   DC3D(ALPHA,X,Y,Z,S_DEPTH,S_DIP,-0.5d0*L,0.5d0*L,-0.5d0*W,0.5d0*W,0d0,U,0d0,   &
     UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)
- 
-
 
   STRAIN(1,1) = UXX
   STRAIN(1,2) = 0.5d0*(UXY+UYX)
@@ -66,8 +64,6 @@ subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau)
   tau_n(3) = STRESS(3,1)*n_f(1)+STRESS(3,2)*n_f(2)+STRESS(3,3)*n_f(3)
 
   tau = tau_n(1)*n_DIR(1)+tau_n(2)*n_DIR(2)+tau_n(3)*n_DIR(3)
-  
-
   
 end subroutine compute_kernel
 
