@@ -15,18 +15,20 @@ p.THETA_LAW=2;
 p.SIGMA=0.5e6;
 p.V_SS=1e-9;
 
+p.A=0.003;
+p.B=0.01;
 
-p.V2=0.8e-7;
+p.V2=0.01;
 
-p.L=100e3;
-p.W=100e3;
-p.NX=1;
-p.NW=100;
-p.Z_CORNER=-50e3;
+p.L=8e3;
+p.W=8e3;
+p.NX=50;
+p.NW=50;
+p.Z_CORNER=-100e3;
 p.N=p.NX*p.NW;
 p.DW(1:p.NW)=p.W/p.NW;
 p.DIP_W(1:p.NW)=30.0;
-twm=2;
+twm=8;
 ts=2;
 p.ACC = 1e-14;
 
@@ -35,7 +37,7 @@ Lb = p.MU*p.DC/p.SIGMA/p.B;
 Lnuc = 1.3774*Lb;
 %------------------------------
 
-filename = 'test_2d_1d_approx.mat'
+filename = ['test_2d_ab',num2str(p.A/p.B),'L',num2str(p.L/1000),'nx',num2str(p.NX),'W',num2str(p.W/1000),'nw',num2str(p.NW),'z',num2str(p.Z_CORNER/1000),'.mat']
 p.IC=ceil(p.N/2);
 dx=p.L/p.NX;
 Lb_over_dx = Lb/dx
@@ -43,7 +45,10 @@ Lb_over_dx = Lb/dx
 
 p = qdyn('set',p);
 
-
+Lc=Lb*(p.B/(p.B-p.A));
+disp(['  Lc=',num2str(Lc),'  L/Lc=',num2str(p.L/Lc),'  W/Lc=',num2str(p.W/Lc)]);
+Linf=2/pi*(p.B/(p.B-p.A))^2*Lb;
+disp(['  Linf=',num2str(Linf),'  L/Linf=',num2str(p.L/Linf),'  W/Linf=',num2str(p.W/Linf)]);
 
 p.TMAX=twm*year;
 
