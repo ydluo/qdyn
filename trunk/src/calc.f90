@@ -121,7 +121,7 @@ subroutine compute_stress_3d_JPA(tau,k3,v)
   double precision , intent(out) :: tau(:)
   double precision , intent(in) :: v(:)
 
-  integer :: nw,nx,i,k,ii,mm
+  integer :: nw,nx,i,m,k,ii,mm
 
   tau = 0d0
   ii = 0
@@ -129,7 +129,7 @@ subroutine compute_stress_3d_JPA(tau,k3,v)
     mm = 0
     do m = 1,nx
       k = abs(i-m)
-      tau(ii+1:ii+nw) = tau(ii+1:ii+nw) + matmul( k3%kernel(:,:,k) , v(mm+1:mm+nw) )
+!      tau(ii+1:ii+nw) = tau(ii+1:ii+nw) + matmul( k3%kernel(:,:,k) , v(mm+1:mm+nw) )
       mm = mm + nw
     enddo
     ii = ii + nw

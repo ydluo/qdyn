@@ -1,6 +1,7 @@
-! dc3d
+! dc3d subroutines by Okada
+! wrapper based on subroutine by Shinichi Miyazaki 
 
-module dc3d_all
+module okada
 
   implicit none
   private
@@ -2047,4 +2048,4 @@ end subroutine compute_kernel
 
       END  SUBROUTINE  DCCON2                                                             
 
-end module dc3d_all
+end module okada
