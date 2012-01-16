@@ -30,7 +30,7 @@ subroutine compute_stress(tau,K,v)
   select case (K%kind)
     case(1); call compute_stress_1d(tau,K%k1,v)
     case(2); call compute_stress_2d(tau,K%k2f,v)
-    case(3); call compute_stress_3d(tau,K%k3,v)
+    case(3); call compute_stress_3d_fft(tau,K%k3f,v)
   end select
 
 end subroutine compute_stress
@@ -69,21 +69,21 @@ subroutine compute_stress_2d(tau,k2f,v)
 end subroutine compute_stress_2d
 
 !--------------------------------------------------------
-subroutine compute_stress_3d(tau,k3,v)
-
-  use problem_class, only : kernel_3D
-
-  type(kernel_3D), intent(in)  :: k3
-  double precision , intent(out) :: tau(:)
-  double precision , intent(in) :: v(:)
-
-  integer :: nn,nw,nx,i,j,jj,ix,iw,jx,jw
-
-  nn = size(v)
-  nw = size(k3%kernel,1)
-  nx = nn/nw
- ! write(6,*) 'nn,nw,nx', nn, nw, nx
-
+!subroutine compute_stress_3d(tau,k3,v)
+!
+!  use problem_class, only : kernel_3D
+!
+!  type(kernel_3D), intent(in)  :: k3
+!  double precision , intent(out) :: tau(:)
+!  double precision , intent(in) :: v(:)
+!
+!  integer :: nn,nw,nx,i,j,jj,ix,iw,jx,jw
+!
+!  nn = size(v)
+!  nw = size(k3%kernel,1)
+!  nx = nn/nw
+! ! write(6,*) 'nn,nw,nx', nn, nw, nx
+!
 !  tau = 0d0
 !  do i = 1,nn
 !    ix = mod((i-1),nx)+1          ! find column of obs
@@ -107,33 +107,34 @@ subroutine compute_stress_3d(tau,k3,v)
 !    end if
 !
 !  end do
-
-  tau = 0d0
-  i=0
-  do iw=1,nw
-  do ix=1,nx
-    i = i+1
-    j = 0
-    do jw=1,nw
-    do jx=1,nx
-      j = j+1
-      idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the kernel
-      jj = (jw-1)*nx + idx + 1 
-      tau(i) = tau(i) - k3%kernel(iw,jj) * v(j)
-    end do
-    end do
-  end do
-  end do
-    
-end subroutine compute_stress_3d
+!
+!  tau = 0d0
+!  i=0
+!  do iw=1,nw
+!  do ix=1,nx
+!    i = i+1
+!    j = 0
+!    do jw=1,nw
+!    do jx=1,nx
+!      j = j+1
+!      idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the kernel
+!      jj = (jw-1)*nx + idx + 1 
+!      tau(i) = tau(i) - k3%kernel(iw,jj) * v(j)
+!    end do
+!    end do
+!  end do
+!  end do
+!    
+!end subroutine compute_stress_3d
 
 !--------------------------------------------------------
 ! JPA: try this subroutine instead
 subroutine compute_stress_3d_fft(tau,k3f,v)
 
-  use problem_class, only : kernel_3D
+  use problem_class, only : kernel_3D_fft
+  use fftsg, only : my_rdft
 
-  type(kernel_3D_fft), intent(in)  :: k3f
+  type(kernel_3D_fft), intent(inout)  :: k3f
   double precision , intent(out) :: tau(:)
   double precision , intent(in) :: v(:)
 
@@ -163,7 +164,7 @@ subroutine compute_stress_3d_fft(tau,k3f,v)
 !       and zero-padding (pre-processing) and chop-in-half (post-processing)
 
   do n = 1,k3f%nw
-    tmp = v( (n-1)*k3f%nx+1 : n*k3f%nx )
+    tmp( 1 : k3f%nx ) = v( (n-1)*k3f%nx+1 : n*k3f%nx )
     tmp( k3f%nx+1 : k3f%nxfft ) = 0d0  ! convolution requires zero-padding
     call my_rdft(1,tmp,k3f%m_fft) 
     tmpzk(n,:) = tmp

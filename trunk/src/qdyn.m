@@ -258,7 +258,7 @@ switch mode
     
     % solve
 %     status = system('~/qdyn_svn/trunk/src/qdyn');
-    status = system('~/bin/qdyn');
+    status = system('qdyn');
     % rename input and output files
     if length(NAME)
       movefile('fort.18',[NAME '.ot']); 

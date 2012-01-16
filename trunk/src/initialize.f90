@@ -46,8 +46,8 @@ subroutine init_field(pb)
   ! 2D fault, uniform grid along-strike
   ! Assumptions: 
   !   + the fault trace is parallel to x 
-  !   + the upper "left" corner of the fault is at (0,0,Z_CORNER)
-  !   + z is positive downwards (depth)
+  !   + the lower "left" corner of the fault is at (0,0,Z_CORNER)
+  !   + z is negative downwards (-depth)
   ! Storage scheme: faster index runs along-strike (x)
   case(2)
 
@@ -114,8 +114,8 @@ subroutine init_field(pb)
 !    do i = 1,pb%mesh%nn
 !      write(6,*) pb%mesh%x(i),pb%mesh%y(i),pb%mesh%z(i)
 !    end do 
-    write(6,*) 'dw'
-    write(6,*) pb%mesh%dw
+!    write(6,*) 'dw'
+!    write(6,*) pb%mesh%dw
 
   end select
 
@@ -177,11 +177,15 @@ subroutine init_kernel(pb)
   use constants, only : PI 
   use problem_class
   use okada, only : compute_kernel
+  use fftsg, only : my_rdft
 
   type(problem_type), intent(inout) :: pb
 
   double precision :: tau_co, wl2, tau
-  integer :: i, j, k, i_src, i_obs, IRET
+  double precision :: y_src, z_src, dip_src, dw_src 
+  double precision :: y_obs, z_obs, dip_obs
+  double precision, allocatable :: tmp(:)   ! for FFT
+  integer :: i, j, jj, k, n, nn, IRET
 
   write(6,*) 'Intializing kernel: ...'
 
@@ -193,7 +197,7 @@ subroutine init_kernel(pb)
     pb%kernel%k2f%nnfft = (pb%kernel%k2f%finite+1)*pb%mesh%nn 
     allocate (pb%kernel%k2f%kernel(pb%kernel%k2f%nnfft))
 
-    write(6,*) 'OouraFFT Selected'
+    write(6,*) 'OouraFFT Applied'
 
     if (pb%kernel%k2f%finite == 0) then
       tau_co = PI*pb%smu/pb%mesh%Lfault *2.d0/pb%mesh%nn
@@ -224,35 +228,35 @@ subroutine init_kernel(pb)
     end if
 
   elseif (pb%kernel%kind == 3) then      ! 3D
+    write(6,*) 'Generating 3D kernel...'
+    write(6,*) 'OouraFFT applied along-strike'
   !------ calculate kernel -----------------
   !kernel(i,j): response at i of source at j
   !because dx = constant, only need to calculate i at first column
 
-    write(6,*) 'Generating 3D kernel...'
-    allocate (pb%kernel%k3%kernel(pb%mesh%nw,pb%mesh%nn))
 
-    do i = 1,pb%mesh%nw
-      do j = 1,pb%mesh%nn
-        call compute_kernel(pb%lam,pb%smu,pb%mesh%x(j),pb%mesh%y(j),pb%mesh%z(j),  &
-               pb%mesh%dip(j),pb%mesh%dx,pb%mesh%dw((j-1)/pb%mesh%nx+1),   &
-               pb%mesh%x(1+(i-1)*pb%mesh%nx),pb%mesh%y(1+(i-1)*pb%mesh%nx),   &
-               pb%mesh%z(1+(i-1)*pb%mesh%nx),pb%mesh%dip(1+(i-1)*pb%mesh%nx),IRET,tau)
-
+!    allocate (pb%kernel%k3%kernel(pb%mesh%nw,pb%mesh%nn))
+!    do i = 1,pb%mesh%nw
+!      do j = 1,pb%mesh%nn
+!        call compute_kernel(pb%lam,pb%smu,pb%mesh%x(j),pb%mesh%y(j),pb%mesh%z(j),  &
+!               pb%mesh%dip(j),pb%mesh%dx,pb%mesh%dw((j-1)/pb%mesh%nx+1),   &
+!               pb%mesh%x(1+(i-1)*pb%mesh%nx),pb%mesh%y(1+(i-1)*pb%mesh%nx),   &
+!               pb%mesh%z(1+(i-1)*pb%mesh%nx),pb%mesh%dip(1+(i-1)*pb%mesh%nx),IRET,tau)
 !        write(6,*) 'obs',pb%mesh%x(1+(i-1)*pb%mesh%nx),pb%mesh%y(1+(i-1)*pb%mesh%nx),pb%mesh%z(1+(i-1)*pb%mesh%nx)
 !        write(6,*) 'src',pb%mesh%x(j),pb%mesh%y(j),pb%mesh%z(j) 
 !        write(6,*) 'tau',tau,'IRET',IRET
-        if (IRET == 0) then
-          pb%kernel%k3%kernel(i,j) = tau    
-        else
-          write(6,*) '!!WARNING!! : Kernel Singular, set value to 0,(i,j)',i,j
-          pb%kernel%k3%kernel(i,j) = 0d0
-        end if
-      end do
-    end do
+!        if (IRET == 0) then
+!          pb%kernel%k3%kernel(i,j) = tau    
+!        else
+!          write(6,*) '!!WARNING!! : Kernel Singular, set value to 0,(i,j)',i,j
+!          pb%kernel%k3%kernel(i,j) = 0d0
+!        end if
+!      end do
+!    end do
 
 !JPA : version 2, does not need to be implemented     
 
-!    do k = 1,pb%mesh%nx-1
+!    do k = 0,pb%mesh%nx-1
 !      do n = 1,pb%mesh%nw
 !        do j = 1,pb%mesh%nw
 !          call compute_kernel(pb%lam,pb%smu,pb%mesh%x(i_src),pb%mesh%y(i_src),pb%mesh%z(i_src),  &
@@ -288,40 +292,43 @@ subroutine init_kernel(pb)
 ! JPA : version 3, with FFT along-strike. This is the version we should implement 
 !       Assumes faster index runs along-strike
 !
-! k3f%nxfft = 2*nx ! fft convolution requires twice longer array
-! allocate(k3f%kernel(nw,nw,k3f%nxfft))
-! do n=1,nw
-!   nn = (n-1)*pb%mesh%nx
-!   y_src = pb%mesh%y(nn)
-!   z_src = pb%mesh%z(nn)
-!   dip_src = pb%mesh%dip(nn)
-!   dw_src = pb%mesh%dw(nn)
-!   do j=1,nw
-!     jj = (j-1)*pb%mesh%nx
-!     y_obs = pb%mesh%y(jj)
-!     z_obs = pb%mesh%z(jj)
-!     dip_obs = pb%mesh%dip(jj)
-!     do i=-nx+1,nx
-!       call compute_kernel(pb%lam,pb%smu, &
-!               i*pb%mesh%dx, y_src, z_src, dip_src, pb%mesh%dx, dw_src,   &
-!               0d0, y_obs, z_obs, dip_obs, &
-!               IRET,tau)
-!       k = i+1
-!       if (i<0) k = k+k3f%nxfft  ! wrap up the negative relative-x-positions in the second half of the array
-!                                 ! to comply with conventions of fft convolution
-!       tmp(k) = tau
-!     enddo
-!     call my_rdft(1,tmp,k3f%m_fft)
-!     k3f%kernel(j,n,:) = tmp
-!   enddo
-! enddo
+  pb%kernel%k3f%nw = pb%mesh%nw
+  pb%kernel%k3f%nx = pb%mesh%nx
+  pb%kernel%k3f%nxfft = 2*pb%mesh%nx ! fft convolution requires twice longer array
+  allocate(pb%kernel%k3f%kernel(pb%mesh%nw,pb%mesh%nw,pb%kernel%k3f%nxfft))
+  allocate(tmp(pb%kernel%k3f%nxfft))
+  do n=1,pb%mesh%nw
+    nn = (n-1)*pb%mesh%nx+1
+    y_src = pb%mesh%y(nn)
+    z_src = pb%mesh%z(nn)
+    dip_src = pb%mesh%dip(nn)
+    dw_src = pb%mesh%dw(nn)
+    do j=1,pb%mesh%nw
+      jj = (j-1)*pb%mesh%nx+1
+      y_obs = pb%mesh%y(jj)
+      z_obs = pb%mesh%z(jj)
+      dip_obs = pb%mesh%dip(jj)
+      do i=-pb%mesh%nx+1,pb%mesh%nx
+        call compute_kernel(pb%lam,pb%smu, &
+                i*pb%mesh%dx, y_src, z_src, dip_src, pb%mesh%dx, dw_src,   &
+                0d0, y_obs, z_obs, dip_obs, &
+                IRET,tau)
+        k = i+1
+        if (i<0) k = k+pb%kernel%k3f%nxfft  ! wrap up the negative relative-x-positions in the second half of the array
+                                  ! to comply with conventions of fft convolution
+        tmp(k) = tau
+      enddo
+      call my_rdft(1,tmp,pb%kernel%k3f%m_fft)
+      pb%kernel%k3f%kernel(j,n,:) = tmp
+    enddo
+  enddo
 
 
-    write(6,*) 'kernel(1,j)'
-    write(6,*) pb%kernel%k3%kernel(1,:)
-    do i = 1,pb%mesh%nn
-      write(99,*) pb%kernel%k3%kernel(1,i)
-    end do
+!    write(6,*) 'kernel(1,j)'
+!    write(6,*) pb%kernel%k3%kernel(1,:)
+!    do i = 1,pb%mesh%nn
+!      write(99,*) pb%kernel%k3%kernel(1,i)
+!    end do
   end if
 
   write(6,*) 'Kernel intialized'
