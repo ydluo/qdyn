@@ -284,30 +284,38 @@ subroutine init_kernel(pb)
 !      enddo
 !    enddo
 
+
 ! JPA : version 3, with FFT along-strike. This is the version we should implement 
-! Warning: maybe still confusion: which index is faster along-strike or along-dip?
+!       Assumes faster index runs along-strike
 !
-! k3f%nxfft = 2*nx
+! k3f%nxfft = 2*nx ! fft convolution requires twice longer array
 ! allocate(k3f%kernel(nw,nw,k3f%nxfft))
 ! do n=1,nw
+!   nn = (n-1)*pb%mesh%nx
+!   y_src = pb%mesh%y(nn)
+!   z_src = pb%mesh%z(nn)
+!   dip_src = pb%mesh%dip(nn)
+!   dw_src = pb%mesh%dw(nn)
 !   do j=1,nw
+!     jj = (j-1)*pb%mesh%nx
+!     y_obs = pb%mesh%y(jj)
+!     z_obs = pb%mesh%z(jj)
+!     dip_obs = pb%mesh%dip(jj)
 !     do i=-nx+1,nx
 !       call compute_kernel(pb%lam,pb%smu, &
-!               i*pb%mesh%dx, pb%mesh%y(n), pb%mesh%z(n), &
-!               pb%mesh%dip(n),pb%mesh%dx,pb%mesh%dw(n),   &
-!               0d0, pb%mesh%y(j), pb%mesh%z(j),  &
-!               pb%mesh%dip(j),IRET,tau)
-!       if (i<0) then 
-!         k = i+k3f%nxfft  ! wrap up the negative relative-x-positions at end of array
-!       else
-!         k = i
-!       endif
-!       tmp(k+1) = tau
+!               i*pb%mesh%dx, y_src, z_src, dip_src, pb%mesh%dx, dw_src,   &
+!               0d0, y_obs, z_obs, dip_obs, &
+!               IRET,tau)
+!       k = i+1
+!       if (i<0) k = k+k3f%nxfft  ! wrap up the negative relative-x-positions in the second half of the array
+!                                 ! to comply with conventions of fft convolution
+!       tmp(k) = tau
 !     enddo
 !     call my_rdft(1,tmp,k3f%m_fft)
 !     k3f%kernel(j,n,:) = tmp
 !   enddo
 ! enddo
+
 
     write(6,*) 'kernel(1,j)'
     write(6,*) pb%kernel%k3%kernel(1,:)
