@@ -241,7 +241,8 @@ subroutine init_kernel(pb)
       end do
     end do
 
-    
+!JPA : version 2, does not need to be implemented     
+
 !    do k = 1,pb%mesh%nx-1
 !      do n = 1,pb%mesh%nw
 !        do j = 1,pb%mesh%nw
@@ -264,6 +265,7 @@ subroutine init_kernel(pb)
 !                               calling algorithm in compute_stress_3D [change not made yet]
 !JPA      
 ! note: requires a storage of x,y,z in which the along-dip index runs faster than the along-strike index
+!    allocate(pb%kernel%k3%kernel(nw,nw,0:nx-1))
 !    do k=0,nx-1 
 !      do n=1,nw
 !        do j=1,nw
@@ -272,10 +274,29 @@ subroutine init_kernel(pb)
 !        enddo
 !      enddo
 !    enddo
-! JPA FFT-along-strike version
+
+! JPA : version 3, with FFT along-strike. This is the version we should implement 
+! Warning: maybe still confusion: which index is faster along-strike or along-dip?
+!
+! k3f%nxfft = 2*nx
+! allocate(k3f%kernel(nw,nw,k3f%nxfft))
 ! do n=1,nw
 !   do j=1,nw
-!     pb%kernel%k3%kernel(j,n,:) = fft(pb%kernel%k3%kernel(j,n,:)) 
+!     do i=-nx+1,nx
+!       call compute_kernel(pb%lam,pb%smu, &
+!               i*pb%mesh%dx, pb%mesh%y(n), pb%mesh%z(n), &
+!               pb%mesh%dip(n),pb%mesh%dx,pb%mesh%dw(n),   &
+!               0d0, pb%mesh%y(j), pb%mesh%z(j),  &
+!               pb%mesh%dip(j),IRET,tau)
+!       if (i<0) then 
+!         k = i+k3f%nxfft  ! wrap up the negative relative-x-positions at end of array
+!       else
+!         k = i
+!       endif
+!       tmp(k+1) = tau
+!     enddo
+!     call my_rdft(1,tmp,k3f%m_fft)
+!     k3f%kernel(j,n,:) = tmp
 !   enddo
 ! enddo
 
