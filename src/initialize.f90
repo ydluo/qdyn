@@ -302,7 +302,7 @@ subroutine init_kernel(pb)
     y_src = pb%mesh%y(nn)
     z_src = pb%mesh%z(nn)
     dip_src = pb%mesh%dip(nn)
-    dw_src = pb%mesh%dw(nn)
+    dw_src = pb%mesh%dw(n)
     do j=1,pb%mesh%nw
       jj = (j-1)*pb%mesh%nx+1
       y_obs = pb%mesh%y(jj)
@@ -318,14 +318,16 @@ subroutine init_kernel(pb)
                                   ! to comply with conventions of fft convolution
         tmp(k) = tau
       enddo
+!      write(6,*) 'kernel_before_fft',tmp
       call my_rdft(1,tmp,pb%kernel%k3f%m_fft)
       pb%kernel%k3f%kernel(j,n,:) = tmp
+!      write(6,*) 'kernel_after_fft',tmp
     enddo
   enddo
 
 
-!    write(6,*) 'kernel(1,j)'
-!    write(6,*) pb%kernel%k3%kernel(1,:)
+!    write(6,*) 'kernel(j,n,nxfft)'
+!    write(6,*) pb%kernel%k3f%kernel
 !    do i = 1,pb%mesh%nn
 !      write(99,*) pb%kernel%k3%kernel(1,i)
 !    end do
