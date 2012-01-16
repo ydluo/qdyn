@@ -139,7 +139,9 @@ subroutine compute_stress_3d_fft(tau,k3f,v)
 
 !JPA version 3, with FFT along-strike version.
 ! Assumes kernel has been FFT'd during initialization
-! Note: requires storage with along-strike index running faster than along-dip
+! Assumes storage with along-strike index running faster than along-dip
+! Note: to avoid periodic wrap-around, fft convolution requires twice longer arrays
+!       and zero-padding (pre-processing) and chop-in-half (post-processing)
 
   do n = 1,k3f%nw
     tmp = v( (n-1)*k3f%nx+1 : n*k3f%nx )
@@ -153,7 +155,7 @@ subroutine compute_stress_3d_fft(tau,k3f,v)
   do n = 1,k3f%nw
     tmp = tmpzk(n,:)
     call my_rdft(-1,tmp,k3f%m_fft)
-    tau( (n-1)*k3f%nx+1 : n*k3f%nx ) = tmp(1:k3f%nx)
+    tau( (n-1)*k3f%nx+1 : n*k3f%nx ) = tmp(1:k3f%nx) ! take only first half of array
   enddo
 
 end subroutine compute_stress_3d_fft
