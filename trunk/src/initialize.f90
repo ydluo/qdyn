@@ -70,10 +70,42 @@ subroutine init_field(pb)
       end do
     end do
     !------ give value to x, y, z , dip of row 2 to nw------------------- 
-    write(6,*) 'x,y,z'
-    do i = 1,pb%mesh%nn
-      write(6,*) pb%mesh%x(i),pb%mesh%y(i),pb%mesh%z(i)
-    end do 
+
+
+! along-dip faster
+!    !------ give value to x, y, z , dip of first row -------------------
+!    cd = dcos(pb%mesh%DIP_W(1)/180d0*PI)
+!    sd = dsin(pb%mesh%DIP_W(1)/180d0*PI)
+!    do j = 1,pb%mesh%nx
+!      pb%mesh%x((j-1)*pb%mesh%nw+1) = 0d0+(0.5d0+dble(j-1))*pb%mesh%dx
+!      pb%mesh%y((j-1)*pb%mesh%nw+1) = 0d0+0.5d0*pb%mesh%dw(1)*cd
+!      pb%mesh%z((j-1)*pb%mesh%nw+1) = pb%mesh%Z_CORNER+0.5d0*pb%mesh%dw(1)*sd
+!      pb%mesh%dip((j-1)*pb%mesh%nw+1) = pb%mesh%DIP_W(1)
+!    end do
+!    !------ give value to x, y, z , dip of first row -------------------
+!
+!    !------ give value to x, y, z , dip of row 2 to nw------------------- 
+!    do i = 2,pb%mesh%nw
+!      cd0 = dcos(pb%mesh%DIP_W(i-1)/180d0*PI)
+!      sd0 = dsin(pb%mesh%DIP_W(i-1)/180d0*PI)
+!      cd = dcos(pb%mesh%DIP_W(i)/180d0*PI)
+!      sd = dsin(pb%mesh%DIP_W(i)/180d0*PI)
+!      do j = 1,pb%mesh%nx
+!        pb%mesh%x((j-1)*pb%mesh%nw+i) = 0d0+(0.5d0+dble(j-1))*pb%mesh%dx
+!        pb%mesh%y((j-1)*pb%mesh%nw+i) = pb%mesh%y((j-1)*pb%mesh%nw+i-1)    &
+!                          +0.5d0*pb%mesh%dw(i-1)*cd0+0.5d0*pb%mesh%dw(i)*cd
+!        pb%mesh%z((j-1)*pb%mesh%nw+i) = pb%mesh%z((j-1)*pb%mesh%nw+i-1)    &
+!                          +0.5d0*pb%mesh%dw(i-1)*sd0+0.5d0*pb%mesh%dw(i)*sd
+!        pb%mesh%dip((j-1)*pb%mesh%nw+i) = pb%mesh%DIP_W(i)
+!      end do
+!    end do
+!    !------ give value to x, y, z , dip of row 2 to nw------------------- 
+! along-dip faster
+
+!    write(6,*) 'x,y,z'
+!    do i = 1,pb%mesh%nn
+!      write(6,*) pb%mesh%x(i),pb%mesh%y(i),pb%mesh%z(i)
+!    end do 
     write(6,*) 'dw'
     write(6,*) pb%mesh%dw
   end if
@@ -140,7 +172,7 @@ subroutine init_kernel(pb)
   type(problem_type), intent(inout) :: pb
 
   double precision :: tau_co, wl2, tau
-  integer :: i, j , IRET
+  integer :: i, j, k, i_src, i_obs, IRET
 
   write(6,*) 'Intializing kernel: ...'
 
@@ -209,6 +241,27 @@ subroutine init_kernel(pb)
       end do
     end do
 
+    
+!    do k = 1,pb%mesh%nx-1
+!      do n = 1,pb%mesh%nw
+!        do j = 1,pb%mesh%nw
+!          call compute_kernel(pb%lam,pb%smu,pb%mesh%x(i_src),pb%mesh%y(i_src),pb%mesh%z(i_src),  &
+!                 pb%mesh%dip(i_src),pb%mesh%dx,pb%mesh%dw((j-1)/pb%mesh%nx+1),   &
+!                 pb%mesh%x(i_obs),pb%mesh%y(i_obs),   &
+!                 pb%mesh%z(i_obs),pb%mesh%dip(i_obs),IRET,tau)
+!          if (IRET == 0) then
+!            pb%kernel%k3%kernel(j,n,k) = tau    
+!         else
+!            write(6,*) '!!WARNING!! : Kernel Singular, set value to 0,(i,j)',i,j
+!            pb%kernel%k3%kernel(j,n,k) = 0d0
+!          end if
+!        end do
+!      end do
+!    end do
+
+!YD : call compute_kernel change made above:
+!     change also required in : mesh x,y,z,dip : [change made and commented]
+!                               calling algorithm in compute_stress_3D [change not made yet]
 !JPA      
 ! note: requires a storage of x,y,z in which the along-dip index runs faster than the along-strike index
 !    do k=0,nx-1 

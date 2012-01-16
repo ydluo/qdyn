@@ -28,7 +28,7 @@ p.Z_CORNER=-100e3;
 p.N=p.NX*p.NW;
 p.DW(1:p.NW)=p.W/p.NW;
 p.DIP_W(1:p.NW)=30.0;
-twm=8;
+twm=4;
 ts=2;
 p.ACC = 1e-14;
 
@@ -67,7 +67,7 @@ p.TMAX=twm*year;
   
 
 
-p.NTOUT=10;
+p.NTOUT=100;
 p.NXOUT=1;
 p.NSTOP=0;
 
