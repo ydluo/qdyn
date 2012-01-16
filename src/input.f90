@@ -48,7 +48,7 @@ subroutine read_main(pb)
     allocate(pb%kernel%k2f)
     read(15,*) pb%kernel%k2f%finite
   elseif (pb%kernel%kind==3) then 
-    allocate(pb%kernel%k3)
+    allocate(pb%kernel%k3f)
   end if
    
   read(15,*) pb%itheta_law

@@ -35,15 +35,22 @@ module problem_class
     type (OouraFFT_type) :: m_fft
   end type kernel_2D_fft
 
-  type kernel_3D
-    double precision, dimension(:,:), allocatable :: kernel
-  end type kernel_3D
+!  type kernel_3D
+!    double precision, dimension(:,:), allocatable :: kernel
+!  end type kernel_3D
+
+  type kernel_3D_fft
+    integer :: nxfft, nw, nx
+    double precision, dimension(:,:,:), allocatable :: kernel
+    type (OouraFFT_type) :: m_fft
+  end type kernel_3D_fft
 
   type kernel_type
     integer :: kind = 0
     double precision :: k1
     type (kernel_2D_fft), pointer :: k2f
-    type (kernel_3D), pointer :: k3
+!    type (kernel_3D), pointer :: k3
+    type (kernel_3D_fft), pointer :: k3f
   end type kernel_type
 
   type problem_type
