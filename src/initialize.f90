@@ -19,58 +19,66 @@ subroutine init_field(pb)
 
   type(problem_type), intent(inout) :: pb
   
-  integer :: i, j
+  integer :: i, j, j0
   double precision :: cd, sd, cd0, sd0
 
   write(6,*) 'Initializing parameters: ...'
   
-  if (pb%mesh%dim == 0) then  ! Spring-block System
+  select case (pb%mesh%dim)
+
+  ! Spring-block System
+  case(0) 
     write(6,*) 'Spring-block System' 
     pb%mesh%dx = pb%mesh%Lfault
     pb%mesh%x = 0d0
-  end if
 
-  if (pb%mesh%dim == 1) then  ! 1D fault, uniform grid
+  ! 1D fault, uniform grid
+  case(1)
     write(6,*) '1D fault, uniform grid' 
     pb%mesh%dx = pb%mesh%Lfault/pb%mesh%nn
     do i=1,pb%mesh%nn
       pb%mesh%x(i) = (i-pb%mesh%nn*0.5d0-0.5d0)*pb%mesh%dx
+      ! Assuming nn is even (usually a power of 2), 
+      ! the center of the two middle elements (i=nn/2 and nn/2+1) 
+      ! are located at x=-dx/2 and x=dx/2, respectively 
     enddo
-  end if
 
-  if (pb%mesh%dim == 2) then  ! 2D fault, uniform grid along-strike
+  ! 2D fault, uniform grid along-strike
+  ! Assumptions: 
+  !   + the fault trace is parallel to x 
+  !   + the upper "left" corner of the fault is at (0,0,Z_CORNER)
+  !   + z is positive downwards (depth)
+  ! Storage scheme: faster index runs along-strike (x)
+  case(2)
+
     write(6,*) '2D fault, uniform grid along-strike'
     pb%mesh%dx = pb%mesh%Lfault/pb%mesh%nx
     allocate(pb%mesh%y(pb%mesh%nn),   &
-             pb%mesh%z(pb%mesh%nn),pb%mesh%dip(pb%mesh%nn)) 
-    !------ give value to x, y, z , dip of first row -------------------
+             pb%mesh%z(pb%mesh%nn),   &
+             pb%mesh%dip(pb%mesh%nn)) 
+
+    ! set x, y, z, dip of first row
     cd = dcos(pb%mesh%DIP_W(1)/180d0*PI)
     sd = dsin(pb%mesh%DIP_W(1)/180d0*PI)
     do j = 1,pb%mesh%nx
       pb%mesh%x(j) = 0d0+(0.5d0+dble(j-1))*pb%mesh%dx
-      pb%mesh%y(j) = 0d0+0.5d0*pb%mesh%dw(1)*cd
-      pb%mesh%z(j) = pb%mesh%Z_CORNER+0.5d0*pb%mesh%dw(1)*sd
-      pb%mesh%dip(j) = pb%mesh%DIP_W(1)
     end do
-    !------ give value to x, y, z , dip of first row -------------------
+    pb%mesh%y(1:pb%mesh%nx) = 0d0+0.5d0*pb%mesh%dw(1)*cd
+    pb%mesh%z(1:pb%mesh%nx) = pb%mesh%Z_CORNER+0.5d0*pb%mesh%dw(1)*sd
+    pb%mesh%dip(1:pb%mesh%nx) = pb%mesh%DIP_W(1)
 
-    !------ give value to x, y, z , dip of row 2 to nw------------------- 
+    ! set x, y, z, dip of row 2 to nw
     do i = 2,pb%mesh%nw
-      cd0 = dcos(pb%mesh%DIP_W(i-1)/180d0*PI)
-      sd0 = dsin(pb%mesh%DIP_W(i-1)/180d0*PI)
+      cd0 = cd
+      sd0 = sd
       cd = dcos(pb%mesh%DIP_W(i)/180d0*PI)
       sd = dsin(pb%mesh%DIP_W(i)/180d0*PI)
-      do j = 1,pb%mesh%nx
-        pb%mesh%x((i-1)*pb%mesh%nx+j) = 0d0+(0.5d0+dble(j-1))*pb%mesh%dx
-        pb%mesh%y((i-1)*pb%mesh%nx+j) = pb%mesh%y((i-2)*pb%mesh%nx+j)    &
-                          +0.5d0*pb%mesh%dw(i-1)*cd0+0.5d0*pb%mesh%dw(i)*cd
-        pb%mesh%z((i-1)*pb%mesh%nx+j) = pb%mesh%z((i-2)*pb%mesh%nx+j)    &
-                          +0.5d0*pb%mesh%dw(i-1)*sd0+0.5d0*pb%mesh%dw(i)*sd
-        pb%mesh%dip((i-1)*pb%mesh%nx+j) = pb%mesh%DIP_W(i)
-      end do
+      j0 = (i-1)*pb%mesh%nx
+      pb%mesh%x(j0+1:j0+pb%mesh%nx) = pb%mesh%x(1:pb%mesh%nx)
+      pb%mesh%y(j0+1:j0+pb%mesh%nx) = pb%mesh%y(j0) + 0.5d0*pb%mesh%dw(i-1)*cd0 + 0.5d0*pb%mesh%dw(i)*cd
+      pb%mesh%z(j0+1:j0+pb%mesh%nx) = pb%mesh%z(j0) + 0.5d0*pb%mesh%dw(i-1)*sd0 + 0.5d0*pb%mesh%dw(i)*sd
+      pb%mesh%dip(j0+1:j0+pb%mesh%nx) = pb%mesh%DIP_W(i)
     end do
-    !------ give value to x, y, z , dip of row 2 to nw------------------- 
-
 
 ! along-dip faster
 !    !------ give value to x, y, z , dip of first row -------------------
@@ -108,7 +116,8 @@ subroutine init_field(pb)
 !    end do 
     write(6,*) 'dw'
     write(6,*) pb%mesh%dw
-  end if
+
+  end select
 
 !YD This part we may want to modify it later to be able to
 !impose more complicated loading/pertubation
