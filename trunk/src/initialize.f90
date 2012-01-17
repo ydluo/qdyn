@@ -254,43 +254,9 @@ subroutine init_kernel(pb)
 !      end do
 !    end do
 
-!JPA : version 2, does not need to be implemented     
 
-!    do k = 0,pb%mesh%nx-1
-!      do n = 1,pb%mesh%nw
-!        do j = 1,pb%mesh%nw
-!          call compute_kernel(pb%lam,pb%smu,pb%mesh%x(i_src),pb%mesh%y(i_src),pb%mesh%z(i_src),  &
-!                 pb%mesh%dip(i_src),pb%mesh%dx,pb%mesh%dw((j-1)/pb%mesh%nx+1),   &
-!                 pb%mesh%x(i_obs),pb%mesh%y(i_obs),   &
-!                 pb%mesh%z(i_obs),pb%mesh%dip(i_obs),IRET,tau)
-!          if (IRET == 0) then
-!            pb%kernel%k3%kernel(j,n,k) = tau    
-!         else
-!            write(6,*) '!!WARNING!! : Kernel Singular, set value to 0,(i,j)',i,j
-!            pb%kernel%k3%kernel(j,n,k) = 0d0
-!          end if
-!        end do
-!      end do
-!    end do
-
-!YD : call compute_kernel change made above:
-!     change also required in : mesh x,y,z,dip : [change made and commented]
-!                               calling algorithm in compute_stress_3D [change not made yet]
-!JPA      
-! note: requires a storage of x,y,z in which the along-dip index runs faster than the along-strike index
-!    allocate(pb%kernel%k3%kernel(nw,nw,0:nx-1))
-!    do k=0,nx-1 
-!      do n=1,nw
-!        do j=1,nw
-!          call compute_kernel( ... j ... k*nw+n ..., IRET,tau)
-!          pb%kernel%k3%kernel(j,n,k) = tau
-!        enddo
-!      enddo
-!    enddo
-
-
-! JPA : version 3, with FFT along-strike. This is the version we should implement 
-!       Assumes faster index runs along-strike
+! version with FFT along-strike. This is the version we should implement 
+! Assumes faster index runs along-strike
 !
   pb%kernel%k3f%nw = pb%mesh%nw
   pb%kernel%k3f%nx = pb%mesh%nx

@@ -128,7 +128,12 @@ end subroutine compute_stress_2d
 !end subroutine compute_stress_3d
 
 !--------------------------------------------------------
-! JPA: try this subroutine instead
+! version with FFT along-strike
+! Assumes kernel has been FFT'd during initialization
+! Assumes storage with along-strike index running faster than along-dip
+! Note: to avoid periodic wrap-around, fft convolution requires twice longer arrays
+!       and zero-padding (pre-processing) and chop-in-half (post-processing)
+
 subroutine compute_stress_3d_fft(tau,k3f,v)
 
   use problem_class, only : kernel_3D_fft
@@ -140,28 +145,6 @@ subroutine compute_stress_3d_fft(tau,k3f,v)
 
   double precision :: tmpzk(k3f%nw,k3f%nxfft), tmp(k3f%nxfft)
   integer :: n,k
-
-! version 2, does not need to be implemented
-! It requires a different storage: 
-!   v and tau: (nw,nx) reshaped into vector of length nw*nx (note that nw, along-dip, is first)
-!   kernel(1:nw,1:nw,0:(nx-1))
-!  tau = 0d0
-!  ii = 0
-!  do i = 1,nx
-!    mm = 0
-!    do m = 1,nx
-!      k = abs(i-m)
-!      tau(ii+1:ii+nw) = tau(ii+1:ii+nw) + matmul( k3%kernel(:,:,k) , v(mm+1:mm+nw) )
-!      mm = mm + nw
-!    enddo
-!    ii = ii + nw
-!  enddo
-
-!JPA version 3, with FFT along-strike version.
-! Assumes kernel has been FFT'd during initialization
-! Assumes storage with along-strike index running faster than along-dip
-! Note: to avoid periodic wrap-around, fft convolution requires twice longer arrays
-!       and zero-padding (pre-processing) and chop-in-half (post-processing)
 
   do n = 1,k3f%nw
     tmp( 1 : k3f%nx ) = v( (n-1)*k3f%nx+1 : n*k3f%nx )
