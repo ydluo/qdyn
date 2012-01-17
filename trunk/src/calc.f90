@@ -153,9 +153,25 @@ subroutine compute_stress_3d_fft(tau,k3f,v)
     call my_rdft(1,tmp,k3f%m_fft) 
     tmpzk(n,:) = tmp
   enddo
-  do k = 1,k3f%nxfft
-    tmpzk(:,k) = matmul( k3f%kernel(:,:,k), tmpzk(:,k) )
+
+  ! convolution in Fourier domain is a product of complex numbers:
+  ! K*V = (ReK + i*ImK)*(ReV+i*ImV) 
+  !     = ReK*ReV - ImK*ImV  + i*( ReK*ImV + ImK*ReV )
+  !
+  ! wavenumber = 0, real
+  tmpzk(:,1) = matmul( k3f%kernel(:,:,1), tmpzk(:,1) ) 
+  ! wavenumber = Nyquist, real
+  tmpzk(:,2) = matmul( k3f%kernel(:,:,2), tmpzk(:,2) ) 
+  ! higher wavenumbers, complex
+  do k = 3,k3f%nxfft-1,2
+    ! real part = ReK*ReV - ImK*ImV
+    tmpzk(:,k)   = matmul( k3f%kernel(:,:,k), tmpzk(:,k) )  &
+                 - matmul( k3f%kernel(:,:,k+1), tmpzk(:,k+1) )
+    ! imaginary part = ReK*ImV + ImK*ReV
+    tmpzk(:,k+1) = matmul( k3f%kernel(:,:,k), tmpzk(:,k+1) )  &
+                 + matmul( k3f%kernel(:,:,k+1), tmpzk(:,k) )
   enddo
+  
   do n = 1,k3f%nw
     tmp = - tmpzk(n,:)
     call my_rdft(-1,tmp,k3f%m_fft)
