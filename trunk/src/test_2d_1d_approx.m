@@ -20,13 +20,13 @@ p.V2=0.8e-7;
 
 p.L=100e3;
 p.W=100e3;
-p.NX=10;
-p.NW=10;
+p.NX=4;
+p.NW=4;
 p.Z_CORNER=-50e3;
 p.N=p.NX*p.NW;
 p.DW(1:p.NW)=p.W/p.NW;
 p.DIP_W(1:p.NW)=30.0;
-twm=2;
+twm=20;
 ts=2;
 p.ACC = 1e-14;
 
