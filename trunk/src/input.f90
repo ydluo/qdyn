@@ -32,7 +32,7 @@ subroutine read_main(pb)
     read(15,*) pb%mesh%nn
     read(15,*) pb%mesh%Lfault, pb%mesh%W 
   !3d problem
-  elseif (pb%mesh%dim==2) then
+  elseif (pb%mesh%dim==2 .or. pb%mesh%dim==3) then
     read(15,*) pb%mesh%nx,pb%mesh%nw
     pb%mesh%nn = pb%mesh%nx * pb%mesh%nw
     read(15,*) pb%mesh%Lfault, pb%mesh%W , pb%mesh%Z_CORNER 
@@ -41,7 +41,7 @@ subroutine read_main(pb)
       read(15,*) pb%mesh%dw(i), pb%mesh%DIP_W(i)
     end do
   else
-    write(6,*) 'mesh dimension should be 0, 1 or 2'
+    write(6,*) 'mesh dimension should be 0, 1 or 2, 3'
   endif
      
   if (pb%kernel%kind==2) then 
@@ -49,6 +49,8 @@ subroutine read_main(pb)
     read(15,*) pb%kernel%k2f%finite
   elseif (pb%kernel%kind==3) then 
     allocate(pb%kernel%k3f)
+  elseif (pb%kernel%kind==4) then     ! 
+    allocate(pb%kernel%k3)
   end if
    
   read(15,*) pb%itheta_law

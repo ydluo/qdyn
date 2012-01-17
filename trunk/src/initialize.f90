@@ -80,42 +80,37 @@ subroutine init_field(pb)
       pb%mesh%dip(j0+1:j0+pb%mesh%nx) = pb%mesh%DIP_W(i)
     end do
 
-! along-dip faster
-!    !------ give value to x, y, z , dip of first row -------------------
-!    cd = dcos(pb%mesh%DIP_W(1)/180d0*PI)
-!    sd = dsin(pb%mesh%DIP_W(1)/180d0*PI)
-!    do j = 1,pb%mesh%nx
-!      pb%mesh%x((j-1)*pb%mesh%nw+1) = 0d0+(0.5d0+dble(j-1))*pb%mesh%dx
-!      pb%mesh%y((j-1)*pb%mesh%nw+1) = 0d0+0.5d0*pb%mesh%dw(1)*cd
-!      pb%mesh%z((j-1)*pb%mesh%nw+1) = pb%mesh%Z_CORNER+0.5d0*pb%mesh%dw(1)*sd
-!      pb%mesh%dip((j-1)*pb%mesh%nw+1) = pb%mesh%DIP_W(1)
-!    end do
-!    !------ give value to x, y, z , dip of first row -------------------
-!
-!    !------ give value to x, y, z , dip of row 2 to nw------------------- 
-!    do i = 2,pb%mesh%nw
-!      cd0 = dcos(pb%mesh%DIP_W(i-1)/180d0*PI)
-!      sd0 = dsin(pb%mesh%DIP_W(i-1)/180d0*PI)
-!      cd = dcos(pb%mesh%DIP_W(i)/180d0*PI)
-!      sd = dsin(pb%mesh%DIP_W(i)/180d0*PI)
-!      do j = 1,pb%mesh%nx
-!        pb%mesh%x((j-1)*pb%mesh%nw+i) = 0d0+(0.5d0+dble(j-1))*pb%mesh%dx
-!        pb%mesh%y((j-1)*pb%mesh%nw+i) = pb%mesh%y((j-1)*pb%mesh%nw+i-1)    &
-!                          +0.5d0*pb%mesh%dw(i-1)*cd0+0.5d0*pb%mesh%dw(i)*cd
-!        pb%mesh%z((j-1)*pb%mesh%nw+i) = pb%mesh%z((j-1)*pb%mesh%nw+i-1)    &
-!                          +0.5d0*pb%mesh%dw(i-1)*sd0+0.5d0*pb%mesh%dw(i)*sd
-!        pb%mesh%dip((j-1)*pb%mesh%nw+i) = pb%mesh%DIP_W(i)
-!      end do
-!    end do
-!    !------ give value to x, y, z , dip of row 2 to nw------------------- 
-! along-dip faster
+  case(3)
 
-!    write(6,*) 'x,y,z'
-!    do i = 1,pb%mesh%nn
-!      write(6,*) pb%mesh%x(i),pb%mesh%y(i),pb%mesh%z(i)
-!    end do 
-!    write(6,*) 'dw'
-!    write(6,*) pb%mesh%dw
+    write(6,*) '2D fault, uniform grid along-strike'
+    pb%mesh%dx = pb%mesh%Lfault/pb%mesh%nx
+    allocate(pb%mesh%y(pb%mesh%nn),   &
+             pb%mesh%z(pb%mesh%nn),   &
+             pb%mesh%dip(pb%mesh%nn)) 
+
+    ! set x, y, z, dip of first row
+    cd = dcos(pb%mesh%DIP_W(1)/180d0*PI)
+    sd = dsin(pb%mesh%DIP_W(1)/180d0*PI)
+    do j = 1,pb%mesh%nx
+      pb%mesh%x(j) = 0d0+(0.5d0+dble(j-1))*pb%mesh%dx
+    end do
+    pb%mesh%y(1:pb%mesh%nx) = 0d0+0.5d0*pb%mesh%dw(1)*cd
+    pb%mesh%z(1:pb%mesh%nx) = pb%mesh%Z_CORNER+0.5d0*pb%mesh%dw(1)*sd
+    pb%mesh%dip(1:pb%mesh%nx) = pb%mesh%DIP_W(1)
+
+    ! set x, y, z, dip of row 2 to nw
+    do i = 2,pb%mesh%nw
+      cd0 = cd
+      sd0 = sd
+      cd = dcos(pb%mesh%DIP_W(i)/180d0*PI)
+      sd = dsin(pb%mesh%DIP_W(i)/180d0*PI)
+      j0 = (i-1)*pb%mesh%nx
+      pb%mesh%x(j0+1:j0+pb%mesh%nx) = pb%mesh%x(1:pb%mesh%nx)
+      pb%mesh%y(j0+1:j0+pb%mesh%nx) = pb%mesh%y(j0) + 0.5d0*pb%mesh%dw(i-1)*cd0 + 0.5d0*pb%mesh%dw(i)*cd
+      pb%mesh%z(j0+1:j0+pb%mesh%nx) = pb%mesh%z(j0) + 0.5d0*pb%mesh%dw(i-1)*sd0 + 0.5d0*pb%mesh%dw(i)*sd
+      pb%mesh%dip(j0+1:j0+pb%mesh%nx) = pb%mesh%DIP_W(i)
+    end do
+
 
   end select
 
@@ -297,6 +292,35 @@ subroutine init_kernel(pb)
 !    do i = 1,pb%mesh%nn
 !      write(99,*) pb%kernel%k3%kernel(1,i)
 !    end do
+
+
+  elseif (pb%kernel%kind == 4) then      ! 3D no fft
+    write(6,*) 'Generating 3D kernel...'
+    write(6,*) 'NO FFT applied'
+  !------ calculate kernel -----------------
+  !kernel(i,j): response at i of source at j
+  !because dx = constant, only need to calculate i at first column
+
+
+    allocate (pb%kernel%k3%kernel(pb%mesh%nw,pb%mesh%nn))
+    do i = 1,pb%mesh%nw
+      do j = 1,pb%mesh%nn
+        call compute_kernel(pb%lam,pb%smu,pb%mesh%x(j),pb%mesh%y(j),pb%mesh%z(j),  &
+               pb%mesh%dip(j),pb%mesh%dx,pb%mesh%dw((j-1)/pb%mesh%nx+1),   &
+               pb%mesh%x(1+(i-1)*pb%mesh%nx),pb%mesh%y(1+(i-1)*pb%mesh%nx),   &
+               pb%mesh%z(1+(i-1)*pb%mesh%nx),pb%mesh%dip(1+(i-1)*pb%mesh%nx),IRET,tau)
+!        write(6,*) 'obs',pb%mesh%x(1+(i-1)*pb%mesh%nx),pb%mesh%y(1+(i-1)*pb%mesh%nx),pb%mesh%z(1+(i-1)*pb%mesh%nx)
+!        write(6,*) 'src',pb%mesh%x(j),pb%mesh%y(j),pb%mesh%z(j) 
+!        write(6,*) 'tau',tau,'IRET',IRET
+        if (IRET == 0) then
+          pb%kernel%k3%kernel(i,j) = tau    
+        else
+          write(6,*) '!!WARNING!! : Kernel Singular, set value to 0,(i,j)',i,j
+          pb%kernel%k3%kernel(i,j) = 0d0
+        end if
+      end do
+    end do
+
   end if
 
   write(6,*) 'Kernel intialized'

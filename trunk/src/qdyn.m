@@ -230,7 +230,7 @@ switch mode
     fid=fopen('qdyn.in','w');
     fprintf(fid,'%u     meshdim\n' , MESHDIM); 
 
-    if MESHDIM == 2;
+    if MESHDIM == 2 || MESHDIM == 3 ;
       disp('MESHDIM =2');
       fprintf(fid,'%u %u     NX, NW\n' , NX, NW);      
       fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
