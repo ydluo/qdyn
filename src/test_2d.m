@@ -20,10 +20,10 @@ p.B=0.01;
 
 p.V2=0.01;
 
-p.L=8e3;
-p.W=8e3;
-p.NX=50;
-p.NW=50;
+p.L=16e3;
+p.W=16e3;
+p.NX=8;
+p.NW=8;
 p.Z_CORNER=-100e3;
 p.N=p.NX*p.NW;
 p.DW(1:p.NW)=p.W/p.NW;

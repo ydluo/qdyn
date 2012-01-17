@@ -173,7 +173,7 @@ subroutine compute_stress_3d_fft(tau,k3f,v)
     tmpzk(:,k) = matmul( k3f%kernel(:,:,k), tmpzk(:,k) )
   enddo
   do n = 1,k3f%nw
-    tmp = tmpzk(n,:)
+    tmp = - tmpzk(n,:)
     call my_rdft(-1,tmp,k3f%m_fft)
     tau( (n-1)*k3f%nx+1 : n*k3f%nx ) = tmp(1:k3f%nx) ! take only first half of array
   enddo
