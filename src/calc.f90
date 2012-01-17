@@ -165,11 +165,12 @@ subroutine compute_stress_3d_fft(tau,k3f,v)
   ! higher wavenumbers, complex
   do k = 3,k3f%nxfft-1,2
     ! real part = ReK*ReV - ImK*ImV
-    tmpzk(:,k)   = matmul( k3f%kernel(:,:,k), tmpzk(:,k) )  &
-                 - matmul( k3f%kernel(:,:,k+1), tmpzk(:,k+1) )
+    tmp  = matmul( k3f%kernel(:,:,k), tmpzk(:,k) )  &
+         - matmul( k3f%kernel(:,:,k+1), tmpzk(:,k+1) )
     ! imaginary part = ReK*ImV + ImK*ReV
     tmpzk(:,k+1) = matmul( k3f%kernel(:,:,k), tmpzk(:,k+1) )  &
                  + matmul( k3f%kernel(:,:,k+1), tmpzk(:,k) )
+    tmpzk(:,k) = tmp
   enddo
   
   do n = 1,k3f%nw
