@@ -9,7 +9,7 @@ rand(1,floor(sum(100*clock)));
 year = 3600*24*365;
 p = qdyn('set');
 
-p.MESHDIM=3;
+p.MESHDIM=2;
 p.THETA_LAW=2;
 
 p.SIGMA=0.5e6;
