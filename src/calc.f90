@@ -78,53 +78,53 @@ subroutine compute_stress_3d(tau,k3,v)
   double precision , intent(out) :: tau(:)
   double precision , intent(in) :: v(:)
 !
-  integer :: nn,nw,nx,i,j,ix,iw,jx
+!  integer :: nn,nw,nx,i,j,ix,iw,jx    !YD
+  integer :: nn,nw,nx,i,iw,ix,j,jw,jx,idx,jj     !JPA
 !
   nn = size(v)
   nw = size(k3%kernel,1)
   nx = nn/nw
  ! write(6,*) 'nn,nw,nx', nn, nw, nx
 
-  tau = 0d0
-  do i = 1,nn
-    ix = mod((i-1),nx)+1          ! find column of obs
-    iw = 1+(i-ix)/nx              ! find row of obs
-    if (ix == 1)  then            ! obs at first column, directly stored in kernel (iw,nw*nx)
-      do j = 1,nn
-        tau(i) = tau(i) - k3%kernel(iw,j) * v(j)
-  !      write(6,*) i,j,k3%kernel(iw,j)
-      end do
-    else                          ! obs at other column, calculate index to get kernel
-      do j = 1,nn
-        jx = mod((j-1),nx)+1        ! find column of source
-        if (jx >= ix)  then         ! source on the right of ods, shift directly
-          tau(i) = tau(i) - k3%kernel(iw,j+1-ix) * v(j)
-   !       write(6,*) i,j,k3%kernel(iw,j+1-ix)
-        else                        ! source on the left, use symmetry
-          tau(i) = tau(i) - k3%kernel(iw,j+1+ix-2*jx) * v(j)
-   !       write(6,*) i,j,k3%kernel(iw,j+1+ix-2*jx)
-        end if
-      end do
-    end if
-
-  end do
-!
 !  tau = 0d0
-!  i=0
-!  do iw=1,nw
-!  do ix=1,nx
-!    i = i+1
-!    j = 0
-!    do jw=1,nw
-!    do jx=1,nx
-!      j = j+1
-!      idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the kernel
-!      jj = (jw-1)*nx + idx + 1 
-!      tau(i) = tau(i) - k3%kernel(iw,jj) * v(j)
-!    end do
-!    end do
+!  do i = 1,nn
+!    ix = mod((i-1),nx)+1          ! find column of obs
+!    iw = 1+(i-ix)/nx              ! find row of obs
+!    if (ix == 1)  then            ! obs at first column, directly stored in kernel (iw,nw*nx)
+!      do j = 1,nn
+!        tau(i) = tau(i) - k3%kernel(iw,j) * v(j)
+!  !      write(6,*) i,j,k3%kernel(iw,j)
+!      end do
+!    else                          ! obs at other column, calculate index to get kernel
+!      do j = 1,nn
+!        jx = mod((j-1),nx)+1        ! find column of source
+!        if (jx >= ix)  then         ! source on the right of ods, shift directly
+!          tau(i) = tau(i) - k3%kernel(iw,j+1-ix) * v(j)
+!   !       write(6,*) i,j,k3%kernel(iw,j+1-ix)
+!        else                        ! source on the left, use symmetry
+!          tau(i) = tau(i) - k3%kernel(iw,j+1+ix-2*jx) * v(j)
+!   !       write(6,*) i,j,k3%kernel(iw,j+1+ix-2*jx)
+!        end if
+!      end do
+!    end if
 !  end do
-!  end do
+!
+   tau = 0d0
+   i=0
+   do iw=1,nw
+   do ix=1,nx
+     i = i+1
+     j = 0
+     do jw=1,nw
+     do jx=1,nx
+       j = j+1
+       idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the kernel
+       jj = (jw-1)*nx + idx + 1 
+       tau(i) = tau(i) - k3%kernel(iw,jj) * v(j)
+     end do
+     end do
+   end do
+   end do
 !    
 end subroutine compute_stress_3d
 
@@ -165,12 +165,12 @@ subroutine compute_stress_3d_fft(tau,k3f,v)
   ! higher wavenumbers, complex
   do k = 3,k3f%nxfft-1,2
     ! real part = ReK*ReV - ImK*ImV
-    tmp  = matmul( k3f%kernel(:,:,k), tmpzk(:,k) )  &
+    tmpzk(:,k)  = matmul( k3f%kernel(:,:,k), tmpzk(:,k) )  &
          - matmul( k3f%kernel(:,:,k+1), tmpzk(:,k+1) )
     ! imaginary part = ReK*ImV + ImK*ReV
     tmpzk(:,k+1) = matmul( k3f%kernel(:,:,k), tmpzk(:,k+1) )  &
                  + matmul( k3f%kernel(:,:,k+1), tmpzk(:,k) )
-    tmpzk(:,k) = tmp
+!    tmpzk(:,k) = tmp
   enddo
   
   do n = 1,k3f%nw

@@ -28,6 +28,9 @@ subroutine solve(pb)
 
     pb%it = pb%it + 1
     call do_bsstep(pb)
+    if (pb%it == 1) then
+      write(6,*) pb%dtau_dt
+    end if
     call update_field(pb)
     call ot_write(pb)
     call check_stop(pb)   ! here itstop will change
