@@ -9,7 +9,7 @@ rand(1,floor(sum(100*clock)));
 year = 3600*24*365;
 p = qdyn('set');
 
-p.MESHDIM=3;
+p.MESHDIM=2;
 p.THETA_LAW=2;
 
 p.SIGMA=0.5e6;
@@ -22,13 +22,13 @@ p.V2=0.01;
 
 p.L=8e3;
 p.W=8e3;
-p.NX=8;
-p.NW=8;
+p.NX=16;
+p.NW=16;
 p.Z_CORNER=-100e3;
 p.N=p.NX*p.NW;
 p.DW(1:p.NW)=p.W/p.NW;
 p.DIP_W(1:p.NW)=30.0;
-twm=2;
+twm=1;
 ts=2;
 p.ACC = 1e-14;
 
@@ -37,7 +37,7 @@ Lb = p.MU*p.DC/p.SIGMA/p.B;
 Lnuc = 1.3774*Lb;
 %------------------------------
 
-filename = ['test_2d_ab',num2str(p.A/p.B),'L',num2str(p.L/1000),'nx',num2str(p.NX),'W',num2str(p.W/1000),'nw',num2str(p.NW),'z',num2str(p.Z_CORNER/1000),'.mat']
+filename = ['test_2d_fft_ab',num2str(p.A/p.B),'L',num2str(p.L/1000),'nx',num2str(p.NX),'W',num2str(p.W/1000),'nw',num2str(p.NW),'z',num2str(p.Z_CORNER/1000),'.mat']
 p.IC=ceil(p.N/2);
 dx=p.L/p.NX;
 Lb_over_dx = Lb/dx
@@ -68,7 +68,7 @@ p.TMAX=twm*year;
 % p.V_0(2) = 1;
 
 
-p.NTOUT=100;
+p.NTOUT=1;
 p.NXOUT=1;
 p.NSTOP=0;
 
