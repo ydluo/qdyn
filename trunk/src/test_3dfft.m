@@ -9,7 +9,7 @@ rand(1,floor(sum(100*clock)));
 year = 3600*24*365;
 p = qdyn('set');
 
-p.MESHDIM=2;
+p.MESHDIM=3;
 p.THETA_LAW=2;
 
 p.SIGMA=0.5e6;
@@ -22,13 +22,13 @@ p.V2=0.01;
 
 p.L=8e3;
 p.W=8e3;
-p.NX=2;
+p.NX=8;
 p.NW=8;
 p.Z_CORNER=-100e3;
 p.N=p.NX*p.NW;
 p.DW(1:p.NW)=p.W/p.NW;
 p.DIP_W(1:p.NW)=30.0;
-twm=0.02;
+twm=2;
 ts=2;
 p.ACC = 1e-14;
 
@@ -64,8 +64,8 @@ p.TMAX=twm*year;
 %   for i=1:1:p.N
 %       p.V_0(i) = p.V_00(mod((i+1024),p.N)+1);
 %   end
- p.V_0(2:p.N) = p.V_SS*1e-80;
- p.V_0(1) = 1;
+% p.V_0(1:p.N) = p.V_SS*1e-80;
+% p.V_0(2) = 1;
 
 
 p.NTOUT=100;

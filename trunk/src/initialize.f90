@@ -281,7 +281,7 @@ subroutine init_kernel(pb)
       enddo
 !      write(6,*) 'kernel_before_fft',tmp
       call my_rdft(1,tmp,pb%kernel%k3f%m_fft)
-      pb%kernel%k3f%kernel(j,n,:) = tmp
+      pb%kernel%k3f%kernel(j,n,:) = tmp / dble(pb%mesh%nx)
 !      write(6,*) 'kernel_after_fft',tmp
     enddo
   enddo
@@ -320,6 +320,7 @@ subroutine init_kernel(pb)
         end if
       end do
     end do
+!    write(6,*) 'kernel',pb%kernel%k3%kernel
 
   end if
 
