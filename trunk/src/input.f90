@@ -35,7 +35,7 @@ subroutine read_main(pb)
   elseif (pb%mesh%dim==2 .or. pb%mesh%dim==3) then
     read(15,*) pb%mesh%nx,pb%mesh%nw
     if (pb%mesh%nx < 4 .and. pb%mesh%dim==2) then
-      write(6,*) 'nx < 4, non-FFT'
+      write(6,*) 'nx < 4, FFT disabled'
       pb%mesh%dim = pb%mesh%dim+1
       pb%kernel%kind = pb%kernel%kind+1
     end if      

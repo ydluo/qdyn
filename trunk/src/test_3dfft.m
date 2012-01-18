@@ -22,8 +22,8 @@ p.V2=0.01;
 
 p.L=8e3;
 p.W=8e3;
-p.NX=16;
-p.NW=16;
+p.NX=8;
+p.NW=3;
 p.Z_CORNER=-100e3;
 p.N=p.NX*p.NW;
 p.DW(1:p.NW)=p.W/p.NW;
