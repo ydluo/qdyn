@@ -321,7 +321,9 @@ subroutine init_kernel(pb)
       end do
     end do
 !    write(6,*) 'kernel',pb%kernel%k3%kernel
-
+    do j = 1,pb%mesh%nn
+      write(99,*) pb%kernel%k3%kernel(1,j)
+    end do
   end if
 
   write(6,*) 'Kernel intialized'

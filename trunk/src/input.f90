@@ -34,6 +34,11 @@ subroutine read_main(pb)
   !3d problem
   elseif (pb%mesh%dim==2 .or. pb%mesh%dim==3) then
     read(15,*) pb%mesh%nx,pb%mesh%nw
+    if (pb%mesh%nx < 4 .and. pb%mesh%dim==2) then
+      write(6,*) 'nx < 4, non-FFT'
+      pb%mesh%dim = pb%mesh%dim+1
+      pb%kernel%kind = pb%kernel%kind+1
+    end if      
     pb%mesh%nn = pb%mesh%nx * pb%mesh%nw
     read(15,*) pb%mesh%Lfault, pb%mesh%W , pb%mesh%Z_CORNER 
     allocate(pb%mesh%dw(pb%mesh%nw), pb%mesh%DIP_W(pb%mesh%nw))
