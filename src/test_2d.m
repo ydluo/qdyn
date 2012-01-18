@@ -22,7 +22,7 @@ p.V2=0.01;
 
 p.L=100e3;
 p.W=1e3;
-p.NX=256;
+p.NX=32;
 p.NW=1;
 p.Z_CORNER=-100e3;
 p.N=p.NX*p.NW;

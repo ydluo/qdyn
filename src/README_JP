@@ -1,0 +1,6 @@
+Simulation for Japan:
+1. Run JP_2d.m first, in current configuration, it will reproduce megathrust event every about 400 years
+   it will store a warmup_jp.mat for next 3d simulation;
+2. Run JP_3d.m, change grid number nx (must = 2^n) and twm (warmup time) accordingly
+   it will store last step v and theta in warmup_jp_3d.mat
+   every step in 3d simulatin now cost less than 1 min, every circle of megathrust event will take about 1000 step;
