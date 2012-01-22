@@ -2,9 +2,9 @@
 
 # 1. Modify next line if you need to place the executable elsewhere:
 # yingdi
-EXEC = $(HOME)/qdyn_svn/trunk/src/qdyn 
+#EXEC = $(HOME)/qdyn_svn/trunk/src/qdyn 
 # pablo
-#EXEC = $(HOME)/bin/qdyn 
+EXEC = $(HOME)/bin/qdyn 
 
 # 2. Uncomment/add/modify the lines corresponding to your compiler:
 

@@ -1,11 +1,12 @@
-calc.o: fftsg.o problem_class.o
+calc.o: constants.o fftsg.o mesh.o okada.o
 derivs_all.o: calc.o problem_class.o
-initialize.o: constants.o fftsg.o okada.o output.o problem_class.o
+initialize.o: constants.o output.o problem_class.o
 input.o: problem_class.o
-main.o: initialize.o input.o problem_class.o solve_master.o
+main.o: calc.o initialize.o input.o mesh.o problem_class.o solve_master.o
+mesh.o: constants.o
 ode_bs.o: derivs_all.o problem_class.o
 okada.o: constants.o
 output.o: constants.o problem_class.o
-problem_class.o: fftsg.o
+problem_class.o: calc.o mesh.o
 solve_master.o: output.o problem_class.o solver_acc.o
 solver_acc.o: derivs_all.o ode_bs.o output.o problem_class.o

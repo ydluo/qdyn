@@ -1,5 +1,6 @@
 ! dc3d subroutines by Okada
-! wrapper based on subroutine by Shinichi Miyazaki 
+! wrapper based on subroutine by Shinichi Miyazaki (with his written agreement)
+! downloaded in December 2012 from http://www-geod.kugi.kyoto-u.ac.jp/~miyazaki/DC_2010/
 
 module okada
 
@@ -9,19 +10,25 @@ module okada
   public :: compute_kernel
 
 contains
-                                                            
+
+! Computes the along-dip shear stress (tau) at a point (SX,SY,SZ) 
+! on a fault with local dip angle S_DIP and strike parallel to X
+! induced by unit slip (1 m) on a fault cell of along-strike size L
+! and along-dip size W located at (OX,OY,OZ) with dip angle O_DIP
+! and strike parallel to X
+! in an elastic half-space with Lame moduli LAM and MU
+!
 subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau)
 
   use constants, only : PI
 
-  double precision :: SX,SY,SZ,OX,OY,OZ
-  double precision :: LAM, MU, ALPHA,   & 
-    S_DEPTH,S_DIP, L, W, U,&
-    X, Y, Z, O_DIP, &
-    UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ
-  double precision :: STRESS(3,3), STRAIN(3,3),TR, n_f(3), n_dir(3), tau_n(3) 
+  double precision, intent(in) :: LAM,MU, SX,SY,SZ,S_DIP, L,W,OX,OY,OZ,O_DIP 
   integer, intent(inout) :: IRET
   double precision, intent(inout) :: tau
+
+  double precision :: ALPHA, S_DEPTH, U, X, Y, Z, &
+    UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ
+  double precision :: STRESS(3,3), STRAIN(3,3),TR, n_f(3), n_dir(3), tau_n(3) 
   
   ALPHA = (LAM+MU)/(LAM+2d0*MU)
   S_DEPTH = -1d0*SZ
@@ -51,11 +58,11 @@ subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau)
   STRESS(3,3) = STRESS(3,3)+LAM*TR
   
   n_f(1) = 0d0
-  n_f(2) = -1d0*dsin(O_DIP/180d0*PI)
-  n_f(3) = 1d0*dcos(O_DIP/180d0*PI)
+  n_f(2) = -sin(O_DIP/180d0*PI)
+  n_f(3) = cos(O_DIP/180d0*PI)
   n_dir(1) = 0d0
-  n_dir(2) = -1d0*dcos(O_DIP/180d0*PI)
-  n_dir(3) = -1d0*dsin(O_DIP/180d0*PI)
+  n_dir(2) = -cos(O_DIP/180d0*PI)
+  n_dir(3) = -sin(O_DIP/180d0*PI)
  
   tau_n(1) = STRESS(1,1)*n_f(1)+STRESS(1,2)*n_f(2)+STRESS(1,3)*n_f(3)
   tau_n(2) = STRESS(2,1)*n_f(1)+STRESS(2,2)*n_f(2)+STRESS(2,3)*n_f(3)
@@ -889,9 +896,9 @@ end subroutine compute_kernel
 
       XI(2)=X-AL2                                                       
 
-      IF(DABS(XI(1)).LT.EPS) XI(1)=F0                                   
+      IF(ABS(XI(1)).LT.EPS) XI(1)=F0                                   
 
-      IF(DABS(XI(2)).LT.EPS) XI(2)=F0                                   
+      IF(ABS(XI(2)).LT.EPS) XI(2)=F0                                   
 
 !======================================                                 
 
@@ -909,11 +916,11 @@ end subroutine compute_kernel
 
       ET(2)=P-AW2                                                       
 
-      IF(DABS(Q).LT.EPS)  Q=F0                                          
+      IF(ABS(Q).LT.EPS)  Q=F0                                          
 
-      IF(DABS(ET(1)).LT.EPS) ET(1)=F0                                   
+      IF(ABS(ET(1)).LT.EPS) ET(1)=F0                                   
 
-      IF(DABS(ET(2)).LT.EPS) ET(2)=F0                                   
+      IF(ABS(ET(2)).LT.EPS) ET(2)=F0                                   
 
 !--------------------------------                                       
 
@@ -941,11 +948,11 @@ end subroutine compute_kernel
 
       KET(2)=0                                                          
 
-      R12=DSQRT(XI(1)*XI(1)+ET(2)*ET(2)+Q*Q)                            
+      R12=SQRT(XI(1)*XI(1)+ET(2)*ET(2)+Q*Q)                            
 
-      R21=DSQRT(XI(2)*XI(2)+ET(1)*ET(1)+Q*Q)                            
+      R21=SQRT(XI(2)*XI(2)+ET(1)*ET(1)+Q*Q)                            
 
-      R22=DSQRT(XI(2)*XI(2)+ET(2)*ET(2)+Q*Q)                            
+      R22=SQRT(XI(2)*XI(2)+ET(2)*ET(2)+Q*Q)                            
 
       IF(XI(1).LT.F0 .AND. R21+XI(2).LT.EPS) KXI(1)=1                   
 
@@ -1015,11 +1022,11 @@ end subroutine compute_kernel
 
       ET(2)=P-AW2                                                       
 
-      IF(DABS(Q).LT.EPS)  Q=F0                                          
+      IF(ABS(Q).LT.EPS)  Q=F0                                          
 
-      IF(DABS(ET(1)).LT.EPS) ET(1)=F0                                   
+      IF(ABS(ET(1)).LT.EPS) ET(1)=F0                                   
 
-      IF(DABS(ET(2)).LT.EPS) ET(2)=F0                                   
+      IF(ABS(ET(2)).LT.EPS) ET(2)=F0                                   
 
 !--------------------------------                                       
 
@@ -1047,11 +1054,11 @@ end subroutine compute_kernel
 
       KET(2)=0                                                          
 
-      R12=DSQRT(XI(1)*XI(1)+ET(2)*ET(2)+Q*Q)                            
+      R12=SQRT(XI(1)*XI(1)+ET(2)*ET(2)+Q*Q)                            
 
-      R21=DSQRT(XI(2)*XI(2)+ET(1)*ET(1)+Q*Q)                            
+      R21=SQRT(XI(2)*XI(2)+ET(1)*ET(1)+Q*Q)                            
 
-      R22=DSQRT(XI(2)*XI(2)+ET(2)*ET(2)+Q*Q)                            
+      R22=SQRT(XI(2)*XI(2)+ET(2)*ET(2)+Q*Q)                            
 
       IF(XI(1).LT.F0 .AND. R21+XI(2).LT.EPS) KXI(1)=1                   
 
@@ -1415,15 +1422,15 @@ end subroutine compute_kernel
 
         ELSE                                                            
 
-          X=DSQRT(XI2+Q2)                                               
+          X=SQRT(XI2+Q2)                                               
 
           AI4=F1/CDCD*( XI/RD*SDCD          &                            
 
-             +F2*DATAN((ET*(X+Q*CD)+X*(R+X)*SD)/(XI*(R+X)*CD)) )        
+             +F2*ATAN((ET*(X+Q*CD)+X*(R+X)*SD)/(XI*(R+X)*CD)) )        
 
         ENDIF                                                           
 
-        AI3=(Y*CD/RD-ALE+SD*DLOG(RD))/CDCD                              
+        AI3=(Y*CD/RD-ALE+SD*LOG(RD))/CDCD                              
 
         AK1=XI*(D11-Y11*SD)/CD                                          
 
@@ -1457,7 +1464,7 @@ end subroutine compute_kernel
 
       AI1=-XI/RD*CD-AI4*SD                                              
 
-      AI2= DLOG(RD)+AI3*SD                                              
+      AI2= LOG(RD)+AI3*SD                                              
 
       AK2= F1/R+AK3*SD                                                  
 
@@ -1864,11 +1871,11 @@ end subroutine compute_kernel
 
       P18=PI2/360.D0                                                    
 
-      SD=DSIN(DIP*P18)                                                  
+      SD=SIN(DIP*P18)                                                  
 
-      CD=DCOS(DIP*P18)                                                  
+      CD=COS(DIP*P18)                                                  
 
-      IF(DABS(CD).LT.EPS) THEN                                          
+      IF(ABS(CD).LT.EPS) THEN                                          
 
         CD=F0                                                           
 
@@ -1910,9 +1917,9 @@ end subroutine compute_kernel
                  UY,VY,WY,UZ,VZ,WZ                                      
       DATA  F0,F1,F3,F5,EPS/0.D0,1.D0,3.D0,5.D0,1.D-6/                  
 !-----                                                                  
-      IF(DABS(X).LT.EPS) X=F0                                           
-      IF(DABS(Y).LT.EPS) Y=F0                                          
-      IF(DABS(D).LT.EPS) D=F0                                           
+      IF(ABS(X).LT.EPS) X=F0                                           
+      IF(ABS(Y).LT.EPS) Y=F0                                          
+      IF(ABS(D).LT.EPS) D=F0                                           
       P=Y*CD+D*SD                                                       
       Q=Y*SD-D*CD                                                       
       S=P*SD+Q*CD                                                       
@@ -1922,7 +1929,7 @@ end subroutine compute_kernel
       Y2=Y*Y                                                            
       D2=D*D                                                            
       R2=X2+Y2+D2                                                       
-      R =DSQRT(R2)                                                      
+      R =SQRT(R2)                                                      
       IF(R.EQ.F0) RETURN                                                
       R3=R *R2                                                          
       R5=R3*R2                                                          
@@ -1970,14 +1977,14 @@ end subroutine compute_kernel
                  EY,EZ,FY,FZ,GY,GZ,HY,HZ                                
       DATA  F0,F1,F2,EPS/0.D0,1.D0,2.D0,1.D-6/                          
 !-----                                                                  
-      IF(DABS(XI).LT.EPS) XI=F0                                         
-      IF(DABS(ET).LT.EPS) ET=F0                                         
-      IF(DABS( Q).LT.EPS)  Q=F0                                         
+      IF(ABS(XI).LT.EPS) XI=F0                                         
+      IF(ABS(ET).LT.EPS) ET=F0                                         
+      IF(ABS( Q).LT.EPS)  Q=F0                                         
       XI2=XI*XI                                                         
       ET2=ET*ET                                                         
       Q2=Q*Q                                                            
       R2=XI2+ET2+Q2                                                     
-      R =DSQRT(R2)                                                      
+      R =SQRT(R2)                                                      
       IF(R.EQ.F0) RETURN                                                
       R3=R *R2                                                          
       R5=R3*R2                                                          
@@ -1987,16 +1994,16 @@ end subroutine compute_kernel
       IF(Q.EQ.F0) THEN                                                  
         TT=F0                                                           
       ELSE                                                              
-        TT=DATAN(XI*ET/(Q*R))                                           
+        TT=ATAN(XI*ET/(Q*R))                                           
       ENDIF                                                             
 !-----                                                                  
       IF(KXI.EQ.1) THEN                                                 
-        ALX=-DLOG(R-XI)                                                 
+        ALX=-LOG(R-XI)                                                 
         X11=F0                                                          
         X32=F0                                                          
       ELSE                                                              
         RXI=R+XI                                                        
-        ALX=DLOG(RXI)                                                   
+        ALX=LOG(RXI)                                                   
 
         X11=F1/(R*RXI)                                                  
 
@@ -2008,7 +2015,7 @@ end subroutine compute_kernel
 
       IF(KET.EQ.1) THEN                                                 
 
-        ALE=-DLOG(R-ET)                                                 
+        ALE=-LOG(R-ET)                                                 
 
         Y11=F0                                                          
 
@@ -2018,7 +2025,7 @@ end subroutine compute_kernel
 
         RET=R+ET                                                        
 
-        ALE=DLOG(RET)                                                   
+        ALE=LOG(RET)                                                   
 
         Y11=F1/(R*RET)                                                  
 
