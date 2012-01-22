@@ -20,7 +20,7 @@ contains
 subroutine derivs(time,yt,dydt,pb) 
    
   use problem_class
-  use calc
+  use fault_stress, only : compute_stress
   
   type(problem_type), intent(inout) :: pb
   double precision , intent(in) :: time, yt(pb%neqs*pb%mesh%nn)

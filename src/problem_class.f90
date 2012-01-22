@@ -2,7 +2,7 @@
 
 module problem_class
  
-  use calc, only : kernel_type
+  use fault_stress, only : kernel_type
   use mesh, only : mesh_type
 
   implicit none
