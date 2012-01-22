@@ -31,6 +31,7 @@ subroutine read_main(pb)
   if (pb%mesh%dim==0 .or. pb%mesh%dim==1) then
     read(15,*) pb%mesh%nn
     read(15,*) pb%mesh%Lfault, pb%mesh%W 
+    if (pb%mesh%dim==0) pb%mesh%nn = 1
   !3d problem
   elseif (pb%mesh%dim==2 .or. pb%mesh%dim==3) then
     read(15,*) pb%mesh%nx,pb%mesh%nw

@@ -2,7 +2,8 @@
 
 module problem_class
  
-  use fftsg, only : OouraFFT_type
+  use calc, only : kernel_type
+  use mesh, only : mesh_type
 
   implicit none
 
@@ -18,40 +19,6 @@ module problem_class
   type ox_type
     integer :: count,unit,nxout
   end type ox_type
-
-  type mesh_type
-    integer :: dim = 0  ! dim = 1, 2 ,3 ~xD
-    integer :: nx, nw, nn ! along-strike, along-dip, total grid number
-    double precision :: dx !along-strike grid size(constant)  
-    double precision :: Lfault, W, Z_CORNER ! fault length, width, lower-left corner z (follow Okada's convention)
-    double precision, allocatable :: dw(:), DIP_W(:) !along-dip grid size and dip (adjustable), nw count
-    double precision, allocatable :: x(:), y(:), z(:), dip(:) !coordinates and dip of every grid (nx*nw count)
-  end type mesh_type
-
-  type kernel_2D_fft
-    integer :: kind = 0
-    double precision, dimension(:), allocatable :: kernel
-    integer :: nnfft, finite
-    type (OouraFFT_type) :: m_fft
-  end type kernel_2D_fft
-
-  type kernel_3D
-    double precision, dimension(:,:), allocatable :: kernel
-  end type kernel_3D
-
-  type kernel_3D_fft
-    integer :: nxfft, nw, nx
-    double precision, dimension(:,:,:), allocatable :: kernel
-    type (OouraFFT_type) :: m_fft
-  end type kernel_3D_fft
-
-  type kernel_type
-    integer :: kind = 0
-    double precision :: k1
-    type (kernel_2D_fft), pointer :: k2f
-    type (kernel_3D), pointer :: k3
-    type (kernel_3D_fft), pointer :: k3f
-  end type kernel_type
 
   type problem_type
     double precision, dimension(:), allocatable :: &
