@@ -14,6 +14,7 @@ contains
 subroutine read_main(pb)
   
   use problem_class
+  use mesh, only : read_mesh
   
   type(problem_type), intent(inout)  :: pb
 
@@ -23,32 +24,13 @@ subroutine read_main(pb)
 
   open(unit=15,FILE= 'qdyn.in') 
 
-  ! problem dimension (1D, 2D or 3D), mesh type
-  read(15,*) pb%mesh%dim
-  pb%kernel%kind = pb%mesh%dim+1 
+  call read_mesh(15,pb%mesh)
 
-  !spring-block or 2d problem
-  if (pb%mesh%dim==0 .or. pb%mesh%dim==1) then
-    read(15,*) pb%mesh%nn
-    read(15,*) pb%mesh%Lfault, pb%mesh%W 
-    if (pb%mesh%dim==0) pb%mesh%nn = 1
-  !3d problem
-  elseif (pb%mesh%dim==2 .or. pb%mesh%dim==3) then
-    read(15,*) pb%mesh%nx,pb%mesh%nw
-    if (pb%mesh%nx < 4 .and. pb%mesh%dim==2) then
-      write(6,*) 'nx < 4, FFT disabled'
-      pb%mesh%dim = pb%mesh%dim+1
-      pb%kernel%kind = pb%kernel%kind+1
-    end if      
-    pb%mesh%nn = pb%mesh%nx * pb%mesh%nw
-    read(15,*) pb%mesh%Lfault, pb%mesh%W , pb%mesh%Z_CORNER 
-    allocate(pb%mesh%dw(pb%mesh%nw), pb%mesh%DIP_W(pb%mesh%nw))
-    do i=1,pb%mesh%nw
-      read(15,*) pb%mesh%dw(i), pb%mesh%DIP_W(i)
-    end do
-  else
-    write(6,*) 'mesh dimension should be 0, 1 or 2, 3'
-  endif
+  pb%kernel%kind = pb%mesh%dim+1 
+  if (pb%mesh%nx < 4 .and. pb%mesh%dim==2) then
+    write(6,*) 'nx < 4, FFT disabled'
+    pb%kernel%kind = pb%kernel%kind+1
+  end if      
      
   if (pb%kernel%kind==2) then 
     allocate(pb%kernel%k2f)
@@ -84,6 +66,7 @@ subroutine read_main(pb)
   read(15,*)pb%Tper, pb%Aper
   read(15,*)pb%dt_try, pb%dt_max,pb%tmax, pb%acc
   read(15,*)pb%NSTOP
+
   allocate (pb%tau(pb%mesh%nn),     &
              pb%dtau_dt(pb%mesh%nn), &
              pb%tau_init(pb%mesh%nn), pb%sigma(pb%mesh%nn), &
