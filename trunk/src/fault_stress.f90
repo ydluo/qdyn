@@ -1,6 +1,6 @@
 !Calculate stress etc.
 
-module calc
+module fault_stress
 
   use fftsg, only : OouraFFT_type
 
@@ -303,4 +303,4 @@ subroutine compute_stress_3d_fft(tau,k3f,v)
 
 end subroutine compute_stress_3d_fft
 
-end module calc
+end module fault_stress

@@ -5,23 +5,28 @@ module initialize
   implicit none
   private
 
-  public :: init_field
+  public :: init_all
 
 contains
 
 !=============================================================
-subroutine init_field(pb)
+subroutine init_all(pb)
   
   use problem_class
+  use mesh, only : init_mesh
   use constants, only : PI
+  use fault_stress, only : init_kernel
   use output, only : ot_init, ox_init
 
   type(problem_type), intent(inout) :: pb
 
+  call init_mesh(pb%mesh)
+  
+  write(6,*) 'Initializing parameters: ...'
 !YD This part we may want to modify it later to be able to
 !impose more complicated loading/pertubation
 !functions involved: problem_class/problem_type; input/read_main 
-!                    initialize/init_field;  derivs_all/derivs
+!                    initialize/init_all;  derivs_all/derivs
  
     !---------------------- dt_max & perturbation------------------
   if (pb%Aper /= 0.d0 .and. pb%Tper > 0.d0) then
@@ -61,12 +66,14 @@ subroutine init_field(pb)
   pb%it = 0
   !---------------------- init_value for solver ----------------- 
    
+  call init_kernel(pb%lam,pb%smu,pb%mesh,pb%kernel)
+
   call ot_init(pb)
   call ox_init(pb)
-  write(6,*) 'Field Initialized'
+  
+  write(6,*) 'Initialization completed'
 
-
-end subroutine init_field
+end subroutine init_all
 
 
 end module initialize
