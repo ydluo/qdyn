@@ -6,7 +6,7 @@ program main
   use problem_class
   use input
   use initialize
-  use solve_master
+  use solver
 
   type(problem_type) :: pb
 

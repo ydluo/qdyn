@@ -1,22 +1,53 @@
-! functions for solver
+! Solve_master
 
-module solver_acc
+module solver
+
+  use problem_class, only : problem_type
 
   implicit none
+  private
 
-  private 
-
-  public :: check_stop, do_bsstep, update_field
+  public  :: solve 
 
 contains
 
+!=====================================================================
+! Master Solver    
+!  
+subroutine solve(pb)
+  
+  use output, only : screen_init, screen_write, ox_write, ot_write
+  
+  type(problem_type), intent(inout)  :: pb
+
+  call screen_init(pb)
+
+  ! Time loop
+  do while (pb%it /= pb%itstop)
+
+    pb%it = pb%it + 1
+    call do_bsstep(pb)
+!    if (pb%it == 1) then
+!      write(6,*) pb%dtau_dt
+!    end if
+    call update_field(pb)
+    call ot_write(pb)
+    call check_stop(pb)   ! here itstop will change
+    !--------Output onestep to screen and ox file(snap_shot)
+    if(mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
+      call screen_write(pb)
+      call ox_write(pb)
+    endif
+
+  enddo
+
+end subroutine solve
 
 !=====================================================================
 ! check stop: 
 !
 subroutine check_stop(pb)
 
-  use problem_class
   use output, only : time_write
 
   type(problem_type), intent(inout) :: pb
@@ -52,11 +83,12 @@ end subroutine check_stop
 
 
 !=====================================================================
-! do bs_step, pack and unpack 
+! pack, do bs_step and unpack 
+!
+! IMPORTANT NOTE : between pack/unpack pb%v & pb%theta are not up-to-date
 !
 subroutine do_bsstep(pb)
 
-  use problem_class
   use derivs_all
   use ode_bs
 
@@ -64,24 +96,16 @@ subroutine do_bsstep(pb)
 
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
 
-  !-------Pack v, theta into yt---------------------------------    
+  ! Pack v, theta into yt
   yt(2::pb%neqs) = pb%v
   yt(1::pb%neqs) = pb%theta
   dydt(2::pb%neqs) = pb%dv_dt
   dydt(1::pb%neqs) = pb%dtheta_dt
-  !-------Pack v, theta into yt--------------------------------- 
-  !!!====================NOTE:: IMPORTANT: ==========================!!!
-  !!!======BETWEEN PACK/UNPACK v & theta in pb is not up-to-date=====!!!
-  !!!====================NOTE:: IMPORTANT: ==========================!!!
 
   ! this update of derivatives is only needed to set up the scaling (yt_scale)
   call derivs(pb%time,yt,dydt,pb)
-  ! One step 
-  !--------Call EXT routine bsstep [Bulirsch-Stoer Method] --------------
-  !-------- 
   yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
-
-  
+  ! One step 
   call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb)
 
   if (pb%dt_max >  0.d0) then
@@ -89,20 +113,14 @@ subroutine do_bsstep(pb)
   else
     pb%dt_try = pb%dt_next
   endif
-  !!!====================NOTE:: IMORTANT: ==========================!!!
-  !!!======BETWEEN PACK/UNPACK v & theta in pb is not up-to-date====!!!
-  !!!====================NOTE:: IMORTANT: ==========================!!!
 
-  !-------Unpack yt into v, theta--------------------------------- 
+  ! Unpack yt into v, theta
   pb%v = yt(2::pb%neqs)
   pb%theta = yt(1::pb%neqs)
   pb%dv_dt = dydt(2::pb%neqs)
   pb%dtheta_dt = dydt(1::pb%neqs) 
-  !-------Unpack yt into v, theta--------------------------------- 
-
   
 end subroutine do_bsstep
-
 
 
 !=====================================================================
@@ -111,10 +129,12 @@ end subroutine do_bsstep
 subroutine update_field(pb)
   
   use output, only : crack_size
-  use problem_class
+
   type(problem_type), intent(inout) :: pb
+
   integer :: i  
   double precision :: vtemp 
+
   ! Update slip, stress. 
   pb%slip = pb%slip + pb%v*pb%dt_did
   pb%tau = (pb%mu_star-pb%a*log(pb%v1/pb%v+1d0)+pb%b*log(pb%theta/pb%theta_star)+1d0)    &
@@ -140,5 +160,4 @@ subroutine update_field(pb)
 end subroutine update_field
 
 
-
-end module solver_acc
+end module solver
