@@ -178,7 +178,35 @@ pathstr = fileparts(mfilename('fullpath'));
 % Override with inputs
 Parse_Inputs(varargin{:});
 
-X = (-N/2+0.5:N/2-0.5) *L/N; % fault coordinates
+if MESHDIM == 1
+  X = (-N/2+0.5:N/2-0.5) *L/N; % fault coordinates
+end
+
+if MESHDIM ==2 || MESHDIM ==3
+    % set x, y, z, dip of first row
+    cd = cos(DIP_W(1)/180.*pi);
+    sd = sin(DIP_W(1)/180.*pi);
+    for j = 1:NX
+      X(j) = 0.+(0.5+(j-1))*L/N;
+    end 
+    Y(1:NX) = 0.+0.5*DW(1)*cd;   
+    Z(1:NX) = Z_CORNER+0.5*DW(1)*sd;
+    DIP(1:NX) = DIP_W(1);
+
+    % set x, y, z, dip of row 2 to nw
+    for i = 2:NW
+      cd0 = cd;
+      sd0 = sd;
+      cd = cos(DIP_W(i)/180.*pi);
+      sd = sin(DIP_W(i)/180.*pi);
+      j0 = (i-1)*NX;
+      X(j0+1:j0+NX) = X(1:NX);
+      Y(j0+1:j0+NX) = Y(j0) + 0.5*DW(i-1)*cd0 + 0.5*DW(i)*cd;
+      Z(j0+1:j0+NX) = Z(j0) + 0.5*DW(i-1)*sd0 + 0.5*DW(i)*sd;
+      DIP(j0+1:j0+NX) = DIP_W(i);
+    end 
+end  
+
 TH_SS = DC/V_SS;
 
 % wrap UPPER CASE variables in parameter structure fields with the same name 
