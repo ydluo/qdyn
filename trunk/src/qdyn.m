@@ -187,7 +187,7 @@ if MESHDIM ==2 || MESHDIM ==3
     cd = cos(DIP_W(1)/180.*pi);
     sd = sin(DIP_W(1)/180.*pi);
     for j = 1:NX
-      X(j) = 0.+(0.5+(j-1))*L/N;
+      X(j) = 0.+(0.5+(j-1))*L/NX;
     end 
     Y(1:NX) = 0.+0.5*DW(1)*cd;   
     Z(1:NX) = Z_CORNER+0.5*DW(1)*sd;
@@ -286,8 +286,8 @@ switch mode
     
     % solve
 %     status = system('~/qdyn_svn/trunk/src/qdyn');
-%    status = system('qdyn');
-     status = system('~/bin/qdyn');
+    status = system('qdyn');
+%     status = system('~/bin/qdyn');
     % rename input and output files
     if length(NAME)
       movefile('fort.18',[NAME '.ot']); 
