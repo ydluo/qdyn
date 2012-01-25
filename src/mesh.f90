@@ -53,15 +53,60 @@ subroutine read_mesh(iin,m)
 end subroutine read_mesh
 
 !=============================================================
-! JPA to do: refactor: split this into several subroutines
-! it should look like this:
-!  select case (m%dim)
-!    case(0); call init_mesh_0D(m)
-!    case(1); call init_mesh_1D(m)
-!    case(2); call init_mesh_2D(m)
-!  end select
 
 subroutine init_mesh(m)
+
+  type(mesh_type), intent(inout) :: m
+
+  write(6,*) 'Initializing mesh ...'
+
+  select case (m%dim)
+    case(0); call init_mesh_0D(m)
+    case(1); call init_mesh_1D(m)
+    case(2); call init_mesh_2D(m)
+  end select
+
+end subroutine init_mesh
+
+!--------------------------------------------------------
+! Spring-block System
+subroutine init_mesh_0D(m)
+
+  type(mesh_type), intent(inout) :: m
+
+  write(6,*) 'Spring-block System' 
+  m%dx = m%Lfault
+  m%x = 0d0
+
+end subroutine init_mesh_0D
+
+!--------------------------------------------------------
+! 1D fault, uniform grid
+subroutine init_mesh_1D(m)
+
+  type(mesh_type), intent(inout) :: m
+
+  integer :: i
+
+  write(6,*) '1D fault, uniform grid' 
+  m%dx = m%Lfault/m%nn
+  do i=1,m%nn
+    m%x(i) = (i-m%nn*0.5d0-0.5d0)*m%dx
+    ! Assuming nn is even (usually a power of 2), 
+    ! the center of the two middle elements (i=nn/2 and nn/2+1) 
+    ! are located at x=-dx/2 and x=dx/2, respectively 
+  enddo
+
+end subroutine init_mesh_1D
+
+!--------------------------------------------------------
+  ! 2D fault, uniform grid along-strike
+  ! Assumptions: 
+  !   + the fault trace is parallel to x 
+  !   + the lower "left" corner of the fault is at (0,0,Z_CORNER)
+  !   + z is negative downwards (-depth)
+  ! Storage scheme: faster index runs along-strike (x)
+subroutine init_mesh_2D(m)
 
   use constants, only : PI
 
@@ -70,66 +115,35 @@ subroutine init_mesh(m)
   double precision :: cd, sd, cd0, sd0
   integer :: i, j, j0
 
-  write(6,*) 'Initializing mesh ...'
+  write(6,*) '2D fault, uniform grid along-strike'
+  m%dx = m%Lfault/m%nx
+  allocate(m%y(m%nn),   &
+           m%z(m%nn),   &
+           m%dip(m%nn)) 
 
-  select case (m%dim)
+  ! set x, y, z, dip of first row
+  cd = cos(m%DIP_W(1)/180d0*PI)
+  sd = sin(m%DIP_W(1)/180d0*PI)
+  do j = 1,m%nx
+    m%x(j) = 0d0+(0.5d0+dble(j-1))*m%dx
+  end do
+  m%y(1:m%nx) = 0d0+0.5d0*m%dw(1)*cd
+  m%z(1:m%nx) = m%Z_CORNER+0.5d0*m%dw(1)*sd
+  m%dip(1:m%nx) = m%DIP_W(1)
 
-  ! Spring-block System
-  case(0)  !; call init_mesh_0D()
-    write(6,*) 'Spring-block System' 
-    m%dx = m%Lfault
-    m%x = 0d0
+  ! set x, y, z, dip of row 2 to nw
+  do i = 2,m%nw
+    cd0 = cd
+    sd0 = sd
+    cd = cos(m%DIP_W(i)/180d0*PI)
+    sd = sin(m%DIP_W(i)/180d0*PI)
+    j0 = (i-1)*m%nx
+    m%x(j0+1:j0+m%nx) = m%x(1:m%nx)
+    m%y(j0+1:j0+m%nx) = m%y(j0) + 0.5d0*m%dw(i-1)*cd0 + 0.5d0*m%dw(i)*cd
+    m%z(j0+1:j0+m%nx) = m%z(j0) + 0.5d0*m%dw(i-1)*sd0 + 0.5d0*m%dw(i)*sd
+    m%dip(j0+1:j0+m%nx) = m%DIP_W(i)
+  end do
 
-  ! 1D fault, uniform grid
-  case(1) !; call init_mesh_1D()
-    write(6,*) '1D fault, uniform grid' 
-    m%dx = m%Lfault/m%nn
-    do i=1,m%nn
-      m%x(i) = (i-m%nn*0.5d0-0.5d0)*m%dx
-      ! Assuming nn is even (usually a power of 2), 
-      ! the center of the two middle elements (i=nn/2 and nn/2+1) 
-      ! are located at x=-dx/2 and x=dx/2, respectively 
-    enddo
-
-  ! 2D fault, uniform grid along-strike
-  ! Assumptions: 
-  !   + the fault trace is parallel to x 
-  !   + the lower "left" corner of the fault is at (0,0,Z_CORNER)
-  !   + z is negative downwards (-depth)
-  ! Storage scheme: faster index runs along-strike (x)
-  case(2) !; call init_mesh_2D()
-
-    write(6,*) '2D fault, uniform grid along-strike'
-    m%dx = m%Lfault/m%nx
-    allocate(m%y(m%nn),   &
-             m%z(m%nn),   &
-             m%dip(m%nn)) 
-
-    ! set x, y, z, dip of first row
-    cd = cos(m%DIP_W(1)/180d0*PI)
-    sd = sin(m%DIP_W(1)/180d0*PI)
-    do j = 1,m%nx
-      m%x(j) = 0d0+(0.5d0+dble(j-1))*m%dx
-    end do
-    m%y(1:m%nx) = 0d0+0.5d0*m%dw(1)*cd
-    m%z(1:m%nx) = m%Z_CORNER+0.5d0*m%dw(1)*sd
-    m%dip(1:m%nx) = m%DIP_W(1)
-
-    ! set x, y, z, dip of row 2 to nw
-    do i = 2,m%nw
-      cd0 = cd
-      sd0 = sd
-      cd = cos(m%DIP_W(i)/180d0*PI)
-      sd = sin(m%DIP_W(i)/180d0*PI)
-      j0 = (i-1)*m%nx
-      m%x(j0+1:j0+m%nx) = m%x(1:m%nx)
-      m%y(j0+1:j0+m%nx) = m%y(j0) + 0.5d0*m%dw(i-1)*cd0 + 0.5d0*m%dw(i)*cd
-      m%z(j0+1:j0+m%nx) = m%z(j0) + 0.5d0*m%dw(i-1)*sd0 + 0.5d0*m%dw(i)*sd
-      m%dip(j0+1:j0+m%nx) = m%DIP_W(i)
-    end do
-
-  end select
-
-end subroutine init_mesh
+end subroutine init_mesh_2D
 
 end module mesh
