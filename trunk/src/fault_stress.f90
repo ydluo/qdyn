@@ -44,108 +44,157 @@ contains
 !   dtau_dt = - K*( v - Vpl )
 
 !=============================================================
-! JPA to do: refactor: split this into several subroutines
 subroutine init_kernel(lambda,mu,m,k)
   
-  use constants, only : PI 
   use mesh, only : mesh_type
-  use okada, only : compute_kernel
-  use fftsg, only : my_rdft
 
   double precision, intent(in) :: lambda,mu
   type(mesh_type), intent(in) :: m
   type(kernel_type), intent(inout) :: k
 
-  double precision :: tau_co, wl2, tau
-  double precision :: y_src, z_src, dip_src, dw_src 
-  double precision :: y_obs, z_obs, dip_obs
-  double precision, allocatable :: tmp(:)   ! for FFT
-  integer :: i, j, ii, jj, n, nn, IRET
-
   write(6,*) 'Intializing kernel: ...'
 
   select case (k%kind)
+    case(1); call init_kernel_1D(k%k1,mu,m%Lfault)
+    case(2); call init_kernel_2D(k%k2f,mu,m)
+    case(3); call init_kernel_3D_fft(k%k3f,lambda,mu,m) ! 3D with FFT along-strike
+    case(4); call init_kernel_3D(k%k3,lambda,mu,m) ! 3D no fft
+  end select
 
-  case(1) ! 1D
-    write(6,*) 'Single degree-of-freedom spring-block system'
-    k%k1 = mu/m%Lfault
-
-  case(2) ! 2D
-    k%k2f%nnfft = (k%k2f%finite+1)*m%nn 
-    allocate (k%k2f%kernel(k%k2f%nnfft))
-
-    write(6,*) 'FFT applied'
-
-    if (k%k2f%finite == 0) then
-      tau_co = PI*mu/m%Lfault *2.d0/m%nn
-      wl2 = (m%Lfault/m%W)**2
-      do i=0,m%nn/2-1
-        k%k2f%kernel(2*i+1) = tau_co*sqrt(i*i+wl2)
-        k%k2f%kernel(2*i+2) = k%k2f%kernel(2*i+1)
-      enddo
-      k%k2f%kernel(2) = tau_co*sqrt(m%nn**2/4.d0+wl2) ! Nyquist
-       
-    elseif (k%k2f%finite == 1) then
-      !- Read coefficient I(n) from pre-calculated file.
-      open(57,file='~/2D_RUPTURE/STATIC/Matlab/kernel_I_32768.tab')
-      if (k%k2f%nnfft/2>32768) stop 'Finite kernel table is too small'
-      do i=1,k%k2f%nnfft/2-1
-        read(57,*) k%k2f%kernel(2*i+1)
-      enddo
-      read(57,*) k%k2f%kernel(2) ! Nyquist
-      close(57)
-      ! The factor 2/N comes from the inverse FFT convention
-      tau_co = PI*mu / (2d0*m%Lfault) *2.d0/k%k2f%nnfft
-      k%k2f%kernel(1) = 0d0
-      k%k2f%kernel(2) = tau_co*dble(k%k2f%nnfft/2)*k%k2f%kernel(2)
-      do i = 1,k%k2f%nnfft/2-1
-        k%k2f%kernel(2*i+1) = tau_co*dble(i)*k%k2f%kernel(2*i+1)
-        k%k2f%kernel(2*i+2) = k%k2f%kernel(2*i+1)
-      enddo
-    end if
-
-  case(3) ! 3D with FFT along-strike
-    write(6,*) 'Generating 3D kernel...'
-    write(6,*) 'OouraFFT applied along-strike'
-    k%k3f%nw = m%nw
-    k%k3f%nx = m%nx
-    k%k3f%nxfft = 2*m%nx ! fft convolution requires twice longer array
-    allocate(k%k3f%kernel(m%nw,m%nw,k%k3f%nxfft))
-    allocate(tmp(k%k3f%nxfft))
-    ! assumes faster index runs along-strike
-    do n=1,m%nw
-      nn = (n-1)*m%nx+1
-      y_src = m%y(nn)
-      z_src = m%z(nn)
-      dip_src = m%dip(nn)
-      dw_src = m%dw(n)
-      do j=1,m%nw
-        jj = (j-1)*m%nx+1
-        y_obs = m%y(jj)
-        z_obs = m%z(jj)
-        dip_obs = m%dip(jj)
-        do i=-m%nx+1,m%nx
-          call compute_kernel(lambda,mu, &
-                  i*m%dx, y_src, z_src, dip_src, m%dx, dw_src,   &
-                  0d0, y_obs, z_obs, dip_obs, &
-                  IRET,tau)
-          ii = i+1
-          ! wrap up the negative relative-x-positions in the second half of the array
-          ! to comply with conventions of fft convolution
-          if (i<0) ii = ii + k%k3f%nxfft  
-          tmp(ii) = tau
-        enddo
-        call my_rdft(1,tmp,k%k3f%m_fft)
-        k%k3f%kernel(j,n,:) = tmp / dble(m%nx)
-      enddo
-    enddo
+  write(6,*) 'Kernel intialized'
   
-  case(4) ! 3D no fft
+end subroutine init_kernel   
+
+!----------------------------------------------------------------------
+subroutine init_kernel_1D(k,mu,L)
+
+  double precision, intent(out) :: k
+  double precision, intent(in) :: mu,L
+
+  write(6,*) 'Single degree-of-freedom spring-block system'
+  k = mu/L
+
+end subroutine init_kernel_1D
+
+
+!----------------------------------------------------------------------
+subroutine init_kernel_2D(k,mu,m)
+
+  use mesh, only : mesh_type
+  use constants, only : PI 
+
+  type(kernel_2d_fft), intent(inout) :: k
+  type(mesh_type), intent(in) :: m
+  double precision, intent(in) :: mu
+
+  double precision :: tau_co, wl2
+  integer :: i
+
+  k%nnfft = (k%finite+1)*m%nn 
+  allocate (k%kernel(k%nnfft))
+
+  write(6,*) 'FFT applied'
+
+  if (k%finite == 0) then
+    tau_co = PI*mu/m%Lfault *2.d0/m%nn
+    wl2 = (m%Lfault/m%W)**2
+    do i=0,m%nn/2-1
+      k%kernel(2*i+1) = tau_co*sqrt(i*i+wl2)
+      k%kernel(2*i+2) = k%kernel(2*i+1)
+    enddo
+    k%kernel(2) = tau_co*sqrt(m%nn**2/4.d0+wl2) ! Nyquist
+     
+  elseif (k%finite == 1) then
+    !- Read coefficient I(n) from pre-calculated file.
+    open(57,file='~/2D_RUPTURE/STATIC/Matlab/kernel_I_32768.tab')
+    if (k%nnfft/2>32768) stop 'Finite kernel table is too small'
+    do i=1,k%nnfft/2-1
+      read(57,*) k%kernel(2*i+1)
+    enddo
+    read(57,*) k%kernel(2) ! Nyquist
+    close(57)
+    ! The factor 2/N comes from the inverse FFT convention
+    tau_co = PI*mu / (2d0*m%Lfault) *2.d0/k%nnfft
+    k%kernel(1) = 0d0
+    k%kernel(2) = tau_co*dble(k%nnfft/2)*k%kernel(2)
+    do i = 1,k%nnfft/2-1
+      k%kernel(2*i+1) = tau_co*dble(i)*k%kernel(2*i+1)
+      k%kernel(2*i+2) = k%kernel(2*i+1)
+    enddo
+  end if
+
+end subroutine init_kernel_2D
+
+!----------------------------------------------------------------------
+subroutine init_kernel_3D_fft(k,lambda,mu,m)
+
+  use mesh, only : mesh_type
+  use okada, only : compute_kernel
+  use fftsg, only : my_rdft
+
+  type(kernel_3d_fft), intent(inout) :: k
+  double precision, intent(in) :: lambda,mu
+  type(mesh_type), intent(in) :: m
+
+  double precision :: tau, y_src, z_src, dip_src, dw_src, y_obs, z_obs, dip_obs
+  double precision, allocatable :: tmp(:)   ! for FFT
+  integer :: i, j, ii, jj, n, nn, IRET
+
+  write(6,*) 'Generating 3D kernel...'
+  write(6,*) 'OouraFFT applied along-strike'
+  k%nw = m%nw
+  k%nx = m%nx
+  k%nxfft = 2*m%nx ! fft convolution requires twice longer array
+  allocate(k%kernel(m%nw,m%nw,k%nxfft))
+  allocate(tmp(k%nxfft))
+  ! assumes faster index runs along-strike
+  do n=1,m%nw
+    nn = (n-1)*m%nx+1
+    y_src = m%y(nn)
+    z_src = m%z(nn)
+    dip_src = m%dip(nn)
+    dw_src = m%dw(n)
+    do j=1,m%nw
+      jj = (j-1)*m%nx+1
+      y_obs = m%y(jj)
+      z_obs = m%z(jj)
+      dip_obs = m%dip(jj)
+      do i=-m%nx+1,m%nx
+        call compute_kernel(lambda,mu, &
+                i*m%dx, y_src, z_src, dip_src, m%dx, dw_src,   &
+                0d0, y_obs, z_obs, dip_obs, &
+                IRET,tau)
+        ii = i+1
+        ! wrap up the negative relative-x-positions in the second half of the array
+        ! to comply with conventions of fft convolution
+        if (i<0) ii = ii + k%nxfft  
+        tmp(ii) = tau
+      enddo
+      call my_rdft(1,tmp,k%m_fft)
+      k%kernel(j,n,:) = tmp / dble(m%nx)
+    enddo
+  enddo
+
+end subroutine init_kernel_3D_fft
+
+!----------------------------------------------------------------------
+subroutine init_kernel_3D(k,lambda,mu,m)
+
+  use mesh, only : mesh_type
+  use okada, only : compute_kernel
+
+  type(kernel_3d), intent(inout) :: k
+  double precision, intent(in) :: lambda,mu
+  type(mesh_type), intent(in) :: m
+
+  double precision :: tau
+  integer :: i, j, IRET
+
     write(6,*) 'Generating 3D kernel...'
     write(6,*) 'NO FFT applied'
     !kernel(i,j): response at i of source at j
     !because dx = constant, only need to calculate i at first column
-    allocate (k%k3%kernel(m%nw,m%nn))
+    allocate (k%kernel(m%nw,m%nn))
     do i = 1,m%nw
       do j = 1,m%nn
         call compute_kernel(lambda,mu,m%x(j),m%y(j),m%z(j),  &
@@ -153,22 +202,18 @@ subroutine init_kernel(lambda,mu,m,k)
                m%x(1+(i-1)*m%nx),m%y(1+(i-1)*m%nx),   &
                m%z(1+(i-1)*m%nx),m%dip(1+(i-1)*m%nx),IRET,tau)
         if (IRET == 0) then
-          k%k3%kernel(i,j) = tau    
+          k%kernel(i,j) = tau    
         else
           write(6,*) '!!WARNING!! : Kernel Singular, set value to 0,(i,j)',i,j
-          k%k3%kernel(i,j) = 0d0
+          k%kernel(i,j) = 0d0
         end if
       end do
     end do
     do j = 1,m%nn
-      write(99,*) k%k3%kernel(1,j)
+      write(99,*) k%kernel(1,j)
     end do
 
-  end select
-
-  write(6,*) 'Kernel intialized'
-  
-end subroutine init_kernel   
+end subroutine init_kernel_3D
 
 !=========================================================
 subroutine compute_stress(tau,K,v)
