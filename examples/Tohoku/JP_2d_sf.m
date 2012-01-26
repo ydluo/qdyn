@@ -14,7 +14,7 @@ p.THETA_LAW=1;
 p.MU=30e9;
 p.MU_SS=0.6;
 p.SIGMA=100e6;
-p.V_SS=0.1/year;
+p.V_SS=0.085/year;
 p.V2=0.01;              %no cut off velocity
 %p.DC=0.3;
 
@@ -42,9 +42,9 @@ p.DW(1:p.NW)=p.W/p.NW;     %deep to shallow
 p.DIP_W(1:p.NW)=dip0;      %deep to shallow 
 p.Z_CORNER=-db+.5*p.DW(1)*sin(p.DIP_W(1)/180.*pi);   %p.Z_CORNER at center of left-bottom cell
 
+dz0=dw0*sin(dip0/180.*pi);
 p.A(1:ceil((db-d8)/dz0))=linspace(aa1,aa0,numel(1:ceil((db-d8)/dz0)));
 p.A(ceil((db-d8)/dz0)+1:p.NW)=aa0;
-dz0=dw0*sin(dip0/180.*pi);
 ba0=1.5;     %b/a at seismogenic zone
 %abmax=5;     %a/b at d3
 bam=0.6;     %b/a at shallow/deeper part
@@ -91,7 +91,7 @@ p.TMAX=twm*year;
 p.V_0 = 1.01*p.V_SS ;
 
 
-p.NTOUT=100;
+p.NTOUT=1000;
 p.NXOUT=1;
 p.NSTOP=0;
 
@@ -101,7 +101,7 @@ xlabel('Time (years)');
 ylabel('Vmax');
 % 
    p.TMAX = ts*year;  
-   p.NTOUT=1;
+   p.NTOUT=10;
 % 
    p.V_0 = ox0.v(:,end);
    p.TH_0= ox0.th(:,end);
