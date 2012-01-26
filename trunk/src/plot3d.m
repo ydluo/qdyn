@@ -1,6 +1,6 @@
 
 clc;
-name='test_3d';
+name='test_3d_lg';
 mname=[name '.avi'];
 year=3600*24*365;
 for i=1:numel(ox1.t)

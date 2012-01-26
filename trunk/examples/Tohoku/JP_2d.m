@@ -46,7 +46,8 @@ p.A(ceil((d3-d2)/dz0)+1:ceil((d3-d11)/dz0))=p.B*ab0;    %a/b < 1 in seismogenic 
 p.A(ceil((d3-d11)/dz0)+1:ceil((d3-d1)/dz0))=p.B*linspace(ab0,abs,numel(ceil((d3-d11)/dz0)+1:ceil((d3-d1)/dz0)));
 p.A(ceil((d3-d1)/dz0)+1:p.NW)=p.B*abs;  %a/b >1 at shallow part  
   
-twm=4000;         %warmup time in years
+twm=10000;         %warmup time in years
+ts=500;    %simulation time in years
 p.ACC = 1e-14;
 
 %------------------------------
@@ -54,7 +55,7 @@ Lb = p.MU*p.DC/p.SIGMA/p.B;
 Lnuc = 1.3774*Lb;
 %------------------------------
 
-filename = ['JP_2D','L',num2str(p.L/1000.),'nx',num2str(p.NX),'W',num2str(p.W/1000.),'nw',num2str(p.NW),'dip',num2str(dip0),'.mat']
+filename = ['JP_2D_twm',num2str(twm),'ts',num2str(ts),'L',num2str(p.L/1000.),'nx',num2str(p.NX),'W',num2str(p.W/1000.),'nw',num2str(p.NW),'dip',num2str(dip0),'.mat']
 p.IC=ceil(p.N/2);
 dx=p.L/p.NX;
 Lb_over_dx = Lb/dx
@@ -75,19 +76,19 @@ p.NTOUT=100;
 p.NXOUT=1;
 p.NSTOP=0;
 
-[p,ot1,ox1]  = qdyn('run',p);
-semilogy(ot1.t/year,ot1.v)
+[p,ot0,ox0]  = qdyn('run',p);
+semilogy(ot0.t/year,ot0.v)
 xlabel('Time (years)');
 ylabel('Vmax');
 % 
-%   p.TMAX = ts*year;  
-%   p.NTOUT=1;
+   p.TMAX = ts*year;  
+   p.NTOUT=1;
 % 
-%   p.V_0 = ox1.v(:,end);
-%   p.TH_0= ox1.th(:,end);
+   p.V_0 = ox0.v(:,end);
+   p.TH_0= ox0.th(:,end);
 %   %p.V_0 =  (ox1.v(:,end)+ox1.v(end:-1:1,end))/2;
 %   %p.TH_0=  (ox1.th(:,end)+ox1.th(end:-1:1,end))/2;
-%   [p,ot,ox]=qdyn('run',p);
+   [p,ot1,ox1]=qdyn('run',p);
 %p0=p;
 V_0 = ox1.v(:,end);
 TH_0= ox1.th(:,end);
