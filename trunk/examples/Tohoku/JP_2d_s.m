@@ -14,7 +14,7 @@ p.THETA_LAW=1;
 p.MU=30e9;
 p.MU_SS=0.6;
 p.SIGMA=100e6;
-p.V_SS=0.1/year;
+p.V_SS=0.085/year;
 p.V2=0.01;              %no cut off velocity
 %p.DC=0.3;
 
