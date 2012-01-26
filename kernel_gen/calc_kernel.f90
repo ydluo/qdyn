@@ -13,6 +13,7 @@ contains
 ! unit response: U=1, return tau
 subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau)
   double precision :: SX,SY,SZ,OX,OY,OZ
+!  double precision :: CD, SD
   double precision :: LAM, MU, ALPHA,   & 
     S_DEPTH,S_DIP, L, W, U,&
     X, Y, Z, O_DIP, &
@@ -23,14 +24,20 @@ subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau)
   
   PI = 3.1415926535897932384626d0
 
-
+!  CD = dcos(S_DIP/180d0*PI)
+!  SD = dsin(S_DIP/180d0*PI)
   ALPHA = (LAM+MU)/(LAM+2d0*MU)
+!  S_DEPTH = -1d0*SZ+0.5d0*W*SD
   S_DEPTH = -1d0*SZ
 
   U = 1d0 
+!  X = OX-SX+0.5d0*L
+!  Y = OY-SY+0.5d0*W*CD
+!  Z = OZ-0.5d0*W*SD
   X = OX-SX
   Y = OY-SY
   Z = OZ
+
  
   call   DC3D(ALPHA,X,Y,Z,S_DEPTH,S_DIP,-0.5d0*L,0.5d0*L,-0.5d0*W,0.5d0*W,0d0,U,0d0,   &
     UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)

@@ -13,14 +13,22 @@ p.NX=512;
 
 p.N=p.NX*p.NW;
 
-tmp=p.A;
+tmp_A=p.A;
+tmp_B=p.B;
+tmp_SIGMA=p.SIGMA;
+tmp_DC=p.DC;
+
 for i=1:p.NW
-    p.A((i-1)*p.NX+1:i*p.NX) = tmp(i);
+    p.A((i-1)*p.NX+1:i*p.NX) = tmp_A(i);
+    p.B((i-1)*p.NX+1:i*p.NX) = tmp_B(i);
+    p.SIGMA((i-1)*p.NX+1:i*p.NX) = tmp_SIGMA(i);
+    p.DC((i-1)*p.NX+1:i*p.NX) = tmp_DC(i);
+
     p.V_0((i-1)*p.NX+1:i*p.NX) = V_0(i);
     p.TH_0((i-1)*p.NX+1:i*p.NX) = TH_0(i);
 end
 
-twm=2200;         %warmup time in years
+twm=1200;         %warmup time in years
 
 
 %------------------------------

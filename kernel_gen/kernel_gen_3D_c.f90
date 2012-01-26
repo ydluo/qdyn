@@ -33,10 +33,10 @@ program main
 
   mesh%w_kind = 0
   mesh%L = 100d3
-  mesh%W = 30d3
-  mesh%nx = 4
-  mesh%nw = 3
-  mesh%Z_CORNER = -30d3
+  mesh%W = 1d3
+  mesh%nx = 1
+  mesh%nw = 100
+  mesh%Z_CORNER = -50d3
   
   mesh%dx = mesh%L/mesh%nx
   
@@ -117,6 +117,7 @@ program main
     write(6,*) 'row=',i,' column=',1  
     write(6,*) temp
     do l = 2, mesh%nx
+      write(6,*) l
       do j =1, mesh%nw*mesh%nx
         mo = mod(j,mesh%nx)
         if (mo >= l .or. mo == 0) then
@@ -129,6 +130,6 @@ program main
       write(6,*) temp
     end do     
   end do
-
+   write(6,*) mesh%nx
 
 end program main
