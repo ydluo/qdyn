@@ -334,7 +334,7 @@ subroutine compute_stress_3d_fft(tau,k3f,v)
   tmpzk(:,2) = matmul( k3f%kernel(:,:,2), tmpzk(:,2) ) 
   ! higher wavenumbers, complex
 !JPA this loop can be parallelized
-!$OMP DO
+!$OMP DO PRIVATE(tmpz)
   do k = 3,k3f%nxfft-1,2
     ! real part = ReK*ReV - ImK*ImV
     ! use tmp to avoid scratching
@@ -348,7 +348,7 @@ subroutine compute_stress_3d_fft(tau,k3f,v)
 !$OMP END DO
   
 !JPA this loop can be parallelized
-!$OMP DO
+!$OMP DO PRIVATE(tmpx)
   do n = 1,k3f%nw
     tmpx = - tmpzk(n,:)
     call my_rdft(-1,tmpx,k3f%m_fft)
