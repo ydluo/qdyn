@@ -50,9 +50,11 @@ subroutine derivs(time,yt,dydt,pb)
     dydt(1::pb%neqs) = -omega
   end select
 
-  dydt(2::pb%neqs) = (dtau_per+pb%dtau_dt - pb%sigma*pb%b*pb%v2*dydt(1::pb%neqs)/   &
-     (pb%v2*yt(1::pb%neqs)+pb%dc) )/  &
-     ( pb%sigma*pb%a*(1.d0/yt(2::pb%neqs)-1.d0/(pb%v1+yt(2::pb%neqs))) + pb%zimpedance )
+  dydt(2::pb%neqs) = ( dtau_per+pb%dtau_dt                       &
+                     - pb%sigma*pb%b*pb%v2*dydt(1::pb%neqs)/     &
+                       (pb%v2*yt(1::pb%neqs)+pb%dc)          )/  &
+                     ( pb%sigma*pb%a*pb%v1/yt(2::pb%neqs)/(pb%v1+yt(2::pb%neqs))  &
+                     + pb%zimpedance )
     
 end subroutine derivs
 

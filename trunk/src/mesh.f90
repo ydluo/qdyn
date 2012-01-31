@@ -37,7 +37,7 @@ subroutine read_mesh(iin,m)
   case(2) !3d problem
     read(iin,*) m%nx,m%nw
     m%nn = m%nx * m%nw
-    read(iin,*) m%Lfault, m%W , m%Z_CORNER 
+    read(iin,*) m%Lfault, m%W , m%Z_CORNER   ! JPA m%W is not used in this case, remove it
     allocate(m%dw(m%nw), m%DIP_W(m%nw))
     do i=1,m%nw
       read(iin,*) m%dw(i), m%DIP_W(i)

@@ -311,15 +311,18 @@ subroutine compute_stress_3d_fft(tau,k3f,v)
   double precision , intent(out) :: tau(:)
   double precision , intent(in) :: v(:)
 
-  double precision :: tmpzk(k3f%nw,k3f%nxfft), tmp(k3f%nxfft)
+  double precision :: tmpzk(k3f%nw,k3f%nxfft), tmpx(k3f%nxfft), tmpz(k3f%nw)
   integer :: n,k
 
+!JPA this loop can be parallelized
+!$OMP DO PRIVATE(tmpx)
   do n = 1,k3f%nw
-    tmp( 1 : k3f%nx ) = v( (n-1)*k3f%nx+1 : n*k3f%nx )
-    tmp( k3f%nx+1 : k3f%nxfft ) = 0d0  ! convolution requires zero-padding
-    call my_rdft(1,tmp,k3f%m_fft) 
-    tmpzk(n,:) = tmp
+    tmpx( 1 : k3f%nx ) = v( (n-1)*k3f%nx+1 : n*k3f%nx )
+    tmpx( k3f%nx+1 : k3f%nxfft ) = 0d0  ! convolution requires zero-padding
+    call my_rdft(1,tmpx,k3f%m_fft) 
+    tmpzk(n,:) = tmpx
   enddo
+!$OMP END DO
 
   ! convolution in Fourier domain is a product of complex numbers:
   ! K*V = (ReK + i*ImK)*(ReV+i*ImV) 
@@ -330,21 +333,28 @@ subroutine compute_stress_3d_fft(tau,k3f,v)
   ! wavenumber = Nyquist, real
   tmpzk(:,2) = matmul( k3f%kernel(:,:,2), tmpzk(:,2) ) 
   ! higher wavenumbers, complex
+!JPA this loop can be parallelized
+!$OMP DO
   do k = 3,k3f%nxfft-1,2
     ! real part = ReK*ReV - ImK*ImV
-    tmpzk(:,k)  = matmul( k3f%kernel(:,:,k), tmpzk(:,k) )  &
-                - matmul( k3f%kernel(:,:,k+1), tmpzk(:,k+1) )
+    ! use tmp to avoid scratching
+    tmpz         = matmul( k3f%kernel(:,:,k), tmpzk(:,k) )  &
+                 - matmul( k3f%kernel(:,:,k+1), tmpzk(:,k+1) )
     ! imaginary part = ReK*ImV + ImK*ReV
     tmpzk(:,k+1) = matmul( k3f%kernel(:,:,k), tmpzk(:,k+1) )  &
                  + matmul( k3f%kernel(:,:,k+1), tmpzk(:,k) )
-!    tmpzk(:,k) = tmp
+    tmpzk(:,k) = tmpz
   enddo
+!$OMP END DO
   
+!JPA this loop can be parallelized
+!$OMP DO
   do n = 1,k3f%nw
-    tmp = - tmpzk(n,:)
-    call my_rdft(-1,tmp,k3f%m_fft)
-    tau( (n-1)*k3f%nx+1 : n*k3f%nx ) = tmp(1:k3f%nx) ! take only first half of array
+    tmpx = - tmpzk(n,:)
+    call my_rdft(-1,tmpx,k3f%m_fft)
+    tau( (n-1)*k3f%nx+1 : n*k3f%nx ) = tmpx(1:k3f%nx) ! take only first half of array
   enddo
+!$OMP END DO
 
 end subroutine compute_stress_3d_fft
 
