@@ -27,9 +27,6 @@ subroutine solve(pb)
 
     pb%it = pb%it + 1
     call do_bsstep(pb)
-!    if (pb%it == 1) then
-!      write(6,*) pb%dtau_dt
-!    end if
     call update_field(pb)
     call ot_write(pb)
     call check_stop(pb)   ! here itstop will change
@@ -138,7 +135,7 @@ subroutine update_field(pb)
   ! Update slip, stress. 
   pb%slip = pb%slip + pb%v*pb%dt_did
   pb%tau = (pb%mu_star-pb%a*log(pb%v1/pb%v+1d0)+pb%b*log(pb%theta/pb%theta_star)+1d0)    &
-    * pb%sigma   
+           * pb%sigma   
   ! update potency and potency rate
   pb%pot = sum(pb%slip) * pb%mesh%dx
   pb%pot_rate = sum(pb%v) * pb%mesh%dx
