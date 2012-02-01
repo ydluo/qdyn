@@ -14,7 +14,7 @@ p.THETA_LAW=1;
 p.MU=30e9;
 p.MU_SS=0.6;
 p.SIGMA=100e6;
-p.V_SS=0.1/year;
+p.V_SS=0.1/year;	% JPA: Vpl=8.5 cm/yr in Japan (DeMets et al, 1990)
 p.V2=0.01;              %no cut off velocity
 p.DC=0.3;
 
@@ -57,8 +57,9 @@ Lnuc = 1.3774*Lb;
 
 filename = ['JP_2D_twm',num2str(twm),'ts',num2str(ts),'L',num2str(p.L/1000.),'nx',num2str(p.NX),'W',num2str(p.W/1000.),'nw',num2str(p.NW),'dip',num2str(dip0),'.mat']
 p.IC=ceil(p.N/2);
-dx=p.L/p.NX;
-Lb_over_dx = Lb/dx
+
+dw=p.W/p.NW;
+Lb_over_dw = Lb/dw
 
 
 p = qdyn('set',p);

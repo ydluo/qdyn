@@ -62,10 +62,11 @@ p.DC(1:ceil((db-dd)/dz0))=0.02;
 p.DC(ceil((db-dd)/dz0)+1:p.NW)=0.5;
 
 p.SIGMA(1:ceil((db-dd)/dz0))=88.2e6;
-p.SIGMA(ceil((db-dd)/dz0)+1:p.NW)=linspace(350e6,0,numel(ceil((db-dd)/dz0)+1:p.NW));
+p.SIGMA(ceil((db-dd)/dz0)+1:p.NW)=linspace(350e6,1e6,numel(ceil((db-dd)/dz0)+1:p.NW));
+%p.SIGMA(1:p.N)=100e6;
 
   
-twm=10000;         %warmup time in years
+twm=4000;         %warmup time in years
 ts=500;    %simulation time in years
 p.ACC = 1e-14;
 
@@ -91,7 +92,7 @@ p.TMAX=twm*year;
 p.V_0 = 1.01*p.V_SS ;
 
 
-p.NTOUT=1000;
+p.NTOUT=100;
 p.NXOUT=1;
 p.NSTOP=0;
 
@@ -101,7 +102,7 @@ xlabel('Time (years)');
 ylabel('Vmax');
 % 
    p.TMAX = ts*year;  
-   p.NTOUT=10;
+   p.NTOUT=1;
 % 
    p.V_0 = ox0.v(:,end);
    p.TH_0= ox0.th(:,end);

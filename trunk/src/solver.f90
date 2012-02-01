@@ -137,6 +137,8 @@ subroutine update_field(pb)
   pb%tau = (pb%mu_star-pb%a*log(pb%v1/pb%v+1d0)+pb%b*log(pb%theta/pb%theta_star)+1d0)    &
            * pb%sigma   
   ! update potency and potency rate
+!JPA dx should be replaced by dw in 2D subduction 
+!    and by dx*dw in 3D
   pb%pot = sum(pb%slip) * pb%mesh%dx
   pb%pot_rate = sum(pb%v) * pb%mesh%dx
   ! update crack size
