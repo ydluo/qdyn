@@ -13,9 +13,10 @@ p.MESHDIM=2;      %FFT enabled
 p.THETA_LAW=1;
 p.MU=30e9;
 p.MU_SS=0.6;
-p.SIGMA=100e6;
+%p.SIGMA=100e6;
 p.V_SS=0.085/year;
-p.V2=0.01;              %no cut off velocity
+p.V2=100.;              %no cut off velocity
+p.V1=p.V2;
 %p.DC=0.3;
 
 dip0=14.;
@@ -36,8 +37,8 @@ p.NX=1;
 p.N=p.NX*p.NW;
 p.DW(1:p.NW)=p.W/p.NW;     %deep to shallow
 p.DIP_W(1:p.NW)=dip0;      %deep to shallow 
-p.Z_CORNER=-db+.5*p.DW(1)*sin(p.DIP_W(1)/180.*pi);   %p.Z_CORNER at center of left-bottom cell
-
+%p.Z_CORNER=-db+.5*p.DW(1)*sin(p.DIP_W(1)/180.*pi);   %p.Z_CORNER at center of left-bottom cell
+p.Z_CORNER=-db
 
 p.A(1:p.NW)=aa0;
 dz0=dw0*sin(dip0/180.*pi);
@@ -51,15 +52,15 @@ p.B(ceil((db-d3)/dz0)+1:ceil((db-d2)/dz0))=p.A(ceil((db-d3)/dz0)+1:ceil((db-d2)/
 p.B(ceil((db-d2)/dz0)+1:ceil((db-d1)/dz0))=p.A(ceil((db-d2)/dz0)+1:ceil((db-d1)/dz0)).*linspace(ba0,bam,numel(ceil((db-d2)/dz0)+1:ceil((db-d1)/dz0)));
 p.B(ceil((db-d1)/dz0)+1:p.NW)=p.A(ceil((db-d1)/dz0)+1:p.NW).*bam;  %a/b >1 at shallow part 
 
-p.DC(1:ceil((db-dd)/dz0))=0.02;
-p.DC(ceil((db-dd)/dz0)+1:p.NW)=0.5;
+p.DC(1:ceil((db-dd)/dz0))=0.8;
+p.DC(ceil((db-dd)/dz0)+1:p.NW)=0.8;
 
 p.SIGMA(1:ceil((db-dd)/dz0))=88.2e6;
-p.SIGMA(ceil((db-dd)/dz0)+1:p.NW)=linspace(350e6,0,numel(ceil((db-dd)/dz0)+1:p.NW));
+p.SIGMA(ceil((db-dd)/dz0)+1:p.NW)=linspace(150e6,1e6,numel(ceil((db-dd)/dz0)+1:p.NW));
 
   
 twm=10000;         %warmup time in years
-ts=500;    %simulation time in years
+ts=1000;    %simulation time in years
 p.ACC = 1e-14;
 
 %------------------------------

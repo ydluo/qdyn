@@ -1,6 +1,15 @@
-Simulation for Japan:
-1. Run JP_2d.m first, in current configuration, it will reproduce megathrust event every about 400 years
-   it will store a warmup_jp.mat for next 3d simulation;
-2. Run JP_3d.m, change grid number nx (must = 2^n) and twm (warmup time) accordingly
-   it will store last step v and theta in warmup_jp_3d.mat
-   every step in 3d simulatin now cost less than 1 min, every circle of megathrust event will take about 1000 step;
+Simulation for Tohoku, Japan:
+[from simulation /home/luoyd/qdyn_mm4]
+
+1. Run JP_2d_s.m to compute 2D earthquake cycle simulations
+   This simulation takes a few minutes or less
+   It generates a M9.1 megathrust event every ~1000 years
+   The output in matlab format is in the "JP_2D_s_*.mat" file
+   A figure can be created by running the matlab script make_figures.m
+   The output file warmup_jp.mat is needed for subsequent 3D simulations
+
+2. Run JP_3d.m to compute 3D earthquake cycle simulations
+   Beforehand, adjust the grid number nx (must be 2^n, a power of 2) and twm (warmup time) accordingly
+   It will store last step v and theta in warmup_jp_3d.mat
+   Each time step in 3D takes less than 1 min
+   Each megathrust cycle in 3D takes about 1000 steps

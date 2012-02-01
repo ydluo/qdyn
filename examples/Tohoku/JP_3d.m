@@ -1,15 +1,9 @@
-clear;
-clc;
-
-%------------------------------
-%rand(1,floor(sum(100*clock)));
-%------------------------------
-
 
 year = 3600*24*365;
 load('warmup_jp');
 
-p.NX=512;
+p.L = 300e3; % along-strike rupture length
+p.NX=128;
 
 p.N=p.NX*p.NW;
 
@@ -28,18 +22,20 @@ for i=1:p.NW
     p.TH_0((i-1)*p.NX+1:i*p.NX) = TH_0(i);
 end
 
-twm=1200;         %warmup time in years
+twm=4000;         %warmup time in years
 
 
 %------------------------------
-Lb = p.MU*p.DC/p.SIGMA/p.B;
+Lb = p.MU.*p.DC./p.SIGMA./p.B;
 Lnuc = 1.3774*Lb;
 %------------------------------
 
 filename = ['JP_3D','L',num2str(p.L/1000.),'nx',num2str(p.NX),'W',num2str(p.W/1000.),'nw',num2str(p.NW),'.mat']
 p.IC=ceil(p.N/2);
 dx=p.L/p.NX;
-Lb_over_dx = Lb/dx
+dw=p.W/p.NW;
+min_Lb_over_dx = min(Lb/dx)
+min_Lb_over_dw = min(Lb/dw)
 
 
 
@@ -47,6 +43,7 @@ p.NTOUT=100;
 p.NXOUT=1;
 p.NSTOP=0;
 
+return
 [p,ot1,ox1]  = qdyn('run',p);
 semilogy(ot1.t/year,ot1.v)
 xlabel('Time (years)');
