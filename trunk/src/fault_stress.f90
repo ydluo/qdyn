@@ -314,27 +314,29 @@ subroutine compute_stress_3d_fft(tau,k3f,v)
   double precision :: tmpzk(k3f%nw,k3f%nxfft), tmpx(k3f%nxfft), tmpz(k3f%nw)
   integer :: n,k
 
-!JPA this loop can be parallelized
-!$OMP DO PRIVATE(tmpx)
+  !$OMP PARALLEL PRIVATE(tmpx,tmpz)
+
+  !$OMP DO SCHEDULE(STATIC) 
   do n = 1,k3f%nw
     tmpx( 1 : k3f%nx ) = v( (n-1)*k3f%nx+1 : n*k3f%nx )
     tmpx( k3f%nx+1 : k3f%nxfft ) = 0d0  ! convolution requires zero-padding
     call my_rdft(1,tmpx,k3f%m_fft) 
     tmpzk(n,:) = tmpx
   enddo
-!$OMP END DO
+  !$OMP END DO
 
   ! convolution in Fourier domain is a product of complex numbers:
   ! K*V = (ReK + i*ImK)*(ReV+i*ImV) 
   !     = ReK*ReV - ImK*ImV  + i*( ReK*ImV + ImK*ReV )
   !
+  !$OMP SINGLE
   ! wavenumber = 0, real
   tmpzk(:,1) = matmul( k3f%kernel(:,:,1), tmpzk(:,1) ) 
   ! wavenumber = Nyquist, real
   tmpzk(:,2) = matmul( k3f%kernel(:,:,2), tmpzk(:,2) ) 
+  !$OMP END SINGLE
   ! higher wavenumbers, complex
-!JPA this loop can be parallelized
-!$OMP DO PRIVATE(tmpz)
+  !$OMP DO SCHEDULE(STATIC)
   do k = 3,k3f%nxfft-1,2
     ! real part = ReK*ReV - ImK*ImV
     ! use tmp to avoid scratching
@@ -345,16 +347,17 @@ subroutine compute_stress_3d_fft(tau,k3f,v)
                  + matmul( k3f%kernel(:,:,k+1), tmpzk(:,k) )
     tmpzk(:,k) = tmpz
   enddo
-!$OMP END DO
+  !$OMP END DO
   
-!JPA this loop can be parallelized
-!$OMP DO PRIVATE(tmpx)
+  !$OMP DO SCHEDULE(STATIC)
   do n = 1,k3f%nw
     tmpx = - tmpzk(n,:)
     call my_rdft(-1,tmpx,k3f%m_fft)
     tau( (n-1)*k3f%nx+1 : n*k3f%nx ) = tmpx(1:k3f%nx) ! take only first half of array
   enddo
-!$OMP END DO
+  !$OMP END DO
+
+  !$OMP END PARALLEL
 
 end subroutine compute_stress_3d_fft
 
