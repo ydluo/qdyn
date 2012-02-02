@@ -17,8 +17,11 @@ subroutine init_all(pb)
   use constants, only : PI
   use fault_stress, only : init_kernel
   use output, only : ot_init, ox_init
+!$  use omp_lib
 
   type(problem_type), intent(inout) :: pb
+
+  integer :: TID, NTHREADS
 
   call init_mesh(pb%mesh)
   
@@ -73,7 +76,17 @@ subroutine init_all(pb)
   
   write(6,*) 'Initialization completed'
 
-end subroutine init_all
+  ! Info about threads 
+!$OMP PARALLEL PRIVATE(NTHREADS, TID)
+!$  TID = OMP_GET_THREAD_NUM()
+!$  write(6,*) 'Thread index = ', TID
+!$OMP BARRIER
+!$  if (TID == 0) then
+!$    NTHREADS = OMP_GET_NUM_THREADS()
+!$    write(6,*) 'Total number of threads = ', NTHREADS
+!$  end if
+!$OMP END PARALLEL
 
+end subroutine init_all
 
 end module initialize

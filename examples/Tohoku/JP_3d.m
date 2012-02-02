@@ -3,32 +3,28 @@ year = 3600*24*365;
 load('warmup_jp');
 
 p.L = 300e3; % along-strike rupture length
-p.NX=128;
+p.NX=128; % must be a power of 2 such that dx=L/NX is smaller than Lb
+p.TMAX=4000*year;         %warmup time in years
+
+p.NTOUT=100;
+p.NXOUT=1;
+p.NSTOP=0;
 
 p.N=p.NX*p.NW;
 
-tmp_A=p.A;
-tmp_B=p.B;
-tmp_SIGMA=p.SIGMA;
-tmp_DC=p.DC;
+% in 2D size(A)=[1 NW]
+% in 3D, faster index runs along strike, size(A)=[NX NW]
+p.A = repmat(p.A,p.NX,1);  
+p.B = repmat(p.B,p.NX,1);  
+p.SIGMA = repmat(p.SIGMA,p.NX,1);  
+p.DC = repmat(p.DC,p.NX,1);  
+p.V_0 = repmat(p.V_0,p.NX,1);  
+p.TH_0 = repmat(p.TH_0,p.NX,1);  
+% qdyn.m handles these quantities correctly even if they are matrices
+% If in doubt, to make sure they are stored as vectors we could do this: p.A=p.A(:);
 
-for i=1:p.NW
-    p.A((i-1)*p.NX+1:i*p.NX) = tmp_A(i);
-    p.B((i-1)*p.NX+1:i*p.NX) = tmp_B(i);
-    p.SIGMA((i-1)*p.NX+1:i*p.NX) = tmp_SIGMA(i);
-    p.DC((i-1)*p.NX+1:i*p.NX) = tmp_DC(i);
-
-    p.V_0((i-1)*p.NX+1:i*p.NX) = V_0(i);
-    p.TH_0((i-1)*p.NX+1:i*p.NX) = TH_0(i);
-end
-
-twm=4000;         %warmup time in years
-
-
-%------------------------------
 Lb = p.MU.*p.DC./p.SIGMA./p.B;
 Lnuc = 1.3774*Lb;
-%------------------------------
 
 filename = ['JP_3D','L',num2str(p.L/1000.),'nx',num2str(p.NX),'W',num2str(p.W/1000.),'nw',num2str(p.NW),'.mat']
 p.IC=ceil(p.N/2);
@@ -37,13 +33,6 @@ dw=p.W/p.NW;
 min_Lb_over_dx = min(Lb/dx)
 min_Lb_over_dw = min(Lb/dw)
 
-
-
-p.NTOUT=100;
-p.NXOUT=1;
-p.NSTOP=0;
-
-return
 [p,ot1,ox1]  = qdyn('run',p);
 semilogy(ot1.t/year,ot1.v)
 xlabel('Time (years)');
