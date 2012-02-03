@@ -1,0 +1,12 @@
++ add GPL license and copyright files
++ binary outputs
++ matlab functions to read snapshots one by one
++ inputs as fortran namelists
+
++ documentation
+
++ MPI parallelization
++ coupling slip to normal stress
++ variable strike
++ triangular elements
++ use object oriented matlab
