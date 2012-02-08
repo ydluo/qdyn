@@ -1,6 +1,6 @@
 
-% QDYN		Quasi-dynamic earthquake cycles on a 1D fault embedded in a 2D elastic medium
-%               This is a Matlab wrapper for the Fortran code qdyn.f
+% QDYN		Quasi-dynamic earthquake cycles on fault embedded in elastic medium
+%               This is a Matlab wrapper for the Fortran code qdyn.f90
 %               Friction Law with cut-off Velocities by Okubo, velocity
 %               weakening at low slip_v and strengthening at high slip_v
 %		Features:
@@ -34,13 +34,24 @@
 %		
 %		These are the parameters that can be set through 'parsin' or 'Prop/Value' pairs:
 %
+%       MESHDIM = mesh dimension, 
+%               0 = spring-blocke system
+%               1 = 1D fault, 2D medium
+%               2 = 2D fault, 3D medium
 %		L = fault length (L scales the stiffness for the spring-block case)
-%		FINITE = boundary conditions: 
+%		FINITE = boundary conditions: (in 2D case)
 %			0 = periodic along-strike, steady loading at distance W from the fault line
 %			1 = rate-and-state fault segment of finite length (L) surrounded by steady slip
-%		W  = out-of-plane dimension (ignored if FINITE=1)
+%		W  = Length along-dip (in 2D case,ignored if FINITE=1 )
 %		MU = shear modulus
+%		LAM = elastic modulus LAMBDA (for 3D simualtion)
 %		VS = shear wave velocity. If VS=0 radiation damping is turned off
+%       V1 = cutting off velocity of direct effect (m/s)
+%       V2 = cutting off velocity of evolutional effect (m/s), controls velocity 
+%            weaking to strengtherning transition while a<b, V2 should <= V1
+%       **set V1, V2 a large value (e.g 100) for no transition**
+%		NX  = number of fault nodes (elements) along-strike (3D)
+%		NW  = number of fault nodes (elements) along-dip (3D) 
 %		N  = number of fault nodes (elements)
 %		TMAX = total simulation time (in seconds)
 %		NSTOP = stop at (0) t=TMAX, (1) end of localization or (2) first slip rate peak
@@ -60,10 +71,15 @@
 %			1 = ageing law
 %			2 = slip law
 %		SIGMA = effective normal stress
+%       DW = along-dip lengh (km) of every node nalong-dip, from deeper to shallower
+%       DIP_W = dipping angel (degree) of every node nalong-dip, from deeper to shallower
+%       Z_CORNER = - depth (km) of bottom left node (3D)
+%       IC = ot output sampling node
 %		V_0 = initial slip velocity
 %		TH_0 = initial state 
 %		APER = amplitude of additional periodic loading (in Pa)
 %		TPER = period of additional periodic loading (in s)
+%       X,Y,Z = relative fault coordinates
 %
 % OUTPUTS 	pars	structure containing parameters, see documentation of qdyn.f
 %		ot	structure containing time series outputs 
@@ -84,11 +100,11 @@
 %			ot.omc 	slip_rate*theta/dc at center
 %			ot.tauc	stress at center
 %			ot.dc	slip at center
-%		ox	structure containing snapshot outputs (x,t)
-%			ox.x	fault coordinates 
+%		ox	structure containing snapshot outputs 
+%			ox.x	fault coordinates (for 2D)
 %			ox.t 	output times
-%			ox.v	slip rate (x,t)
-%			ox.th	state variable theta(x,t)
+%			ox.v	slip rate 
+%			ox.th	state variable theta
 %			ox.vd	slip acceleration
 %			ox.dtau stress (-initial)
 %			ox.dtaud stress rate
@@ -102,7 +118,8 @@
 % SEE ALSO	qdyn_example1.m
 %
 % AUTHOR	Jean-Paul Ampuero	ampuero@gps.caltech.edu
-% LAST MODIF	May 2010
+% MODIFIED by Yingdi LUO        luoyd@gps.caltech.edu
+% Last Mod 02/08/2012
 
 function [pars,ot,ox] = qdyn(mode,varargin)
 
@@ -113,7 +130,7 @@ function [pars,ot,ox] = qdyn(mode,varargin)
 
 %--------- DEFAULT PARAMETERS ------------------------------------
 
-MESHDIM=0;
+MESHDIM=1;
 
 NEQS=2;
 
