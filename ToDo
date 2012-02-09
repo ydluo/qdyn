@@ -1,12 +1,22 @@
-+ add GPL license and copyright files
-+ binary outputs
-+ matlab functions to read snapshots one by one
-+ inputs as fortran namelists
+(Priorities are not indicated)
 
-+ documentation
-
-+ MPI parallelization
+Physics:
 + coupling slip to normal stress
 + variable strike
-+ triangular elements
++ triangular elements: Meade's code (buggy?) or Gausian quadrature of Okada point sources
+
+Code engineering and optimization:
++ inputs as fortran namelists
++ MPI parallelization
++ hierarchical matrix techniques
 + use object oriented matlab
+
+Outputs:
++ binary outputs
++ more options to set output times: at regular times (with switch to short time during events), at regular increment of log(v)
++ matlab functions to read snapshots one by one
+
+Packaging:
++ documentation: find a tool that allows automated actions (e.g. sinc with Matlab help)
++ add GPL license and copyright files
+
