@@ -134,7 +134,7 @@ subroutine update_field(pb)
 
   ! Update slip, stress. 
   pb%slip = pb%slip + pb%v*pb%dt_did
-  pb%tau = (pb%mu_star-pb%a*log(pb%v1/pb%v+1d0)+pb%b*log(pb%theta/pb%theta_star)+1d0)    &
+  pb%tau = (pb%mu_star-pb%a*log(pb%v1/pb%v+1d0)+pb%b*log(pb%theta/pb%theta_star+1d0))    &
            * pb%sigma   
   ! update potency and potency rate
 !JPA dx should be replaced by dw in 2D subduction 
