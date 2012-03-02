@@ -42,6 +42,7 @@ subroutine read_main(pb)
   end if
    
   read(15,*) pb%itheta_law
+  read(15,*) pb%i_rns_law
   read(15,*) pb%neqs 
 
 !JPA neqs should not be setup explicitly by the user

@@ -70,6 +70,8 @@
 %			0 = ageing in the "no-healing" approximation
 %			1 = ageing law
 %			2 = slip law
+%		RNS_LAW 0 = original rate-and-state friction law
+%			1 = rate-and-state frction with cutting-off velocity
 %		SIGMA = effective normal stress
 %       DW = along-dip lengh (km) of every node nalong-dip, from deeper to shallower
 %       DIP_W = dipping angel (degree) of every node nalong-dip, from deeper to shallower
@@ -175,7 +177,7 @@ MU_SS = 0.6;
 V_SS = 1e-9;
 TH_SS = DC/V_SS;
 THETA_LAW = 1;
-
+RNS_LAW = 1;
 %-- initial conditions
 SIGMA=1e8;
 V_0=V_SS ; 
@@ -290,6 +292,7 @@ switch mode
     end   
     
     fprintf(fid,'%u   itheta_law\n', THETA_LAW);
+    fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
     fprintf(fid,'%u   n_equations\n', NEQS);
     fprintf(fid,'%u %u %u   ntout, nt_coord, nxout\n', NTOUT,IC,NXOUT);     
     fprintf(fid,'%.15g %.15g %.15g   beta, smu, lambda\n', VS, MU, LAM);

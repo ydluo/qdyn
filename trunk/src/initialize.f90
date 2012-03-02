@@ -56,9 +56,15 @@ subroutine init_all(pb)
   !---------------------- impedance ------------------
      
   !---------------------- ref_value ------------------        
-  pb%theta_star = pb%dc/pb%v2
-  pb%tau_init = pb%sigma *   &
-    (pb%mu_star- pb%a*log(pb%v1/pb%v+1d0)+ pb%b*log(pb%theta/pb%theta_star+1d0))
+  if (pb%i_rns_law == 1) then
+    pb%theta_star = pb%dc/pb%v2
+    pb%tau_init = pb%sigma *   &
+      (pb%mu_star- pb%a*log(pb%v1/pb%v+1d0)+ pb%b*log(pb%theta/pb%theta_star+1d0))
+  else
+    pb%theta_star = pb%dc/pb%v_star
+    pb%tau_init = pb%sigma *   &
+      (pb%mu_star- pb%a*log(pb%v_star/pb%v)+ pb%b*log(pb%theta/pb%theta_star))
+  endif
   pb%tau = pb%tau_init
   pb%slip = 0d0 
   !---------------------- ref_value ----------------- 
