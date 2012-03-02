@@ -49,13 +49,17 @@ subroutine derivs(time,yt,dydt,pb)
   case(0) ! "aging" in the no-healing approximation
     dydt(1::pb%neqs) = -omega
   end select
-
-  dydt(2::pb%neqs) = ( dtau_per+pb%dtau_dt                       &
-                     - pb%sigma*pb%b*pb%v2*dydt(1::pb%neqs)/     &
+  if (pb%i_rns_law == 1) then
+    dydt(2::pb%neqs) = ( dtau_per+pb%dtau_dt                       &
+                         - pb%sigma*pb%b*pb%v2*dydt(1::pb%neqs)/     &
                        (pb%v2*yt(1::pb%neqs)+pb%dc)          )/  &
                      ( pb%sigma*pb%a*pb%v1/yt(2::pb%neqs)/(pb%v1+yt(2::pb%neqs))  &
                      + pb%zimpedance )
-    
+  else
+    dydt(2::pb%neqs) = ( dtau_per+pb%dtau_dt                      &
+                         -  pb%sigma*pb%b*dydt(1::pb%neqs)/yt(1::pb%neqs) )/    &
+                       ( pb%sigma*pb%a/yt(2::pb%neqs) + pb%zimpedance )
+  endif
 end subroutine derivs
 
 end module derivs_all

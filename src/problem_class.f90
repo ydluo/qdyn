@@ -36,7 +36,7 @@ module problem_class
 
     double precision :: Tper=0d0, Aper=0d0, Omper=0d0
     double precision :: time=0d0
-    integer :: itheta_law, neqs
+    integer :: itheta_law,i_rns_law, neqs
 
     double precision :: dt_try, dt_did, dt_next, dt_max=0d0, tmax, acc
     integer :: NSTOP,itstop,it

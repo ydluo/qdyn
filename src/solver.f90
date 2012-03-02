@@ -129,18 +129,38 @@ subroutine update_field(pb)
 
   type(problem_type), intent(inout) :: pb
 
-  integer :: i  
+  integer :: i,ix,iw  
   double precision :: vtemp 
 
   ! Update slip, stress. 
   pb%slip = pb%slip + pb%v*pb%dt_did
-  pb%tau = (pb%mu_star-pb%a*log(pb%v1/pb%v+1d0)+pb%b*log(pb%theta/pb%theta_star+1d0))    &
-           * pb%sigma   
+  if (pb%i_rns_law == 1) then
+    pb%tau = (pb%mu_star-pb%a*log(pb%v1/pb%v+1d0)+pb%b*log(pb%theta/pb%theta_star+1d0))    &
+           * pb%sigma 
+  else
+    pb%tau = (pb%mu_star-pb%a*log(pb%v_star/pb%v)+pb%b*log(pb%theta/pb%theta_star))    &
+           * pb%sigma  
+  endif
   ! update potency and potency rate
 !JPA dx should be replaced by dw in 2D subduction 
 !    and by dx*dw in 3D
-  pb%pot = sum(pb%slip) * pb%mesh%dx
-  pb%pot_rate = sum(pb%v) * pb%mesh%dx
+! -YD: solved
+  pb%pot=0d0;
+  pb%pot_rate=0d0;
+  if (pb%mesh%dim == 0 .or. pb%mesh%dim == 1) then
+    pb%pot = sum(pb%slip) * pb%mesh%dx
+    pb%pot_rate = sum(pb%v) * pb%mesh%dx
+  else
+    do iw=1,pb%mesh%nw
+      do ix=1,pb%mesh%nx
+        i=(iw-1)*pb%mesh%nx+ix
+        pb%pot = pb%pot + pb%slip(i) * pb%mesh%dx * pb%mesh%dw(iw)
+        pb%pot_rate = pb%pot_rate + pb%v(i) * pb%mesh%dx * pb%mesh%dw(iw)
+      end do
+    end do
+  endif
+    
+
   ! update crack size
   pb%ot%lcold = pb%ot%lcnew
   pb%ot%lcnew = crack_size(pb%slip,pb%mesh%nn)
