@@ -77,6 +77,8 @@ subroutine init_mesh_0D(m)
   write(6,*) 'Spring-block System' 
   m%dx = m%Lfault
   m%x = 0d0
+  m%y = 0d0
+  m%z = 0d0
 
 end subroutine init_mesh_0D
 
@@ -95,6 +97,8 @@ subroutine init_mesh_1D(m)
     ! Assuming nn is even (usually a power of 2), 
     ! the center of the two middle elements (i=nn/2 and nn/2+1) 
     ! are located at x=-dx/2 and x=dx/2, respectively 
+    m%y(i) = 0d0
+    m%z(i) = 0d0
   enddo
 
 end subroutine init_mesh_1D

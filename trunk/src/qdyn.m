@@ -1,4 +1,3 @@
-
 % QDYN		Quasi-dynamic earthquake cycles on fault embedded in elastic medium
 %               This is a Matlab wrapper for the Fortran code qdyn.f90
 %               Friction Law with cut-off Velocities by Okubo, velocity
@@ -152,6 +151,7 @@ MU = 30e9;	% shear modulus
 LAM = 30e9;
 VS = 3000; 	% shear wave velocity (if VS=0: turn off radiation damping)
 
+
 %-- numerical settings
 N=1024; 	% number of grid cells
 NX=100;
@@ -168,6 +168,8 @@ DTMAX = 0;	% maximum timestep (0=unrestricted)
 ACC = 1e-7;     % solver accuracy
 NXOUT = 8;	% space stride (cells) for snapshot outputs
 NTOUT = 100; 	% time stride (iterations) for snapshot outputs
+OX_SEQ = 0; 	% = 1 ; enable sequential ox output , from fort.1000 ...
+
 
 %-- friction
 A = 0.9e-2; 
@@ -294,7 +296,7 @@ switch mode
     fprintf(fid,'%u   itheta_law\n', THETA_LAW);
     fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
     fprintf(fid,'%u   n_equations\n', NEQS);
-    fprintf(fid,'%u %u %u   ntout, nt_coord, nxout\n', NTOUT,IC,NXOUT);     
+    fprintf(fid,'%u %u %u %u  ntout, nt_coord, nxout\n', NTOUT,IC,NXOUT,OX_SEQ);     
     fprintf(fid,'%.15g %.15g %.15g   beta, smu, lambda\n', VS, MU, LAM);
     fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
     fprintf(fid,'%.15g %.15g %.15g %.15g    dt_try, dtmax, tmax, accuracy\n',DTTRY,DTMAX,TMAX,ACC);
@@ -306,8 +308,8 @@ switch mode
     
     % solve
 %     status = system('~/qdyn_svn/trunk/src/qdyn');
-    status = system('qdyn');
-%     status = system('~/bin/qdyn');
+%     status = system('qdyn');
+    status = system('~/bin/qdyn');
     % rename input and output files
     if length(NAME)
       movefile('fort.18',[NAME '.ot']); 
