@@ -149,20 +149,20 @@ subroutine ox_write(pb)
 
   if (pb%ox%i_ox_seq == 0) then
     write(pb%ox%unit,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
-    write(pb%ox%unit,'(2a)') '#  x  y  z  v  theta','  V./V  dtau  tau_dot  slip '
+    write(pb%ox%unit,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip '
     do ixout=1,pb%mesh%nn,pb%ox%nxout
-      write(pb%ox%unit,'(3e15.7,6e15.7)')       &
-        pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),    &
+      write(pb%ox%unit,'(3e15.7,e24.14,6e15.7)')       &
+        pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,    &
         pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
         pb%dtau_dt(ixout),pb%slip(ixout)
     enddo
   else
     pb%ox%unit = pb%ox%unit + 1
     write(pb%ox%unit,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
-    write(pb%ox%unit,'(2a)') '#  x  y  z  v  theta','  V./V  dtau  tau_dot  slip '
+    write(pb%ox%unit,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip '
     do ixout=1,pb%mesh%nn,pb%ox%nxout
-      write(pb%ox%unit,'(3e15.7,6e15.7)')       &
-        pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),     &
+      write(pb%ox%unit,'(3e15.7,e24.14,6e15.7)')       &
+        pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
         pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
         pb%dtau_dt(ixout),pb%slip(ixout)
     enddo
