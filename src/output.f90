@@ -101,7 +101,11 @@ subroutine ox_init(pb)
   use problem_class
   type (problem_type), intent(inout) :: pb
   integer :: i
-  pb%ox%unit = 19
+  if (pb%ox%i_ox_seq == 0) then
+    pb%ox%unit = 19
+  else
+    pb%ox%unit = 1000
+  endif
 
   pb%ox%count=0
   do i=1,pb%mesh%nn,pb%ox%nxout
@@ -143,13 +147,27 @@ subroutine ox_write(pb)
 
   integer :: ixout
 
-  write(pb%ox%unit,'(2a,2i8,e14.6)')'# x v theta',' V./V dtau tau_dot slip ',pb%it,pb%ot%ivmax,pb%time
-! JPA: this output should also contain y and z
-  do ixout=1,pb%mesh%nn,pb%ox%nxout
-    write(pb%ox%unit,'(e15.7,e24.16,6e15.7)') pb%mesh%x(ixout),pb%time,pb%v(ixout),   &
-      pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
-      pb%dtau_dt(ixout),pb%slip(ixout)
-  enddo
+  if (pb%ox%i_ox_seq == 0) then
+    write(pb%ox%unit,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
+    write(pb%ox%unit,'(2a)') '#  x  y  z  v  theta','  V./V  dtau  tau_dot  slip '
+    do ixout=1,pb%mesh%nn,pb%ox%nxout
+      write(pb%ox%unit,'(3e15.7,6e15.7)')       &
+        pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),    &
+        pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
+        pb%dtau_dt(ixout),pb%slip(ixout)
+    enddo
+  else
+    pb%ox%unit = pb%ox%unit + 1
+    write(pb%ox%unit,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
+    write(pb%ox%unit,'(2a)') '#  x  y  z  v  theta','  V./V  dtau  tau_dot  slip '
+    do ixout=1,pb%mesh%nn,pb%ox%nxout
+      write(pb%ox%unit,'(3e15.7,6e15.7)')       &
+        pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),     &
+        pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
+        pb%dtau_dt(ixout),pb%slip(ixout)
+    enddo
+  endif
+  
 
 end subroutine ox_write
 

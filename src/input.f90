@@ -56,7 +56,7 @@ subroutine read_main(pb)
 !However, it will be safer to deal with variable/parameters here
 !--?? Leave AS IS till we complete benchmark this 2D version ??---
 
-  read(15,*)pb%ot%ntout, pb%ot%ic, pb%ox%nxout
+  read(15,*)pb%ot%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%i_ox_seq
   read(15,*)pb%beta, pb%smu, pb%lam
 
 !YD This part we may want to modify it later to be able to

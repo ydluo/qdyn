@@ -17,7 +17,7 @@ module problem_class
 
  ! snapshot outputs: at every fault point, but only at few selected times
   type ox_type
-    integer :: count,unit,nxout
+    integer :: count,unit,nxout,i_ox_seq
   end type ox_type
 
   type problem_type
