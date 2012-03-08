@@ -58,6 +58,9 @@
 %		DTMAX = maximum timestep (0=unrestricted)
 %		ACC = solver accuracy
 %		NXOUT = spatial interval (number of nodes) for snapshot outputs
+%		NX_SEQ = Sequential snapshot outputs
+%              = 0 one output ox file (fort.19) contains all snapshots 
+%              = 1  seperate, sequential ox file outputs (fort.1001, ...)
 %		NTOUT = temporal interval (number of iterations) for snapshot outputs
 %		A  = amplitude of direct effect in rate-and-state friction 
 %		B  = amplitude of evolution effect in rate-and-state friction
