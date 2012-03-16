@@ -5,13 +5,14 @@
 %		Features:
 % 		+ rate-and-state friction 
 %   			Mu = Muss + a*ln(V/Vss) + b*ln(Theta/Thetass)
+%           OR with velocity weaking to strengtherning transition (cutting-off velocity)
 %	  	  with ageing law:
 %   			dTheta/dT = 1-V*Theta/Dc
 %		  or slip law
 %   			dTheta/dT = -V*Theta/Dc * log(V*Theta/Dc)
 %                 or ageing law in the self-accelerating approximation:
 %   			dTheta/dT = -V*Theta/Dc
-%		+ spatially non-uniform a,b,Dc,v(0),theta(0)
+%		+ spatially non-uniform a,b,Dc,v(0),theta(0),sigma,v1,v2
 %		+ quasistatic stress balance with radiation damping, no inertia, no elastodynamics
 %		+ two possible boundary conditions: 
 %			. the fault is periodic along-strike and is loaded by steady displacement
@@ -75,15 +76,15 @@
 %		RNS_LAW 0 = original rate-and-state friction law
 %			1 = rate-and-state frction with cutting-off velocity
 %		SIGMA = effective normal stress
-%       DW = along-dip lengh (km) of every node nalong-dip, from deeper to shallower
-%       DIP_W = dipping angel (degree) of every node nalong-dip, from deeper to shallower
+%       DW = along-dip lengh (km) of every node along-dip, from deeper to shallower
+%       DIP_W = dipping angel (degree) of every node along-dip, from deeper to shallower
 %       Z_CORNER = - depth (km) of bottom left node (3D)
 %       IC = ot output sampling node
 %		V_0 = initial slip velocity
 %		TH_0 = initial state 
 %		APER = amplitude of additional periodic loading (in Pa)
 %		TPER = period of additional periodic loading (in s)
-%       X,Y,Z = relative fault coordinates
+%       [X,Y,Z = relative fault coordinates , NOT AN INPUT, set by this script with L,W,DW,DIP_W ]
 %
 % OUTPUTS 	pars	structure containing parameters, see documentation of qdyn.f
 %		ot	structure containing time series outputs 
@@ -123,7 +124,7 @@
 %
 % AUTHOR	Jean-Paul Ampuero	ampuero@gps.caltech.edu
 % MODIFIED by Yingdi LUO        luoyd@gps.caltech.edu
-% Last Mod 02/08/2012
+% Last Mod 03/16/2012
 
 function [pars,ot,ox] = qdyn(mode,varargin)
 
