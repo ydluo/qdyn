@@ -52,8 +52,8 @@ p.B(ceil((db-d3)/dz0)+1:ceil((db-d2)/dz0))=p.A(ceil((db-d3)/dz0)+1:ceil((db-d2)/
 p.B(ceil((db-d2)/dz0)+1:ceil((db-d1)/dz0))=p.A(ceil((db-d2)/dz0)+1:ceil((db-d1)/dz0)).*linspace(ba0,bam,numel(ceil((db-d2)/dz0)+1:ceil((db-d1)/dz0)));
 p.B(ceil((db-d1)/dz0)+1:p.NW)=p.A(ceil((db-d1)/dz0)+1:p.NW).*bam;  %a/b >1 at shallow part 
 
-p.DC(1:ceil((db-dd)/dz0))=0.8;
-p.DC(ceil((db-dd)/dz0)+1:p.NW)=0.8;
+p.DC(1:ceil((db-dd)/dz0))=0.3;
+p.DC(ceil((db-dd)/dz0)+1:p.NW)=0.3;
 
 p.SIGMA(1:ceil((db-dd)/dz0))=88.2e6;
 p.SIGMA(ceil((db-dd)/dz0)+1:p.NW)=linspace(150e6,1e6,numel(ceil((db-dd)/dz0)+1:p.NW));
