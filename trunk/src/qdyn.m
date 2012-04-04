@@ -35,7 +35,7 @@
 %		These are the parameters that can be set through 'parsin' or 'Prop/Value' pairs:
 %
 %       MESHDIM = mesh dimension, 
-%               0 = spring-blocke system
+%               0 = spring-block system
 %               1 = 1D fault, 2D medium
 %               2 = 2D fault, 3D medium
 %		L = fault length (L scales the stiffness for the spring-block case)
@@ -76,7 +76,7 @@
 %		RNS_LAW 0 = original rate-and-state friction law
 %			1 = rate-and-state frction with cutting-off velocity
 %		SIGMA = effective normal stress
-%       DW = along-dip lengh (km) of every node along-dip, from deeper to shallower
+%       DW = along-dip length (km) of every node along-dip, from deeper to shallower
 %       DIP_W = dipping angel (degree) of every node along-dip, from deeper to shallower
 %       Z_CORNER = - depth (km) of bottom left node (3D)
 %       IC = ot output sampling node
@@ -300,7 +300,7 @@ switch mode
     fprintf(fid,'%u   itheta_law\n', THETA_LAW);
     fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
     fprintf(fid,'%u   n_equations\n', NEQS);
-    fprintf(fid,'%u %u %u %u  ntout, nt_coord, nxout\n', NTOUT,IC,NXOUT,OX_SEQ);     
+    fprintf(fid,'%u %u %u %u  ntout, nt_coord, nxout, ox_SEQ\n', NTOUT,IC,NXOUT,OX_SEQ);     
     fprintf(fid,'%.15g %.15g %.15g   beta, smu, lambda\n', VS, MU, LAM);
     fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
     fprintf(fid,'%.15g %.15g %.15g %.15g    dt_try, dtmax, tmax, accuracy\n',DTTRY,DTMAX,TMAX,ACC);
