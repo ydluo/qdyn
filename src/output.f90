@@ -111,7 +111,7 @@ subroutine ox_init(pb)
   do i=1,pb%mesh%nn,pb%ox%nxout
     pb%ox%count = pb%ox%count+1
   enddo
-  write(pb%ox%unit,'(a,2i5)')'# nx= ',pb%ox%count
+  write(pb%ox%unit,'(a,2i10)')'# nx= ',pb%ox%count
 
 end subroutine ox_init
 
