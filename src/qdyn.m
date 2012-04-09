@@ -173,7 +173,7 @@ ACC = 1e-7;     % solver accuracy
 NXOUT = 8;	% space stride (cells) for snapshot outputs
 NTOUT = 100; 	% time stride (iterations) for snapshot outputs
 OX_SEQ = 0; 	% = 1 ; enable sequential ox output , from fort.1000 ...
-
+IOT = 0;    % = 1 to output ot of indicated nodes    
 
 %-- friction
 A = 0.9e-2; 
@@ -278,7 +278,7 @@ switch mode
     SIGMA(1:N) =SIGMA;
     MU_SS(1:N)=MU_SS;
     V_SS(1:N)=V_SS;
- 
+    IOT(1:N)=IOT;
     % export qdyn.in
     fid=fopen('qdyn.in','w');
     fprintf(fid,'%u     meshdim\n' , MESHDIM); 
@@ -306,7 +306,7 @@ switch mode
     fprintf(fid,'%.15g %.15g %.15g %.15g    dt_try, dtmax, tmax, accuracy\n',DTTRY,DTMAX,TMAX,ACC);
     fprintf(fid,'%u   nstop\n',NSTOP);
           
-    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',[SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:)]');
+    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',[SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:),IOT(:)]');
  
     fclose(fid);
     

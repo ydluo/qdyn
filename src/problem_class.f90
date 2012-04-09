@@ -25,7 +25,7 @@ module problem_class
       tau, dtau_dt, tau_init, &
       sigma, &
       slip, v, dv_dt, theta, dtheta_dt,  &
-      a, b, dc, v1, v2, mu_star, v_star, theta_star
+      a, b, dc, v1, v2, mu_star, v_star, theta_star, iot
     double precision :: pot, pot_rate
     double precision :: beta=0d0, smu=0d0, lam=0d0, zimpedance=0d0
 
