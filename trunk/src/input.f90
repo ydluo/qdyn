@@ -76,12 +76,13 @@ subroutine read_main(pb)
              pb%a(pb%mesh%nn), pb%b(pb%mesh%nn), pb%dc(pb%mesh%nn),   &
              pb%mesh%x(pb%mesh%nn),  &
              pb%v1(pb%mesh%nn), pb%v2(pb%mesh%nn), pb%mu_star(pb%mesh%nn),& 
-             pb%v_star(pb%mesh%nn), pb%theta_star(pb%mesh%nn))
+             pb%v_star(pb%mesh%nn), pb%theta_star(pb%mesh%nn),   &
+             pb%iot(pb%mesh%nn))
  
   do i=1,pb%mesh%nn
     read(15,*)pb%sigma(i), pb%v(i), pb%theta(i),  &
               pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
-              pb%v2(i), pb%mu_star(i), pb%v_star(i)                 
+              pb%v2(i), pb%mu_star(i), pb%v_star(i), pb%iot(i)                 
   end do
 
   close(15)

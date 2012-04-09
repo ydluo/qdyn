@@ -77,7 +77,7 @@ subroutine ot_init(pb)
 
   use problem_class
   type (problem_type), intent(inout) :: pb
-
+  integer :: i
   pb%ot%lcnew = dble(pb%mesh%nn)
   pb%ot%llocnew = dble(pb%mesh%nn)
 
@@ -89,6 +89,17 @@ subroutine ot_init(pb)
   write(pb%ot%unit,'(a)')'# 6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip'
   write(pb%ot%unit,'(a)')'# values at max(V) location:'
   write(pb%ot%unit,'(a)')'# 11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip'
+
+  pb%ot%unit = 10000
+
+  do i=1,pb%mesh%nn
+    if (pb%iot(i) == 1) then
+      pb%ot%unit = pb%ot%unit+1
+      write(pb%ot%unit,'(a,i10)')'# nx= ', i
+      write(pb%ot%unit,'(a)')'# 1=t, 2=V, 3=theta, 4=tau, 5=slip'
+    endif
+  enddo
+
 
 end subroutine ot_init
 
@@ -111,7 +122,7 @@ subroutine ox_init(pb)
   do i=1,pb%mesh%nn,pb%ox%nxout
     pb%ox%count = pb%ox%count+1
   enddo
-  write(pb%ox%unit,'(a,2i10)')'# nx= ',pb%ox%count
+  write(pb%ox%unit,'(a,i10)')'# nx= ',pb%ox%count
 
 end subroutine ox_init
 
@@ -123,7 +134,9 @@ subroutine ot_write(pb)
  
   use problem_class
   type (problem_type), intent(inout) :: pb
-  
+  integer :: i
+
+  pb%ot%unit = 18
   write(pb%ot%unit,'(e24.16,15e14.6)') pb%time, pb%ot%llocnew*pb%mesh%dx,  &
     pb%ot%lcnew*pb%mesh%dx, pb%pot, pb%pot_rate,    &
     pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
@@ -132,6 +145,21 @@ subroutine ot_write(pb)
     pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
     pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
     pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax)
+
+
+
+  pb%ot%unit = 10000
+
+  do i=1,pb%mesh%nn
+    if (pb%iot(i) == 1) then
+      pb%ot%unit = pb%ot%unit+1
+      write(pb%ot%unit,'(e24.16,4e14.6)') pb%time, pb%v(i),      &
+      pb%theta(i), pb%tau(i), pb%slip(i)
+    endif
+  enddo
+
+
+
 
 end subroutine ot_write
 
