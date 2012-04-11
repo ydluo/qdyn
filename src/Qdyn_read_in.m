@@ -20,7 +20,7 @@ d.DIP=zeros(d.NW,1);
 for i=1:d.NW
     rline=fgetl(fid); rdat = sscanf(rline,'%f');
     d.DW(i)=rdat(1);
-    d.DIP(i)=rdat(2);
+    d.DIP_W(i)=rdat(2);
 end
 rline=fgetl(fid); rdat = sscanf(rline,'%f');
 d.THETA_LAW=rdat(1);

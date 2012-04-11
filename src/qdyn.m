@@ -232,7 +232,7 @@ if MESHDIM ==2 || MESHDIM ==3
     end 
 end  
 
-TH_SS = DC/V_SS;
+TH_SS = DC./V_SS;
 
 % wrap UPPER CASE variables in parameter structure fields with the same name 
 fpars = who;
