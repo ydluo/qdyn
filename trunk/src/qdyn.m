@@ -124,7 +124,7 @@
 %
 % AUTHOR	Jean-Paul Ampuero	ampuero@gps.caltech.edu
 % MODIFIED by Yingdi LUO        luoyd@gps.caltech.edu
-% Last Mod 03/16/2012
+% Last Mod 04/11/2012
 
 function [pars,ot,ox] = qdyn(mode,varargin)
 
@@ -154,7 +154,7 @@ W= 50e3;   	% out-of-plane dimension (ignored in spring-block)
 MU = 30e9;	% shear modulus
 LAM = 30e9;
 VS = 3000; 	% shear wave velocity (if VS=0: turn off radiation damping)
-
+V_TH= 1e-5; % threshold velocity for seismic events;
 
 %-- numerical settings
 N=1024; 	% number of grid cells
@@ -174,7 +174,7 @@ NXOUT = 8;	% space stride (cells) for snapshot outputs
 NTOUT = 100; 	% time stride (iterations) for snapshot outputs
 OX_SEQ = 0; 	% = 1 ; enable sequential ox output , from fort.1000 ...
 IOT = 0;    % = 1 to output ot of indicated nodes    
-
+IASP = 0;   % =1 indicating that it is an asperity
 %-- friction
 A = 0.9e-2; 
 B = 1e-2; 
@@ -279,6 +279,7 @@ switch mode
     MU_SS(1:N)=MU_SS;
     V_SS(1:N)=V_SS;
     IOT(1:N)=IOT;
+    IASP(1:N)=IASP;
     % export qdyn.in
     fid=fopen('qdyn.in','w');
     fprintf(fid,'%u     meshdim\n' , MESHDIM); 
@@ -301,12 +302,13 @@ switch mode
     fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
     fprintf(fid,'%u   n_equations\n', NEQS);
     fprintf(fid,'%u %u %u %u  ntout, nt_coord, nxout, ox_SEQ\n', NTOUT,IC,NXOUT,OX_SEQ);     
-    fprintf(fid,'%.15g %.15g %.15g   beta, smu, lambda\n', VS, MU, LAM);
+    fprintf(fid,'%.15g %.15g %.15g %.15g    beta, smu, lambda, v_th\n', VS, MU, LAM, V_TH);
     fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
     fprintf(fid,'%.15g %.15g %.15g %.15g    dt_try, dtmax, tmax, accuracy\n',DTTRY,DTMAX,TMAX,ACC);
     fprintf(fid,'%u   nstop\n',NSTOP);
           
-    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',[SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:),IOT(:)]');
+    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
+        [SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:),IOT(:),IASP(:)]');
  
     fclose(fid);
     

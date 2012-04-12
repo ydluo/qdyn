@@ -81,8 +81,7 @@ subroutine ot_init(pb)
   pb%ot%lcnew = dble(pb%mesh%nn)
   pb%ot%llocnew = dble(pb%mesh%nn)
 
-  pb%ot%unit = 18
- 
+  pb%ot%unit = 18 
   write(pb%ot%unit,'(a)')'# macroscopic values:'
   write(pb%ot%unit,'(a)')'# 1=t,2=loc_size,3=crack_size,4=potcy,5=pot_rate'
   write(pb%ot%unit,'(a)')'# values at center:'
@@ -90,8 +89,11 @@ subroutine ot_init(pb)
   write(pb%ot%unit,'(a)')'# values at max(V) location:'
   write(pb%ot%unit,'(a)')'# 11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip'
 
-  pb%ot%unit = 10000
+  pb%ot%unit = 22
+  write(pb%ot%unit,'(a)')'# Seismicity record:' 
+  write(pb%ot%unit,'(a)')'# 1=loc, 2=t, 3=v'
 
+  pb%ot%unit = 10000
   do i=1,pb%mesh%nn
     if (pb%iot(i) == 1) then
       pb%ot%unit = pb%ot%unit+1
@@ -145,6 +147,17 @@ subroutine ot_write(pb)
     pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
     pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
     pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax)
+
+
+  pb%ot%unit = 22
+  do i=1,pb%mesh%nn
+    if ((pb%iasp(i) == 1) .and. (pb%v(i) >= pb%v_th) .and.      &
+        (pb%v(i) < pb%v_pre(i)) .and. (pb%v_pre(i) >= pb%v_pre2(i))) then
+      write(pb%ot%unit,'(i10,2e24.16)') i, pb%time, pb%v(i)
+    endif
+  enddo
+  pb%v_pre2=pb%v_pre
+  pb%v_pre=pb%v
 
 
 
