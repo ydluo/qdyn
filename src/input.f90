@@ -57,7 +57,7 @@ subroutine read_main(pb)
 !--?? Leave AS IS till we complete benchmark this 2D version ??---
 
   read(15,*)pb%ot%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%i_ox_seq
-  read(15,*)pb%beta, pb%smu, pb%lam
+  read(15,*)pb%beta, pb%smu, pb%lam, pb%v_th
 
 !YD This part we may want to modify it later to be able to
 !impose more complicated loading/pertubation
@@ -74,15 +74,16 @@ subroutine read_main(pb)
              pb%slip(pb%mesh%nn), pb%v(pb%mesh%nn), pb%dv_dt(pb%mesh%nn), &
              pb%theta(pb%mesh%nn),  pb%dtheta_dt(pb%mesh%nn),  &
              pb%a(pb%mesh%nn), pb%b(pb%mesh%nn), pb%dc(pb%mesh%nn),   &
-             pb%mesh%x(pb%mesh%nn),  &
+             pb%mesh%x(pb%mesh%nn), &
+             pb%v_pre(pb%mesh%nn), pb%v_pre2(pb%mesh%nn),&
              pb%v1(pb%mesh%nn), pb%v2(pb%mesh%nn), pb%mu_star(pb%mesh%nn),& 
              pb%v_star(pb%mesh%nn), pb%theta_star(pb%mesh%nn),   &
-             pb%iot(pb%mesh%nn))
+             pb%iot(pb%mesh%nn),pb%iasp(pb%mesh%nn))
  
   do i=1,pb%mesh%nn
     read(15,*)pb%sigma(i), pb%v(i), pb%theta(i),  &
               pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
-              pb%v2(i), pb%mu_star(i), pb%v_star(i), pb%iot(i)                 
+              pb%v2(i), pb%mu_star(i), pb%v_star(i), pb%iot(i), pb%iasp(i)                 
   end do
 
   close(15)

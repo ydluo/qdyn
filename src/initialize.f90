@@ -30,7 +30,10 @@ subroutine init_all(pb)
 !impose more complicated loading/pertubation
 !functions involved: problem_class/problem_type; input/read_main 
 !                    initialize/init_all;  derivs_all/derivs
- 
+   
+  pb%v_pre = 0.d0
+  pb%v_pre2 = 0.d0
+
     !---------------------- dt_max & perturbation------------------
   if (pb%Aper /= 0.d0 .and. pb%Tper > 0.d0) then
     if (pb%dt_max > 0.d0) then

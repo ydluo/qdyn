@@ -23,11 +23,11 @@ module problem_class
   type problem_type
     double precision, dimension(:), allocatable :: &
       tau, dtau_dt, tau_init, &
-      sigma, &
+      sigma, v_pre, v_pre2, &
       slip, v, dv_dt, theta, dtheta_dt,  &
-      a, b, dc, v1, v2, mu_star, v_star, theta_star, iot
+      a, b, dc, v1, v2, mu_star, v_star, theta_star, iot, iasp
     double precision :: pot, pot_rate
-    double precision :: beta=0d0, smu=0d0, lam=0d0, zimpedance=0d0
+    double precision :: beta=0d0, smu=0d0, lam=0d0, zimpedance=0d0, v_th
 
 !YD This part we may want to modify it later to be able to
 !impose more complicated loading/pertubation
