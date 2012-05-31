@@ -27,6 +27,11 @@ subroutine solve(pb)
 
     pb%it = pb%it + 1
     call do_bsstep(pb)
+! if stress exceeds yield call Coulomb_solver ! JPA Coulomb quick and dirty
+!                         or (cleaner version) do linear adjustment of
+!                         timestep then redo bsstep
+!                         or (cleanest version) iterate tiemstep adjustment and
+!                         bsstep until stress is exactly equal to yield
     call update_field(pb)
     call ot_write(pb)
     call check_stop(pb)   ! here itstop will change
@@ -94,6 +99,7 @@ subroutine do_bsstep(pb)
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
 
   ! Pack v, theta into yt
+! yt(2::pb%neqs) = pb%v(pb%rs_nodes) ! JPA Coulomb
   yt(2::pb%neqs) = pb%v
   yt(1::pb%neqs) = pb%theta
   dydt(2::pb%neqs) = pb%dv_dt
@@ -112,6 +118,7 @@ subroutine do_bsstep(pb)
   endif
 
   ! Unpack yt into v, theta
+!  pb%v(pb%rs_nodes) = yt(2::pb%neqs) ! JPA Coulomb
   pb%v = yt(2::pb%neqs)
   pb%theta = yt(1::pb%neqs)
   pb%dv_dt = dydt(2::pb%neqs)
