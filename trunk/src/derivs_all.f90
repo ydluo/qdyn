@@ -32,6 +32,11 @@ subroutine derivs(time,yt,dydt,pb)
   ! compute shear stress rate from elastic interactions, for 0D, 1D & 2D
   call compute_stress(pb%dtau_dt,pb%kernel,yt(2::pb%neqs)-pb%v_star)
 
+  ! JPA Coulomb
+  ! v = 0d0
+  ! v(pb%rs_nodes) = yt(2::pb%neqs) 
+  !call compute_stress(pb%dtau_dt,pb%kernel,v-pb%v_star)
+
 !YD we may want to modify this part later to be able to
 !impose more complicated loading/pertubation
 !functions involved: problem_class/problem_type; input/read_main 
