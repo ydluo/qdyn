@@ -5,7 +5,7 @@
 A conceptual cycle simulation of the Tohoku-Oki earthquake.
 The megathrust event has a recurrence time of ~600 years,
 and the deep brittle asperities produce high-frequency contains during the megathrust event.
-These asperities also produces inter-megathrust M7 earthquakes recurring every several years.
+These asperities also produce inter-megathrust M7 earthquakes recurring every several years.
 
 
 
