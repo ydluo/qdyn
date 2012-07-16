@@ -3,14 +3,14 @@
 
 
 Simulation of complicated tremor migration patterns in Northern Cascadia.
-
+-----------------
 == Background Slow-slip Event ==
 https://lh4.googleusercontent.com/-XdYNJwkLLiM/T-v2BKlHm0I/AAAAAAAAAB0/mJ_PHz22NMo/s900/Cascadia_Slowslip.gif
 
 The upper panel shows the logarithmic slip-rate normalized by the plate velocity.
 The lower panel shows the slip-rate at the center of the fault (a profile along-strike).
 
-
+----------------
 == Tremor Simulation ==
 By applying small, brittle asperities on the fault, we simulated tremors with complicated migration patterns.
 https://lh5.googleusercontent.com/-a_2MRxcUgf8/T-v2JCjmxBI/AAAAAAAAAB8/NlQTwfra4fY/s900/Tremor_3D_Cascadia.gif
