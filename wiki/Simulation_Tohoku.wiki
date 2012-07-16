@@ -32,6 +32,8 @@ Figure 1: Simulation of multiple subduction earthquake cycles in 2D:
 
 ==3D simulations with deep brittle asperities==
 This model comes with 11 brittle asperities randomly distributed at the deeper part of the subduction zone. The megathrust event has a recurrence time of ~600 years, and the deep brittle asperities produce high-frequency contains during the megathrust event. These asperities also produce inter-megathrust M7 earthquakes recurring every several years.
+
+
 https://lh6.googleusercontent.com/-b47smr_ug5g/UANVm65nVHI/AAAAAAAAACs/J5vliT1q-os/s1024/tohoku_asp.jpg
 
 Figure 2: 3D simulation with deep brittle asperity:
