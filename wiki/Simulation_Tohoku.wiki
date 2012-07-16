@@ -1,7 +1,7 @@
 #labels QDYN,Simulation_results
 = Tohoku cycle simulation =
 -------
-==About==
+==Summary==
 
 A conceptual cycle simulation of the Tohoku-Oki earthquake.
 The megathrust event has a recurrence time of ~600 years,
