@@ -8,7 +8,7 @@ The megathrust event has a recurrence time of ~600 years,
 and the deep brittle asperities produce high-frequency contains during the megathrust event.
 These asperities also produce inter-megathrust M7 earthquakes recurring every several years.
 -------------
-==Introduction:==
+==Introduction==
 
 The 2010 Tohoku Great Earthquake was a devastating disaster to all human beings. It features outstanding characters as huge slip (>50m) towards the trench and high frequency radiations from the deeper part of the subduction zone during the megathrust event (with a possible recurrence time of ~1000 years), and numbers of M7 earthquakes between megathrust events. Here we perform quasi-dynamic simulations trying to reproduce these key features.
 
