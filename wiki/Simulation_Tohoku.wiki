@@ -50,3 +50,9 @@ Animation: 3D simulation with deep brittle asperity:
 
 The upper panel shows the logarithmic slip-rate normalized by the plate velocity.
 The lower panel shows the global peak slip-rate as a function of time, respectively.
+
+-----------
+
+[http://code.google.com/p/qdyn/downloads/detail?name=QDYN_DEMO_Tohoku_with_Results.zip Download Full DEMO Package w/ Result Matrix]
+
+[http://code.google.com/p/qdyn/downloads/detail?name=QDYN_DEMO_Tohoku.zip Download DEMO Package w/o Result Matrix]
