@@ -34,22 +34,22 @@
 %		
 %		These are the parameters that can be set through 'parsin' or 'Prop/Value' pairs:
 %
-%       MESHDIM = mesh dimension, 
-%               0 = spring-block system
-%               1 = 1D fault, 2D medium
-%               2 = 2D fault, 3D medium
+%		MESHDIM = mesh dimension, 
+%			0 = spring-block system
+%			1 = 1D fault, 2D medium
+%			2 = 2D fault, 3D medium
 %		L = fault length (L scales the stiffness for the spring-block case)
 %		FINITE = boundary conditions: (in 2D case)
-%			0 = periodic along-strike, steady loading at distance W from the fault line
-%			1 = rate-and-state fault segment of finite length (L) surrounded by steady slip
+%			0 = periodic along-strike, steady loading at distance W from the fault
+%			1 = rate-and-state fault of finite length (L) surrounded by steady slip
 %		W  = Length along-dip (in 2D case,ignored if FINITE=1 )
 %		MU = shear modulus
 %		LAM = elastic modulus LAMBDA (for 3D simualtion)
 %		VS = shear wave velocity. If VS=0 radiation damping is turned off
-%       V1 = cutting off velocity of direct effect (m/s)
-%       V2 = cutting off velocity of evolutional effect (m/s), controls velocity 
-%            weaking to strengtherning transition while a<b, V2 should <= V1
-%       **set V1, V2 a large value (e.g 100) for no transition**
+%		V1 = cut-off velocity of direct effect (m/s)
+%		V2 = cut-off velocity of evolution effect (m/s), controls the transition
+%			from weakening to strengtherning when a<b. V2 should be <= V1
+%			** to eliminate the transition set V1 and V2 to large values (e.g 100) **
 %		NX  = number of fault nodes (elements) along-strike (3D)
 %		NW  = number of fault nodes (elements) along-dip (3D) 
 %		N  = number of fault nodes (elements)
@@ -60,8 +60,8 @@
 %		ACC = solver accuracy
 %		NXOUT = spatial interval (number of nodes) for snapshot outputs
 %		NX_SEQ = Sequential snapshot outputs
-%              = 0 one output ox file (fort.19) contains all snapshots 
-%              = 1  seperate, sequential ox file outputs (fort.1001, ...)
+%			= 0 one ox output file (fort.19) contains all snapshots 
+%			= 1  separate, sequential ox file outputs (fort.1001, ...)
 %		NTOUT = temporal interval (number of iterations) for snapshot outputs
 %		A  = amplitude of direct effect in rate-and-state friction 
 %		B  = amplitude of evolution effect in rate-and-state friction
@@ -76,17 +76,17 @@
 %		RNS_LAW 0 = original rate-and-state friction law
 %			1 = rate-and-state frction with cutting-off velocity
 %		SIGMA = effective normal stress
-%       DW = along-dip length (km) of every node along-dip, from deeper to shallower
-%       DIP_W = dipping angel (degree) of every node along-dip, from deeper to shallower
-%       Z_CORNER = - depth (km) of bottom left node (3D)
-%       IC = ot output sampling node
+%		DW = along-dip length (km) of every node along-dip, from deeper to shallower
+%		DIP_W = dipping angel (degree) of every node along-dip, from deeper to shallower
+%		Z_CORNER = - depth (km) of bottom left node (3D)
+%		IC = ot output sampling node
 %		V_0 = initial slip velocity
 %		TH_0 = initial state 
 %		APER = amplitude of additional periodic loading (in Pa)
 %		TPER = period of additional periodic loading (in s)
-%       [X,Y,Z = relative fault coordinates , NOT AN INPUT, set by this script with L,W,DW,DIP_W ]
 %
-% OUTPUTS 	pars	structure containing parameters, see documentation of qdyn.f
+% OUTPUTS 	pars	structure containing the parameters listed above, and:
+%			X,Y,Z = fault coordinates
 %		ot	structure containing time series outputs 
 %			at the point of maximum slip rate
 %			ot.t	output times
@@ -119,8 +119,6 @@
 %			p = qdyn('set');
 %			[p,ot,ox] = qdyn('run','V_0',1.01*p.V_SS);
 %			semilogy(ot.t,ot.v)
-%
-% SEE ALSO	qdyn_example1.m
 %
 % AUTHOR	Jean-Paul Ampuero	ampuero@gps.caltech.edu
 % MODIFIED by Yingdi LUO        luoyd@gps.caltech.edu
@@ -183,7 +181,7 @@ MU_SS = 0.6;
 V_SS = 1e-9;
 TH_SS = DC/V_SS;
 THETA_LAW = 1;
-RNS_LAW = 1;
+RNS_LAW = 0;
 %-- initial conditions
 SIGMA=1e8;
 V_0=V_SS ; 

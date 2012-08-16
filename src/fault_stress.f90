@@ -106,7 +106,8 @@ subroutine init_kernel_2D(k,mu,m)
      
   elseif (k%finite == 1) then
     !- Read coefficient I(n) from pre-calculated file.
-    open(57,file='~/2D_RUPTURE/STATIC/Matlab/kernel_I_32768.tab')
+    !open(57,file='~/2D_RUPTURE/STATIC/Matlab/kernel_I_32768.tab')
+    open(57,file='~/3D_RUPTURE/qdyn/trunk/src/kernel_I_32768.tab')
     if (k%nnfft/2>32768) stop 'Finite kernel table is too small'
     do i=1,k%nnfft/2-1
       read(57,*) k%kernel(2*i+1)
