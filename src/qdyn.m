@@ -185,7 +185,7 @@ RNS_LAW = 0;
 %-- initial conditions
 SIGMA=1e8;
 V_0=V_SS ; 
-TH_0=TH_SS; 
+TH_0=TH_SS;
 V1=0.01;
 V2=1e-7;
 

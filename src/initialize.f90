@@ -17,6 +17,7 @@ subroutine init_all(pb)
   use constants, only : PI
   use fault_stress, only : init_kernel
   use output, only : ot_init, ox_init
+  use friction, only : set_theta_star, friction_mu
 !$  use omp_lib
 
   type(problem_type), intent(inout) :: pb
@@ -59,15 +60,8 @@ subroutine init_all(pb)
   !---------------------- impedance ------------------
      
   !---------------------- ref_value ------------------        
-  if (pb%i_rns_law == 1) then
-    pb%theta_star = pb%dc/pb%v2
-    pb%tau_init = pb%sigma *   &
-      (pb%mu_star- pb%a*log(pb%v1/pb%v+1d0)+ pb%b*log(pb%theta/pb%theta_star+1d0))
-  else
-    pb%theta_star = pb%dc/pb%v_star
-    pb%tau_init = pb%sigma *   &
-      (pb%mu_star- pb%a*log(pb%v_star/pb%v)+ pb%b*log(pb%theta/pb%theta_star))
-  endif
+  call set_theta_star(pb)
+  pb%tau_init = pb%sigma * friction_mu(pb%v,pb%theta,pb)
   pb%tau = pb%tau_init
   pb%slip = 0d0 
   !---------------------- ref_value ----------------- 
