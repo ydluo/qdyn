@@ -133,6 +133,7 @@ end subroutine do_bsstep
 subroutine update_field(pb)
   
   use output, only : crack_size
+  use friction, only : friction_mu
 
   type(problem_type), intent(inout) :: pb
 
@@ -141,17 +142,8 @@ subroutine update_field(pb)
 
   ! Update slip, stress. 
   pb%slip = pb%slip + pb%v*pb%dt_did
-  if (pb%i_rns_law == 1) then
-    pb%tau = (pb%mu_star-pb%a*log(pb%v1/pb%v+1d0)+pb%b*log(pb%theta/pb%theta_star+1d0))    &
-           * pb%sigma 
-  else
-    pb%tau = (pb%mu_star-pb%a*log(pb%v_star/pb%v)+pb%b*log(pb%theta/pb%theta_star))    &
-           * pb%sigma  
-  endif
+  pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb)
   ! update potency and potency rate
-!JPA dx should be replaced by dw in 2D subduction 
-!    and by dx*dw in 3D
-! -YD: solved
   pb%pot=0d0;
   pb%pot_rate=0d0;
   if (pb%mesh%dim == 0 .or. pb%mesh%dim == 1) then

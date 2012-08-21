@@ -1,11 +1,12 @@
 (Priorities are not indicated)
 
 Physics:
++ slip-dependent friction term
 + coupling slip to normal stress
 + variable strike
 + triangular elements: Meade's code (buggy?) or Gausian quadrature of Okada point sources
 + layered media: EDKS (Luis Rivera) or Relax (Sylvain Barbot)?
-+ heterogeneous media: Relax, Pylith, SPECFEM3D ?
++ heterogeneous media: import kernel from Relax, Pylith, SPECFEM3D ?
 
 Code engineering and optimization:
 + inputs as fortran namelists

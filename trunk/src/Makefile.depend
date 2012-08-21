@@ -1,6 +1,8 @@
-derivs_all.o: fault_stress.o problem_class.o
+derivs_all.o: fault_stress.o friction.o problem_class.o
 fault_stress.o: constants.o fftsg.o mesh.o okada.o
-initialize.o: constants.o fault_stress.o mesh.o output.o problem_class.o
+friction.o: problem_class.o
+initialize.o: constants.o fault_stress.o friction.o mesh.o output.o \
+	problem_class.o
 input.o: mesh.o problem_class.o
 main.o: initialize.o input.o problem_class.o solver.o
 mesh.o: constants.o
@@ -8,4 +10,4 @@ ode_bs.o: derivs_all.o problem_class.o
 okada.o: constants.o
 output.o: constants.o problem_class.o
 problem_class.o: fault_stress.o mesh.o
-solver.o: derivs_all.o ode_bs.o output.o problem_class.o
+solver.o: derivs_all.o friction.o ode_bs.o output.o problem_class.o
