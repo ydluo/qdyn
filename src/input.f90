@@ -67,6 +67,8 @@ subroutine read_main(pb)
   read(15,*)pb%Tper, pb%Aper
   read(15,*)pb%dt_try, pb%dt_max,pb%tmax, pb%acc
   read(15,*)pb%NSTOP
+  read(15,*)pb%DYN_FLAG,pb%DYN_SKIP
+  read(15,*)pb%DYN_M,pb%DYN_th_on,pb%DYN_th_off
 
   allocate (pb%tau(pb%mesh%nn),     &
              pb%dtau_dt(pb%mesh%nn), &
@@ -74,8 +76,8 @@ subroutine read_main(pb)
              pb%slip(pb%mesh%nn), pb%v(pb%mesh%nn), pb%dv_dt(pb%mesh%nn), &
              pb%theta(pb%mesh%nn),  pb%dtheta_dt(pb%mesh%nn),  &
              pb%a(pb%mesh%nn), pb%b(pb%mesh%nn), pb%dc(pb%mesh%nn),   &
-             pb%mesh%x(pb%mesh%nn), &
-             pb%v_pre(pb%mesh%nn), pb%v_pre2(pb%mesh%nn),&
+             pb%mesh%x(pb%mesh%nn), pb%v_pre(pb%mesh%nn),&
+             pb%v_pre2(pb%mesh%nn), &
              pb%v1(pb%mesh%nn), pb%v2(pb%mesh%nn), pb%mu_star(pb%mesh%nn),& 
              pb%v_star(pb%mesh%nn), pb%theta_star(pb%mesh%nn),   &
              pb%iot(pb%mesh%nn),pb%iasp(pb%mesh%nn))

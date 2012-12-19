@@ -84,6 +84,14 @@
 %		TH_0 = initial state 
 %		APER = amplitude of additional periodic loading (in Pa)
 %		TPER = period of additional periodic loading (in s)
+%%%%%%%%%%% FOR Dynamic Code        
+%       DYN_FLAG = flag intergrating with dynamic code
+%           0 = no dynamic
+%           1 = output and stop QDYN (from DYN_SKIP+1 th event larger than DYN_M)
+%       DYN_M = Target Seismic Moment of a dynamic event
+%       DYN_SKIP = how many dynamic events to skip (for warming up)
+%       DYN_th_on = threshold to trigger the detection of a dynamic event
+%       DYN_th_off = threshold to end the detection of a dynamic event
 %
 % OUTPUTS 	pars	structure containing the parameters listed above, and:
 %			X,Y,Z = fault coordinates
@@ -122,7 +130,7 @@
 %
 % AUTHOR	Jean-Paul Ampuero	ampuero@gps.caltech.edu
 % MODIFIED by Yingdi LUO        luoyd@gps.caltech.edu
-% Last Mod 04/11/2012
+% Last Mod 12/19/2012
 
 function [pars,ot,ox] = qdyn(mode,varargin)
 
@@ -193,6 +201,13 @@ V2=1e-7;
 %-- periodic loading 
 APER = 0;
 TPER = 1*year; 
+
+% dynamic intergrating parameters
+DYN_FLAG = 0;
+DYN_M = 1.e18; % M0= 10^(1.5Mw+9) [M0=1.e18 => Mw=6.0; M0=1.e21 => Mw=8.0]
+DYN_SKIP = 0;
+DYN_th_on = 1e-3;
+DYN_th_off = 1e-4;
 
 %--------- INITIALIZE -------------------------------------
 
@@ -304,6 +319,9 @@ switch mode
     fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
     fprintf(fid,'%.15g %.15g %.15g %.15g    dt_try, dtmax, tmax, accuracy\n',DTTRY,DTMAX,TMAX,ACC);
     fprintf(fid,'%u   nstop\n',NSTOP);
+    fprintf(fid,'%u %u  DYN_FLAG, DYN_SKIP\n',DYN_FLAG,DYN_SKIP);
+    fprintf(fid,'%.15g %.15g %.15g    M0, DYN_th_on, DYN_th_off\n', DYN_M,DYN_th_on,DYN_th_off);
+
           
     fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
         [SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:),IOT(:),IASP(:)]');
