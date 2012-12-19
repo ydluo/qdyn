@@ -206,7 +206,50 @@ subroutine ox_write(pb)
         pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
         pb%dtau_dt(ixout),pb%slip(ixout)
     enddo
+    close(pb%ox%unit)
   endif
+  
+
+
+  if (pb%DYN_FLAG == 1)
+
+    if (pb%ox%dyn_stat == 0) .and. (pb%v(pb%ot%ivmax) >= pb%DYN_th_on )
+      pb%ox%dyn_stat = 1
+      OPEN (UNIT = 100, FILE='DYN_PRE.txt', STATUS='REPLACE')
+      write(100,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
+      write(100,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip '
+      do ixout=1,pb%mesh%nn,pb%ox%nxout
+        write(pb%ox%unit,'(3e15.7,e24.14,6e15.7)')       &
+          pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
+          pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
+          pb%dtau_dt(ixout),pb%slip(ixout)
+      enddo
+      pb%pot_pre = pb%pot
+      CLOSE(100)
+    endif
+
+    if (pb%ox%dyn_stat == 1) .and. (pb%v(pb%ot%ivmax) <= pb%DYN_th_off )
+      pb%ox%dyn_stat = 0
+      OPEN (UNIT = 101, FILE='DYN_POST.txt', STATUS='REPLACE')
+      write(101,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
+      write(101,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip '
+      do ixout=1,pb%mesh%nn,pb%ox%nxout
+        write(pb%ox%unit,'(3e15.7,e24.14,6e15.7)')       &
+          pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
+          pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
+          pb%dtau_dt(ixout),pb%slip(ixout)
+      enddo
+      CLOSE(101)
+      if ((pb%pot-pb%pot_pre)*pb%smu >= pb%DYN_M)
+        pb%ox%dyn_count = pb%ox%dyn_count + 1
+        if (pb%ox%dyn_count > pb%DYN_SKIP)
+          pb%itstop = pb%it
+          write(222,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
+        endif
+      endif
+    endif 
+   
+  endif  
   
 
 end subroutine ox_write

@@ -17,7 +17,7 @@ module problem_class
 
  ! snapshot outputs: at every fault point, but only at few selected times
   type ox_type
-    integer :: count,unit,nxout,i_ox_seq
+    integer :: count,unit,nxout,i_ox_seq,dyn_stat,dyn_count 
   end type ox_type
 
   type problem_type
@@ -26,7 +26,7 @@ module problem_class
       sigma, v_pre, v_pre2, &
       slip, v, dv_dt, theta, dtheta_dt,  &
       a, b, dc, v1, v2, mu_star, v_star, theta_star, iot, iasp
-    double precision :: pot, pot_rate
+    double precision :: pot, pot_rate, pot_pre
     double precision :: beta=0d0, smu=0d0, lam=0d0, zimpedance=0d0, v_th
 
 !YD This part we may want to modify it later to be able to
@@ -39,7 +39,8 @@ module problem_class
     integer :: itheta_law,i_rns_law, neqs
 
     double precision :: dt_try, dt_did, dt_next, dt_max=0d0, tmax, acc
-    integer :: NSTOP,itstop,it
+    double precision :: DYN_M,DYN_th_on,DYN_th_off
+    integer :: NSTOP,itstop,it,DYN_FLAG,DYN_SKIP
 
     type (mesh_type) :: mesh
     type (ot_type) :: ot
