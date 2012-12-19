@@ -211,9 +211,9 @@ subroutine ox_write(pb)
   
 
 
-  if (pb%DYN_FLAG == 1)
+  if (pb%DYN_FLAG == 1) then
 
-    if (pb%ox%dyn_stat == 0) .and. (pb%v(pb%ot%ivmax) >= pb%DYN_th_on )
+    if (pb%ox%dyn_stat == 0 .and. pb%v(pb%ot%ivmax) >= pb%DYN_th_on ) then
       pb%ox%dyn_stat = 1
       OPEN (UNIT = 100, FILE='DYN_PRE.txt', STATUS='REPLACE')
       write(100,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
@@ -228,7 +228,7 @@ subroutine ox_write(pb)
       CLOSE(100)
     endif
 
-    if (pb%ox%dyn_stat == 1) .and. (pb%v(pb%ot%ivmax) <= pb%DYN_th_off )
+    if (pb%ox%dyn_stat == 1 .and. pb%v(pb%ot%ivmax) <= pb%DYN_th_off ) then
       pb%ox%dyn_stat = 0
       OPEN (UNIT = 101, FILE='DYN_POST.txt', STATUS='REPLACE')
       write(101,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
@@ -240,9 +240,9 @@ subroutine ox_write(pb)
           pb%dtau_dt(ixout),pb%slip(ixout)
       enddo
       CLOSE(101)
-      if ((pb%pot-pb%pot_pre)*pb%smu >= pb%DYN_M)
+      if ((pb%pot-pb%pot_pre)*pb%smu >= pb%DYN_M) then
         pb%ox%dyn_count = pb%ox%dyn_count + 1
-        if (pb%ox%dyn_count > pb%DYN_SKIP)
+        if (pb%ox%dyn_count > pb%DYN_SKIP) then
           pb%itstop = pb%it
           write(222,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
         endif
