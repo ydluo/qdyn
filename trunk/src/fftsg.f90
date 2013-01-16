@@ -11,12 +11,12 @@ module fftsg
  ! working arrays for Ooura's fft
   type OouraFFT_type
     private
-    integer :: n=-1, nw=-1
-    integer, allocatable :: iw(:)
-    double precision, allocatable :: rw(:)
+    integer :: n=-1, nw=-1, n1=-1, n2=-1
+    integer, allocatable, dimension(:) :: iw
+    double precision, allocatable, dimension(:) :: rw, tw
   end type OouraFFT_type
 
-  public :: cdft,rdft,ddct,ddst,dfct,dfst, my_rdft, OouraFFT_type
+  public :: cdft,rdft,ddct,ddst,dfct,dfst,my_rdft,my_rdft2,conj2d,OouraFFT_type
 
 contains
 
@@ -289,6 +289,7 @@ contains
 !
 !
 
+! One-dimensional real FFT
 subroutine my_rdft(isgn, a, m_fft)
 
   integer, intent(in) :: isgn
@@ -318,6 +319,61 @@ subroutine my_rdft(isgn, a, m_fft)
   call rdft(n,isgn,a,m_fft%iw,m_fft%rw)
 
 end subroutine my_rdft
+
+! Two-dimensional real FFT
+subroutine my_rdft2(isgn, a, m_fft)
+
+  integer, intent(in) :: isgn
+  real*8, intent(inout) :: a(:,:)
+  type(OouraFFT_type), intent(inout) :: m_fft
+
+  integer, dimension(2) :: shp
+  integer :: n1, n2, n
+
+  ! Initialize working arrays with same scheme as before
+  ! See comments in Ooura rdft2 code for allocation sizes
+  shp = shape(a)
+  n1 = shp(1)
+  n2 = shp(2)
+  if (m_fft%n1 /= n1 .or. m_fft%n2 /= n2) then
+    if (m_fft%n1 > 0) deallocate(m_fft%iw, m_fft%rw, m_fft%tw)
+    m_fft%n1 = n1
+    m_fft%n2 = n2
+    n = max(n1/2, n2)
+    m_fft%nw = 2 + ceiling(dsqrt(dble(n)))
+    allocate(m_fft%tw(8*n2))
+    allocate(m_fft%iw(m_fft%nw))
+    n = max(n1/4, n2/2) + n1/4
+    allocate(m_fft%rw(n))
+  end if
+
+  ! Compute FFT
+  call rdft2d(n1, n1, n2, isgn, a, m_fft%tw, m_fft%iw, m_fft%rw)
+
+end subroutine my_rdft2
+
+! Complex conjugate of 2D real FFT array
+! Output array MUST already have the correct shape
+subroutine conj2d(a, b)
+
+  real*8, intent(in) :: a(:,:)
+  real*8, intent(inout) :: b(:,:)
+
+  integer :: n2
+  integer, dimension(2) :: shp
+
+  ! Determine size of input array and allocate output
+  shp = shape(a)
+  n2 = shp(2)
+
+  ! Assign values to output
+  b = a
+  b(1,n2/2+2:) = -1.0d0 * b(1,n2/2+2:)
+  b(2,2:n2/2)  = -1.0d0 * b(2,2:n2/2)
+  b(4::2,:)    = -1.0d0 * b(4::2,:)
+
+end subroutine conj2d
+  
 
 !_________________________________________________________
 
@@ -623,6 +679,253 @@ end subroutine my_rdft
       end if
       a(0) = 0
       end subroutine dfst
+
+! -------- Two-dimensional routines -------
+
+      subroutine cdft2d(n1max, n1, n2, isgn, a, t, ip, w)
+      integer n1max, n1, n2, isgn, ip(0 : *), n, j
+      real*8 a(0 : n1max - 1, 0 : n2 - 1), t(0 : 8 * n2 - 1), w(0 : *)
+      n = max(n1, 2 * n2)
+      if (n .gt. 4 * ip(0)) then
+          call makewt(n / 4, ip, w)
+      end if
+      do j = 0, n2 - 1
+          call cdft(n1, isgn, a(0, j), ip, w)
+      end do
+      call cdft2d_sub(n1max, n1, n2, isgn, a, t, ip, w)
+      end subroutine cdft2d
+!
+      subroutine rdft2d(n1max, n1, n2, isgn, a, t, ip, w)
+      integer n1max, n1, n2, isgn, ip(0 : *), n, nw, nc, j
+      real*8 a(0 : n1max - 1, 0 : n2 - 1), t(0 : 8 * n2 - 1), w(0 : *)
+      n = max(n1, 2 * n2)
+      nw = ip(0)
+      if (n .gt. 4 * nw) then
+          nw = n / 4
+          call makewt(nw, ip, w)
+      end if
+      nc = ip(1)
+      if (n1 .gt. 4 * nc) then
+          nc = n1 / 4
+          call makect(nc, ip, w(nw))
+      end if
+      if (isgn .lt. 0) then
+          call rdft2d_sub(n1max, n1, n2, isgn, a)
+          call cdft2d_sub(n1max, n1, n2, isgn, a, t, ip, w)
+      end if
+      do j = 0, n2 - 1
+          call rdft(n1, isgn, a(0, j), ip, w)
+      end do
+      if (isgn .ge. 0) then
+          call cdft2d_sub(n1max, n1, n2, isgn, a, t, ip, w)
+          call rdft2d_sub(n1max, n1, n2, isgn, a)
+      end if
+      end subroutine rdft2d
+!
+      subroutine rdft2dsort(n1max, n1, n2, isgn, a)
+      integer n1max, n1, n2, isgn, n2h, j
+      real*8 a(0 : n1max - 1, 0 : n2 - 1), x, y
+      n2h = n2 / 2
+      if (isgn .lt. 0) then
+          do j = n2h + 1, n2 - 1
+              a(0, j) = a(n1 + 1, j)
+              a(1, j) = a(n1, j)
+          end do
+          a(1, 0) = a(n1, 0)
+          a(1, n2h) = a(n1, n2h)
+      else
+          do j = n2h + 1, n2 - 1
+              y = a(0, j)
+              x = a(1, j)
+              a(n1, j) = x
+              a(n1 + 1, j) = y
+              a(n1, n2 - j) = x
+              a(n1 + 1, n2 - j) = -y
+              a(0, j) = a(0, n2 - j)
+              a(1, j) = -a(1, n2 - j)
+          end do
+          a(n1, 0) = a(1, 0)
+          a(n1 + 1, 0) = 0
+          a(1, 0) = 0
+          a(n1, n2h) = a(1, n2h)
+          a(n1 + 1, n2h) = 0
+          a(1, n2h) = 0
+      end if
+      end subroutine rdft2dsort
+!
+      subroutine ddct2d(n1max, n1, n2, isgn, a, t, ip, w)
+      integer n1max, n1, n2, isgn, ip(0 : *), n, nw, nc, j
+      real*8 a(0 : n1max - 1, 0 : n2 - 1), t(0 : 4 * n2 - 1), w(0 : *)
+      n = max(n1, n2)
+      nw = ip(0)
+      if (n .gt. 4 * nw) then
+          nw = n / 4
+          call makewt(nw, ip, w)
+      end if
+      nc = ip(1)
+      if (n .gt. nc) then
+          nc = n
+          call makect(nc, ip, w(nw))
+      end if
+      do j = 0, n2 - 1
+          call ddct(n1, isgn, a(0, j), ip, w)
+      end do
+      call ddxt2d_sub(n1max, n1, n2, 0, isgn, a, t, ip, w)
+      end subroutine ddct2d
+!
+      subroutine ddst2d(n1max, n1, n2, isgn, a, t, ip, w)
+      integer n1max, n1, n2, isgn, ip(0 : *), n, nw, nc, j
+      real*8 a(0 : n1max - 1, 0 : n2 - 1), t(0 : 4 * n2 - 1), w(0 : *)
+      n = max(n1, n2)
+      nw = ip(0)
+      if (n .gt. 4 * nw) then
+          nw = n / 4
+          call makewt(nw, ip, w)
+      end if
+      nc = ip(1)
+      if (n .gt. nc) then
+          nc = n
+          call makect(nc, ip, w(nw))
+      end if
+      do j = 0, n2 - 1
+          call ddst(n1, isgn, a(0, j), ip, w)
+      end do
+      call ddxt2d_sub(n1max, n1, n2, 1, isgn, a, t, ip, w)
+      end subroutine ddst2d
+!
+! -------- child routines --------
+!
+      subroutine cdft2d_sub(n1max, n1, n2, isgn, a, t, ip, w)
+      integer n1max, n1, n2, isgn, ip(0 : *), i, j
+      real*8 a(0 : n1max - 1, 0 : n2 - 1), t(0 : 8 * n2 - 1), w(0 : *)
+      if (n1 .gt. 4) then
+          do i = 0, n1 - 8, 8
+              do j = 0, n2 - 1
+                  t(2 * j) = a(i, j)
+                  t(2 * j + 1) = a(i + 1, j)
+                  t(2 * n2 + 2 * j) = a(i + 2, j)
+                  t(2 * n2 + 2 * j + 1) = a(i + 3, j)
+                  t(4 * n2 + 2 * j) = a(i + 4, j)
+                  t(4 * n2 + 2 * j + 1) = a(i + 5, j)
+                  t(6 * n2 + 2 * j) = a(i + 6, j)
+                  t(6 * n2 + 2 * j + 1) = a(i + 7, j)
+              end do
+              call cdft(2 * n2, isgn, t, ip, w)
+              call cdft(2 * n2, isgn, t(2 * n2), ip, w)
+              call cdft(2 * n2, isgn, t(4 * n2), ip, w)
+              call cdft(2 * n2, isgn, t(6 * n2), ip, w)
+              do j = 0, n2 - 1
+                  a(i, j) = t(2 * j)
+                  a(i + 1, j) = t(2 * j + 1)
+                  a(i + 2, j) = t(2 * n2 + 2 * j)
+                  a(i + 3, j) = t(2 * n2 + 2 * j + 1)
+                  a(i + 4, j) = t(4 * n2 + 2 * j)
+                  a(i + 5, j) = t(4 * n2 + 2 * j + 1)
+                  a(i + 6, j) = t(6 * n2 + 2 * j)
+                  a(i + 7, j) = t(6 * n2 + 2 * j + 1)
+              end do
+          end do
+      else if (n1 .eq. 4) then
+          do j = 0, n2 - 1
+              t(2 * j) = a(0, j)
+              t(2 * j + 1) = a(1, j)
+              t(2 * n2 + 2 * j) = a(2, j)
+              t(2 * n2 + 2 * j + 1) = a(3, j)
+          end do
+          call cdft(2 * n2, isgn, t, ip, w)
+          call cdft(2 * n2, isgn, t(2 * n2), ip, w)
+          do j = 0, n2 - 1
+              a(0, j) = t(2 * j)
+              a(1, j) = t(2 * j + 1)
+              a(2, j) = t(2 * n2 + 2 * j)
+              a(3, j) = t(2 * n2 + 2 * j + 1)
+          end do
+      else if (n1 .eq. 2) then
+          do j = 0, n2 - 1
+              t(2 * j) = a(0, j)
+              t(2 * j + 1) = a(1, j)
+          end do
+          call cdft(2 * n2, isgn, t, ip, w)
+          do j = 0, n2 - 1
+              a(0, j) = t(2 * j)
+              a(1, j) = t(2 * j + 1)
+          end do
+      end if
+      end subroutine cdft2d_sub
+!
+      subroutine rdft2d_sub(n1max, n1, n2, isgn, a)
+      integer n1max, n1, n2, isgn, n2h, i, j
+      real*8 a(0 : n1max - 1, 0 : n2 - 1), xi
+      n2h = n2 / 2
+      if (isgn .lt. 0) then
+          do i = 1, n2h - 1
+              j = n2 - i
+              xi = a(0, i) - a(0, j)
+              a(0, i) = a(0, i) + a(0, j)
+              a(0, j) = xi
+              xi = a(1, j) - a(1, i)
+              a(1, i) = a(1, i) + a(1, j)
+              a(1, j) = xi
+          end do
+      else
+          do i = 1, n2h - 1
+              j = n2 - i
+              a(0, j) = 0.5d0 * (a(0, i) - a(0, j))
+              a(0, i) = a(0, i) - a(0, j)
+              a(1, j) = 0.5d0 * (a(1, i) + a(1, j))
+              a(1, i) = a(1, i) - a(1, j)
+          end do
+      end if
+      end subroutine rdft2d_sub
+!
+      subroutine ddxt2d_sub(n1max, n1, n2, ics, isgn, a, t, ip, w)
+      integer n1max, n1, n2, ics, isgn, ip(0 : *), i, j
+      real*8 a(0 : n1max - 1, 0 : n2 - 1), t(0 : 4 * n2 - 1), w(0 : *)
+      if (n1 .gt. 2) then
+          do i = 0, n1 - 4, 4
+              do j = 0, n2 - 1
+                  t(j) = a(i, j)
+                  t(n2 + j) = a(i + 1, j)
+                  t(2 * n2 + j) = a(i + 2, j)
+                  t(3 * n2 + j) = a(i + 3, j)
+              end do
+              if (ics .eq. 0) then
+                  call ddct(n2, isgn, t, ip, w)
+                  call ddct(n2, isgn, t(n2), ip, w)
+                  call ddct(n2, isgn, t(2 * n2), ip, w)
+                  call ddct(n2, isgn, t(3 * n2), ip, w)
+              else
+                  call ddst(n2, isgn, t, ip, w)
+                  call ddst(n2, isgn, t(n2), ip, w)
+                  call ddst(n2, isgn, t(2 * n2), ip, w)
+                  call ddst(n2, isgn, t(3 * n2), ip, w)
+              end if
+              do j = 0, n2 - 1
+                  a(i, j) = t(j)
+                  a(i + 1, j) = t(n2 + j)
+                  a(i + 2, j) = t(2 * n2 + j)
+                  a(i + 3, j) = t(3 * n2 + j)
+              end do
+          end do
+      else if (n1 .eq. 2) then
+          do j = 0, n2 - 1
+              t(j) = a(0, j)
+              t(n2 + j) = a(1, j)
+          end do
+          if (ics .eq. 0) then
+              call ddct(n2, isgn, t, ip, w)
+              call ddct(n2, isgn, t(n2), ip, w)
+          else
+              call ddst(n2, isgn, t, ip, w)
+              call ddst(n2, isgn, t(n2), ip, w)
+          end if
+          do j = 0, n2 - 1
+              a(0, j) = t(j)
+              a(1, j) = t(n2 + j)
+          end do
+      end if
+      end subroutine ddxt2d_sub
+
 !
 ! -------- initializing routines --------
 !

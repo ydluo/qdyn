@@ -34,7 +34,7 @@ subroutine read_mesh(iin,m)
     read(iin,*) m%nn
     read(iin,*) m%Lfault, m%W 
 
-  case(2) !3d problem
+  case(2,4) !3d problem
     read(iin,*) m%nx,m%nw
     m%nn = m%nx * m%nw
     read(iin,*) m%Lfault, m%W , m%Z_CORNER   ! JPA m%W is not used in this case, remove it
@@ -42,7 +42,7 @@ subroutine read_mesh(iin,m)
     do i=1,m%nw
       read(iin,*) m%dw(i), m%DIP_W(i)
     end do
-  
+    
   case default
     write(6,*) 'mesh dimension should be 0, 1 or 2'
 
@@ -64,6 +64,7 @@ subroutine init_mesh(m)
     case(0); call init_mesh_0D(m)
     case(1); call init_mesh_1D(m)
     case(2); call init_mesh_2D(m)
+    case(4); call init_mesh_2D(m)
   end select
 
 end subroutine init_mesh

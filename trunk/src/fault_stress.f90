@@ -23,12 +23,19 @@ module fault_stress
     type (OouraFFT_type) :: m_fft
   end type kernel_3D_fft
 
+  type kernel_3D_fft2d
+    integer :: nwfft, nxfft, nw, nx
+    double precision, dimension(:,:), allocatable :: kernel
+    type (OouraFFT_type) :: m_fft
+  end type kernel_3D_fft2d
+
   type kernel_type
     integer :: kind = 0
     double precision :: k1
     type (kernel_2D_fft), pointer :: k2f
     type (kernel_3D), pointer :: k3
     type (kernel_3D_fft), pointer :: k3f
+    type (kernel_3D_fft2d), pointer :: k3f2
   end type kernel_type
 
   public :: init_kernel, compute_stress, kernel_type
@@ -59,6 +66,7 @@ subroutine init_kernel(lambda,mu,m,k)
     case(2); call init_kernel_2D(k%k2f,mu,m)
     case(3); call init_kernel_3D_fft(k%k3f,lambda,mu,m) ! 3D with FFT along-strike
     case(4); call init_kernel_3D(k%k3,lambda,mu,m) ! 3D no fft
+    case(5); call init_kernel_3D_fft2d(k%k3f2,lambda,mu,m) ! 3D with 2DFFT 
   end select
 
   write(6,*) 'Kernel intialized'
@@ -178,6 +186,73 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m)
 
 end subroutine init_kernel_3D_fft
 
+! -----------------------------------------------
+
+subroutine init_kernel_3D_fft2d(k,lambda,mu,m)
+
+  use mesh, only : mesh_type
+  use fftsg, only : my_rdft2, conj2d
+
+  type(kernel_3d_fft2d), intent(inout) :: k
+  double precision, intent(in) :: lambda, mu
+  type(mesh_type), intent(in) :: m
+
+  double precision, allocatable, dimension(:,:) :: Kij
+  double precision :: Im, Ip, Jm, Jp, ImJp, ImJm, IpJp, IpJm, T1, T2, T3, T4, koef
+  double precision, parameter :: PI = 3.14159265358979d0
+  integer :: i, j, n, stat
+
+  write(6,*) 'Generating 3D kernel...'
+  write(6,*) 'Ooura FFT2 applied for fault plane'
+  k%nw = m%nw
+  k%nx = m%nx
+  k%nwfft = 2 * m%nw ! fft convolution requires twice longer array
+  k%nxfft = 2 * m%nx
+  write(6,*) 'FFT2 Dimensions are ', k%nwfft, ' x ', k%nxfft
+  allocate(k%kernel(k%nwfft,k%nxfft))
+  allocate(Kij(k%nxfft,k%nwfft)) 
+
+  koef = 2.0d0 * (lambda + mu) / (lambda + 2.0d0*mu)
+
+  ! Construct the static kernel (modified from F. Gallovic code); note that slip
+  ! is assumed to be in the along-strike direction.
+  ! We mirror the kernel along-strike and along-dip for 2D convolution
+  do i = 1,k%nxfft
+    if (i <= m%nx) then
+      Im = (dble(i-1) - 0.5d0) * m%dx
+      Ip = (dble(i-1) + 0.5d0) * m%dx
+    else
+      Im = (dble(m%nx*2 - i + 1) - .5d0) * m%dx
+      Ip = (dble(m%nx*2 - i + 1) + .5d0) * m%dx
+    endif
+    do j = 1,k%nwfft
+      if (j <= m%nw) then
+        Jm = (dble(j-1) - .5d0) * m%dw(1)
+        Jp = (dble(j-1) + .5d0) * m%dw(1)
+      else
+        Jm = (dble(m%nw*2 - j + 1) - .5d0) * m%dw(1)
+        Jp = (dble(m%nw*2 - j + 1) + .5d0) * m%dw(1)
+      endif
+      ImJp = sqrt(Im**2 + Jp**2)
+      ImJm = sqrt(Im**2 + Jm**2)
+      IpJp = sqrt(Ip**2 + Jp**2)
+      IpJm = sqrt(Ip**2 + Jm**2)
+      T1 = (Jp/ImJp - Jm/ImJm) / Im
+      T2 = (Jp/IpJp - Jm/IpJm) / Ip
+      T3 = (Ip/IpJm - Im/ImJm) / Jm
+      T4 = (Ip/IpJp - Im/ImJp) / Jp
+      Kij(i,j) = mu/(4.d0*PI) * ( koef*(T1 - T2) + T3 - T4 ) 
+    enddo
+  enddo
+
+  ! Perform 2D FFT on kernel and pre-normalize
+  call my_rdft2(1, Kij, k%m_fft)
+  k%kernel = Kij * 2.0d0 / dble(k%nwfft * k%nxfft)
+
+  deallocate(Kij)
+
+end subroutine init_kernel_3D_fft2d
+
 !----------------------------------------------------------------------
 subroutine init_kernel_3D(k,lambda,mu,m)
 
@@ -229,6 +304,7 @@ subroutine compute_stress(tau,K,v)
     case(2); call compute_stress_2d(tau,K%k2f,v)
     case(3); call compute_stress_3d_fft(tau,K%k3f,v)
     case(4); call compute_stress_3d(tau,K%k3,v)
+    case(5); call compute_stress_3d_fft2d(tau,K%k3f2,v)
   end select
 
 end subroutine compute_stress
@@ -272,28 +348,42 @@ subroutine compute_stress_3d(tau,k3,v)
   double precision , intent(out) :: tau(:)
   double precision , intent(in) :: v(:)
 
-  integer :: nn,nw,nx,i,iw,ix,j,jw,jx,idx,jj
+  integer :: nn,nw,nx,i,iw,ix,j,jw,jx,idx,jj,chunk
+  double precision :: tsum
+  double precision, allocatable :: tmptau(:,:)
 
   nn = size(v)
   nw = size(k3%kernel,1)
   nx = nn/nw
 
-   tau = 0d0
-   i=0
+  allocate(tmptau(nw,nx))
+
+  !$OMP PARALLEL SHARED(tmptau) PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j)
+
+  !$OMP DO SCHEDULE(STATIC)
    do iw=1,nw
-   do ix=1,nx
-     i = i+1
-     j = 0
-     do jw=1,nw
-     do jx=1,nx
-       j = j+1
-       idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the kernel
-       jj = (jw-1)*nx + idx + 1 
-       tau(i) = tau(i) - k3%kernel(iw,jj) * v(j)
-     end do
+     do ix=1,nx
+       j = 0
+       tsum = 0.0d0
+       do jw=1,nw
+         do jx=1,nx
+           j = j+1
+           idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the kernel
+           jj = (jw-1)*nx + idx + 1 
+           tsum = tsum - k3%kernel(iw,jj) * v(j)
+         end do
+       end do
+       tmptau(iw,ix) = tsum
      end do
    end do
-   end do
+  !$OMP END DO
+
+  !$OMP END PARALLEL
+
+  ! Transfer back to 1D array tau
+  tau = reshape(transpose(tmptau), (/ nw*nx /))
+
+  deallocate(tmptau)
 
 end subroutine compute_stress_3d
 
@@ -361,5 +451,65 @@ subroutine compute_stress_3d_fft(tau,k3f,v)
   !$OMP END PARALLEL
 
 end subroutine compute_stress_3d_fft
+
+! ---------------------------------------------------------------------------
+! Version to perform the 2D-convolution using 2D-FFTs of the velocity on the fault
+! plane and a pre-computed 2D-FFT of an elastic kernel in an infinite medium. The
+! kernel assumes slip is in the along-strike direction.
+
+subroutine compute_stress_3d_fft2d(tau, k, v)
+
+  use fftsg, only : my_rdft2
+
+  double precision, intent(out) :: tau(:)
+  type(kernel_3d_fft2d), intent(inout) :: k
+  double precision, intent(in) :: v(:)
+
+  double precision :: tmpx(k%nwfft, k%nxfft), tmpz(k%nwfft, k%nxfft)
+  integer :: nw, nx, nwfft, nxfft, nx2, nx21
+  real :: time_begin, time_end
+
+  ! Retrieve dimensions and half indices
+  nw = k%nw
+  nx = k%nx
+  nwfft = k%nwfft
+  nxfft = k%nxfft
+  nx2 = nxfft / 2 + 1
+  nx21 = nx2 + 1
+
+  ! Store the velocity and zero-pad (faster index along-strike)
+  tmpx = 0.0d0
+  tmpx(1:nw,1:nx) = reshape(v, (/ nw, nx /))
+
+  ! Compute the 2D-FFT on the velocity
+  call my_rdft2(1, tmpx, k%m_fft)
+  tmpz = tmpx
+
+  ! Pointwise multiply with the FFT'd kernel
+  ! Complex multiplication: do real parts first
+  tmpx(1:2,1)   = k%kernel(1:2,1)   * tmpz(1:2,1)
+  tmpx(1:2,nx2) = k%kernel(1:2,nx2) * tmpz(1:2,nx2)
+  ! Now do higher wavenumbers
+  tmpx(3::2,:) = k%kernel(3::2,:) * tmpz(3::2,:) &
+               - k%kernel(4::2,:) * tmpz(4::2,:)
+  tmpx(4::2,:) = k%kernel(3::2,:) * tmpz(4::2,:) &
+               + k%kernel(4::2,:) * tmpz(3::2,:)
+  tmpx(1,2:nx) = k%kernel(1,2:nx) * tmpz(1,2:nx) &
+               - k%kernel(2,2:nx) * tmpz(2,2:nx)
+  tmpx(2,2:nx) = k%kernel(1,2:nx) * tmpz(2,2:nx) &
+               + k%kernel(2,2:nx) * tmpz(1,2:nx)
+  ! Upper right is switched: first row is imaginary, second row is real
+  tmpx(2,nx21:) = k%kernel(2,nx21:) * tmpz(2,nx21:) &
+                - k%kernel(1,nx21:) * tmpz(1,nx21:)
+  tmpx(1,nx21:) = k%kernel(2,nx21:) * tmpz(1,nx21:) &
+                + k%kernel(1,nx21:) * tmpz(2,nx21:)
+
+  ! Compute inverse 2D-FFT on complex product
+  call my_rdft2(-1, tmpx, k%m_fft)
+  
+  ! Extract only the valid part
+  tau = reshape(tmpx(1:nw,1:nx), (/ nw*nx /))
+
+end subroutine compute_stress_3d_fft2d
 
 end module fault_stress

@@ -39,6 +39,8 @@ subroutine read_main(pb)
     allocate(pb%kernel%k3f)
   elseif (pb%kernel%kind==4) then     ! 
     allocate(pb%kernel%k3)
+  elseif (pb%kernel%kind==5) then
+    allocate(pb%kernel%k3f2)
   end if
    
   read(15,*) pb%itheta_law

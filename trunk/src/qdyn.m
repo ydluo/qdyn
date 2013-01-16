@@ -26,6 +26,7 @@
 % INPUTS 	mode	'set'	gives the default parameter structure (pars), 
 %				overrides by fields present in structure parsin
 %				or by Property/Value pairs
+%           'write' writes qdyn input file only
 %			'run'	sets parameters and runs a simulation
 %			'read' 	reads parameters and outputs from a previous simulation
 %		parsin	parameter structure to override the default parameters 
@@ -38,6 +39,7 @@
 %			0 = spring-block system
 %			1 = 1D fault, 2D medium
 %			2 = 2D fault, 3D medium
+%           4 = 2D fault, 3D medium, 2D-FFT for fault stress
 %		L = fault length (L scales the stiffness for the spring-block case)
 %		FINITE = boundary conditions: (in 2D case)
 %			0 = periodic along-strike, steady loading at distance W from the fault
@@ -220,7 +222,7 @@ if MESHDIM == 1
   X = (-N/2+0.5:N/2-0.5) *L/N; % fault coordinates
 end
 
-if MESHDIM ==2 || MESHDIM ==3
+if MESHDIM ==2 || MESHDIM ==3 || MESHDIM == 4
     % set x, y, z, dip of first row
     cd = cos(DIP_W(1)/180.*pi);
     sd = sin(DIP_W(1)/180.*pi);
@@ -268,7 +270,7 @@ switch mode
     [pars.N,pars.FINITE] = read_qdyn_h(NAME);
     [ot,ox]= read_qdyn_out(NAME);
 
-  case 'run',
+  case {'run', 'write'},
 
 %     % recompile if qdyn.h must change
 %     [n,finite] = read_qdyn_h(fullfile(pathstr,'qdyn'));
@@ -297,8 +299,8 @@ switch mode
     fid=fopen('qdyn.in','w');
     fprintf(fid,'%u     meshdim\n' , MESHDIM); 
 
-    if MESHDIM == 2 || MESHDIM == 3 ;
-      disp('MESHDIM =2');
+    if MESHDIM == 2 || MESHDIM == 3 || MESHDIM == 4;
+      fprintf(1, 'MESHDIM = %d\n', MESHDIM);
       fprintf(fid,'%u %u     NX, NW\n' , NX, NW);      
       fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
       fprintf(fid,'%.15g %.15g \n', [DW(:), DIP_W(:)]');
@@ -327,6 +329,12 @@ switch mode
         [SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:),IOT(:),IASP(:)]');
  
     fclose(fid);
+
+    if strcmp(mode, 'write')
+        ot = 0;
+        ox = 0;
+        return;
+    end
     
     % solve
 %     status = system('~/qdyn_svn/trunk/src/qdyn');
