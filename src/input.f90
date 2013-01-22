@@ -25,7 +25,7 @@ subroutine read_main(pb)
   open(unit=15,FILE= 'qdyn.in') 
 
   call read_mesh(15,pb%mesh)
-
+  write(6,*) '   Mesh input complete'
   pb%kernel%kind = pb%mesh%dim+1 
   if (pb%mesh%nx < 4 .and. pb%mesh%dim==2) then
     write(6,*) 'nx < 4, FFT disabled'
@@ -71,7 +71,7 @@ subroutine read_main(pb)
   read(15,*)pb%NSTOP
   read(15,*)pb%DYN_FLAG,pb%DYN_SKIP
   read(15,*)pb%DYN_M,pb%DYN_th_on,pb%DYN_th_off
-
+  write(6,*) '  Flags input complete'
   allocate (pb%tau(pb%mesh%nn),     &
              pb%dtau_dt(pb%mesh%nn), &
              pb%tau_init(pb%mesh%nn), pb%sigma(pb%mesh%nn), &
