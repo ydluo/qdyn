@@ -17,7 +17,7 @@ EXEC = $(HOME)/bin/qdyn
 
 #-- Intel Fortran --
 F90 = ifort
-OPT = -O3 -ip -ipo -unroll -openmp
+OPT = -O3 -ip -ipo -parallel -openmp -par-threshold:50
 #-no-inline-factor
 #OPT = -O3
 # OPT = -O0 -warn all -C
