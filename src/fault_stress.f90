@@ -208,9 +208,9 @@ subroutine init_kernel_3D_fft2d(k,lambda,mu,m)
   k%nx = m%nx
   k%nwfft = 2 * m%nw ! fft convolution requires twice longer array
   k%nxfft = 2 * m%nx
-  write(6,*) 'FFT2 Dimensions are ', k%nwfft, ' x ', k%nxfft
-  allocate(k%kernel(k%nwfft,k%nxfft))
+  allocate(k%kernel(k%nxfft,k%nwfft))
   allocate(Kij(k%nxfft,k%nwfft)) 
+  write(6,*) 'Allocated for FFT2 Dimensions of ', k%nxfft, ' x ', k%nwfft
 
   koef = 2.0d0 * (lambda + mu) / (lambda + 2.0d0*mu)
 
@@ -465,8 +465,8 @@ subroutine compute_stress_3d_fft2d(tau, k, v)
   type(kernel_3d_fft2d), intent(inout) :: k
   double precision, intent(in) :: v(:)
 
-  double precision :: tmpx(k%nwfft, k%nxfft), tmpz(k%nwfft, k%nxfft)
-  integer :: nw, nx, nwfft, nxfft, nx2, nx21
+  double precision :: tmpx(k%nxfft, k%nwfft), tmpz(k%nxfft, k%nwfft)
+  integer :: nw, nx, nwfft, nxfft, nw2, nw21
   real :: time_begin, time_end
 
   ! Retrieve dimensions and half indices
@@ -474,12 +474,12 @@ subroutine compute_stress_3d_fft2d(tau, k, v)
   nx = k%nx
   nwfft = k%nwfft
   nxfft = k%nxfft
-  nx2 = nxfft / 2 + 1
-  nx21 = nx2 + 1
+  nw2 = nwfft / 2 + 1
+  nw21 = nw2 + 1
 
   ! Store the velocity and zero-pad (faster index along-strike)
   tmpx = 0.0d0
-  tmpx(1:nw,1:nx) = reshape(v, (/ nw, nx /))
+  tmpx(1:nx,1:nw) = reshape(v, (/ nx, nw /))
 
   ! Compute the 2D-FFT on the velocity
   call my_rdft2(1, tmpx, k%m_fft)
@@ -488,27 +488,27 @@ subroutine compute_stress_3d_fft2d(tau, k, v)
   ! Pointwise multiply with the FFT'd kernel
   ! Complex multiplication: do real parts first
   tmpx(1:2,1)   = k%kernel(1:2,1)   * tmpz(1:2,1)
-  tmpx(1:2,nx2) = k%kernel(1:2,nx2) * tmpz(1:2,nx2)
+  tmpx(1:2,nw2) = k%kernel(1:2,nw2) * tmpz(1:2,nw2)
   ! Now do higher wavenumbers
   tmpx(3::2,:) = k%kernel(3::2,:) * tmpz(3::2,:) &
                - k%kernel(4::2,:) * tmpz(4::2,:)
   tmpx(4::2,:) = k%kernel(3::2,:) * tmpz(4::2,:) &
                + k%kernel(4::2,:) * tmpz(3::2,:)
-  tmpx(1,2:nx) = k%kernel(1,2:nx) * tmpz(1,2:nx) &
-               - k%kernel(2,2:nx) * tmpz(2,2:nx)
-  tmpx(2,2:nx) = k%kernel(1,2:nx) * tmpz(2,2:nx) &
-               + k%kernel(2,2:nx) * tmpz(1,2:nx)
+  tmpx(1,2:nw) = k%kernel(1,2:nw) * tmpz(1,2:nw) &
+               - k%kernel(2,2:nw) * tmpz(2,2:nw)
+  tmpx(2,2:nw) = k%kernel(1,2:nw) * tmpz(2,2:nw) &
+               + k%kernel(2,2:nw) * tmpz(1,2:nw)
   ! Upper right is switched: first row is imaginary, second row is real
-  tmpx(2,nx21:) = k%kernel(2,nx21:) * tmpz(2,nx21:) &
-                - k%kernel(1,nx21:) * tmpz(1,nx21:)
-  tmpx(1,nx21:) = k%kernel(2,nx21:) * tmpz(1,nx21:) &
-                + k%kernel(1,nx21:) * tmpz(2,nx21:)
+  tmpx(2,nw21:) = k%kernel(2,nw21:) * tmpz(2,nw21:) &
+                - k%kernel(1,nw21:) * tmpz(1,nw21:)
+  tmpx(1,nw21:) = k%kernel(2,nw21:) * tmpz(1,nw21:) &
+                + k%kernel(1,nw21:) * tmpz(2,nw21:)
 
   ! Compute inverse 2D-FFT on complex product
   call my_rdft2(-1, tmpx, k%m_fft)
   
   ! Extract only the valid part
-  tau = reshape(tmpx(1:nw,1:nx), (/ nw*nx /))
+  tau = reshape(tmpx(1:nx,1:nw), (/ nx*nw /))
 
 end subroutine compute_stress_3d_fft2d
 
