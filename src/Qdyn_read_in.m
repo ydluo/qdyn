@@ -20,7 +20,7 @@ d.DIP=zeros(d.NW,1);
 for i=1:d.NW
     rline=fgetl(fid); rdat = sscanf(rline,'%f');
     d.DW(i)=rdat(1);
-    d.DIP_W(i)=rdat(2);
+    d.DIP(i)=rdat(2);
 end
 rline=fgetl(fid); rdat = sscanf(rline,'%f');
 d.THETA_LAW=rdat(1);
@@ -37,6 +37,7 @@ rline=fgetl(fid); rdat = sscanf(rline,'%f');
 d.VS=rdat(1);
 d.MU=rdat(2);
 d.LAM=rdat(3);
+d.V_TH=rdat(4);
 rline=fgetl(fid); rdat = sscanf(rline,'%f');
 d.TPER=rdat(1);
 d.APER=rdat(2);
@@ -47,10 +48,17 @@ d.TMAX=rdat(3);
 d.ACC=rdat(4);
 rline=fgetl(fid); rdat = sscanf(rline,'%f');
 d.NSTOP=rdat(1);
+rline=fgetl(fid); rdat = sscanf(rline,'%f');
+d.DYN_FLAG=rdat(1);
+d.DYN_SKIP=rdat(2);
+rline=fgetl(fid); rdat = sscanf(rline,'%f');
+d.M0=rdat(1);
+d.DYN_TH_ON=rdat(2);
+d.DYN_TH_OFF=rdat(3);
 fclose(fid);
 
 
-dd=importdata('qdyn.in',' ',11+d.NW);
+dd=importdata('qdyn.in',' ',13+d.NW);
 d.SIGMA=dd.data(:,1);
 d.V_0=dd.data(:,2);
 d.TH_0=dd.data(:,3);
