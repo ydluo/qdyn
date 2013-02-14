@@ -265,7 +265,7 @@ endif
 
       write(20003+3*pb%ox%dyn_count2,'(2a)') '#  x  y  z  t_rup tau_max t_vmax vmax'
       do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
-        write(20003+3*pb%ox%dyn_count2,'(3e15.7,e24.14,6e15.7)')       &
+        write(20003+3*pb%ox%dyn_count2,'(3e15.7,4e28.20)')       &
           pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),       &
           pb%t_rup(ixout),pb%tau_max(ixout),pb%t_vmax(ixout),pb%v_max(ixout)
       enddo
