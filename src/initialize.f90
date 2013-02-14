@@ -36,8 +36,9 @@ subroutine init_all(pb)
   pb%v_pre2 = 0.d0
   pb%pot_pre = 0.d0
   pb%ox%dyn_stat = 0
+  pb%ox%dyn_stat2 = 0
   pb%ox%dyn_count = 0
-
+  pb%ox%dyn_count2 = 0
     !---------------------- dt_max & perturbation------------------
   if (pb%Aper /= 0.d0 .and. pb%Tper > 0.d0) then
     if (pb%dt_max > 0.d0) then

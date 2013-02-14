@@ -38,9 +38,8 @@ subroutine solve(pb)
     !--------Output onestep to screen and ox file(snap_shot)
     if(mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
       call screen_write(pb)
-      call ox_write(pb)
     endif
-
+    call ox_write(pb)
   enddo
 
 end subroutine solve

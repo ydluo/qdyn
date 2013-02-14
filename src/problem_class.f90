@@ -17,13 +17,15 @@ module problem_class
 
  ! snapshot outputs: at every fault point, but only at few selected times
   type ox_type
-    integer :: count,unit,nxout,i_ox_seq,dyn_stat,dyn_count 
+    integer :: count,dyn_count2,unit,nxout,nxout_dyn,        &
+                i_ox_seq, i_ox_dyn, dyn_stat, dyn_stat2, dyn_count 
   end type ox_type
 
   type problem_type
     double precision, dimension(:), allocatable :: &
       tau, dtau_dt, tau_init, &
       sigma, v_pre, v_pre2, &
+      tau_max, t_rup, v_max, t_vmax,  &
       slip, v, dv_dt, theta, dtheta_dt,  &
       a, b, dc, v1, v2, mu_star, v_star, theta_star, iot, iasp
     double precision :: pot, pot_rate, pot_pre

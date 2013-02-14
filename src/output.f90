@@ -121,6 +121,8 @@ subroutine ox_init(pb)
   endif
 
   pb%ox%count=0
+  pb%ox%dyn_count=0
+  pb%ox%dyn_count2=0
   do i=1,pb%mesh%nn,pb%ox%nxout
     pb%ox%count = pb%ox%count+1
   enddo
@@ -188,6 +190,7 @@ subroutine ox_write(pb)
 
   integer :: ixout
 
+if (mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
   if (pb%ox%i_ox_seq == 0) then
     write(pb%ox%unit,'(2a,2i8,e14.6)')'# x v theta',' V./V dtau tau_dot slip ',pb%it,pb%ot%ivmax,pb%time
   ! JPA: this output should also contain y and z
@@ -208,6 +211,71 @@ subroutine ox_write(pb)
     enddo
     close(pb%ox%unit)
   endif
+endif
+
+  if (pb%ox%i_ox_dyn == 1) then
+
+    if (pb%ox%dyn_stat2 == 0 .and. pb%v(pb%ot%ivmax) >= pb%DYN_th_on ) then
+      pb%ox%dyn_stat2 = 1
+      do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
+        pb%tau_max(ixout) = pb%tau(ixout)
+        pb%t_rup(ixout) = pb%time
+        pb%v_max(ixout) = pb%v(ixout)
+        pb%t_vmax(ixout) = pb%time
+      enddo
+      write(20001+3*pb%ox%dyn_count2,'(3i10,e24.14)')   &
+            pb%it,pb%ot%ivmax,pb%ox%count,pb%time
+      write(20001+3*pb%ox%dyn_count2,'(2a)') '#  x  y  z  t  v  theta',  &
+            '  V./V  dtau  tau_dot  slip '
+      do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
+        write(20001+3*pb%ox%dyn_count2,'(3e15.7,e24.14,6e15.7)')       &
+          pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
+          pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
+          pb%dtau_dt(ixout),pb%slip(ixout)
+      enddo
+      close(20001+2*pb%ox%dyn_count2)
+    endif
+
+    if (pb%ox%dyn_stat2 == 1) then
+      do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
+        if (pb%tau(ixout) > pb%tau_max(ixout)) then
+          pb%tau_max(ixout) = pb%tau(ixout)
+          pb%t_rup(ixout) = pb%time
+        endif
+        if (pb%v(ixout) > pb%v_max(ixout)) then
+          pb%v_max(ixout) = pb%v(ixout)
+          pb%t_vmax(ixout) = pb%time
+        endif
+      enddo
+    endif
+
+    if (pb%ox%dyn_stat2 == 1 .and. pb%v(pb%ot%ivmax) <= pb%DYN_th_off ) then
+      pb%ox%dyn_stat2 = 0
+      write(20002+3*pb%ox%dyn_count2,'(3i10,e24.14)')   &
+            pb%it,pb%ot%ivmax,pb%ox%count,pb%time
+      write(20002+3*pb%ox%dyn_count2,'(2a)') '#  x  y  z  t  v  theta',  &
+            '  V./V  dtau  tau_dot  slip '
+      do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
+        write(20002+3*pb%ox%dyn_count2,'(3e15.7,e24.14,6e15.7)')       &
+          pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
+          pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
+          pb%dtau_dt(ixout),pb%slip(ixout)
+      enddo
+      close(20002+3*pb%ox%dyn_count2)
+
+      write(20003+3*pb%ox%dyn_count2,'(2a)') '#  x  y  z  t_rup tau_max t_vmax vmax'
+      do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
+        write(20003+3*pb%ox%dyn_count2,'(3e15.7,e24.14,6e15.7)')       &
+          pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),       &
+          pb%t_rup(ixout),pb%tau_max(ixout),pb%t_vmax(ixout),pb%v_max(ixout)
+      enddo
+      close(20003+3*pb%ox%dyn_count2)
+
+      pb%ox%dyn_count2 = pb%ox%dyn_count2 + 1      
+    endif 
+   
+  endif  
+
   
 
 
@@ -218,7 +286,7 @@ subroutine ox_write(pb)
       OPEN (UNIT = 100, FILE='DYN_PRE.txt', STATUS='REPLACE')
       write(100,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
       write(100,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip '
-      do ixout=1,pb%mesh%nn,pb%ox%nxout
+      do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
         write(pb%ox%unit,'(3e15.7,e24.14,6e15.7)')       &
           pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
           pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
@@ -233,7 +301,7 @@ subroutine ox_write(pb)
       OPEN (UNIT = 101, FILE='DYN_POST.txt', STATUS='REPLACE')
       write(101,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
       write(101,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip '
-      do ixout=1,pb%mesh%nn,pb%ox%nxout
+      do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
         write(pb%ox%unit,'(3e15.7,e24.14,6e15.7)')       &
           pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
           pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
