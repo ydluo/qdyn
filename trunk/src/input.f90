@@ -58,7 +58,8 @@ subroutine read_main(pb)
 !However, it will be safer to deal with variable/parameters here
 !--?? Leave AS IS till we complete benchmark this 2D version ??---
 
-  read(15,*)pb%ot%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%i_ox_seq
+  read(15,*)pb%ot%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nxout_dyn,    &
+            pb%ox%i_ox_seq, pb%ox%i_ox_dyn
   read(15,*)pb%beta, pb%smu, pb%lam, pb%v_th
 
 !YD This part we may want to modify it later to be able to
@@ -80,6 +81,8 @@ subroutine read_main(pb)
              pb%a(pb%mesh%nn), pb%b(pb%mesh%nn), pb%dc(pb%mesh%nn),   &
              pb%mesh%x(pb%mesh%nn), pb%v_pre(pb%mesh%nn),&
              pb%v_pre2(pb%mesh%nn), &
+             pb%t_rup(pb%mesh%nn), pb%tau_max(pb%mesh%nn),   &
+             pb%v_max(pb%mesh%nn), pb%t_vmax(pb%mesh%nn),   &
              pb%v1(pb%mesh%nn), pb%v2(pb%mesh%nn), pb%mu_star(pb%mesh%nn),& 
              pb%v_star(pb%mesh%nn), pb%theta_star(pb%mesh%nn),   &
              pb%iot(pb%mesh%nn),pb%iasp(pb%mesh%nn))

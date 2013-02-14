@@ -61,9 +61,13 @@
 %		DTMAX = maximum timestep (0=unrestricted)
 %		ACC = solver accuracy
 %		NXOUT = spatial interval (number of nodes) for snapshot outputs
-%		NX_SEQ = Sequential snapshot outputs
+%		NXOUT_DYN = spatial interval (number of nodes) for dynamic snapshot outputs
+%		OX_SEQ = Sequential snapshot outputs
 %			= 0 one ox output file (fort.19) contains all snapshots 
 %			= 1  separate, sequential ox file outputs (fort.1001, ...)
+%		OX_DYN = Sequential snapshot of dynamic events
+%			= 0 disable 
+%			= 1  enable (event start fort.20001+3i, end fort.20002+3i, rupture time fort.20003+3i)
 %		NTOUT = temporal interval (number of iterations) for snapshot outputs
 %		A  = amplitude of direct effect in rate-and-state friction 
 %		B  = amplitude of evolution effect in rate-and-state friction
@@ -179,8 +183,10 @@ DTTRY = 1e2;   % first trial timestep
 DTMAX = 0;	% maximum timestep (0=unrestricted)
 ACC = 1e-7;     % solver accuracy
 NXOUT = 8;	% space stride (cells) for snapshot outputs
+NXOUT_DYN = 1;	% space stride (cells) for dynamic snapshot outputs
 NTOUT = 100; 	% time stride (iterations) for snapshot outputs
 OX_SEQ = 0; 	% = 1 ; enable sequential ox output , from fort.1000 ...
+OX_DYN = 0; % = 1 ; enable sequential snapshot of dynamic events
 IOT = 0;    % = 1 to output ot of indicated nodes    
 IASP = 0;   % =1 indicating that it is an asperity
 %-- friction
@@ -208,8 +214,8 @@ TPER = 1*year;
 DYN_FLAG = 0;
 DYN_M = 1.e18; % M0= 10^(1.5Mw+9) [M0=1.e18 => Mw=6.0; M0=1.e21 => Mw=8.0]
 DYN_SKIP = 0;
-DYN_th_on = 1e-3;
-DYN_th_off = 1e-4;
+DYN_TH_ON = 1e-3;
+DYN_TH_OFF = 1e-4;
 
 %--------- INITIALIZE -------------------------------------
 
@@ -316,13 +322,13 @@ switch mode
     fprintf(fid,'%u   itheta_law\n', THETA_LAW);
     fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
     fprintf(fid,'%u   n_equations\n', NEQS);
-    fprintf(fid,'%u %u %u %u  ntout, nt_coord, nxout, ox_SEQ\n', NTOUT,IC,NXOUT,OX_SEQ);     
+    fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);     
     fprintf(fid,'%.15g %.15g %.15g %.15g    beta, smu, lambda, v_th\n', VS, MU, LAM, V_TH);
     fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
     fprintf(fid,'%.15g %.15g %.15g %.15g    dt_try, dtmax, tmax, accuracy\n',DTTRY,DTMAX,TMAX,ACC);
     fprintf(fid,'%u   nstop\n',NSTOP);
     fprintf(fid,'%u %u  DYN_FLAG, DYN_SKIP\n',DYN_FLAG,DYN_SKIP);
-    fprintf(fid,'%.15g %.15g %.15g    M0, DYN_th_on, DYN_th_off\n', DYN_M,DYN_th_on,DYN_th_off);
+    fprintf(fid,'%.15g %.15g %.15g    M0, DYN_th_on, DYN_th_off\n', DYN_M,DYN_TH_ON,DYN_TH_OFF);
 
           
     fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
