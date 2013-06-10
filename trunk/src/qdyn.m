@@ -82,6 +82,8 @@
 %		RNS_LAW 0 = original rate-and-state friction law
 %			1 = rate-and-state frction with cutting-off velocity
 %		SIGMA = effective normal stress
+%		SIGMA_CPL 0 = no normal stress coupling
+%			1 = enable normal stress coupling
 %		DW = along-dip length (km) of every node along-dip, from deeper to shallower
 %		DIP_W = dipping angel (degree) of every node along-dip, from deeper to shallower
 %		Z_CORNER = - depth (km) of bottom left node (3D)
@@ -198,6 +200,7 @@ V_SS = 1e-9;
 TH_SS = DC/V_SS;
 THETA_LAW = 1;
 RNS_LAW = 0;
+SIGMA_CPL = 0;
 %-- initial conditions
 SIGMA=1e8;
 V_0=V_SS ; 
@@ -321,6 +324,7 @@ switch mode
     
     fprintf(fid,'%u   itheta_law\n', THETA_LAW);
     fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
+    fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);    
     fprintf(fid,'%u   n_equations\n', NEQS);
     fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);     
     fprintf(fid,'%.15g %.15g %.15g %.15g    beta, smu, lambda, v_th\n', VS, MU, LAM, V_TH);
