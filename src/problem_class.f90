@@ -24,7 +24,7 @@ module problem_class
   type problem_type
     double precision, dimension(:), allocatable :: &
       tau, dtau_dt, tau_init, &
-      sigma, v_pre, v_pre2, &
+      sigma, dsigma_dt, v_pre, v_pre2, &
       tau_max, t_rup, v_max, t_vmax,  &
       slip, v, dv_dt, theta, dtheta_dt,  &
       a, b, dc, v1, v2, mu_star, v_star, theta_star, iot, iasp
@@ -38,7 +38,7 @@ module problem_class
 
     double precision :: Tper=0d0, Aper=0d0, Omper=0d0
     double precision :: time=0d0
-    integer :: itheta_law,i_rns_law, neqs
+    integer :: itheta_law,i_rns_law, i_sigma_cpl, neqs
 
     double precision :: dt_try, dt_did, dt_next, dt_max=0d0, tmax, acc
     double precision :: DYN_M,DYN_th_on,DYN_th_off

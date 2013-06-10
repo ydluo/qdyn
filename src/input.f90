@@ -37,14 +37,17 @@ subroutine read_main(pb)
     read(15,*) pb%kernel%k2f%finite
   elseif (pb%kernel%kind==3) then 
     allocate(pb%kernel%k3f)
+    allocate(pb%kernel%k3f_n)
   elseif (pb%kernel%kind==4) then     ! 
     allocate(pb%kernel%k3)
+    allocate(pb%kernel%k3_n)
   elseif (pb%kernel%kind==5) then
     allocate(pb%kernel%k3f2)
   end if
    
   read(15,*) pb%itheta_law
   read(15,*) pb%i_rns_law
+  read(15,*) pb%i_sigma_cpl
   read(15,*) pb%neqs 
 
 !JPA neqs should not be setup explicitly by the user
