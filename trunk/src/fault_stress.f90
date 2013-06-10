@@ -14,12 +14,12 @@ module fault_stress
   end type kernel_2D_fft
 
   type kernel_3D
-    double precision, dimension(:,:), allocatable :: kernel
+    double precision, dimension(:,:), allocatable :: kernel, kernel_n
   end type kernel_3D
 
   type kernel_3D_fft
     integer :: nxfft, nw, nx
-    double precision, dimension(:,:,:), allocatable :: kernel
+    double precision, dimension(:,:,:), allocatable :: kernel, kernel_n
     type (OouraFFT_type) :: m_fft
   end type kernel_3D_fft
 
@@ -33,8 +33,8 @@ module fault_stress
     integer :: kind = 0
     double precision :: k1
     type (kernel_2D_fft), pointer :: k2f
-    type (kernel_3D), pointer :: k3
-    type (kernel_3D_fft), pointer :: k3f
+    type (kernel_3D), pointer :: k3, k3_n
+    type (kernel_3D_fft), pointer :: k3f, k3f_n
     type (kernel_3D_fft2d), pointer :: k3f2
   end type kernel_type
 
@@ -64,8 +64,8 @@ subroutine init_kernel(lambda,mu,m,k)
   select case (k%kind)
     case(1); call init_kernel_1D(k%k1,mu,m%Lfault)
     case(2); call init_kernel_2D(k%k2f,mu,m)
-    case(3); call init_kernel_3D_fft(k%k3f,lambda,mu,m) ! 3D with FFT along-strike
-    case(4); call init_kernel_3D(k%k3,lambda,mu,m) ! 3D no fft
+    case(3); call init_kernel_3D_fft(k%k3f,k%k3f_n,lambda,mu,m) ! 3D with FFT along-strike
+    case(4); call init_kernel_3D(k%k3,k%k3_n,lambda,mu,m) ! 3D no fft
     case(5); call init_kernel_3D_fft2d(k%k3f2,lambda,mu,m) ! 3D with 2DFFT 
   end select
 
@@ -135,18 +135,18 @@ subroutine init_kernel_2D(k,mu,m)
 end subroutine init_kernel_2D
 
 !----------------------------------------------------------------------
-subroutine init_kernel_3D_fft(k,lambda,mu,m)
+subroutine init_kernel_3D_fft(k,k_n,lambda,mu,m)
 
   use mesh, only : mesh_type
   use okada, only : compute_kernel
   use fftsg, only : my_rdft
 
-  type(kernel_3d_fft), intent(inout) :: k
+  type(kernel_3d_fft), intent(inout) :: k, k_n
   double precision, intent(in) :: lambda,mu
   type(mesh_type), intent(in) :: m
 
-  double precision :: tau, y_src, z_src, dip_src, dw_src, y_obs, z_obs, dip_obs
-  double precision, allocatable :: tmp(:)   ! for FFT
+  double precision :: tau,sigma_n, y_src, z_src, dip_src, dw_src, y_obs, z_obs, dip_obs
+  double precision, allocatable :: tmp(:), tmp_n(:)   ! for FFT
   integer :: i, j, ii, jj, n, nn, IRET
 
   write(6,*) 'Generating 3D kernel...'
@@ -156,6 +156,8 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m)
   k%nxfft = 2*m%nx ! fft convolution requires twice longer array
   allocate(k%kernel(m%nw,m%nw,k%nxfft))
   allocate(tmp(k%nxfft))
+  allocate(k%kernel_n(m%nw,m%nw,k%nxfft))
+  allocate(tmp_n(k%nxfft))
   ! assumes faster index runs along-strike
   do n=1,m%nw
     nn = (n-1)*m%nx+1
@@ -172,15 +174,18 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m)
         call compute_kernel(lambda,mu, &
                 i*m%dx, y_src, z_src, dip_src, m%dx, dw_src,   &
                 0d0, y_obs, z_obs, dip_obs, &
-                IRET,tau)
+                IRET,tau,sigma_n)
         ii = i+1
         ! wrap up the negative relative-x-positions in the second half of the array
         ! to comply with conventions of fft convolution
         if (i<0) ii = ii + k%nxfft  
         tmp(ii) = tau
+        tmp_n(ii) = sigma_n
       enddo
       call my_rdft(1,tmp,k%m_fft)
       k%kernel(j,n,:) = tmp / dble(m%nx)
+      call my_rdft(1,tmp_n,k%m_fft)
+      k%kernel_n(j,n,:) = tmp_n / dble(m%nx)
     enddo
   enddo
 
@@ -254,16 +259,16 @@ subroutine init_kernel_3D_fft2d(k,lambda,mu,m)
 end subroutine init_kernel_3D_fft2d
 
 !----------------------------------------------------------------------
-subroutine init_kernel_3D(k,lambda,mu,m)
+subroutine init_kernel_3D(k,k_n,lambda,mu,m)
 
   use mesh, only : mesh_type
   use okada, only : compute_kernel
 
-  type(kernel_3d), intent(inout) :: k
+  type(kernel_3d), intent(inout) :: k, k_n
   double precision, intent(in) :: lambda,mu
   type(mesh_type), intent(in) :: m
 
-  double precision :: tau
+  double precision :: tau, sigma_n
   integer :: i, j, IRET
 
     write(6,*) 'Generating 3D kernel...'
@@ -271,22 +276,27 @@ subroutine init_kernel_3D(k,lambda,mu,m)
     !kernel(i,j): response at i of source at j
     !because dx = constant, only need to calculate i at first column
     allocate (k%kernel(m%nw,m%nn))
+    allocate (k%kernel_n(m%nw,m%nn))
+
     do i = 1,m%nw
       do j = 1,m%nn
         call compute_kernel(lambda,mu,m%x(j),m%y(j),m%z(j),  &
                m%dip(j),m%dx,m%dw((j-1)/m%nx+1),   &
                m%x(1+(i-1)*m%nx),m%y(1+(i-1)*m%nx),   &
-               m%z(1+(i-1)*m%nx),m%dip(1+(i-1)*m%nx),IRET,tau)
+               m%z(1+(i-1)*m%nx),m%dip(1+(i-1)*m%nx),IRET,tau,sigma_n)
         if (IRET == 0) then
-          k%kernel(i,j) = tau    
+          k%kernel(i,j) = tau  
+          k%kernel_n(i,j) = sigma_n    
         else
           write(6,*) '!!WARNING!! : Kernel Singular, set value to 0,(i,j)',i,j
           k%kernel(i,j) = 0d0
+          k%kernel_n(i,j) = 0d0
         end if
       end do
     end do
     do j = 1,m%nn
       write(99,*) k%kernel(1,j)
+      write(99,*) k%kernel_n(1,j)
     end do
 
 end subroutine init_kernel_3D

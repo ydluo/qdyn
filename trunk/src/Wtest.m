@@ -17,17 +17,18 @@ p = qdyn('set');
 
 p.MESHDIM=1;
 p.THETA_LAW=2;
+p.RNS_LAW=1;
 p.FINITE=0;
-p.SIGMA=0.5e6;
+p.SIGMA=5.0e6;
 p.V_SS=1e-9;
 
 
-p.V2=0.8e-7;
+p.V2=3e-7;
 
-p.L=4e3;
+p.L=200e3;
 p.W=110e3;
-twm=22;
-ts=2;
+twm=30;
+ts=3;
 p.ACC = 1e-14;
 %p.A=p.A*.8;
 %p.B=p.B*.8;
@@ -51,15 +52,25 @@ p = qdyn('set',p);
 
 p.TMAX=twm*year;
 
-%for i=1:1:floor(p.N*0.05)
+% for i=1:1:floor(p.N*0.05)
 %    p.V_0(i) = 1.01 *p.V_SS ;
-%end
-%for i=floor(p.N*0.05)+1:1:p.N
+% end
+% for i=floor(p.N*0.05)+1:1:p.N
 %    p.V_0(i)=p.V_SS;
-%end
- p.V_0 = 1.01*p.V_SS ;
+% end
+%  p.V_0 = 1.01*p.V_SS ;
 % p.V_0 = p.V_0/mean(p.V_0)*p.V_SS;
- p.V_00=p.V_0;
+
+
+for i = 1:1:p.N
+    p.V_0(i) = p.V_SS;
+end
+
+for i = floor(p.N*0.49):1:ceil(p.N*0.51)
+    p.V_0(i) = 1.01*p.V_SS;
+end
+
+%  p.V_00=p.V_0;
 %   for i=1:1:p.N
 %       p.V_0(i) = p.V_00(mod((i+1024),p.N)+1);
 %   end
@@ -74,15 +85,15 @@ p.NSTOP=0;
 semilogy(ot1.t/year,ot1.v)
 xlabel('Time (years)');
 ylabel('Vmax');
-% 
-%   p.TMAX = ts*year;  
-%   p.NTOUT=1;
-% 
-%   p.V_0 = ox1.v(:,end);
-%   p.TH_0= ox1.th(:,end);
-%   %p.V_0 =  (ox1.v(:,end)+ox1.v(end:-1:1,end))/2;
-%   %p.TH_0=  (ox1.th(:,end)+ox1.th(end:-1:1,end))/2;
-%   [p,ot,ox]=qdyn('run',p);
+
+  p.TMAX = ts*year;  
+  p.NTOUT=10;
+
+  p.V_0 = ox1.v(:,end);
+  p.TH_0= ox1.th(:,end);
+  %p.V_0 =  (ox1.v(:,end)+ox1.v(end:-1:1,end))/2;
+  %p.TH_0=  (ox1.th(:,end)+ox1.th(end:-1:1,end))/2;
+  [p,ot,ox]=qdyn('run',p);
 
 save(filename)  
 
