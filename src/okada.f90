@@ -18,13 +18,13 @@ contains
 ! and strike parallel to X
 ! in an elastic half-space with Lame moduli LAM and MU
 !
-subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau)
+subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau,sigma_n)
 
   use constants, only : PI
 
   double precision, intent(in) :: LAM,MU, SX,SY,SZ,S_DIP, L,W,OX,OY,OZ,O_DIP 
   integer, intent(inout) :: IRET
-  double precision, intent(inout) :: tau
+  double precision, intent(inout) :: tau, sigma_n
 
   double precision :: ALPHA, S_DEPTH, U, X, Y, Z, &
     UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ
@@ -69,7 +69,8 @@ subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau)
   tau_n(3) = STRESS(3,1)*n_f(1)+STRESS(3,2)*n_f(2)+STRESS(3,3)*n_f(3)
 
   tau = tau_n(1)*n_DIR(1)+tau_n(2)*n_DIR(2)+tau_n(3)*n_DIR(3)
-  
+  sigma_n = tau_n(1)*n_f(1)+tau_n(2)*n_f(2)+tau_n(3)*n_f(3)
+
 end subroutine compute_kernel
 
 
