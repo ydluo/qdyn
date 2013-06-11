@@ -148,8 +148,10 @@ subroutine init_mesh_2D(m)
     m%x(j0+1:j0+m%nx) = m%x(1:m%nx)
     m%y(j0+1:j0+m%nx) = m%y(j0) + 0.5d0*m%dw(i-1)*cd0 + 0.5d0*m%dw(i)*cd
     m%z(j0+1:j0+m%nx) = m%z(j0) + 0.5d0*m%dw(i-1)*sd0 + 0.5d0*m%dw(i)*sd
+    write(66,*) m%z(j0+1:j0+m%nx) 
     m%dip(j0+1:j0+m%nx) = m%DIP_W(i)
   end do
+
 
 end subroutine init_mesh_2D
 

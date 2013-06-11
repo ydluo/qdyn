@@ -40,7 +40,7 @@ subroutine screen_init(pb)
 ! YD:  should we out put 2D mesh K?
 
     write(6,*)
-    write(6,*) '    it,  dt (secs), time (yrs), vmax (m/s), sigma'
+    write(6,*) '    it,  dt (secs), time (yrs), vmax (m/s), sigma(MPa)'
 
 end subroutine screen_init
 
@@ -54,8 +54,8 @@ subroutine screen_write(pb)
   use problem_class
   type (problem_type), intent(inout) :: pb
 
-  write(6,'(i7,x,3(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,    &
-                            pb%v(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
+  write(6,'(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,    &
+                            pb%v(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)/1.0D6
 
 end subroutine screen_write
 
@@ -142,7 +142,7 @@ subroutine ot_write(pb)
   integer :: i
 
   pb%ot%unit = 18
-  write(pb%ot%unit,'(e24.16,15e14.6)') pb%time, pb%ot%llocnew*pb%mesh%dx,  &
+  write(pb%ot%unit,'(e24.16,16e14.6)') pb%time, pb%ot%llocnew*pb%mesh%dx,  &
     pb%ot%lcnew*pb%mesh%dx, pb%pot, pb%pot_rate,    &
     pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
     pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
@@ -169,7 +169,7 @@ subroutine ot_write(pb)
   do i=1,pb%mesh%nn
     if (pb%iot(i) == 1) then
       pb%ot%unit = pb%ot%unit+1
-      write(pb%ot%unit,'(e24.16,4e14.6)') pb%time, pb%v(i),      &
+      write(pb%ot%unit,'(e24.16,5e14.6)') pb%time, pb%v(i),      &
       pb%theta(i), pb%tau(i), pb%slip(i), pb%sigma(i)
     endif
   enddo
@@ -196,7 +196,7 @@ if (mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
     write(pb%ox%unit,'(2a,2i8,e14.6)')'# x v theta',' V./V dtau tau_dot slip ',pb%it,pb%ot%ivmax,pb%time
   ! JPA: this output should also contain y and z
     do ixout=1,pb%mesh%nn,pb%ox%nxout
-      write(pb%ox%unit,'(e15.7,e24.16,6e15.7)') pb%mesh%x(ixout),pb%time,pb%v(ixout),   &
+      write(pb%ox%unit,'(e15.7,e24.16,7e15.7)') pb%mesh%x(ixout),pb%time,pb%v(ixout),   &
         pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
         pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
     enddo
@@ -205,7 +205,7 @@ if (mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
     write(pb%ox%unit,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
     write(pb%ox%unit,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip '
     do ixout=1,pb%mesh%nn,pb%ox%nxout
-      write(pb%ox%unit,'(3e15.7,e24.14,6e15.7)')       &
+      write(pb%ox%unit,'(3e15.7,e24.14,7e15.7)')       &
         pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
         pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
         pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
@@ -229,7 +229,7 @@ endif
       write(20001+3*pb%ox%dyn_count2,'(2a)') '#  x  y  z  t  v  theta',  &
             '  V./V  dtau  tau_dot  slip sigma'
       do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
-        write(20001+3*pb%ox%dyn_count2,'(3e15.7,e24.14,6e15.7)')       &
+        write(20001+3*pb%ox%dyn_count2,'(3e15.7,e24.14,7e15.7)')       &
           pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
           pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
           pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
@@ -257,7 +257,7 @@ endif
       write(20002+3*pb%ox%dyn_count2,'(2a)') '#  x  y  z  t  v  theta',  &
             '  V./V  dtau  tau_dot  slip sigma'
       do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
-        write(20002+3*pb%ox%dyn_count2,'(3e15.7,e24.14,6e15.7)')       &
+        write(20002+3*pb%ox%dyn_count2,'(3e15.7,e24.14,7e15.7)')       &
           pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
           pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
           pb%dtau_dt(ixout),pb%slip(ixout),pb%sigma(ixout)
