@@ -31,10 +31,11 @@ module fault_stress
 
   type kernel_type
     integer :: kind = 0
+    integer :: i_sigma_cpl = 0
     double precision :: k1
     type (kernel_2D_fft), pointer :: k2f
-    type (kernel_3D), pointer :: k3, k3_n
-    type (kernel_3D_fft), pointer :: k3f, k3f_n
+    type (kernel_3D), pointer :: k3
+    type (kernel_3D_fft), pointer :: k3f
     type (kernel_3D_fft2d), pointer :: k3f2
   end type kernel_type
 
@@ -64,8 +65,8 @@ subroutine init_kernel(lambda,mu,m,k)
   select case (k%kind)
     case(1); call init_kernel_1D(k%k1,mu,m%Lfault)
     case(2); call init_kernel_2D(k%k2f,mu,m)
-    case(3); call init_kernel_3D_fft(k%k3f,k%k3f_n,lambda,mu,m) ! 3D with FFT along-strike
-    case(4); call init_kernel_3D(k%k3,k%k3_n,lambda,mu,m) ! 3D no fft
+    case(3); call init_kernel_3D_fft(k%k3f,lambda,mu,m) ! 3D with FFT along-strike
+    case(4); call init_kernel_3D(k%k3,lambda,mu,m) ! 3D no fft
     case(5); call init_kernel_3D_fft2d(k%k3f2,lambda,mu,m) ! 3D with 2DFFT 
   end select
 
@@ -135,13 +136,13 @@ subroutine init_kernel_2D(k,mu,m)
 end subroutine init_kernel_2D
 
 !----------------------------------------------------------------------
-subroutine init_kernel_3D_fft(k,k_n,lambda,mu,m)
+subroutine init_kernel_3D_fft(k,lambda,mu,m)
 
   use mesh, only : mesh_type
   use okada, only : compute_kernel
   use fftsg, only : my_rdft
 
-  type(kernel_3d_fft), intent(inout) :: k, k_n
+  type(kernel_3d_fft), intent(inout) :: k
   double precision, intent(in) :: lambda,mu
   type(mesh_type), intent(in) :: m
 
@@ -259,12 +260,12 @@ subroutine init_kernel_3D_fft2d(k,lambda,mu,m)
 end subroutine init_kernel_3D_fft2d
 
 !----------------------------------------------------------------------
-subroutine init_kernel_3D(k,k_n,lambda,mu,m)
+subroutine init_kernel_3D(k,lambda,mu,m)
 
   use mesh, only : mesh_type
   use okada, only : compute_kernel
 
-  type(kernel_3d), intent(inout) :: k, k_n
+  type(kernel_3d), intent(inout) :: k
   double precision, intent(in) :: lambda,mu
   type(mesh_type), intent(in) :: m
 
@@ -302,18 +303,18 @@ subroutine init_kernel_3D(k,k_n,lambda,mu,m)
 end subroutine init_kernel_3D
 
 !=========================================================
-subroutine compute_stress(tau,K,v)
+subroutine compute_stress(tau,sigma_n,K,v)
 
   type(kernel_type), intent(inout)  :: K
-  double precision , intent(out) :: tau(:)
+  double precision , intent(out) :: tau(:), sigma_n(:)
   double precision , intent(in) :: v(:)
 
   ! depends on dimension (0D, 1D or 2D fault)
   select case (K%kind)
     case(1); call compute_stress_1d(tau,K%k1,v)
     case(2); call compute_stress_2d(tau,K%k2f,v)
-    case(3); call compute_stress_3d_fft(tau,K%k3f,v)
-    case(4); call compute_stress_3d(tau,K%k3,v)
+    case(3); call compute_stress_3d_fft(tau,sigma_n,K%k3f,v,K%i_sigma_cpl)
+    case(4); call compute_stress_3d(tau,sigma_n,K%k3,v,K%i_sigma_cpl)
     case(5); call compute_stress_3d_fft2d(tau,K%k3f2,v)
   end select
 
@@ -352,15 +353,15 @@ subroutine compute_stress_2d(tau,k2f,v)
 end subroutine compute_stress_2d
 
 !--------------------------------------------------------
-subroutine compute_stress_3d(tau,k3,v)
+subroutine compute_stress_3d(tau,sigma_n,k3,v,i_sigma_cpl)
 
   type(kernel_3D), intent(in)  :: k3
-  double precision , intent(out) :: tau(:)
+  double precision , intent(out) :: tau(:), sigma_n(:)
   double precision , intent(in) :: v(:)
 
-  integer :: nn,nw,nx,i,iw,ix,j,jw,jx,idx,jj,chunk
+  integer :: nn,nw,nx,i,iw,ix,j,jw,jx,idx,jj,chunk,i_sigma_cpl
   double precision :: tsum
-  double precision, allocatable :: tmptau(:,:)
+  double precision, allocatable :: tmptau(:,:),tmpsigma_n(:,:)
 
   nn = size(v)
   nw = size(k3%kernel,1)
@@ -395,6 +396,38 @@ subroutine compute_stress_3d(tau,k3,v)
 
   deallocate(tmptau)
 
+if (i_sigma_cpl == 1) then
+  allocate(tmpsigma_n(nw,nx))
+
+  !$OMP PARALLEL SHARED(tmpsigma_n) PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j)
+
+  !$OMP DO SCHEDULE(STATIC)
+   do iw=1,nw
+     do ix=1,nx
+       j = 0
+       tsum = 0.0d0
+       do jw=1,nw
+         do jx=1,nx
+           j = j+1
+           idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the kernel
+           jj = (jw-1)*nx + idx + 1 
+           tsum = tsum - k3%kernel_n(iw,jj) * v(j)
+         end do
+       end do
+       tmpsigma_n(iw,ix) = tsum
+     end do
+   end do
+  !$OMP END DO
+
+  !$OMP END PARALLEL
+
+  ! Transfer back to 1D array sigma_n
+  sigma_n = reshape(transpose(tmpsigma_n), (/ nw*nx /))
+
+  deallocate(tmpsigma_n)
+end if
+
+
 end subroutine compute_stress_3d
 
 !--------------------------------------------------------
@@ -404,16 +437,16 @@ end subroutine compute_stress_3d
 ! Note: to avoid periodic wrap-around, fft convolution requires twice longer arrays
 !       and zero-padding (pre-processing) and chop-in-half (post-processing)
 
-subroutine compute_stress_3d_fft(tau,k3f,v)
+subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v,i_sigma_cpl)
 
   use fftsg, only : my_rdft
 
   type(kernel_3D_fft), intent(inout)  :: k3f
-  double precision , intent(out) :: tau(:)
+  double precision , intent(out) :: tau(:), sigma_n(:)
   double precision , intent(in) :: v(:)
 
   double precision :: tmpzk(k3f%nw,k3f%nxfft), tmpx(k3f%nxfft), tmpz(k3f%nw)
-  integer :: n,k
+  integer :: n,k,i_sigma_cpl 
 
   !$OMP PARALLEL PRIVATE(tmpx,tmpz)
 
@@ -458,7 +491,45 @@ subroutine compute_stress_3d_fft(tau,k3f,v)
   enddo
   !$OMP END DO
 
+  if (i_sigma_cpl == 1) then
+  
+    ! convolution in Fourier domain is a product of complex numbers:
+    ! K*V = (ReK + i*ImK)*(ReV+i*ImV) 
+    !     = ReK*ReV - ImK*ImV  + i*( ReK*ImV + ImK*ReV )
+    !
+    !$OMP SINGLE
+    ! wavenumber = 0, real
+    tmpzk(:,1) = matmul( k3f%kernel_n(:,:,1), tmpzk(:,1) ) 
+    ! wavenumber = Nyquist, real
+    tmpzk(:,2) = matmul( k3f%kernel_n(:,:,2), tmpzk(:,2) ) 
+    !$OMP END SINGLE
+    ! higher wavenumbers, complex
+    !$OMP DO SCHEDULE(STATIC)
+    do k = 3,k3f%nxfft-1,2
+      ! real part = ReK*ReV - ImK*ImV
+      ! use tmp to avoid scratching
+      tmpz         = matmul( k3f%kernel_n(:,:,k), tmpzk(:,k) )  &
+                     - matmul( k3f%kernel_n(:,:,k+1), tmpzk(:,k+1) )
+      ! imaginary part = ReK*ImV + ImK*ReV
+      tmpzk(:,k+1) = matmul( k3f%kernel_n(:,:,k), tmpzk(:,k+1) )  &
+                     + matmul( k3f%kernel_n(:,:,k+1), tmpzk(:,k) )
+      tmpzk(:,k) = tmpz
+    enddo
+    !$OMP END DO
+ 
+    !$OMP DO SCHEDULE(STATIC)
+    do n = 1,k3f%nw
+      tmpx = - tmpzk(n,:)
+      call my_rdft(-1,tmpx,k3f%m_fft)
+      sigma_n( (n-1)*k3f%nx+1 : n*k3f%nx ) = tmpx(1:k3f%nx) ! take only first half of array
+    enddo
+    !$OMP END DO
+    
+  endif
+
   !$OMP END PARALLEL
+
+
 
 end subroutine compute_stress_3d_fft
 

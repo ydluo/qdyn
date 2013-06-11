@@ -37,17 +37,15 @@ subroutine read_main(pb)
     read(15,*) pb%kernel%k2f%finite
   elseif (pb%kernel%kind==3) then 
     allocate(pb%kernel%k3f)
-    allocate(pb%kernel%k3f_n)
   elseif (pb%kernel%kind==4) then     ! 
     allocate(pb%kernel%k3)
-    allocate(pb%kernel%k3_n)
   elseif (pb%kernel%kind==5) then
     allocate(pb%kernel%k3f2)
   end if
    
   read(15,*) pb%itheta_law
   read(15,*) pb%i_rns_law
-  read(15,*) pb%i_sigma_cpl
+  read(15,*) pb%kernel%i_sigma_cpl
   read(15,*) pb%neqs 
 
 !JPA neqs should not be setup explicitly by the user
@@ -77,7 +75,7 @@ subroutine read_main(pb)
   read(15,*)pb%DYN_M,pb%DYN_th_on,pb%DYN_th_off
   write(6,*) '  Flags input complete'
   allocate (pb%tau(pb%mesh%nn),     &
-             pb%dtau_dt(pb%mesh%nn), &
+             pb%dtau_dt(pb%mesh%nn), pb%dsigma_dt(pb%mesh%nn), &
              pb%tau_init(pb%mesh%nn), pb%sigma(pb%mesh%nn), &
              pb%slip(pb%mesh%nn), pb%v(pb%mesh%nn), pb%dv_dt(pb%mesh%nn), &
              pb%theta(pb%mesh%nn),  pb%dtheta_dt(pb%mesh%nn),  &
