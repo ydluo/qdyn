@@ -492,6 +492,14 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v,i_sigma_cpl)
   !$OMP END DO
 
   if (i_sigma_cpl == 1) then
+    !$OMP DO SCHEDULE(STATIC) 
+    do n = 1,k3f%nw
+      tmpx( 1 : k3f%nx ) = v( (n-1)*k3f%nx+1 : n*k3f%nx )
+      tmpx( k3f%nx+1 : k3f%nxfft ) = 0d0  ! convolution requires zero-padding
+      call my_rdft(1,tmpx,k3f%m_fft) 
+      tmpzk(n,:) = tmpx
+    enddo
+    !$OMP END DO
   
     ! convolution in Fourier domain is a product of complex numbers:
     ! K*V = (ReK + i*ImK)*(ReV+i*ImV) 

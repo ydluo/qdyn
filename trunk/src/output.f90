@@ -40,7 +40,7 @@ subroutine screen_init(pb)
 ! YD:  should we out put 2D mesh K?
 
     write(6,*)
-    write(6,*) '    it,  dt (secs), time (yrs), vmax (m/s)'
+    write(6,*) '    it,  dt (secs), time (yrs), vmax (m/s), sigma'
 
 end subroutine screen_init
 
@@ -54,7 +54,8 @@ subroutine screen_write(pb)
   use problem_class
   type (problem_type), intent(inout) :: pb
 
-  write(6,'(i7,x,3(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR, pb%v(pb%ot%ivmax)
+  write(6,'(i7,x,3(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,    &
+                            pb%v(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
 
 end subroutine screen_write
 
@@ -87,7 +88,7 @@ subroutine ot_init(pb)
   write(pb%ot%unit,'(a)')'# values at center:'
   write(pb%ot%unit,'(a)')'# 6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip'
   write(pb%ot%unit,'(a)')'# values at max(V) location:'
-  write(pb%ot%unit,'(a)')'# 11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip'
+  write(pb%ot%unit,'(a)')'# 11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip, 17=sigma'
 
   pb%ot%unit = 22
   write(pb%ot%unit,'(a)')'# Seismicity record:' 
@@ -98,7 +99,7 @@ subroutine ot_init(pb)
     if (pb%iot(i) == 1) then
       pb%ot%unit = pb%ot%unit+1
       write(pb%ot%unit,'(a,i10)')'# nx= ', i
-      write(pb%ot%unit,'(a)')'# 1=t, 2=V, 3=theta, 4=tau, 5=slip'
+      write(pb%ot%unit,'(a)')'# 1=t, 2=V, 3=theta, 4=tau, 5=slip, 6=sigma'
     endif
   enddo
 
@@ -148,7 +149,7 @@ subroutine ot_write(pb)
     pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
     pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
     pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
-    pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax)
+    pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
 
 
   pb%ot%unit = 22
@@ -169,7 +170,7 @@ subroutine ot_write(pb)
     if (pb%iot(i) == 1) then
       pb%ot%unit = pb%ot%unit+1
       write(pb%ot%unit,'(e24.16,4e14.6)') pb%time, pb%v(i),      &
-      pb%theta(i), pb%tau(i), pb%slip(i)
+      pb%theta(i), pb%tau(i), pb%slip(i), pb%sigma(i)
     endif
   enddo
 
@@ -197,7 +198,7 @@ if (mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
     do ixout=1,pb%mesh%nn,pb%ox%nxout
       write(pb%ox%unit,'(e15.7,e24.16,6e15.7)') pb%mesh%x(ixout),pb%time,pb%v(ixout),   &
         pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
-        pb%dtau_dt(ixout),pb%slip(ixout)
+        pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
     enddo
   else
     pb%ox%unit = pb%ox%unit + 1
@@ -207,7 +208,7 @@ if (mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
       write(pb%ox%unit,'(3e15.7,e24.14,6e15.7)')       &
         pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
         pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
-        pb%dtau_dt(ixout),pb%slip(ixout)
+        pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
     enddo
     close(pb%ox%unit)
   endif
@@ -226,12 +227,12 @@ endif
       write(20001+3*pb%ox%dyn_count2,'(3i10,e24.14)')   &
             pb%it,pb%ot%ivmax,pb%ox%count,pb%time
       write(20001+3*pb%ox%dyn_count2,'(2a)') '#  x  y  z  t  v  theta',  &
-            '  V./V  dtau  tau_dot  slip '
+            '  V./V  dtau  tau_dot  slip sigma'
       do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
         write(20001+3*pb%ox%dyn_count2,'(3e15.7,e24.14,6e15.7)')       &
           pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
           pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
-          pb%dtau_dt(ixout),pb%slip(ixout)
+          pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
       enddo
       close(20001+2*pb%ox%dyn_count2)
     endif
@@ -254,12 +255,12 @@ endif
       write(20002+3*pb%ox%dyn_count2,'(3i10,e24.14)')   &
             pb%it,pb%ot%ivmax,pb%ox%count,pb%time
       write(20002+3*pb%ox%dyn_count2,'(2a)') '#  x  y  z  t  v  theta',  &
-            '  V./V  dtau  tau_dot  slip '
+            '  V./V  dtau  tau_dot  slip sigma'
       do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
         write(20002+3*pb%ox%dyn_count2,'(3e15.7,e24.14,6e15.7)')       &
           pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
           pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
-          pb%dtau_dt(ixout),pb%slip(ixout)
+          pb%dtau_dt(ixout),pb%slip(ixout),pb%sigma(ixout)
       enddo
       close(20002+3*pb%ox%dyn_count2)
 
@@ -285,12 +286,12 @@ endif
       pb%ox%dyn_stat = 1
       OPEN (UNIT = 100, FILE='DYN_PRE.txt', STATUS='REPLACE')
       write(100,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
-      write(100,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip '
+      write(100,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip sigma '
       do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
         write(pb%ox%unit,'(3e15.7,e24.14,6e15.7)')       &
           pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
           pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
-          pb%dtau_dt(ixout),pb%slip(ixout)
+          pb%dtau_dt(ixout),pb%slip(ixout),pb%sigma(ixout)
       enddo
       pb%pot_pre = pb%pot
       CLOSE(100)
@@ -300,12 +301,12 @@ endif
       pb%ox%dyn_stat = 0
       OPEN (UNIT = 101, FILE='DYN_POST.txt', STATUS='REPLACE')
       write(101,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
-      write(101,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip '
+      write(101,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip sigma'
       do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
         write(pb%ox%unit,'(3e15.7,e24.14,6e15.7)')       &
           pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
           pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
-          pb%dtau_dt(ixout),pb%slip(ixout)
+          pb%dtau_dt(ixout),pb%slip(ixout),pb%sigma(ixout)
       enddo
       CLOSE(101)
       if ((pb%pot-pb%pot_pre)*pb%smu >= pb%DYN_M) then
