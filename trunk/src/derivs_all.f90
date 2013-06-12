@@ -37,7 +37,7 @@ subroutine derivs(time,yt,dydt,pb)
   ! dtheta/dt = dydt(1::pb%neqs)
 
   ! compute shear stress rate from elastic interactions, for 0D, 1D & 2D
-  call compute_stress(pb%dtau_dt,pb%dsigma_dt,pb%kernel,yt(2::pb%neqs)-pb%v_star)
+  call compute_stress(pb%dtau_dt,dydt(3::pb%neqs),pb%kernel,yt(2::pb%neqs)-pb%v_star)
 
   ! JPA Coulomb
   ! v = 0d0
