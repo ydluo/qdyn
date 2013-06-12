@@ -103,6 +103,10 @@ subroutine do_bsstep(pb)
   yt(1::pb%neqs) = pb%theta
   dydt(2::pb%neqs) = pb%dv_dt
   dydt(1::pb%neqs) = pb%dtheta_dt
+  if ( pb%neqs == 3) then           ! Temp solution for normal stress coupling
+    yt(3::pb%neqs) = pb%sigma
+    dydt(3::pb%neqs) = pb%dsigma_dt
+  endif
 
   ! this update of derivatives is only needed to set up the scaling (yt_scale)
   call derivs(pb%time,yt,dydt,pb)
@@ -122,6 +126,10 @@ subroutine do_bsstep(pb)
   pb%theta = yt(1::pb%neqs)
   pb%dv_dt = dydt(2::pb%neqs)
   pb%dtheta_dt = dydt(1::pb%neqs) 
+  if ( pb%neqs == 3) then           ! Temp solution for normal stress coupling
+    pb%sigma = yt(3::pb%neqs)  
+    pb%dsigma_dt = dydt(3::pb%neqs)  
+  endif
   
 end subroutine do_bsstep
 
@@ -141,9 +149,6 @@ subroutine update_field(pb)
 
   ! Update slip, stress. 
   pb%slip = pb%slip + pb%v*pb%dt_did
-  if (pb%kernel%i_sigma_cpl == 1) then
-    pb%sigma = pb%sigma + pb%dsigma_dt*pb%dt_did
-  endif
   pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb)
   ! update potency and potency rate
   pb%pot=0d0;
