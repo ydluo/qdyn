@@ -138,7 +138,7 @@
 %
 % AUTHOR	Jean-Paul Ampuero	ampuero@gps.caltech.edu
 % MODIFIED by Yingdi LUO        luoyd@gps.caltech.edu
-% Last Mod 12/19/2012
+% Last Mod 07/15/2013
 
 function [pars,ot,ox] = qdyn(mode,varargin)
 
