@@ -234,7 +234,7 @@ endif
           pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
           pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
       enddo
-      close(20001+2*pb%ox%dyn_count2)
+      close(20001+3*pb%ox%dyn_count2)
     endif
 
     if (pb%ox%dyn_stat2 == 1) then

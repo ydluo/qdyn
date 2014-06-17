@@ -23,7 +23,7 @@ d.vd=dd.data(:,7);
 d.dtau=dd.data(:,8);
 d.dtaud=dd.data(:,9);
 d.d=dd.data(:,10);
-
+d.sigma=dd.data(:,11);
 
 
 return

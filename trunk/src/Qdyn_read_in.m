@@ -27,6 +27,8 @@ d.THETA_LAW=rdat(1);
 rline=fgetl(fid); rdat = sscanf(rline,'%f');
 d.RNS_LAW=rdat(1);
 rline=fgetl(fid); rdat = sscanf(rline,'%f');
+d.SIGMA_CPL=rdat(1);
+rline=fgetl(fid); rdat = sscanf(rline,'%f');
 d.NEQUS=rdat(1);
 rline=fgetl(fid); rdat = sscanf(rline,'%f');
 d.NTOUT=rdat(1);
@@ -60,7 +62,7 @@ d.DYN_TH_OFF=rdat(3);
 fclose(fid);
 
 
-dd=importdata('qdyn.in',' ',13+d.NW);
+dd=importdata('qdyn.in',' ',14+d.NW);
 d.SIGMA=dd.data(:,1);
 d.V_0=dd.data(:,2);
 d.TH_0=dd.data(:,3);
@@ -71,7 +73,8 @@ d.V1=dd.data(:,7);
 d.V2=dd.data(:,8);
 d.MU_SS=dd.data(:,9);
 d.V_SS=dd.data(:,10);
-
+d.IOT=dd.data(:,11);
+d.IASP=dd.data(:,12);
 
 
 return
