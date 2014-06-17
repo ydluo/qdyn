@@ -497,4 +497,5 @@ ox.vd= cosa(:,:,5);
 ox.dtau = cosa(:,:,6);
 ox.dtaud = cosa(:,:,7);
 ox.d = cosa(:,:,8);
+ox.sigma = cosa(:,:,9);
 
