@@ -6,7 +6,7 @@
 # pablo
 EXEC = $(HOME)/bin/qdyn 
 
-# 2. Uncomment/add/modify the lines corresponding to your compiler:
+# 2. Comment/uncomment/add/modify the lines corresponding to your compiler:
 
 # GNU 
 #F90 = g95

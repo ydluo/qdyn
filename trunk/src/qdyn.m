@@ -93,7 +93,7 @@
 %		APER = amplitude of additional periodic loading (in Pa)
 %		TPER = period of additional periodic loading (in s)
 %%%%%%%%%%% FOR Dynamic Code        
-%       DYN_FLAG = flag intergrating with dynamic code
+%       DYN_FLAG = flag integrating with dynamic code
 %           0 = no dynamic
 %           1 = output and stop QDYN (from DYN_SKIP+1 th event larger than DYN_M)
 %       DYN_M = Target Seismic Moment of a dynamic event
@@ -138,7 +138,7 @@
 %
 % AUTHOR	Jean-Paul Ampuero	ampuero@gps.caltech.edu
 % MODIFIED by Yingdi LUO        luoyd@gps.caltech.edu
-% Last Mod 07/15/2013
+% Last Mod 10/14/2014
 
 function [pars,ot,ox] = qdyn(mode,varargin)
 
