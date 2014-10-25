@@ -1,4 +1,4 @@
-% a brittle asperity (velocity-weakening) surrounded by creep (velocity-strengthening)
+% Interacting of two brittle asperities (velocity-weakening) surrounded by creep (velocity-strengthening)
 
 Lasp = 4; % asperity "size" normalized by Lc = mu*Dc/((b-a)*sigma)
 Lasp_2 = 2; % asperity "size" normalized by Lc = mu*Dc/((b-a)*sigma)
