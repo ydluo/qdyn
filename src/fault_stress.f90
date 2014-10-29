@@ -113,11 +113,11 @@ subroutine init_kernel_2D(k,mu,m)
     enddo
     k%kernel(2) = tau_co*sqrt(m%nn**2/4.d0+wl2) ! Nyquist
      
+ !- Read coefficient I(n) from pre-calculated file.
   elseif (k%finite == 1) then
-    !- Read coefficient I(n) from pre-calculated file.
-    !open(57,file='~/2D_RUPTURE/STATIC/Matlab/kernel_I_32768.tab')
+!NOTE: users need to update the path and file name below
     open(57,file='~/3D_RUPTURE/qdyn/trunk/src/kernel_I_32768.tab')
-    if (k%nnfft/2>32768) stop 'Finite kernel table is too small'
+    if (k%nnfft/2>32768) stop 'FINITE=1: finite kernel table is too small. See the QDYN manual for further instructions.'
     do i=1,k%nnfft/2-1
       read(57,*) k%kernel(2*i+1)
     enddo

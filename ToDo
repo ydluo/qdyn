@@ -1,25 +1,34 @@
 (Priorities are not indicated)
 
 Physics:
-+ slip-dependent friction term
 + coupling slip to normal stress
++ slip-dependent friction law (Olivier Lengline is working on it)
++ in 2D: finite slab geometry (Pablo)
++ kernel for fault in infinite medium
 + variable strike
 + triangular elements: Meade's code (buggy?) or Gausian quadrature of Okada point sources
 + layered media: EDKS (Luis Rivera) or Relax (Sylvain Barbot)?
 + heterogeneous media: import kernel from Relax, Pylith, SPECFEM3D ?
++ set two spring-blocks model
 
 Code engineering and optimization:
-+ inputs as fortran namelists
++ double FFT for planar faults in infinite medium
 + MPI parallelization
-+ hierarchical matrix techniques
++ hierarchical matrix techniques (interface to Andrew Bradley's code)
++ inputs as fortran namelists
 + use object oriented matlab
 
 Outputs:
 + binary outputs
 + more options to set output times: at regular times (with switch to short time during events), at regular increment of log(v)
-+ matlab functions to read snapshots one by one
 
 Packaging:
-+ documentation: find a tool that allows automated actions (e.g. sinc with Matlab help)
++ documentation: automate sinc between manual doc and matlab help
 + add GPL license and copyright files
-
++ solve issue with Num.Rec. code license
++ clean up "download" area in webpage
++ add names (Windows / Mac) to executables in QDYN_release/executables download
++ add acknowledgements: Rubin for early code, Miyazaki for Okada's code, Ooura's fft
++ document equations and friction laws in manual
++ make it work with Octave (change output format, add note in manual)
++ set the path in fault_stress.f90 and qdyn.m via the Makefile, instead of manually

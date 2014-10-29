@@ -142,6 +142,7 @@ subroutine ot_write(pb)
   integer :: i
 
   pb%ot%unit = 18
+  !write(pb%ot%unit,'(g0.16,16(",",g0.6))') pb%time, pb%ot%llocnew*pb%mesh%dx,  & ! for Octave?
   write(pb%ot%unit,'(e24.16,16e14.6)') pb%time, pb%ot%llocnew*pb%mesh%dx,  &
     pb%ot%lcnew*pb%mesh%dx, pb%pot, pb%pot_rate,    &
     pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
