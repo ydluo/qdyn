@@ -1,135 +1,170 @@
-% QDYN		Quasi-dynamic earthquake cycles on fault embedded in elastic medium
+% QDYN		Quasi-dynamic earthquake cycles on a fault embedded in a
+%		homogeneous, linear, isotropic elastic medium.
 %               This is a Matlab wrapper for the Fortran code qdyn.f90
-%               Friction Law with cut-off Velocities by Okubo, velocity
-%               weakening at low slip_v and strengthening at high slip_v
 %		Features:
-% 		+ rate-and-state friction 
-%   			Mu = Muss + a*ln(V/Vss) + b*ln(Theta/Thetass)
-%           OR with velocity weaking to strengtherning transition (cutting-off velocity)
-%	  	  with ageing law:
+% 		+ rate-and-state friction coefficient
+%   			Mu(V,Theta) = Muss + a*ln(V/Vss) + b*ln(Theta/Thetass)
+%           	  or with transitions between velocity-weakening and strengthening 
+%		  via cut-off velocities:
+%   			Mu = Muss - a*ln(1+V1/V) + b*ln(1+Theta*Dc/V2)
+%	  	+ evolution equations for the state variable: ageing law
 %   			dTheta/dT = 1-V*Theta/Dc
 %		  or slip law
 %   			dTheta/dT = -V*Theta/Dc * log(V*Theta/Dc)
 %                 or ageing law in the self-accelerating approximation:
 %   			dTheta/dT = -V*Theta/Dc
-%		+ spatially non-uniform a,b,Dc,v(0),theta(0),sigma,v1,v2
+%		+ spatially non-uniform friction parameters a, b, Dc, v1, v2 
+%		  and initial conditions v(0), theta(0), sigma(0)
 %		+ quasistatic stress balance with radiation damping, no inertia, no elastodynamics
-%		+ two possible boundary conditions: 
-%			. the fault is periodic along-strike and is loaded by steady displacement
-%			  at a fault-normal distance W
+%		+ geometries: spring-block, straight linear fault in a 1D elastic medium, 
+%		  or 2D fault surface with depth-dependent dip angle in a 3D elastic half-space
+%		+ boundary/loading conditions
+%			. (in 2D) slip can be spatially periodic along-strike 
+%			  and the fault is loaded by steady displacement at a distance W from the fault
 %			  (crustal plane model, mimics a finite seismogenic depth W)
-%		  	. the fault area governed by rate-and-state friction has a 
-%			  finite length and is loaded by steady sliding on the rest of the fault
+%		  	. or (in 2D and 3D) the fault area governed by rate-and-state friction has a 
+%			  finite size and is loaded by steady sliding on the rest of the fault
 %
 % SYNTAX	[pars,ot,ox] = qdyn(mode,[parsin],['Property',Value,...])
 %
 % INPUTS 	mode	'set'	gives the default parameter structure (pars), 
 %				overrides by fields present in structure parsin
 %				or by Property/Value pairs
-%           'write' writes qdyn input file only
+%			'write' writes qdyn input file only
 %			'run'	sets parameters and runs a simulation
 %			'read' 	reads parameters and outputs from a previous simulation
 %		parsin	parameter structure to override the default parameters 
 %		'Prop' 	property to be set, a fieldname of the parameter structure
 %		Value   of the above property, overrides default and parsin
 %		
-%		These are the parameters that can be set through 'parsin' or 'Prop/Value' pairs:
+%		The parameters that can be set through 'parsin' or 'Prop/Value' pairs are listed below.
+%		Their default values can be obtained by running:
+%			pars = qdyn(‘set’)
 %
-%		MESHDIM = mesh dimension, 
+%		Parameters defining the geometry of the problem and loading:
+%		MESHDIM	dimension of the problem:
 %			0 = spring-block system
-%			1 = 1D fault, 2D medium
-%			2 = 2D fault, 3D medium
-%           4 = 2D fault, 3D medium, 2D-FFT for fault stress
-%		L = fault length (L scales the stiffness for the spring-block case)
-%		FINITE = boundary conditions: (in 2D case)
-%			0 = periodic along-strike, steady loading at distance W from the fault
-%			1 = rate-and-state fault of finite length (L) surrounded by steady slip
-%		W  = Length along-dip (in 2D case,ignored if FINITE=1 )
-%		MU = shear modulus
-%		LAM = elastic modulus LAMBDA (for 3D simualtion)
-%		VS = shear wave velocity. If VS=0 radiation damping is turned off
-%		V1 = cut-off velocity of direct effect (m/s)
-%		V2 = cut-off velocity of evolution effect (m/s), controls the transition
+%			1 = 1D fault in a 2D elastic medium
+%			2 = 2D fault in a 3D medium
+%           		4 = same as 2 but fault stresses computed via 2DFFT
+%			    (only if the grid spacings and dip angle are uniform)
+%		MU 	shear modulus (Pa)
+%		LAM 	elastic modulus LAMBDA for 3D simulations (Pa)
+%		VS 	shear wave velocity (m/s). If VS=0 radiation damping is turned off
+%		L 	fault length if MESHDIM=1
+%		    	stiffness is MU/L if MESHDIM=0
+%		FINITE	boundary conditions if MESHDIM=1
+%			0 = fault is infinitely long but slip is spatially periodic with period L,
+%			    loaded by steady displacement at distance W from the fault
+%			1 = fault is infinitely long but only a segment of length L has
+%			    rate-and-state friction, the rest has steady slip. If you get the
+%			    error message “finite kernel is too small”, create a larger kernel file 
+%			    using the function TabKernelFiniteFlt.m, update the file name in
+%			    subroutine init_kernel_2D of src/fault_stress.f90, and recompile
+%		W  	distance between displacement loading and fault if MESHDIM=1 and FINITE=0
+%		DIP_W	dipping angle (degree). If depthdependent, values must be given
+%			from deeper to shallower depth.
+%		Z_CORNER fault bottom depth (km, negative down)
+%		SIGMA_CPL normal stress coupling
+%			0 = disable
+%			1 = enable
+%		APER 	amplitude of additional time-dependent oscillatory shear stress loading (Pa)
+%		TPER 	period of oscillatory loading (s)
+%
+%		Rate-and-state friction parameters:
+%		A  	amplitude of direct effect
+%		B  	amplitude of evolution effect
+%		DC 	characteristic slip distance (m)
+%		MU_SS	reference steady-state friction coefficient
+%		V_SS	reference steady-state slip velocity (m/s)
+%		TH_SS	reference steady-state state (default: TH_SS=DC/V_SS)
+%		RNS_LAW	type of rate-and-state friction law:
+%			0 = original
+%			1 = with cutt-off velocities
+%		V1 	cut-off velocity of direct effect (m/s)
+%		V2 	cut-off velocity of evolution effect (m/s), controls the transition
 %			from weakening to strengtherning when a<b. V2 should be <= V1
-%			** to eliminate the transition set V1 and V2 to large values (e.g 100) **
-%		NX  = number of fault nodes (elements) along-strike (3D)
-%		NW  = number of fault nodes (elements) along-dip (3D) 
-%		N  = number of fault nodes (elements)
-%		TMAX = total simulation time (in seconds)
-%		NSTOP = stop at (0) t=TMAX, (1) end of localization or (2) first slip rate peak
-%		DTTRY = first trial timestep (in seconds)
-%		DTMAX = maximum timestep (0=unrestricted)
-%		ACC = solver accuracy
-%		NXOUT = spatial interval (number of nodes) for snapshot outputs
-%		NXOUT_DYN = spatial interval (number of nodes) for dynamic snapshot outputs
-%		OX_SEQ = Sequential snapshot outputs
-%			= 0 one ox output file (fort.19) contains all snapshots 
-%			= 1  separate, sequential ox file outputs (fort.1001, ...)
-%		OX_DYN = Sequential snapshot of dynamic events
-%			= 0 disable 
-%			= 1  enable (event start fort.20001+3i, end fort.20002+3i, rupture time fort.20003+3i)
-%		NTOUT = temporal interval (number of iterations) for snapshot outputs
-%		A  = amplitude of direct effect in rate-and-state friction 
-%		B  = amplitude of evolution effect in rate-and-state friction
-%		DC = characteristic slip in rate-and-state friction
-%		MU_SS = reference steady-state friction coefficient
-%		V_SS = reference steady-state slip velocity
-%		TH_SS = reference steady-state state (normally TH_SS=DC/V_SS)
-%		THETA_LAW = evolution law for the state variable:
+%		THETA_LAW type of evolution law for the state variable:
 %			0 = ageing in the "no-healing" approximation
 %			1 = ageing law
 %			2 = slip law
-%		RNS_LAW 0 = original rate-and-state friction law
-%			1 = rate-and-state frction with cutting-off velocity
+%
+%		Initial conditions:
 %		SIGMA = effective normal stress
-%		SIGMA_CPL 0 = no normal stress coupling
-%			1 = enable normal stress coupling
-%		DW = along-dip length (km) of every node along-dip, from deeper to shallower
-%		DIP_W = dipping angel (degree) of every node along-dip, from deeper to shallower
-%		Z_CORNER = - depth (km) of bottom left node (3D)
-%		IC = ot output sampling node
 %		V_0 = initial slip velocity
 %		TH_0 = initial state 
-%		APER = amplitude of additional periodic loading (in Pa)
-%		TPER = period of additional periodic loading (in s)
-%%%%%%%%%%% FOR Dynamic Code        
-%       DYN_FLAG = flag integrating with dynamic code
-%           0 = no dynamic
-%           1 = output and stop QDYN (from DYN_SKIP+1 th event larger than DYN_M)
-%       DYN_M = Target Seismic Moment of a dynamic event
-%       DYN_SKIP = how many dynamic events to skip (for warming up)
-%       DYN_th_on = threshold to trigger the detection of a dynamic event
-%       DYN_th_off = threshold to end the detection of a dynamic event
+%
+%		Discretization and accuracy parameters:
+%		N	number of fault elements if MESHDIM=1
+%		NX	number of fault elements along-strike in 3D
+%		NW 	number of fault elements along-dip in 3D
+%		DW 	along-dip length (km) of each element along-dip, from deeper to shallower
+%		TMAX 	total simulation time (s)
+%		NSTOP 	stopping criterion:
+%			0 = stop at t=TMAX
+%			1 = stop end of slip localization phase
+%			2 = stop at first slip rate peak
+%		DTTRY 	first trial timestep (s)
+%		DTMAX	maximum timestep (0=unrestricted)
+%		ACC	solver accuracy
+%
+%		Output control parameters:
+%		OX_SEQ 	type of snapshot outputs
+%			0 = all snapshots in a single output file (fort.19)
+%			1 = one output file per snapshot (fort.1001, ...)
+%		NXOUT 	spatial interval (in number of elements) for snapshot outputs 
+%		NTOUT 	temporal interval (number of time steps) for snapshot outputs
+%		OX_DYN	output specific snapshots of dynamic events defined by thresholds
+%			on peak slip velocity DYN_TH_ON and DYN_TH_OFF (see below) 
+%			0 = disable 
+%			1 = enable outputs for event #i:
+%				event start: fort.19998+3i
+%				event end: fort.19999+3i
+%				rupture time: fort.20000+3i
+%		NXOUT_DYN spatial interval (in number of elements) for dynamic snapshot outputs
+% 		DYN_TH_ON peak slip rate threshold defining the beginning of a dynamic event
+%		DYN_TH_OFF peak slip rate threshold defining the end of a dynamic event
+%		IC = ot output sampling node
+%
+%		Parameters for integration with SPECFEM3D dynamic code:
+%		DYN_FLAG integration with dynamic code
+%			0 = disable
+%			1 = enable: stop QDYN at the DYN_SKIP+1-th dynamic event 
+%			    with seismic moment > DYN_M
+%		DYN_M	target seismic moment of a dynamic event
+%		DYN_SKIP number of dynamic events to skip (warm up cycles)
 %
 % OUTPUTS 	pars	structure containing the parameters listed above, and:
 %			X,Y,Z = fault coordinates
 %		ot	structure containing time series outputs 
-%			at the point of maximum slip rate
 %			ot.t	output times
 %			ot.locl	localization length (distance between stressing rate maxima)
 %			ot.cl	crack length (distance between slip rate maxima)
 %			ot.p	seismic potency
 %			ot.pdot	seismic potency rate
-%			ot.xm	location of maximum slip rate 
+%			-- outputs at the fault location with maximum slip rate:
+%			ot.xm	location of maximum slip rate point
 %			ot.v	maximum slip rate 
-%			ot.th	state variable theta at xm
-%			ot.om 	slip_rate*theta/dc at xm
-%			ot.tau	stress at xm
-%			ot.d	slip at xm
-%			ot.vc	slip rate at center
-%			ot.thc	state variable theta at center
-%			ot.omc 	slip_rate*theta/dc at center
-%			ot.tauc	stress at center
-%			ot.dc	slip at center
+%			ot.th	state variable theta
+%			ot.om 	(slip rate)*theta/dc
+%			ot.tau	stress
+%			ot.d	slip
+%			-- outputs at selected fault node with index pars.ic
+%			ot.vc	slip rate
+%			ot.thc	state variable theta
+%			ot.omc 	slip_rate*theta/dc
+%			ot.tauc	shear stress
+%			ot.dc	slip
 %		ox	structure containing snapshot outputs 
 %			ox.x	fault coordinates (for 2D)
 %			ox.t 	output times
 %			ox.v	slip rate 
-%			ox.th	state variable theta
+%			ox.th	state variable
 %			ox.vd	slip acceleration
-%			ox.dtau stress (-initial)
-%			ox.dtaud stress rate
+%			ox.dtau shear stress relative to initial value
+%			ox.dtaud shear stress rate
 %			ox.d 	slip
+%			ox.sigma effective normal stress
 %
 % EXAMPLE	A run with initial velocity slightly above the default steady state:
 %			p = qdyn('set');
@@ -138,7 +173,7 @@
 %
 % AUTHOR	Jean-Paul Ampuero	ampuero@gps.caltech.edu
 % MODIFIED by Yingdi LUO        luoyd@gps.caltech.edu
-% Last Mod 10/14/2014
+% Last Mod 10/29/2014
 
 function [pars,ot,ox] = qdyn(mode,varargin)
 
