@@ -28,8 +28,8 @@ p.Z_CORNER=-100e3;
 p.N=p.NX*p.NW;
 p.DW(1:p.NW)=p.W/p.NW;
 p.DIP_W(1:p.NW)=30.0;
-twm=2;
-ts=0.5;
+twm=0.5;
+%ts=0.5;
 p.ACC = 1e-14;
 
 %------------------------------
@@ -68,23 +68,23 @@ p.TMAX=twm*year;
 % p.V_0(2) = 1;
 
 
-p.NTOUT=200;
+p.NTOUT=10;
 p.NXOUT=1;
 p.NSTOP=0;
 
-[p,ot0,ox0]  = qdyn('run',p);
-semilogy(ot0.t/year,ot0.v)
+[p,ot1,ox1]  = qdyn('run',p);
+semilogy(ot1.t/year,ot1.v)
 xlabel('Time (years)');
 ylabel('Vmax');
 % 
-   p.TMAX = ts*year;  
-   p.NTOUT=10;
+%   p.TMAX = ts*year;  
+%   p.NTOUT=10;
 % 
-   p.V_0 = ox0.v(:,end);
-   p.TH_0= ox0.th(:,end);
+%   p.V_0 = ox0.v(:,end);
+%   p.TH_0= ox0.th(:,end);
 %   %p.V_0 =  (ox1.v(:,end)+ox1.v(end:-1:1,end))/2;
 %   %p.TH_0=  (ox1.th(:,end)+ox1.th(end:-1:1,end))/2;
-   [p,ot1,ox1]=qdyn('run',p);
+%   [p,ot1,ox1]=qdyn('run',p);
 
 save(filename)  
 
