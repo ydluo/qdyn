@@ -5,11 +5,15 @@ DEVELOPING:
 
   + Do "svn update" regularly, very often
   + Do "svn update" before any "svn commit"
+  + Run "devel_tools/mymakedepend.perl" if you have added a new module or a new "use" command
+    (this perl script updates the list of module dependencies in the file Makefile.depend)
+  + If you modified the usage of qdyn.m, document it in qdyn.m and in the manual
+  + If you modified the manual, update doc/QDYN_man.pdf in the svn repository
+
+  + Use the ToDo list file
   + Look often for comment lines in the code that contain the keyword "JPA". These are questions, issues 
     or suggestions noted by J.-P. Ampuero. They need to be addressed.
   + Learn from other developer's modifications: browse code changes online
-  + Run "devel_tools/mymakedepend.perl" if you have added a new module or a new "use" command
-    (this perl script update the list of module dependencies in the file Makefile.depend)
 
 
 CODE STYLE CONVENTIONS :

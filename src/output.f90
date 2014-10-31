@@ -138,12 +138,19 @@ end subroutine ox_init
 subroutine ot_write(pb)
  
   use problem_class
+  use constants, only : OCTAVE_OUTPUT
   type (problem_type), intent(inout) :: pb
   integer :: i
+  character(30) :: ot_fmt
 
   pb%ot%unit = 18
-  !write(pb%ot%unit,'(g0.16,16(",",g0.6))') pb%time, pb%ot%llocnew*pb%mesh%dx,  & ! for Octave?
-  write(pb%ot%unit,'(e24.16,16e14.6)') pb%time, pb%ot%llocnew*pb%mesh%dx,  &
+  if (OCTAVE_OUTPUT) then
+   ! for Octave: comma as field delimiter and no spaces
+    ot_fmt = '(g0.16,16(",",g0.6))'
+  else
+    ot_fmt = '(e24.16,16e14.6)'
+  endif
+  write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
     pb%ot%lcnew*pb%mesh%dx, pb%pot, pb%pot_rate,    &
     pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
     pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
