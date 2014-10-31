@@ -510,27 +510,45 @@ else
   namex = 'fort.19';
 end
 
-% time series
-[ot.t, ot.locl, ot.cl, ot.p, ot.pdot, ...
- ot.vc, ot.thc, ot.omc, ot.tauc, ot.dc, ...
- ot.xm, ot.v, ot.th, ot.om, ot.tau, ot.d, ot.sigma ] = ...
-  textread(namet,'','headerlines',6);
+if uimatlab
+  % time series
+  [ot.t, ot.locl, ot.cl, ot.p, ot.pdot, ...
+   ot.vc, ot.thc, ot.omc, ot.tauc, ot.dc, ...
+   ot.xm, ot.v, ot.th, ot.om, ot.tau, ot.d, ot.sigma ] = ...
+    textread(namet,'','headerlines',6);
+  
+  % snapshots
+  fid=fopen(namex);
+  NSX=fscanf(fid,'# nx=%u');
+  fclose(fid);
+  cosa = textread(namex,'','commentstyle','shell');
+  ncosa = size(cosa);
+  NST=ncosa(1)/NSX;
+  cosa=reshape(cosa,NSX,NST,ncosa(2));
+  ox.x = cosa(:,1,1);
+  ox.t = cosa(1,:,2)';
+  ox.v = cosa(:,:,3);
+  ox.th= cosa(:,:,4);
+  ox.vd= cosa(:,:,5);
+  ox.dtau = cosa(:,:,6);
+  ox.dtaud = cosa(:,:,7);
+  ox.d = cosa(:,:,8);
+  ox.sigma = cosa(:,:,9);
 
-% snapshots
-fid=fopen(namex);
-NSX=fscanf(fid,'# nx=%u');
-fclose(fid);
-cosa = textread(namex,'','commentstyle','shell');
-ncosa = size(cosa);
-NST=ncosa(1)/NSX;
-cosa=reshape(cosa,NSX,NST,ncosa(2));
-ox.x = cosa(:,1,1);
-ox.t = cosa(1,:,2)';
-ox.v = cosa(:,:,3);
-ox.th= cosa(:,:,4);
-ox.vd= cosa(:,:,5);
-ox.dtau = cosa(:,:,6);
-ox.dtaud = cosa(:,:,7);
-ox.d = cosa(:,:,8);
-ox.sigma = cosa(:,:,9);
+else 
+  [ot,ox] = read_qdyn_out_Octave(namet,namex)
+end
 
+%---
+% From http://www.mathworks.com/matlabcentral/fileexchange/23868-is-this-matlab-or-octave-
+function uiIsMatLab = uimatlab
+
+uiIsMatLab = false;
+LIC = license('inuse');
+for elem = 1:numel(LIC)
+    envStr = LIC(elem).feature;
+    if strcmpi(envStr,'matlab')
+        uiIsMatLab = true;
+        break
+    end
+end

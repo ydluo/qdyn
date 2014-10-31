@@ -23,12 +23,10 @@ Outputs:
 + more options to set output times: at regular times (with switch to short time during events), at regular increment of log(v)
 
 Packaging:
-+ documentation: automate sinc between manual doc and matlab help
-+ add GPL license and copyright files
-+ solve issue with Num.Rec. code license
-+ clean up "download" area in webpage
-+ add names (Windows / Mac) to executables in QDYN_release/executables download
-+ add acknowledgements: Rubin for early code, Miyazaki for Okada's code, Ooura's fft
++ automatically update "modification date" in google doc user's manual with Google Apps Script
++ add copyright notices (see http://www.gnu.org/copyleft/gpl.html)
++ replace Num.Rec. code by something else (Netlib?)
 + document equations and friction laws in manual
-+ make it work with Octave (change output format, add note in manual)
-+ set the path in fault_stress.f90 and qdyn.m via the Makefile, instead of manually
++ set the path in constants.f90 and qdyn.m via the Makefile, instead of manually
++ use grive to update the google drive repository
++ get a DOI through https://zenodo.org/
