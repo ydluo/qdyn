@@ -64,7 +64,7 @@
 %		W  	distance between displacement loading and fault if MESHDIM=1 and FINITE=0
 %		DIP_W	dipping angle (degree). If depthdependent, values must be given
 %			from deeper to shallower depth.
-%		Z_CORNER fault bottom depth (km, negative down)
+%		Z_CORNER fault bottom depth (m, negative down)
 %		SIGMA_CPL normal stress coupling
 %			0 = disable
 %			1 = enable
@@ -98,7 +98,7 @@
 %		N	number of fault elements if MESHDIM=1
 %		NX	number of fault elements along-strike in 3D
 %		NW 	number of fault elements along-dip in 3D
-%		DW 	along-dip length (km) of each element along-dip, from deeper to shallower
+%		DW 	along-dip length (m) of each element along-dip, from deeper to shallower
 %		TMAX 	total simulation time (s)
 %		NSTOP 	stopping criterion:
 %			0 = stop at t=TMAX
