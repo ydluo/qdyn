@@ -2,6 +2,4 @@
 
 = Downloads =
 
-*[https://drive.google.com/folderview?id=0B13IeWPRjYq8c2h5SGFsWDVyZ1k&usp=sharing Click here]* to download code source, examples and pre-compiled executable for Windows and Mac OS.
-
-
+*[https://drive.google.com/folderview?id=0B13IeWPRjYq8c2h5SGFsWDVyZ1k&usp=sharing Click here]* to download code source, examples and pre-compiled executables for Windows and Mac OS.
