@@ -540,14 +540,15 @@ else
 end
 
 %---
-% From http://www.mathworks.com/matlabcentral/fileexchange/23868-is-this-matlab-or-octave-
+% adapted from http://www.mathworks.com/matlabcentral/fileexchange/23868-is-this-matlab-or-octave-
 function uiIsMatLab = uimatlab
 
 uiIsMatLab = false;
 LIC = license('inuse');
 for elem = 1:numel(LIC)
     envStr = LIC(elem).feature;
-    if strcmpi(envStr,'matlab')
+%    if strcmpi(envStr,'matlab')
+    if ~isempty(strfind(lower(envStr),'matlab'))
         uiIsMatLab = true;
         break
     end
