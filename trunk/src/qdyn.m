@@ -213,7 +213,7 @@ DW=1e3;
 DIP_W=30.0;
 
 Z_CORNER=-50e3;
-IC=512;         %output ot coordinate
+IC=1;         %output ot coordinate
 TMAX = 6*month;  % total simulation time
 NSTOP = 0;	% stop at (0) tmax, (1) end of localization or (2) max slip rate
 DTTRY = 1e2;   % first trial timestep
