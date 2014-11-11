@@ -125,6 +125,9 @@
 % 		DYN_TH_ON peak slip rate threshold defining the beginning of a dynamic event
 %		DYN_TH_OFF peak slip rate threshold defining the end of a dynamic event
 %		IC = ot output sampling node
+%       IOT = Indices of additional elements for time series outputs, set IOT(i) = 1 to enable time series outputs at i-th element:
+%               seperately outputs in fort.10000++
+%       IASP = Flags for elements (will not affect outputs)
 %
 %		Parameters for integration with SPECFEM3D dynamic code:
 %		DYN_FLAG integration with dynamic code
@@ -173,7 +176,7 @@
 %
 % AUTHOR	Jean-Paul Ampuero	ampuero@gps.caltech.edu
 % MODIFIED by Yingdi LUO        luoyd@gps.caltech.edu
-% Last Mod 10/29/2014
+% Last Mod 11/11/2014
 
 function [pars,ot,ox] = qdyn(mode,varargin)
 
