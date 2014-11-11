@@ -85,7 +85,7 @@ subroutine ot_init(pb)
   pb%ot%unit = 18 
   write(pb%ot%unit,'(a)')'# macroscopic values:'
   write(pb%ot%unit,'(a)')'# 1=t,2=loc_size,3=crack_size,4=potcy,5=pot_rate'
-  write(pb%ot%unit,'(a)')'# values at center:'
+  write(pb%ot%unit,'(a)')'# values at selected point:'
   write(pb%ot%unit,'(a)')'# 6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip'
   write(pb%ot%unit,'(a)')'# values at max(V) location:'
   write(pb%ot%unit,'(a)')'# 11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip, 17=sigma'
