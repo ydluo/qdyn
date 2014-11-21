@@ -345,7 +345,9 @@ switch mode
     % export qdyn.in
     fid=fopen('qdyn.in','w');
     fprintf(fid,'%u     meshdim\n' , MESHDIM); 
-
+    if SIGMA_CPL == 1
+        NEQS = 3;
+    end
     if MESHDIM == 2 || MESHDIM == 3 || MESHDIM == 4;
       fprintf(1, 'MESHDIM = %d\n', MESHDIM);
       fprintf(fid,'%u %u     NX, NW\n' , NX, NW);      
