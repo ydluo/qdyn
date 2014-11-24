@@ -26,10 +26,10 @@
 % EXAMPLE  	TabKernelFiniteFlt(4096,'kernel_I_4096');
 %
 function I = TabKernelFiniteFlt(nmax,name)
-
+atol = 1e-14;
 I = zeros(nmax,1);
 for n=1:nmax,
-  I(n) = quadl(@mysinc,(n-1)*pi,n*pi);
+  I(n) = integral(@mysinc,(n-1)*pi,n*pi,'AbsTol',atol);
 end
 I = cumsum(I);
 I = 2/pi*I(:);
