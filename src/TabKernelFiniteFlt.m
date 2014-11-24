@@ -29,7 +29,10 @@ function I = TabKernelFiniteFlt(nmax,name)
 atol = 1e-14;
 I = zeros(nmax,1);
 for n=1:nmax,
-  I(n) = integral(@mysinc,(n-1)*pi,n*pi,'AbsTol',atol);
+  I(n) = integral(@mysinc,(n-1)*pi,n*pi,'AbsTol',atol);  
+    %discontinued using of deprecated function quadl, 
+    %benchmarked with a differnce smaller than 9th significant digit 
+    %Do we need a higher precision integral tool?
 end
 I = cumsum(I);
 I = 2/pi*I(:);
