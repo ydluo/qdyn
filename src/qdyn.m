@@ -124,10 +124,17 @@
 %		NXOUT_DYN spatial interval (in number of elements) for dynamic snapshot outputs
 % 		DYN_TH_ON peak slip rate threshold defining the beginning of a dynamic event
 %		DYN_TH_OFF peak slip rate threshold defining the end of a dynamic event
-%		IC = ot output sampling node
-%       IOT = Indices of additional elements for time series outputs, set IOT(i) = 1 to enable time series outputs at i-th element:
-%               seperately outputs in fort.10000++
-%       IASP = Flags for elements (will not affect outputs)
+%		IC 	index of selected element for time series output (ot)
+%		IOT 	Indices of elements for additional time series outputs. 
+%			Set IOT(i) = 1 to enable time series outputs at the i-th element.
+%			By default IOT(i)=-0 and this output is not done.
+%               	Each element has a separate output file named fort.xxxxx
+%			where xxxxx is an index (different than i) that starts at 10001
+%			and is incremented by 1 for each selected element. For instance if
+%			IOT=[0 0 1 1], the output of elements i=3 and i=4 are in files
+%			fort.10001 and fort.10002, respectively.
+%		IASP	Flags for elements. This is for convenient identification purposes only,
+%			it does not affect computation and outputs.
 %
 %		Parameters for integration with SPECFEM3D dynamic code:
 %		DYN_FLAG integration with dynamic code
@@ -349,7 +356,7 @@ switch mode
         NEQS = 3;
     end
     if MESHDIM == 2 || MESHDIM == 3 || MESHDIM == 4;
-      fprintf(1, 'MESHDIM = %d\n', MESHDIM);
+      fprintf(1, 'MESHDIM = %d\n', MESHDIM); %JPA should "1" be "fid" instead?
       fprintf(fid,'%u %u     NX, NW\n' , NX, NW);      
       fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
       fprintf(fid,'%.15g %.15g \n', [DW(:), DIP_W(:)]');

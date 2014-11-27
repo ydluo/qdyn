@@ -1,4 +1,4 @@
-% Interacting of two brittle asperities (velocity-weakening) surrounded by creep (velocity-strengthening)
+% Interaction between two brittle asperities (velocity-weakening) surrounded by creep (velocity-strengthening)
 
 Lasp = 4; % asperity "size" normalized by Lc = mu*Dc/((b-a)*sigma)
 Lasp_2 = 2; % asperity "size" normalized by Lc = mu*Dc/((b-a)*sigma)
@@ -109,11 +109,3 @@ axis tight;
 ylim([min(p.A./p.B)*0.8 max(p.A./p.B)*1.2])
 legend('a/b')
 xlabel('x')
-
-
-
-
-
-
-
-
