@@ -272,17 +272,18 @@ pathstr = fileparts(mfilename('fullpath'));
 % Override with inputs
 Parse_Inputs(varargin{:});
 
-if MESHDIM == 1
-  X = (-N/2+0.5:N/2-0.5) *L/N; % fault coordinates
-end
-
-if MESHDIM ==2 || MESHDIM ==3 || MESHDIM == 4
+X = [];
+% fault mesh
+switch MESHDIM
+  case 0
+    X = [];
+  case 1
+    X = (-N/2+0.5:N/2-0.5) *L/N; 
+  case {2, 4}
     % set x, y, z, dip of first row
     cd = cos(DIP_W(1)/180.*pi);
     sd = sin(DIP_W(1)/180.*pi);
-    for j = 1:NX
-      X(j) = 0.+(0.5+(j-1))*L/NX;
-    end 
+    X = 0. + (0.5+(0:NX-1))*L/NX;
     Y(1:NX) = 0.+0.5*DW(1)*cd;   
     Z(1:NX) = Z_CORNER+0.5*DW(1)*sd;
     DIP(1:NX) = DIP_W(1);
@@ -299,6 +300,8 @@ if MESHDIM ==2 || MESHDIM ==3 || MESHDIM == 4
       Z(j0+1:j0+NX) = Z(j0) + 0.5*DW(i-1)*sd0 + 0.5*DW(i)*sd;
       DIP(j0+1:j0+NX) = DIP_W(i);
     end 
+  otherwise
+    error('MESHDIM must be 0, 1, 2 or 4');
 end  
 
 TH_SS = DC./V_SS;
@@ -353,9 +356,9 @@ switch mode
     fid=fopen('qdyn.in','w');
     fprintf(fid,'%u     meshdim\n' , MESHDIM); 
     if SIGMA_CPL == 1
-        NEQS = 3;
+      NEQS = 3;
     end
-    if MESHDIM == 2 || MESHDIM == 3 || MESHDIM == 4;
+    if MESHDIM == 2 || MESHDIM == 4;
       fprintf(1, 'MESHDIM = %d\n', MESHDIM); %JPA should "1" be "fid" instead?
       fprintf(fid,'%u %u     NX, NW\n' , NX, NW);      
       fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);

@@ -53,10 +53,10 @@ function friction_mu(v,theta,pb) result(mu)
   select case (pb%i_rns_law)
 
   case (0)
-    mu = pb%mu_star - pb%a*log(pb%v_star/pb%v) + pb%b*log(pb%theta/pb%theta_star)
+    mu = pb%mu_star - pb%a*log(pb%v_star/v) + pb%b*log(theta/pb%theta_star)
 
   case (1)
-    mu = pb%mu_star - pb%a*log(pb%v1/pb%v+1d0) + pb%b*log(pb%theta/pb%theta_star+1d0)
+    mu = pb%mu_star - pb%a*log(pb%v1/v+1d0) + pb%b*log(theta/pb%theta_star+1d0)
 
 ! new friction law:
 !  case(xxx)

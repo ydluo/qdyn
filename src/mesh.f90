@@ -12,7 +12,7 @@ module mesh
     double precision, allocatable :: x(:), y(:), z(:), dip(:) !coordinates and dip of every grid (nx*nw count)
   end type mesh_type
 
-  public :: mesh_type, read_mesh, init_mesh
+  public :: mesh_type, read_mesh, init_mesh, mesh_get_size
 
 contains
 
@@ -44,13 +44,20 @@ subroutine read_mesh(iin,m)
     end do
     
   case default
-    write(6,*) 'mesh dimension should be 0, 1 or 2'
+    write(6,*) 'mesh dimension should be 0, 1, 2 or 4'
 
   end select
 
   if (m%dim==0) m%nn = 1
 
 end subroutine read_mesh
+
+!=============================================================
+function mesh_get_size(m) result(n)
+  type(mesh_type), intent(inout) :: m
+  integer :: n
+  n = m%nn
+end function mesh_get_size
 
 !=============================================================
 
@@ -76,7 +83,7 @@ subroutine init_mesh_0D(m)
   type(mesh_type), intent(inout) :: m
 
   write(6,*) 'Spring-block System' 
-  allocate(m%y(m%nn), m%z(m%nn))
+  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn))
   m%dx = m%Lfault
   m%x = 0d0
   m%y = 0d0
@@ -94,7 +101,7 @@ subroutine init_mesh_1D(m)
 
   write(6,*) '1D fault, uniform grid' 
   m%dx = m%Lfault/m%nn
-  allocate(m%y(m%nn), m%z(m%nn))
+  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn))
   do i=1,m%nn
     m%x(i) = (i-m%nn*0.5d0-0.5d0)*m%dx
     ! Assuming nn is even (usually a power of 2), 
@@ -124,9 +131,7 @@ subroutine init_mesh_2D(m)
 
   write(6,*) '2D fault, uniform grid along-strike'
   m%dx = m%Lfault/m%nx
-  allocate(m%y(m%nn),   &
-           m%z(m%nn),   &
-           m%dip(m%nn)) 
+  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%dip(m%nn)) 
 
   ! set x, y, z, dip of first row
   cd = cos(m%DIP_W(1)/180d0*PI)

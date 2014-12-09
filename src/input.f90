@@ -14,17 +14,19 @@ contains
 subroutine read_main(pb)
   
   use problem_class
-  use mesh, only : read_mesh
+  use mesh, only : read_mesh, mesh_get_size
   
   type(problem_type), intent(inout)  :: pb
 
-  integer :: i
+  integer :: i,n
   
   write(6,*) 'Start reading input: ...'
 
   open(unit=15,FILE= 'qdyn.in') 
 
   call read_mesh(15,pb%mesh)
+  n = mesh_get_size(pb%mesh)
+
   write(6,*) '   Mesh input complete'
   pb%kernel%kind = pb%mesh%dim+1 
   if (pb%mesh%nx < 4 .and. pb%mesh%dim==2) then
@@ -74,21 +76,23 @@ subroutine read_main(pb)
   read(15,*)pb%DYN_FLAG,pb%DYN_SKIP
   read(15,*)pb%DYN_M,pb%DYN_th_on,pb%DYN_th_off
   write(6,*) '  Flags input complete'
-  allocate (pb%tau(pb%mesh%nn),     &
-             pb%dtau_dt(pb%mesh%nn), pb%dsigma_dt(pb%mesh%nn), &
-             pb%tau_init(pb%mesh%nn), pb%sigma(pb%mesh%nn), &
-             pb%slip(pb%mesh%nn), pb%v(pb%mesh%nn), pb%dv_dt(pb%mesh%nn), &
-             pb%theta(pb%mesh%nn),  pb%dtheta_dt(pb%mesh%nn),  &
-             pb%a(pb%mesh%nn), pb%b(pb%mesh%nn), pb%dc(pb%mesh%nn),   &
-             pb%mesh%x(pb%mesh%nn), pb%v_pre(pb%mesh%nn),&
-             pb%v_pre2(pb%mesh%nn), &
-             pb%t_rup(pb%mesh%nn), pb%tau_max(pb%mesh%nn),   &
-             pb%v_max(pb%mesh%nn), pb%t_vmax(pb%mesh%nn),   &
-             pb%v1(pb%mesh%nn), pb%v2(pb%mesh%nn), pb%mu_star(pb%mesh%nn),& 
-             pb%v_star(pb%mesh%nn), pb%theta_star(pb%mesh%nn),   &
-             pb%iot(pb%mesh%nn),pb%iasp(pb%mesh%nn))
+
+!JPA some of these arrays should be allocated elsewhere, unless it's better to do it
+!    here to optimize memory access
+  allocate ( pb%tau(n),     &
+             pb%dtau_dt(n), pb%dsigma_dt(n), &
+             pb%tau_init(n), pb%sigma(n), &
+             pb%slip(n), pb%v(n), pb%dv_dt(n), &
+             pb%theta(n),  pb%dtheta_dt(n),  &
+             pb%a(n), pb%b(n), pb%dc(n),   &
+             pb%v_pre(n), pb%v_pre2(n), &
+             pb%t_rup(n), pb%tau_max(n),   &
+             pb%v_max(n), pb%t_vmax(n),   &
+             pb%v1(n), pb%v2(n), pb%mu_star(n),& 
+             pb%v_star(n), pb%theta_star(n),   &
+             pb%iot(n),pb%iasp(n))
  
-  do i=1,pb%mesh%nn
+  do i=1,n
     read(15,*)pb%sigma(i), pb%v(i), pb%theta(i),  &
               pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
               pb%v2(i), pb%mu_star(i), pb%v_star(i), pb%iot(i), pb%iasp(i)                 
