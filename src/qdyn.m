@@ -104,6 +104,7 @@
 %			0 = stop at t=TMAX
 %			1 = stop end of slip localization phase
 %			2 = stop at first slip rate peak
+%           3 = stop at v > TMAX
 %		DTTRY 	first trial timestep (s)
 %		DTMAX	maximum timestep (0=unrestricted)
 %		ACC	solver accuracy
