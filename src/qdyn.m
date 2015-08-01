@@ -216,8 +216,8 @@ VS = 3000; 	% shear wave velocity (if VS=0: turn off radiation damping)
 V_TH= 1e-5; % threshold velocity for seismic events;
 
 %-- numerical settings
-N=1024; 	% number of grid cells
-NX=100;
+N=1024/2; 	% number of grid cells
+NX=100/2;
 NW=10;
 DW=1e3;
 DIP_W=30.0;

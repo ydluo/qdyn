@@ -12,7 +12,7 @@ d.n=rdat(3);
 d.t=rdat(4);
 
 
-dd=importdata(filename,' ',2);
+dd.data = dlmread(filename,'',2,0);
 d.X=dd.data(:,1);
 d.Y=dd.data(:,2);
 d.Z=dd.data(:,3);

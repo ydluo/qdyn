@@ -61,8 +61,7 @@ d.DYN_TH_ON=rdat(2);
 d.DYN_TH_OFF=rdat(3);
 fclose(fid);
 
-
-dd=importdata('qdyn.in',' ',14+d.NW);
+dd.data = dlmread('qdyn.in','',14+d.NW,0);
 d.SIGMA=dd.data(:,1);
 d.V_0=dd.data(:,2);
 d.TH_0=dd.data(:,3);
