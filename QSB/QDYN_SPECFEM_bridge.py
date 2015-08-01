@@ -1,6 +1,7 @@
 import os
 
 n_core_allco = 108;
+n_core_allco_sinle_node = 12;
 
 QDYN_dir_work = "/home/luoyd/qdyn_git_svn/trunk/src/"
 QDYN_dir_out_store = "/home/luoyd/QSB_out/test/QDYN_out/"
@@ -27,7 +28,8 @@ for irun in range(1,5):
  cmd = "cd "+ QDYN_dir_work
  os.system(cmd)
  print "QSB: run # %d QDYN simulation ..." % (irun)
- os.system("qdyn")
+ cmd = "mpirun -np "+str(n_core_allco_single_node)+ " qdyn"
+ os.system(cmd)
  print "QSB: QDYN run # %d finished" % (irun)
  cmd = "cp qdyn.in "+SPECFEM_dir_out
  os.system(cmd)
@@ -46,9 +48,9 @@ for irun in range(1,5):
  ndir = QDYN_dir_out_store+"run"+str(irun) 
  cmd = "mkdir "+ndir
  os.system(cmd)
- cmd = "mv fort.* "+ndir
+ cmd = "mv " +QDYN_dir_work+ " fort.* "+ndir
  os.system(cmd)
- cmd = "cp timpestamp.txt "+ndir
+ cmd = "cp " +QDYN_dir_work+ " timpestamp.txt "+ndir
  os.system(cmd)
  print "QSB: QDYN outputs moved to "+ndir
 
@@ -74,7 +76,7 @@ for irun in range(1,5):
  ndir = SPECFEM_dir_out_store+"run"+str(irun)
  cmd = "mkdir "+ndir
  os.system(cmd)
- cmd = "mv ./* "+ndir
+ cmd = "mv " +SPECFEM_dir_out_store+ "/* "+ndir
  os.system(cmd)
  print "QSB: SPECFEM outputs moved to "+ndir
 
