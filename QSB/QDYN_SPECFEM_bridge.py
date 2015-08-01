@@ -1,7 +1,7 @@
 import os
 
 n_core_allco = 108;
-n_core_allco_sinle_node = 12;
+n_core_allco_single_node = 12;
 
 QDYN_dir_work = "/home/luoyd/qdyn_git_svn/trunk/src/"
 QDYN_dir_out_store = "/home/luoyd/QSB_out/test/QDYN_out/"
