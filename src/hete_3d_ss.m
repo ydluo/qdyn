@@ -9,7 +9,7 @@ rand(1,floor(sum(100*clock)));
 year = 3600*24*365;
 p = qdyn('set');
 p.NSTOP = 3;        %stop at v_th
-p.TMAX = 0.1;       % stop at v = v_th = tmax
+p.TMAX = 0.101;       % stop at v = v_th = tmax
 
 p.RNS_LAW=0;
 p.MESHDIM=2;      %FFT enabled
@@ -23,6 +23,8 @@ p.V2=100.;              %no cut off velocity
 p.V1=p.V2;
 p.OX_SEQ=1;
 p.OX_DYN=1;
+p.DYN_TH_ON = 0.1;
+p.DYN_TH_OFF = 0.1;
 %p.DC=0.3;
 DC_min=0.05;     %threshhold of lower DC
 DC_max=0.07;     %max DC
