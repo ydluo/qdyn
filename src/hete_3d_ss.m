@@ -21,6 +21,7 @@ p.MU_SS=0.6;
 p.V_SS=0.01/year;
 p.V2=100.;              %no cut off velocity
 p.V1=p.V2;
+
 p.OX_SEQ=1;
 p.OX_DYN=1;
 p.DYN_TH_ON = 0.1;
@@ -105,8 +106,8 @@ twm=100000;         %warmup time in years
 ts=1000;    %simulation time in years
 p.ACC = 1e-10;
 Vdyn=2*mean(p.A.*p.SIGMA./p.MU.*p.VS);
-p.DYN_TH_ON=Vdyn/10.;
-p.DYN_TH_OFF=Vdyn/10.;
+%p.DYN_TH_ON=Vdyn/10.;
+%p.DYN_TH_OFF=Vdyn/10.;
 
 %------------------------------
 Lb = min(p.MU*p.DC./p.SIGMA./p.B)
