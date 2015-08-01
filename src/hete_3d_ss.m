@@ -9,7 +9,7 @@ rand(1,floor(sum(100*clock)));
 year = 3600*24*365;
 p = qdyn('set');
 p.NSTOP = 3;        %stop at v_th
-p.TMAX = 0.101;       % stop at v = v_th = tmax
+p.TMAX = 0.1001;       % stop at v = v_th = tmax
 
 p.RNS_LAW=0;
 p.MESHDIM=2;      %FFT enabled
@@ -30,7 +30,7 @@ DC_min=0.05;     %threshhold of lower DC
 DC_max=0.07;     %max DC
 
 dip0=90.;
-dw0=0.5e3*2;
+dw0=0.5e3;
 dd=20e3;    %depth of L sigma change
 d1=5e3;     %upperbound of seismogenic zone (depth in m)
 d2=9e3;    %limit of constant b/a
@@ -44,7 +44,7 @@ p.NXOUT_DYN=1;   %dynamic snapshot output grid interval
 p.W=db/sin(dip0/180.*pi);
 p.L=512e3;
 p.NW=ceil(p.W/dw0);
-p.NX=1024/2;
+p.NX=1024;
 p.VS=3000.;
 
 p.N=p.NX*p.NW;
