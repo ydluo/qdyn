@@ -36,7 +36,7 @@ for irun in range(1,5):
 
  os.system("date")
  print "QSB: Matlab run # %d QDYN to SEM ..." % (irun)
- os.system("matlab -nosplash -nodesktop -wait -r 'QDYN_to_SEM_m_RSF_f; quit'")
+ os.system("matlab -nosplash -nodesktop -r 'QDYN_to_SEM_m_RSF_f; quit'")
  print "QSB: Matlab run # %d QDYN to SEM finished" % (irun)
  cmd = "cp ./input_file.txt "+SPECFEM_dir_in
  os.system(cmd)
@@ -65,7 +65,7 @@ for irun in range(1,5):
  os.system("date")
  print "QSB: Matlab run # %d SEM to QDYN ..." % (irun)
  os.system(cmd)
- os.system("matlab -nosplash -nodesktop -wait -r 'SEM_to_QDYN_RSF; quit'")
+ os.system("matlab -nosplash -nodesktop -r 'SEM_to_QDYN_RSF; quit'")
  print "QSB: Matlab run # %d SEM to QDYN finished" % (irun)
  cmd = "cp qdyn.in "+QDYN_dir_work
  os.system(cmd)
