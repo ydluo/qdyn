@@ -50,7 +50,7 @@ do
    echo "QSB: run no. $irun SPECFEM simulation ... &&
    cd $SPECFEM_dir_work &&
    mpirun -np $N_core_allco ./xspecfem3D &&
-   echo "QSB: run no. $irun SPECFEM simulation finished &&
+   echo QSB: run no. $irun SPECFEM simulation finished &&
    
    cd $SPECFEM_dir_out &&
    date &&
