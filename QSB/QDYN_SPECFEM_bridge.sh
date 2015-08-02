@@ -10,15 +10,15 @@ SPECFEM_dir_in="/home/luoyd/SPECFEM3D_CIG_RSF_10/DATA/"
 SPECFEM_dir_out="/home/luoyd/SPECFEM3D_CIG_RSF_10/OUTPUT_FILES/"
 SPECFEM_dir_out_store="/home/luoyd/QSB_out/test/SPECFEM_out/"
 
-cp SEM_to_QDYN_RSF.m $SPECFEM_dir_ou &&
+cp SEM_to_QDYN_RSF.m $SPECFEM_dir_out &&
 cp FSEM3D_snapshot.m $SPECFEM_dir_out &&
 cp Qdyn_read_ox_seq.m $SPECFEM_dir_out &&
 cp cp Qdyn_read_in.m $SPECFEM_dir_out &&
 cp nodesonfault $QDYN_dir_work &&
 
 
-echo "N_core_allco_single_node = $N_core_allco_single_node &&
-echo "N_core_allco = $N_core_allco" &&
+echo N_core_allco_single_node = $N_core_allco_single_node &&
+echo N_core_allco = $N_core_allco &&
 
 
 for irun in {1..2}
@@ -47,7 +47,7 @@ do
    echo QSB: QDYN outputs moved to ${QDYN_dir_out_store}/run$irun &&
    
    date &&
-   echo "QSB: run no. $irun SPECFEM simulation ... &&
+   echo QSB: run no. $irun SPECFEM simulation ... &&
    cd $SPECFEM_dir_work &&
    mpirun -np $N_core_allco ./xspecfem3D &&
    echo QSB: run no. $irun SPECFEM simulation finished &&
