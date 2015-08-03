@@ -1,7 +1,7 @@
 #!/bin/bash
 
-N_core_allco=108
 N_core_allco_single_node=12
+N_loop=2
 
 QDYN_dir_work="/home/luoyd/qdyn_git_svn/trunk/src/"
 QDYN_dir_out_store="/home/luoyd/QSB_out/test/QDYN_out/"
@@ -17,11 +17,10 @@ cp Qdyn_read_in.m $SPECFEM_dir_out &&
 cp nodesonfault $QDYN_dir_work &&
 
 
-echo N_core_allco_single_node = $N_core_allco_single_node &&
 echo N_core_allco = $N_core_allco &&
 
 
-for irun in {1..2}
+for irun in {1..$N_loop}
 do
 
    date &&
