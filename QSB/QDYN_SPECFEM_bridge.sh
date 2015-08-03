@@ -1,6 +1,6 @@
 #!/bin/bash
 
-N_core_allco_single_node=12
+N_core_allco=108
 N_loop=2
 
 QDYN_dir_work="/home/luoyd/qdyn_git_svn/trunk/src/"
@@ -18,7 +18,7 @@ cp nodesonfault $QDYN_dir_work &&
 
 
 echo N_core_allco = $N_core_allco &&
-
+echo N_loop = $N_loop &&
 
 for ((irun=1; irun<=$N_loop; irun++))
 do
