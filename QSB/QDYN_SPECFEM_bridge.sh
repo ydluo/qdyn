@@ -20,7 +20,7 @@ cp nodesonfault $QDYN_dir_work &&
 echo N_core_allco = $N_core_allco &&
 
 
-for irun in {1..$N_loop}
+for ((irun=1; irun<=$N_loop; irun++))
 do
 
    date &&
