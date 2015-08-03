@@ -10,7 +10,7 @@ SPECFEM_dir_in="/home/luoyd/SPECFEM3D_CIG_RSF_10/DATA/"
 SPECFEM_dir_out="/home/luoyd/SPECFEM3D_CIG_RSF_10/OUTPUT_FILES/"
 SPECFEM_dir_out_store="/home/luoyd/QSB_out/test/SPECFEM_out/"
 
-cp SEM_to_QDYN_RSF_f.m $SPECFEM_dir_out &&
+cp SEM_to_QDYN_RSF.m $SPECFEM_dir_out &&
 cp FSEM3D_snapshot.m $SPECFEM_dir_out &&
 cp Qdyn_read_ox_seq.m $SPECFEM_dir_out &&
 cp Qdyn_read_in.m $SPECFEM_dir_out &&
