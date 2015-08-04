@@ -12,8 +12,8 @@ SPECFEM_dir_out_store="/home/luoyd/QSB_out/test/SPECFEM_out/"
 
 cp SEM_to_QDYN_RSF.m $SPECFEM_dir_out &&
 cp FSEM3D_snapshot.m $SPECFEM_dir_out &&
-cp Qdyn_read_ox_seq.m $SPECFEM_dir_out &&
-cp Qdyn_read_in.m $SPECFEM_dir_out &&
+cp $QDYN_dir_work/Qdyn_read_ox_seq.m $SPECFEM_dir_out &&
+cp $QDYN_dir_work/Qdyn_read_in.m $SPECFEM_dir_out &&
 cp nodesonfault $QDYN_dir_work &&
 
 
