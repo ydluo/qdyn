@@ -51,6 +51,10 @@ for i=1:p.N
     end
 end
 
+p.X=p.X-x_off;
+p.Y=p.Y-y_off;
+p.Z=p.Z-z_off;
+
 disp('Done');
 
 disp('Writing qdyn.in ...')
