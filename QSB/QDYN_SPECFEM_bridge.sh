@@ -42,6 +42,7 @@ do
    date &&
    mkdir ${QDYN_dir_out_store}/run$irun &&
    mv ${QDYN_dir_work}/fort.* ${QDYN_dir_out_store}/run$irun/ &&
+   cp ${QDYN_dir_work}/qdyn.in ${QDYN_dir_out_store}/run$irun/ &&
    cp ${QDYN_dir_work}/timestamp.txt ${QDYN_dir_out_store}/run$irun/ &&
    echo QSB: QDYN outputs moved to ${QDYN_dir_out_store}/run$irun &&
    
