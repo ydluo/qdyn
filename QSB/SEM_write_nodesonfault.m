@@ -15,7 +15,7 @@ d.Z = d.Z*1000;
 disp('Done');
 
 disp(['Writing ' fname ' ...']);
-
+dlmwrite(fname,[1*ones(size(d.X)),1*ones(size(d.X)),d.X,d.Y,d.Z],'\t')
 disp('Done');
 
 
