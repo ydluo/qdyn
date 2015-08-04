@@ -20,6 +20,5 @@
 
     # Tell me which nodes it is run on
     echo ” ”
-                                                              1,5           Top
     #mpirun -machinefile $PBS_NODEFILE -np $NPROCS applicationame 
     ./QDYN_SPECFEM_bridge.sh  > output.txt
