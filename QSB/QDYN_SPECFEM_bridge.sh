@@ -41,8 +41,8 @@ do
    
    date &&
    mkdir ${QDYN_dir_out_store}/run$irun &&
-   mv ${QDYN_dir_work}/fort.* ${QDYN_dir_out_store}/run$irun &&
-   cp ${QDYN_dir_work}/timestamp.txt ${QDYN_dir_out_store}/run$irun &&
+   mv ${QDYN_dir_work}/fort.* ${QDYN_dir_out_store}/run$irun/ &&
+   cp ${QDYN_dir_work}/timestamp.txt ${QDYN_dir_out_store}/run$irun/ &&
    echo QSB: QDYN outputs moved to ${QDYN_dir_out_store}/run$irun &&
    
    date &&
@@ -60,7 +60,11 @@ do
 
    date &&
    mkdir ${SPECFEM_dir_out_store}/run$irun &&
-   mv ${SPECFEM_dir_out}/* ${SPECFEM_dir_out_store}/run$irun &&
+   mv ${SPECFEM_dir_out}/body* ${SPECFEM_dir_out_store}/run$irun/ &&
+   mv ${SPECFEM_dir_out}/faultst* ${SPECFEM_dir_out_store}/run$irun/ &&
+   mv ${SPECFEM_dir_out}/Snapshot* ${SPECFEM_dir_out_store}/run$irun/ &&
+   mv ${SPECFEM_dir_out}/timestamp* ${SPECFEM_dir_out_store}/run$irun/ &&
+
    echo QSB: SPECFEM outputs moved to ${SPECFEM_dir_out_store}/run$irun
 
 done
