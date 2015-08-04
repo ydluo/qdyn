@@ -11,6 +11,8 @@ dt=0.005;
 ft_id=1;
 dir='./';
 
+i_gif = 1; % =1 to write a gif of slip and rate
+
 iskip=5;       % # ponits skipped while plotting
 
 icaxis_const=1; % 1 for constant caxis of slip rate  
@@ -143,7 +145,10 @@ for isnap=istart:iplot:iend
     clf(h2); 
 
 end
-writegif('V.gif',frameV,1/fps);
-writegif('V_d.gif',frameV(1:ceil(numel(frameV)/240):end),1/12);
-writegif('D.gif',frameD,1/fps);
-writegif('D_d.gif',frameD(1:ceil(numel(frameD)/240):end),1/12);
+
+if i_gif == 1
+    writegif('V.gif',frameV,1/fps);
+    writegif('V_d.gif',frameV(1:ceil(numel(frameV)/240):end),1/12);
+    writegif('D.gif',frameD,1/fps);
+    writegif('D_d.gif',frameD(1:ceil(numel(frameD)/240):end),1/12);
+end
