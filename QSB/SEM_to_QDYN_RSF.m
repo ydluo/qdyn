@@ -11,6 +11,7 @@ isnap=60000;
 dt=0.005;
 ft_id=1;
 dir='./';
+i_v_corr = 1;	% = 1 to set Vmin = v_corr
 v_corr = 1e-20;
 
 iskip=5;       % # ponits skipped while plotting
@@ -21,7 +22,10 @@ d = FSEM3D_snapshot(isnap,dir,ft_id);
 d.X = d.X*1000;
 d.Y = d.Y*1000;
 d.Z = d.Z*1000;
-d.Vx = max(d.Vx,v_corr);
+
+if i_v_corr =  1
+	d.Vx = max(d.Vx,v_corr);
+end
 disp('Done');
 
 disp('Loading qdyn.in ...');
