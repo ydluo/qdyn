@@ -23,7 +23,7 @@ d.X = d.X*1000;
 d.Y = d.Y*1000;
 d.Z = d.Z*1000;
 
-if i_v_corr =  1
+if i_v_corr ==  1
 	d.Vx = max(d.Vx,v_corr);
 end
 disp('Done');
