@@ -11,7 +11,7 @@ isnap=60000;
 dt=0.005;
 ft_id=1;
 dir='./';
-i_v_corr = 1;	% = 1 to set Vmin = v_corr
+i_v_corr = 0;	% = 1 to set Vmin = v_corr
 v_corr = 1e-20;
 
 iskip=5;       % # ponits skipped while plotting

@@ -19,7 +19,7 @@ rn=200;
 rsn=3;
 vmax=1.;
 c_depth=3e3; % Cohesion cutoff depth in m
-coh=0;    %cohension in Pa/ default: 4e6
+coh=4e6;    %cohension in Pa/ default: 4e6
 %forced rupture zone
 hxr=0.5;  %hypocenter relative location along-strike (0,1) left to right
 hzr=10/50; %hypocenter relative depth (0,1) surface to bottom
