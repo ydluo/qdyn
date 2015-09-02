@@ -1,15 +1,18 @@
 clc;
 clear;
 name='Dc005to007';
-name2='test';
+name2='test2';
 
 istart=0;
 iplot=200;        %frame interval for output
-iend=22000;
+iend=60000;
 %plot control
 dt=0.005;
 ft_id=1;
 dir='./';
+
+i_dmax_corr_auto = 1; %auto correct irrgular dmax in SEM
+i_dmax_corr_N = 200; % sample N points of largest D to correct
 
 i_gif = 1; % =1 to write a gif of slip and rate
 
@@ -17,11 +20,11 @@ iskip=5;       % # ponits skipped while plotting
 
 icaxis_const=1; % 1 for constant caxis of slip rate  
 vmin=0;
-vmax=1;        %m/s
+vmax=4;        %m/s
 icaxis_const_d=1; % 1 for constant caxis of slip
 dmin=0;
 dmax=8;        %m
-icaxis_d_auto=0;    % =1 for auto setting dmax
+icaxis_d_auto=1;    % =1 for auto setting dmax
 
 iend_auto=1;        %=1 for auto end plotting while vmax< vth_plot;
 vth_plot=0.001;     %m/s
@@ -38,6 +41,12 @@ pph=200;    %figure height
 isnap=iend;
 display(['Processsing Snapshot # ', num2str(isnap),'...']);
 d = FSEM3D_snapshot(isnap,dir,ft_id);
+
+if i_dmax_corr_auto == 1
+    tt = sort(d.Dx);
+    ddmax_th = mean(tt(end-i_dmax_corr_N:end));
+    d.Dx = min(d.Dx,ddmax_th);
+end
 
 if icaxis_d_auto == 1
     dmax=max(d.Dx);
@@ -88,6 +97,12 @@ for isnap=istart:iplot:iend
 
     display(['Processsing Snapshot # ', num2str(isnap),'...']);
     d = FSEM3D_snapshot(isnap,dir,ft_id);
+    
+    if i_dmax_corr_auto == 1
+        tt = sort(d.Dx);
+        ddmax_th = mean(tt(end-i_dmax_corr_N:end));
+        d.Dx = min(d.Dx,ddmax_th);
+    end
    
     if (iend_auto ==1) && (max(d.Vx) <= vth_plot) && (isnap > 10)
         disp(['Event end at t = ', num2str(dt*isnap,'%15.1f'), '  Snapshot # ', num2str(isnap)]);
