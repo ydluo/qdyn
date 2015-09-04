@@ -1,11 +1,11 @@
 clc;
 clear;
 name='Dc005to007';
-name2='test';
+name2='test2';
 
 year = 365*24*3600;
 
-iplot = [1001:10:1505];
+iplot = [1400:1:1400];
 % iplot = 20001;
 
 iskip=1;       % # ponits skipped while plotting
@@ -16,7 +16,11 @@ vmax=0.1;        %m/s
 icaxis_const_d=1; % 1 for constant caxis of slip
 dmin=0;
 dmax=8;        %m
-icaxis_d_auto=0;    % =1 for auto setting dmax
+icaxis_d_auto=1;    % =1 for auto setting dmax
+
+X_int_plot = 200;   %plotting interval for X in m
+Z_int_plot = 200;   %plotting interval for Z in m
+
 
 i_gif = 1; % =1 to plot gif
 
@@ -40,11 +44,13 @@ if icaxis_d_auto == 1
     dmax=max(d.d);
 end 
 
+[XR,ZR] = meshgrid(min(d.X):X_int_plot:max(d.X),min(d.Z):Z_int_plot:max(d.Z));
 
 h1=figure(1);
 set(h1,'Position',[100 100 ppw pph])
 set(h1,'Color',[1 1 1]);
-scatter(d.X(1:iskip:end)/1000,d.Z(1:iskip:end)/1000,[],d.d(1:iskip:end),'s','filled');colorbar;
+DxR = griddata(d.X,d.Z,d.d,XR,ZR);
+contourf(XR/1000,ZR/1000,DxR,40,'LineStyle','none');colorbar;
 if iaxis_equal == 1
     axis equal;
 end
@@ -63,7 +69,8 @@ clf(h1);
 h2=figure(2);
 set(h2,'Position',[100 300+pph ppw pph])
 set(h2,'Color',[1 1 1]);
-scatter(d.X(1:iskip:end)/1000,d.Z(1:iskip:end)/1000,[],log10(d.v(1:iskip:end)),'s','filled');colorbar;
+VxR = griddata(d.X,d.Z,d.v,XR,ZR);
+contourf(XR/1000,ZR/1000,log10(VxR),40,'LineStyle','none');colorbar;
 if iaxis_equal == 1
     axis equal;
 end
@@ -100,7 +107,8 @@ for iii = 1:1:numel(iplot)
     h1=figure(1);
     set(h1,'Position',[100 100 ppw pph])
     set(h1,'Color',[1 1 1]);
-    scatter(d.X(1:iskip:end)/1000,d.Z(1:iskip:end)/1000,[],d.d(1:iskip:end),'s','filled');colorbar;
+    DxR = griddata(d.X,d.Z,d.d,XR,ZR);
+    contourf(XR/1000,ZR/1000,DxR,40,'LineStyle','none');colorbar;    
     if iaxis_equal == 1
         axis equal;
     end
@@ -122,7 +130,9 @@ for iii = 1:1:numel(iplot)
     h2=figure(2);
     set(h2,'Position',[100 300+pph ppw pph])
     set(h2,'Color',[1 1 1]);
-    scatter(d.X(1:iskip:end)/1000,d.Z(1:iskip:end)/1000,[],log10(d.v(1:iskip:end)),'s','filled');colorbar;
+    VxR = griddata(d.X,d.Z,d.v,XR,ZR);
+    contourf(XR/1000,ZR/1000,log10(VxR),40,'LineStyle','none');colorbar;
+    
     if iaxis_equal == 1
         axis equal;
     end

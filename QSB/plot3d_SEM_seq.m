@@ -1,11 +1,11 @@
 clc;
 clear;
 name='Dc005to007';
-name2='test2';
+name2='test2_2';
 
-istart=0;
+istart=20000;
 iplot=200;        %frame interval for output
-iend=60000;
+iend=20000;
 %plot control
 dt=0.005;
 ft_id=1;
@@ -15,8 +15,6 @@ i_dmax_corr_auto = 1; %auto correct irrgular dmax in SEM
 i_dmax_corr_N = 200; % sample N points of largest D to correct
 
 i_gif = 1; % =1 to write a gif of slip and rate
-
-iskip=5;       % # ponits skipped while plotting
 
 icaxis_const=1; % 1 for constant caxis of slip rate  
 vmin=0;
@@ -28,6 +26,9 @@ icaxis_d_auto=1;    % =1 for auto setting dmax
 
 iend_auto=1;        %=1 for auto end plotting while vmax< vth_plot;
 vth_plot=0.001;     %m/s
+X_int_plot = 0.2;   %plotting interval for X in km
+Z_int_plot = 0.2;   %plotting interval for Z in km
+
 
 iaxis_equal=1;	% 1 for equal axis  
 % vvmin=0;  %min (v)
@@ -52,11 +53,16 @@ if icaxis_d_auto == 1
     dmax=max(d.Dx);
 end 
 
+[XR,ZR] = meshgrid(min(d.X):X_int_plot:max(d.X),min(d.Z):Z_int_plot:max(d.Z));
+
+
 
 h1=figure(1);
 set(h1,'Position',[100 100 ppw pph])
 set(h1,'Color',[1 1 1]);
-scatter(d.X(1:iskip:end),d.Z(1:iskip:end),[],d.Dx(1:iskip:end),'s','filled');colorbar;
+
+DxR = griddata(d.X,d.Z,d.Dx,XR,ZR);
+contourf(XR,ZR,DxR,40,'LineStyle','none');colorbar;
 if iaxis_equal == 1
     axis equal;
 end
@@ -75,7 +81,10 @@ clf(h1);
 h2=figure(2);
 set(h2,'Position',[100 300+pph ppw pph])
 set(h2,'Color',[1 1 1]);
-scatter(d.X(1:iskip:end),d.Z(1:iskip:end),[],d.Vx(1:iskip:end),'s','filled');colorbar;
+
+VxR = griddata(d.X,d.Z,d.Vx,XR,ZR);
+contourf(XR,ZR,VxR,40,'LineStyle','none');colorbar;
+
 if iaxis_equal == 1
     axis equal;
 end
@@ -114,7 +123,10 @@ for isnap=istart:iplot:iend
     h1=figure(1);
     set(h1,'Position',[100 100 ppw pph])
     set(h1,'Color',[1 1 1]);
-    scatter(d.X(1:iskip:end),d.Z(1:iskip:end),[],d.Dx(1:iskip:end),'s','filled');colorbar;
+    
+    DxR = griddata(d.X,d.Z,d.Dx,XR,ZR);
+    contourf(XR,ZR,DxR,40,'LineStyle','none');colorbar;
+    
     if iaxis_equal == 1
         axis equal;
     end
@@ -138,7 +150,10 @@ for isnap=istart:iplot:iend
     h2=figure(2);
     set(h2,'Position',[100 300+pph ppw pph])
     set(h2,'Color',[1 1 1]);
-    scatter(d.X(1:iskip:end),d.Z(1:iskip:end),[],d.Vx(1:iskip:end),'s','filled');colorbar;
+
+    VxR = griddata(d.X,d.Z,d.Vx,XR,ZR);
+    contourf(XR,ZR,VxR,40,'LineStyle','none');colorbar;
+
     if iaxis_equal == 1
         axis equal;
     end
