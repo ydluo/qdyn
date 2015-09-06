@@ -1,14 +1,14 @@
 #!/bin/bash
 
 N_core_allco=108
-N_loop=2
+N_loop=5
 
-QDYN_dir_work="/home/luoyd/qdyn_git_test/trunk/src/"
-QDYN_dir_out_store="/home/luoyd/QSB_out_test/QDYN_out/"
-SPECFEM_dir_work="/home/luoyd/SPECFEM3D_CIG_RSF_10/bin/"
-SPECFEM_dir_in="/home/luoyd/SPECFEM3D_CIG_RSF_10/DATA/"
-SPECFEM_dir_out="/home/luoyd/SPECFEM3D_CIG_RSF_10/OUTPUT_FILES/"
-SPECFEM_dir_out_store="/home/luoyd/QSB_out_test/SPECFEM_out/"
+QDYN_dir_work="/home/luoyd/qdyn_git_dev/trunk/src/"
+QDYN_dir_out_store="/home/luoyd/QSB_out_test_dev/QDYN_out/"
+SPECFEM_dir_work="/home/luoyd/SPECFEM3D_dev/specfem3d/bin/"
+SPECFEM_dir_in="/home/luoyd/SPECFEM3D_dev/specfem3d/DATA/"
+SPECFEM_dir_out="/home/luoyd/SPECFEM3D_dev/specfem3d/OUTPUT_FILES/"
+SPECFEM_dir_out_store="/home/luoyd/QSB_out_test_dev/SPECFEM_out/"
 
 cp SEM_to_QDYN_RSF.m $SPECFEM_dir_out &&
 cp FSEM3D_snapshot.m $SPECFEM_dir_out &&

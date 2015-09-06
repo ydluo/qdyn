@@ -1,7 +1,7 @@
 
 #PBS -q default
 #PBS -l nodes=108
-#PBS -l walltime=48:00:00
+#PBS -l walltime=96:00:00
 #PBS -V
 #PBS -m bae
 #PBS -M luoyd@gps.caltech.edu

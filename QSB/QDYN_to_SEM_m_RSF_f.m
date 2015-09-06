@@ -114,7 +114,7 @@ disp('Done');
 
 
 
-fid=fopen('input_file.txt','w');
+fid=fopen('rsf_hete_input_file.txt','w');
 
 fprintf(fid,'%u %u %E %E \n' ,q.NX, q.NZ, max(q.X)-min(q.X), max(abs(q.Z))-min(abs(q.Z))); 
 disp('Start write SEM input:...');
