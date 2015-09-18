@@ -42,6 +42,8 @@ The code implements adaptive time stepping, shared-memory parallelization, and i
   * matlab wrapper and graphic output display utilities
   * parallelized for shared memory systems (OpenMP)
   * normal stress coupling
+  * fully coupled with SPECFEM3D with QSB (QDYN-SPECFEM Bridge)
+
 
 
 
