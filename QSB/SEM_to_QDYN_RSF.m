@@ -26,6 +26,26 @@ d.Z = d.Z*1000;
 if i_v_corr ==  1
 	d.Vx = max(d.Vx,v_corr);
 end
+
+iiv = find(d.Vx >= 0 );
+d.Vx = d.Vx(iiv);
+d.Vz = d.Vz(iiv);
+d.Dx = d.Dx(iiv);
+d.Dz = d.Dz(iiv);
+d.Tx = d.Tx(iiv);
+d.Ty = d.Ty(iiv);
+d.Tz = d.Tz(iiv);
+d.X = d.X(iiv);
+d.Y = d.Y(iiv);
+d.Z = d.Z(iiv);
+d.S = d.S(iiv);
+d.Sg = d.Dg(iiv);
+d.Trup = d.Trup(iiv);
+d.Tpz = d.Tpz(iiv);
+
+
+
+
 disp('Done');
 
 disp('Loading qdyn.in ...');
@@ -50,7 +70,7 @@ for i=1:p.N
     
     p.TH_0(i)=d.S(id);
     p.V_0(i)=d.Vx(id);
-
+    p.SIGMA(i)=-d.Tz(id);
 
     if mod(i,ceil(p.N/100)) == 0
         disp([num2str(i/ceil(p.N/100)) '% Complete'])
