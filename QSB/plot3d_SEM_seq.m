@@ -3,9 +3,9 @@ clear;
 name='Dc005to007';
 name2='test2_2';
 
-istart=20000;
+istart=0;
 iplot=200;        %frame interval for output
-iend=20000;
+iend=60000;
 %plot control
 dt=0.005;
 ft_id=1;

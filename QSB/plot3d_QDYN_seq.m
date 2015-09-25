@@ -1,15 +1,15 @@
 clc;
 clear;
-name='Dc005to007';
-name2='test2';
+name='Dc005to007_QDYN_cmp_revt';
+name2='run1';
 
 year = 365*24*3600;
 
-iplot = [1400:1:1400];
+iplot = [1431:5:1500];
 % iplot = 20001;
 
 iskip=1;       % # ponits skipped while plotting
-
+i_time_r = 1 ;  %plot time relative to first plot
 icaxis_const=1; % 1 for constant caxis of slip rate  
 vmin=1e-15;
 vmax=0.1;        %m/s
@@ -35,6 +35,13 @@ iaxis_equal=1;	% 1 for equal axis
 fps=12;  %framerate for movie, FPS
 ppw=1200;    %figure width
 pph=200;    %figure height
+
+if i_time_r == 1
+    d = Qdyn_read_ox_seq(['fort.' num2str(iplot(1))]);
+    tt0 = d.t;
+end
+
+
 
 isnap=max(iplot);
 display(['Processsing Snapshot # ', num2str(isnap),'...']);
@@ -62,9 +69,14 @@ set(gca,'FontSize',16);
 title('Slip (m)','FontSize',16);
 xlabel('Along-strike: (km)','FontSize',16);
 ylabel('Along-dip: (km)','FontSize',16);
-text(max(d.X)/1000,min(d.Z)/1000,['time = ', num2str(d.t/year,'%15.5f'),' Years'],...
-      'color','White','HorizontalAlignment','Right','VerticalAlignment','Bottom','FontSize',16); 
-clf(h1); 
+ if i_time_r == 1
+        text(max(d.X)/1000,min(d.Z)/1000,['time = ', num2str(d.t-tt0,'%15.1f'),'s'],...
+          'color','White','HorizontalAlignment','Right','VerticalAlignment','Bottom','FontSize',16); 
+    else
+        text(max(d.X)/1000,min(d.Z)/1000,['time = ', num2str(d.t/year,'%15.5f'),' Years'],...
+          'color','White','HorizontalAlignment','Right','VerticalAlignment','Bottom','FontSize',16);
+ end
+ clf(h1);
   
 h2=figure(2);
 set(h2,'Position',[100 300+pph ppw pph])
@@ -82,12 +94,18 @@ set(gca,'FontSize',16);
 title('Log10 slip rate (m/s)','FontSize',16);
 xlabel('Along-strike: (km)','FontSize',16);
 ylabel('Along-dip: (km)','FontSize',16);
-text(max(d.X)/1000,min(d.Z)/1000,['time = ', num2str(d.t/year,'%15.5f'),' Years'],...
-    'color','White','HorizontalAlignment','Right','VerticalAlignment','Bottom','FontSize',16); 
+ if i_time_r == 1
+        text(max(d.X)/1000,min(d.Z)/1000,['time = ', num2str(d.t-tt0,'%15.1f'),'s'],...
+          'color','White','HorizontalAlignment','Right','VerticalAlignment','Bottom','FontSize',16); 
+    else
+        text(max(d.X)/1000,min(d.Z)/1000,['time = ', num2str(d.t/year,'%15.5f'),' Years'],...
+          'color','White','HorizontalAlignment','Right','VerticalAlignment','Bottom','FontSize',16);
+    end 
 clf(h2);  
  
 
 ifm=0;
+
 
 
 for iii = 1:1:numel(iplot)
@@ -120,8 +138,13 @@ for iii = 1:1:numel(iplot)
     title('Slip (m)','FontSize',16);
     xlabel('Along-strike: (km)','FontSize',16);
     ylabel('Along-dip: (km)','FontSize',16);
-    text(max(d.X)/1000,min(d.Z)/1000,['time = ', num2str(d.t/year,'%15.5f'),' Years'],...
-      'color','White','HorizontalAlignment','Right','VerticalAlignment','Bottom','FontSize',16); 
+    if i_time_r == 1
+        text(max(d.X)/1000,min(d.Z)/1000,['time = ', num2str(d.t-tt0,'%15.1f'),'s'],...
+          'color','White','HorizontalAlignment','Right','VerticalAlignment','Bottom','FontSize',16); 
+    else
+        text(max(d.X)/1000,min(d.Z)/1000,['time = ', num2str(d.t/year,'%15.5f'),' Years'],...
+          'color','White','HorizontalAlignment','Right','VerticalAlignment','Bottom','FontSize',16);
+    end
     fD=getframe(h1);
     imwrite(fD.cdata,['D_',name,name2,'_',num2str(isnap), '.jpg'],'jpg');    
     frameD(ifm)=fD;
@@ -143,9 +166,13 @@ for iii = 1:1:numel(iplot)
     set(gca,'FontSize',16);
     title('Log10 slip rate (m/s)','FontSize',16);
     xlabel('Along-strike: (km)','FontSize',16);
-    ylabel('Along-dip: (km)','FontSize',16);
-    text(max(d.X)/1000,min(d.Z)/1000,['time = ', num2str(d.t/year,'%15.5f'),' Years'],...
-        'color','White','HorizontalAlignment','Right','VerticalAlignment','Bottom','FontSize',16); 
+    if i_time_r == 1
+        text(max(d.X)/1000,min(d.Z)/1000,['time = ', num2str(d.t-tt0,'%15.1f'),'s'],...
+          'color','White','HorizontalAlignment','Right','VerticalAlignment','Bottom','FontSize',16); 
+    else
+        text(max(d.X)/1000,min(d.Z)/1000,['time = ', num2str(d.t/year,'%15.5f'),' Years'],...
+          'color','White','HorizontalAlignment','Right','VerticalAlignment','Bottom','FontSize',16);
+    end
 %    print(h2,'-djpeg',['V_',name,name2,'_',num2str(isnap), '.jpg']);
 %    print(h2,'-depsc2', ['V_',name,name2,'_',num2str(isnap), '.eps']);
     fV=getframe(h2);
