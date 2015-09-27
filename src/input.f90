@@ -90,12 +90,13 @@ subroutine read_main(pb)
              pb%v_max(n), pb%t_vmax(n),   &
              pb%v1(n), pb%v2(n), pb%mu_star(n),& 
              pb%v_star(n), pb%theta_star(n),   &
-             pb%iot(n),pb%iasp(n))
+             pb%iot(n),pb%iasp(n),pb%coh(n))
  
   do i=1,n
     read(15,*)pb%sigma(i), pb%v(i), pb%theta(i),  &
               pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
-              pb%v2(i), pb%mu_star(i), pb%v_star(i), pb%iot(i), pb%iasp(i)                 
+              pb%v2(i), pb%mu_star(i), pb%v_star(i), &
+              pb%iot(i), pb%iasp(i), pb%coh(i)                 
   end do
 
   close(15)

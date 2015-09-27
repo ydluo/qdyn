@@ -28,7 +28,7 @@ module problem_class
       tau_max, t_rup, v_max, t_vmax,  &
       slip, v, dv_dt, theta, dtheta_dt,  &
       a, b, dc, v1, v2, mu_star, v_star, &
-      theta_star, iot, iasp, co
+      theta_star, iot, iasp, coh
     double precision :: pot, pot_rate, pot_pre
     double precision :: beta=0d0, smu=0d0, lam=0d0, zimpedance=0d0, v_th
 
