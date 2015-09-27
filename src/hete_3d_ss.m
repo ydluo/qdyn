@@ -11,6 +11,10 @@ p = qdyn('set');
 p.NSTOP = 3;        %stop at v_th
 p.TMAX = 0.1001;       % stop at v = v_th = tmax
 
+
+co = 4e6;  %cohesion
+co_limit = 3e3;  %first X m to appy cohesion 
+
 p.RNS_LAW=0;
 p.MESHDIM=2;      %FFT enabled
 p.THETA_LAW=1;
@@ -74,14 +78,15 @@ p.DC(ceil((db-dd)/dz0)+1:p.NW)=0.3;
 p.SIGMA(1:ceil((db-dd)/dz0))=sigma0;
 p.SIGMA(ceil((db-dd)/dz0)+1:p.NW)=linspace(sigma0,1e6,numel(ceil((db-dd)/dz0)+1:p.NW));
 
-
-
+p.CO(1:ceil((db-co_limit)/dz0))=0;
+p.CO(ceil((db-co_limit)/dz0)+1:p.NW)=co;
 
 p.N=p.NX*p.NW;
 tmp_A=p.A;
 tmp_B=p.B;
 tmp_SIGMA=p.SIGMA;
 tmp_DC=p.DC;
+tmp_CO=p.CO;
 
 
 for i=1:p.NW
@@ -90,7 +95,8 @@ for i=1:p.NW
     p.B((i-1)*p.NX+1:i*p.NX) = tmp_B(i);
     p.SIGMA((i-1)*p.NX+1:i*p.NX) = tmp_SIGMA(i);
     p.DC((i-1)*p.NX+1:i*p.NX) = tmp_DC(i);
-
+    p.CO((i-1)*p.NX+1:i*p.NX) = tmp_CO(i);
+	
 end
 
 

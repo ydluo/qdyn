@@ -84,15 +84,17 @@
 %		V1 	cut-off velocity of direct effect (m/s)
 %		V2 	cut-off velocity of evolution effect (m/s), controls the transition
 %			from weakening to strengtherning when a<b. V2 should be <= V1
+%		CO	Cohesion (Pa)
+%
 %		THETA_LAW type of evolution law for the state variable:
 %			0 = ageing in the "no-healing" approximation
 %			1 = ageing law
 %			2 = slip law
 %
 %		Initial conditions:
-%		SIGMA = effective normal stress
-%		V_0 = initial slip velocity
-%		TH_0 = initial state 
+%		SIGMA = effective normal stress (Pa)
+%		V_0 = initial slip velocity (m/s)
+%		TH_0 = initial state (m/s)
 %
 %		Discretization and accuracy parameters:
 %		N	number of fault elements if MESHDIM=1
@@ -247,6 +249,7 @@ TH_SS = DC/V_SS;
 THETA_LAW = 1;
 RNS_LAW = 0;
 SIGMA_CPL = 0;
+CO = 0;
 %-- initial conditions
 SIGMA=1e8;
 V_0=V_SS ; 
@@ -353,6 +356,7 @@ switch mode
     V_SS(1:N)=V_SS;
     IOT(1:N)=IOT;
     IASP(1:N)=IASP;
+    CO(1:N)=CO;
     % export qdyn.in
     fid=fopen('qdyn.in','w');
     fprintf(fid,'%u     meshdim\n' , MESHDIM); 
@@ -386,8 +390,8 @@ switch mode
     fprintf(fid,'%.15g %.15g %.15g    M0, DYN_th_on, DYN_th_off\n', DYN_M,DYN_TH_ON,DYN_TH_OFF);
 
           
-    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
-        [SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:),IOT(:),IASP(:)]');
+    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
+        [SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:),IOT(:),IASP(:),CO(:)]');
  
     fclose(fid);
 
@@ -506,7 +510,7 @@ DTTRY = rdat(1);
 DTMAX = rdat(2);
 ACC   = rdat(3);
 fclose(fid);
-[X,A,B,DC,V1,V2,V_0,TH_0]=textread(name,'','headerlines',6);
+[X,A,B,DC,V1,V2,V_0,TH_0,]=textread(name,'','headerlines',6);
 
 % wrap UPPER CASE variables in parameter structure fields with the same name 
 fpars = who;

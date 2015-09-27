@@ -65,7 +65,7 @@ subroutine init_all(pb)
      
   !---------------------- ref_value ------------------        
   call set_theta_star(pb)
-  pb%tau_init = pb%sigma * friction_mu(pb%v,pb%theta,pb)
+  pb%tau_init = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%co
   pb%tau = pb%tau_init
   pb%slip = 0d0 
   !---------------------- ref_value ----------------- 

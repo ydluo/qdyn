@@ -18,8 +18,8 @@ itp=1;   %interpfactor
 rn=200;
 rsn=3;
 vmax=1.;
-c_depth=3e3; % Cohesion cutoff depth in m
-coh=4e6;    %cohension in Pa/ default: 4e6
+%c_depth=3e3; % Cohesion cutoff depth in m
+%coh=4e6;    %cohension in Pa/ default: 4e6
 %forced rupture zone
 hxr=0.5;  %hypocenter relative location along-strike (0,1) left to right
 hzr=10/50; %hypocenter relative depth (0,1) surface to bottom
@@ -97,12 +97,12 @@ for i=1:q.N
     q.f0(i)=p.MU_SS(id);
     q.V_ini(i)=o.v(id);
     q.TH_ini(i)=o.th(id);
- 
+    co(i)=p.CO(id);
     tau(i)=q.SIGMA(i)*(q.f0(i)+q.A(i)*log(q.V_ini(i)/q.V0(i))+q.B(i)*log(q.TH_ini(i)*q.V0(i)/q.DC(i)));
-
-    if abs(q.Z(i)) <= c_depth
-        co(i)=coh;
-    end
+    
+%    if abs(q.Z(i)) <= c_depth
+%        co(i)=coh;
+%    end
 
     if mod(i,ceil(q.N/100)) == 0
         disp([num2str(i/ceil(q.N/100)) '% Complete'])

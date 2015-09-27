@@ -149,7 +149,7 @@ subroutine update_field(pb)
 
   ! Update slip, stress. 
   pb%slip = pb%slip + pb%v*pb%dt_did
-  pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb)
+  pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%co
   ! update potency and potency rate
   pb%pot=0d0;
   pb%pot_rate=0d0;

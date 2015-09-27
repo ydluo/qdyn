@@ -74,6 +74,6 @@ d.MU_SS=dd.data(:,9);
 d.V_SS=dd.data(:,10);
 d.IOT=dd.data(:,11);
 d.IASP=dd.data(:,12);
-
+d.CO=dd.data(:,13);
 
 return
