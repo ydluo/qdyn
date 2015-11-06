@@ -4,7 +4,7 @@
 
 function d = Qdyn_read_ot(filename)
 
-dd=dlmread(filename,' ',6,0);
+dd.data=dlmread(filename,'',6,0);
 d.t=dd.data(:,1);
 d.locl=dd.data(:,2);
 d.cl=dd.data(:,3);
