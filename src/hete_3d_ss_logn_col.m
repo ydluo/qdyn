@@ -5,10 +5,10 @@ clc;
 rand(1,floor(sum(100*clock)));
 %------------------------------
 
-DC_mean = 0.03;		%mean DC
+DC_mean = 0.015;		%mean DC
 dcsigma = 0.25;		%Dv
-col_l = 10e3;	%r of col 
-DC_min = 0.02;		%min_DC
+col_l = 1e3;	%r of col 
+DC_min = 0.01;		%min_DC
 
 DC_v = (exp((dcsigma)^2)-1)*DC_mean^2;
 dcmu = log(DC_mean^2/sqrt(DC_v+DC_mean^2));
@@ -21,7 +21,7 @@ p.TMAX = 100000*year;       % stop at v = v_th = tmax
 
 
 co = 4e6;  %cohesion
-co_limit = 3e3;  %first X m to appy cohesion 
+co_limit = 2e3;  %first X m to appy cohesion 
 
 p.RNS_LAW=0;
 p.MESHDIM=2;      %FFT enabled
@@ -36,28 +36,28 @@ p.V1=p.V2;
 
 p.OX_SEQ=1;
 p.OX_DYN=1;
-p.DYN_TH_ON = 0.1;
-p.DYN_TH_OFF = 0.1;
+p.DYN_TH_ON = 0.01;
+p.DYN_TH_OFF = 0.002;
 %p.DC=0.3;
 
  
 
 dip0=90.;
-dw0=0.5e3/2;
-dd=20e3;    %depth of L sigma change
-d1=5e3;     %upperbound of seismogenic zone (depth in m)
-d2=9e3;    %limit of constant b/a
-d3=27e3;     %lowerbound of seismogenic zone (depth in m)
-d4=31e3;     %limit of constant b/a
-db=50e3;     %bottom of simulation zone (depth in m)
+dw0=125;
+dd=10e3;    %depth of L sigma change
+d1=2e3;     %upperbound of seismogenic zone (depth in m)
+d2=5e3;    %limit of constant b/a
+d3=18e3;     %lowerbound of seismogenic zone (depth in m)
+d4=21e3;     %limit of constant b/a
+db=30e3;     %bottom of simulation zone (depth in m)
 aa0=0.01;    %p.A
 sigma0=75e6;        %sigma max
 nxout=1;       %snapshot output grid interval
 p.NXOUT_DYN=1;   %dynamic snapshot output grid interval
 p.W=db/sin(dip0/180.*pi);
-p.L=512e3;
+p.L=64e3;
 p.NW=ceil(p.W/dw0);
-p.NX=1024*2;
+p.NX=512;
 p.VS=3000.;
 
 r_filter = ceil(col_l/dw0);
