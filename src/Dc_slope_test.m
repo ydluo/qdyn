@@ -248,7 +248,7 @@ for iiHC = 1:1:numel(HC)
                         sR_rup(iipks_2) = p.X(iXR);
                         sLen_rup(iipks_2) = sR_rup(iipks_2) - sL_rup(iipks_2); 
                         sDc_rup(iipks_2) = mean(p.DC(iXL:iXR));
-                        sLc_rup(iipks_2) = p2.MU*sDc_rup(iipks_2)/(p.SIGMA*(p.B-p.A));                        
+                        sLc_rup(iipks_2) = p.MU*sDc_rup(iipks_2)/(p.SIGMA*(p.B-p.A));                        
                     end
                    
                 % find largest event
