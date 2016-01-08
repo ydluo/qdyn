@@ -220,11 +220,12 @@ for iiHC = 1:1:numel(HC)
             
             if i_event_type == 5 || i_event_type ==6
                 disp('Recording rupture lengths and Dc in rupture area');
-                sL_rup = zeros(size(pks));
-                sR_rup = zeros(size(pks));
-                sLen_rup = zeros(size(pks));
-                sDc_rup = zeros(size(pks));
-                sLc_rup = zeros(size(pks)); 
+                sL_rup = 0;
+                sR_rup = 0;
+                sLen_rup = 0;
+                sDc_rup = 0;
+                sLc_rup = 0; 
+                iipks_2 = 0;
                 sVmax = zeros(size(pks));
                 sT = zeros(size(pks));
 
@@ -232,6 +233,7 @@ for iiHC = 1:1:numel(HC)
                     sVmax(iipks) = pks(iipks);
                     sT(iipks) = locs(iipks);
                     if sVmax(iipks) >= v_th*Vdyn 
+                        iipks_2 = 1+ iipks_2;
                         oxvmax = max(ox.v);
                         id0 = find(oxvmax(ox.t<= sT(iipks)) <= v_th*Vdyn,1,'last');
                         id1 = find(oxvmax(ox.t>= sT(iipks)) <= v_th*Vdyn,1,'first');
@@ -242,11 +244,11 @@ for iiHC = 1:1:numel(HC)
                         ttvmax = max(ox.v(:,id0:id1),[],2);
                         iXL = find(ttvmax >= v_th*Vdyn,1,'first');
                         iXR = find(ttvmax >= v_th*Vdyn,1,'last');
-                        sL_rup(iipks) = p.X(iXL);
-                        sR_rup(iipks) = p.X(iXR);
-                        sLen_rup(iipks) = sR_rup(iipks) - sL_rup(iipks); 
-                        sDc_rup(iipks) = mean(p.DC(iXL:iXR));
-                        sLc_rup(iipks) = p.MU*sDc_rup(iipks)/(p.SIGMA*(p.B-p.A));                        
+                        sL_rup(iipks_2) = p2.X(iXL);
+                        sR_rup(iipks_2) = p2.X(iXR);
+                        sLen_rup(iipks_2) = sR_rup(iipks_2) - sL_rup(iipks_2); 
+                        sDc_rup(iipks_2) = mean(p2.DC(iXL:iXR));
+                        sLc_rup(iipks_2) = p2.MU*sDc_rup(iipks_2)/(p2.SIGMA*(p2.B-p2.A));                        
                     end
                    
                 % find largest event
