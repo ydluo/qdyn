@@ -8,24 +8,38 @@ rand(1,floor(sum(100*clock)));
 %------------------------------
 
 
-L = 100e3;
-N = 2048;
-DCC = 0.01;
-B = 0.01;
-A = 0.008;
+L = 128e3;
+N = 1024;
+W = 15e3;
+
 FINITE = 1;
 
-twm = 4000;     %simu time in years 
+twm2 = 1000;     %simu time in years 
+      % slope left dDc/dx normalized by critical DDCC = sigma(b-a)/mu
 
-DCmax = 100;    % max DC cap
-HC = [0:1:10 0.2:1:5 0.4:1:5 0.6:1:5 0.8:1:5];   % L/Lc in the center
-L_slp = [0.1:0.1:1.0 1.2:0.2:2.0 2.4:0.4:4.0 5:1:10 15:5:50 60:20:200 300:100:1000];        % slope left dDc/dx normalized by critical DDCC = sigma(b-a)/mu
+% bin_DC_mean = [0.01:0.005:0.1 0.012:0.005:0.1];		%mean DC
+% bin_dcsigma = [0.25 0.5 0.125];		%Dv
+% bin_col_l = [125:125:1000 1250:250:5000 6e3:1e3:10e3 12e3:2e3:30e3];	%r of col 
 
+bin_DC_mean = [0.025];		%mean DC
+bin_dcsigma = [0.25];		%Dv
+bin_col_l = [5000];	%r of col 
+
+
+
+DC_min = 0.01;		%min_DC
+
+
+
+
+year = 3600*24*365;      
+      
+      
 %-----------
 
 
-tardir = ' luoyd@pacha:/export/raid1/luoyd/qdyn_results_DC_slope/New2/';
-filename_sum = 'Dc_slope_finiti_New2.txt';
+tardir = ' luoyd@pacha:/export/raid1/luoyd/qdyn_results_DC_test_rnd/';
+filename_sum = 'Dc_test_rnd_finiti.txt';
 event_type = {'Undefined','Steady-Slip','Irreg. Aseismic','Chara. Aseismic','Irreg. Seismic','Chara. Seismic'};
 
 t_pk_dist = 1800;        % min peak distance in seconds
@@ -38,6 +52,8 @@ t_end_p = 0.5;  %portion of twm used for analysiscd
 
 
 ii_count_glb = 0;
+
+
 % dia.HC = zeros(ttl_sim,1);
 % dia.L_slp = zeros(ttl_sim,1);
 % dia.R_slp = zeros(ttl_sim,1);
@@ -49,65 +65,196 @@ ii_count_glb = 0;
 % dia.event_type = zeros(ttl_sim,1);
 
 
-for iiHC = 1:1:numel(HC)
-    tHC = HC(iiHC);
+for iibin_dcsigma = 1:1:numel(bin_dcsigma)
+    dcsigma = bin_dcsigma(iibin_dcsigma);
     
-    for iiL_slp = 1:1:numel(L_slp)
-        tL_slp = L_slp(iiL_slp);
+    for iiDC_mean = 1:1:numel(bin_DC_mean)
+        DC_mean = bin_DC_mean(iiDC_mean);
         
-        tR_slp = tL_slp;  
-            
+        for iicol_l = 1:1:numel(bin_col_l)
+            col_l = bin_col_l(iicol_l);
+                    
            
             ii_count_glb = ii_count_glb + 1;
             
-            filename = ['Dc_slope_finite_Lslp' num2str(tL_slp) '_Rslp' num2str(tR_slp) ...
-                '_cLc' num2str(tHC) '.mat'];
+            DC_v = (exp((dcsigma)^2)-1)*DC_mean^2;
+            dcmu = log(DC_mean^2/sqrt(DC_v+DC_mean^2));
+            
+            filename = ['Dc_test_rnd_finite_dcsigma' num2str(dcsigma) '_DCmean' num2str(DC_mean) ...
+                '_coll' num2str(col_l) '.mat'];
             
             disp(filename);
 
             year = 3600*24*365;
-            %if exist('qdyn')~=2, addpath ~/2D_RUPTURE/RATE_AND_STATE/qdyn/ ; end
             p = qdyn('set');
-            p.B = B;
-            p.A = A;
-            AB_RATIO = p.A/p.B;
-            p.DC = DCC;
-            p.W = 100e3;
+            p.NSTOP = 0;        %stop at v_th
+            p.TMAX = 100000*year;       % stop at v = v_th = tmax
 
-            Lb = p.MU*DCC/p.SIGMA/p.B;
-            Lnuc = 1.3774*Lb;
-            Lc = Lb/(1-AB_RATIO);
-            Linf = 1/pi *(1-AB_RATIO)^2 *Lb;
 
-            p.L = L;
-            p.FINITE=FINITE;
-            p.N = N;
+            co = 4e6;  %cohesion
+            co_limit = 3e3;  %first X m to appy cohesion 
 
-            dx=p.L/p.N;
-            Lb_over_dx = Lb/dx
+            p.RNS_LAW=0;
+            p.MESHDIM=2;      %FFT enabled
+            p.THETA_LAW=1;
+            p.MU=40e9;
+            p.LAM=40e9;
+            p.MU_SS=0.6;
+            %p.SIGMA=100e6;
+            p.V_SS=0.01/year;
+            p.V2=100.;              %no cut off velocity
+            p.V1=p.V2;
+
+            p.OX_SEQ=1;
+            p.OX_DYN=1;
+            p.DYN_TH_ON = 0.1;
+            p.DYN_TH_OFF = 0.1;
+            %p.DC=0.3;
+
+
+
+            dip0=90.;
+            dw0=0.5e3/4;
+            db=20e3;     %bottom of simulation zone (depth in m)
+            aa0=0.01;    %p.A
+            sigma0=75e6;        %sigma max
+            nxout=1;       %snapshot output grid interval
+            p.NXOUT_DYN=1;   %dynamic snapshot output grid interval
+            p.W=db/sin(dip0/180.*pi);
+            p.L=512e3;
+            p.NW=ceil(p.W/dw0);
+            p.NX=1024*4;
+            p.VS=3000.;
+
+            r_filter = ceil(col_l/dw0);
+
+            p.N=p.NX*p.NW;
+            p.DW(1:p.NW)=p.W/p.NW;     %deep to shallow
+            p.DIP_W(1:p.NW)=dip0;      %deep to shallow 
+            %p.Z_CORNER=-db+.5*p.DW(1)*sin(p.DIP_W(1)/180.*pi);   %p.Z_CORNER at center of left-bottom cell
+
+            p.Z_CORNER=-db;
+
+            p.IC = p.N/2;
+
+            p.A(1:p.NW)=aa0;
+            dz0=dw0*sin(dip0/180.*pi);
+            ba0=1.5;     %b/a at seismogenic zone
+            %abmax=5;     %a/b at d3
+
+            p.B(1:p.NW)=p.A(1:p.NW).*ba0;
+
+            p.DC(1:p.NW)=0.3;
+
+            p.SIGMA(1:p.NW)=sigma0;
+
+            p.CO(1:ceil((db-co_limit)/dz0))=0;
+            p.CO(ceil((db-co_limit)/dz0)+1:p.NW)=co;
+
+            p.N=p.NX*p.NW;
+            tmp_A=p.A;
+            tmp_B=p.B;
+            tmp_SIGMA=p.SIGMA;
+            tmp_DC=p.DC;
+            tmp_CO=p.CO;
+
+
+            for i=1:p.NW
+                p.X((i-1)*p.NX+1:i*p.NX) = linspace(0,p.L,p.NX);
+                p.A((i-1)*p.NX+1:i*p.NX) = tmp_A(i);
+                p.B((i-1)*p.NX+1:i*p.NX) = tmp_B(i);
+                p.SIGMA((i-1)*p.NX+1:i*p.NX) = tmp_SIGMA(i);
+                p.DC((i-1)*p.NX+1:i*p.NX) = tmp_DC(i);
+                p.CO((i-1)*p.NX+1:i*p.NX) = tmp_CO(i);
+
+            end
+
+
+            for i=1:1:p.N
+                p.IOT(i) = 0;
+            end
+
+            T = normrnd(log(DC_mean),dcsigma,p.NX+r_filter*2,p.NW+r_filter*2);
+            h = fspecial('disk',r_filter);
+            Tm = imfilter(T,h);
+            TTm = Tm(r_filter+1:1:end-r_filter,r_filter+1:1:end-r_filter);
+            pd = fitdist(reshape(TTm,[],1),'normal');
+            TTm = pd.mu+(TTm-pd.mu)*dcsigma/pd.sigma;
+            TTm = exp(TTm);
+            p.DC = reshape(TTm,size(p.X));
+            p.DC = max(p.DC,DC_min);
+
+
+            twm=100000;         %warmup time in years
+            ts=1000;    %simulation time in years
             p.ACC = 1e-10;
+            Vdyn=2*mean(p.A.*p.SIGMA./p.MU.*p.VS);
+            p.DYN_TH_ON=0.01;
+            p.DYN_TH_OFF=0.01*0.5;
+
+            %------------------------------
+            Lb = min(p.MU.*p.DC./p.SIGMA./p.B)
+            %Lnuc = 1.3774*Lb;
+            %------------------------------
+
+
+            p.IC=ceil(p.N/2);
+            dw=p.W/p.NW;
+            Lb_over_dw = Lb/dw;
+            dx=p.L/p.NX;
+            Lb_over_dx = Lb/dx;
 
             p = qdyn('set',p);
 
+            p.V_0 = 1.01*p.V_SS ;
 
-            p.TMAX = twm * year; % 
-            p.NTOUT=100;
-            p.NXOUT=1;
-            p.NSTOP=0;
+
+            p.NTOUT=1000;
+            p.NXOUT=nxout;
+
+            % p.DYN_FLAG=1;
+            % p.DYN_M=10.^19;
+            % p.DYN_SKIP = 1;
             
-            p.DC = ones(size(p.X))*p.DC;
-            Hcc = tHC * Lc;
-            DDCC = p.SIGMA *(p.B-p.A)/p.MU * 2;
-                        
-            p.DC(p.X >= Hcc/2) = p.DC(p.X >= Hcc/2) + DDCC*(p.X(p.X >= Hcc/2) - Hcc/2)*tR_slp;
-            p.DC(p.X <= -Hcc/2) = p.DC(p.X <= -Hcc/2) - DDCC*(p.X(p.X <= -Hcc/2) + Hcc/2)*tL_slp;
-            p.DC = min(p.DC,DCmax);
             
-            p.V_0 = ( 1.+0.01*exp( -(p.X/Hcc).^6 ) )*p.V_SS ;
-            p.V_0 = p.V_0/mean(p.V_0)*p.V_SS;
-            [p,ot,ox] = qdyn('run',p) ;
+            p2 = qdyn('set');
+            p2.B = p.B(p.N/2+1);
+            p2.A = p.A(p.N/2+1);
+            p2.L = L;
+            p2.FINITE=FINITE;
+            p2.N = N;
+            p2.DC = p.DC(p.N/2+1:1:p.N/2+p2.N);
+            p2.W = W;
+            p2.SIGMA = p.SIGMA(p.N/2+1);
+            p2.MU = p.MU;
+            Lb_min = p2.MU*min(p2.DC)/p2.SIGMA/p2.B;
+            Lb_mean = p2.MU*mean(p2.DC)/p2.SIGMA/p2.B;
+
+
+
+
+            dx=p2.L/p2.N;
+            Lb_min_over_dx = Lb_min/dx
+            Lb_mean_over_dx = Lb_mean/dx
+
+            p2.ACC = 1e-10;
+
+            p2 = qdyn('set',p2);
+
+
+            p2.TMAX = twm2 * year; % 
+            p2.NTOUT=100;
+            p2.NXOUT=1;
+            p2.NSTOP=0;
             
-            Vdyn=2*mean(p.A.*p.SIGMA./p.MU.*p.VS);
+
+            
+            p2.V_0 = ( 1.+0.01*exp( -(p2.X/(p2.L*0.1)).^6 ) )*p2.V_SS ;
+            p2.V_0 = p2.V_0/mean(p2.V_0)*p2.V_SS;
+
+            [p2,ot,ox] = qdyn('run',p2) ;
+            
+            Vdyn=2*mean(p2.A.*p2.SIGMA./p2.MU.*p2.VS);
 
             filename_eps = [filename '.eps'];
             filename_eps_z = [filename '_zoom.eps'];
@@ -116,7 +263,7 @@ for iiHC = 1:1:numel(HC)
             
                   %------------ try to find event type
 
-            ii_end = find(ot.t >= twm*year*(1.0 - t_end_p) , 1);
+            ii_end = find(ot.t >= twm2*year*(1.0 - t_end_p) , 1);
             vend = ot.v(ii_end:1:numel(ot.v));
             tend = ot.t(ii_end:1:numel(ot.v));
 
@@ -145,11 +292,11 @@ for iiHC = 1:1:numel(HC)
 
             end
 
-            if vend_max <= p.V_SS*v_th_ss
+            if vend_max <= p2.V_SS*v_th_ss
                     i_event_type = 2;   %steady slip
             end
 
-            if (vend_max > p.V_SS*v_th_ss) && (vend_max < v_th * Vdyn) || (isp == 1)
+            if ((vend_max > p2.V_SS*v_th_ss) && (vend_max < v_th * Vdyn)) || (isp == 1)
                     i_event_type = 4;   % chara aseis
                 [pks,locs] = findpeaks(vend,tend,'MinPeakDistance',t_pk_dist,'MinPeakHeight',vend_max * 0.01);
                 t_rec = diff(locs);
@@ -157,7 +304,7 @@ for iiHC = 1:1:numel(HC)
                     i_event_type = 3;
                 end
 
-                if (vend_max <= p.V_SS*100)
+                if (vend_max <= p2.V_SS*100)
                     ii_end_all = zeros(num_cc,1);
                     vend_max_all = zeros(num_cc-1,1);
 
@@ -175,7 +322,7 @@ for iiHC = 1:1:numel(HC)
                         i_event_type = 2;
                     end  
 
-                    if (vend_max <= p.V_SS*2)
+                    if (vend_max <= p2.V_SS*2)
                         i_event_type = 2;
                     end
                 end
@@ -212,7 +359,7 @@ for iiHC = 1:1:numel(HC)
             R_rup_mean = 0;
             Len_rup_mean = 0;
             Dc_rup_mean = 0;
-            Lc_rup_mean = 0;   
+            Lc_rup_mean = 0;    
             
             if i_event_type == 5 || i_event_type ==6
                 disp('Recording rupture lengths and Dc in rupture area');
@@ -264,8 +411,8 @@ for iiHC = 1:1:numel(HC)
                 R_rup_mean = mean(sR_rup);
                 Len_rup_mean = mean(sLen_rup);
                 Dc_rup_mean = mean(sDc_rup);
-                Lc_rup_mean = mean(sLc_rup);                
-                
+                Lc_rup_mean = mean(sLc_rup); 
+                                
                 end
             end
             
@@ -281,17 +428,18 @@ for iiHC = 1:1:numel(HC)
             %system(['scp ' filename_eps_z ' ' tardir]);
             %system(['rm ' filename_eps_z]);
             %display([filename_eps_z ' has been copyed to ' tardir]);  
+
             fid=fopen(filename_sum,'a');
-            fprintf(fid,'%10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10d\n',...
-                tHC,tL_slp,tR_slp,L_rup_max,R_rup_max,Len_rup_max,Dc_rup_max,Lc_rup_max,...
+            fprintf(fid,'%10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10.8g %10d\n',...
+                dcsigma,DC_mean,col_l,L_rup_max,R_rup_max,Len_rup_max,Dc_rup_max,Lc_rup_max,...
                 L_rup_min,R_rup_min,Len_rup_min,Dc_rup_min,Lc_rup_min,...
                 L_rup_mean,R_rup_mean,Len_rup_mean,Dc_rup_mean,Lc_rup_mean,vend_max,i_event_type);
             fclose(fid);
 
-            dia.HC(ii_count_glb) = tHC;
-            dia.L_slp(ii_count_glb) = tL_slp;
-            dia.R_slp(ii_count_glb) = tR_slp;
-            
+            dia.dcsigma(ii_count_glb) = dcsigma;
+            dia.DC_mean(ii_count_glb) = DC_mean;
+            dia.col_l(ii_count_glb) = col_l;
+
             dia.L_rup_max(ii_count_glb) = L_rup_max;
             dia.R_rup_max(ii_count_glb) = R_rup_max;
             dia.Len_rup_max(ii_count_glb) = Len_rup_max;
@@ -306,10 +454,12 @@ for iiHC = 1:1:numel(HC)
             dia.R_rup_mean(ii_count_glb) = R_rup_mean;
             dia.Len_rup_mean(ii_count_glb) = Len_rup_mean;
             dia.Dc_rup_mean(ii_count_glb) =  Dc_rup_mean;
-            dia.Lc_rup_mean(ii_count_glb) =  Lc_rup_mean;   
-            
+            dia.Lc_rup_mean(ii_count_glb) =  Lc_rup_mean;                                   
+                        
             dia.vmax(ii_count_glb) = vend_max;
             dia.event_type(ii_count_glb) = i_event_type;
+            
+        end
             
             
     end
