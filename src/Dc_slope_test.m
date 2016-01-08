@@ -21,6 +21,10 @@ DCmax = 100;    % max DC cap
 HC = [0:1:10 0.2:1:5 0.4:1:5 0.6:1:5 0.8:1:5];   % L/Lc in the center
 L_slp = [0.1:0.1:1.0 1.2:0.2:2.0 2.4:0.4:4.0 5:1:10 15:5:50 60:20:200 300:100:1000];        % slope left dDc/dx normalized by critical DDCC = sigma(b-a)/mu
 
+% HC = [1];   % L/Lc in the center
+% L_slp = [0.3];        % slope left dDc/dx normalized by critical DDCC = sigma(b-a)/mu
+
+
 %-----------
 
 
@@ -238,11 +242,11 @@ for iiHC = 1:1:numel(HC)
                         ttvmax = max(ox.v(:,id0:id1),[],2);
                         iXL = find(ttvmax >= v_th*Vdyn,1,'first');
                         iXR = find(ttvmax >= v_th*Vdyn,1,'last');
-                        sL_rup(iipks) = p2.X(iXL);
-                        sR_rup(iipks) = p2.X(iXR);
+                        sL_rup(iipks) = p.X(iXL);
+                        sR_rup(iipks) = p.X(iXR);
                         sLen_rup(iipks) = sR_rup(iipks) - sL_rup(iipks); 
-                        sDc_rup(iipks) = mean(p2.DC(iXL:iXR));
-                        sLc_rup(iipks) = p2.MU*sDc_rup(iipks)/(p2.SIGMA*(p2.B-p2.A));                        
+                        sDc_rup(iipks) = mean(p.DC(iXL:iXR));
+                        sLc_rup(iipks) = p.MU*sDc_rup(iipks)/(p.SIGMA*(p.B-p.A));                        
                     end
                    
                 % find largest event
