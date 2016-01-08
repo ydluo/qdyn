@@ -271,7 +271,11 @@ for iiHC = 1:1:numel(HC)
                 Len_rup_mean = mean(sLen_rup);
                 Dc_rup_mean = mean(sDc_rup);
                 Lc_rup_mean = mean(sLc_rup);                
-                
+               	
+		if L_rup_min < L_rup_max * 0.8
+		   i_event_type = 5;
+		end
+ 
                 end
             end
             
