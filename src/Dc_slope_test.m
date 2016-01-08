@@ -244,11 +244,11 @@ for iiHC = 1:1:numel(HC)
                         ttvmax = max(ox.v(:,id0:id1),[],2);
                         iXL = find(ttvmax >= v_th*Vdyn,1,'first');
                         iXR = find(ttvmax >= v_th*Vdyn,1,'last');
-                        sL_rup(iipks_2) = p2.X(iXL);
-                        sR_rup(iipks_2) = p2.X(iXR);
+                        sL_rup(iipks_2) = p.X(iXL);
+                        sR_rup(iipks_2) = p.X(iXR);
                         sLen_rup(iipks_2) = sR_rup(iipks_2) - sL_rup(iipks_2); 
-                        sDc_rup(iipks_2) = mean(p2.DC(iXL:iXR));
-                        sLc_rup(iipks_2) = p2.MU*sDc_rup(iipks_2)/(p2.SIGMA*(p2.B-p2.A));                        
+                        sDc_rup(iipks_2) = mean(p.DC(iXL:iXR));
+                        sLc_rup(iipks_2) = p2.MU*sDc_rup(iipks_2)/(p.SIGMA*(p.B-p.A));                        
                     end
                    
                 % find largest event
