@@ -18,9 +18,11 @@ FINITE = 1;
 twm = 4000;     %simu time in years 
 
 DCmax = 100;    % max DC cap
-HC = [0:1:10 0.2:1:5 0.4:1:5 0.6:1:5 0.8:1:5];   % L/Lc in the center
-L_slp = [0.1:0.1:1.0 1.2:0.2:2.0 2.4:0.4:4.0 5:1:10 15:5:50 60:20:200 300:100:1000];        % slope left dDc/dx normalized by critical DDCC = sigma(b-a)/mu
+%HC = [4:1:10 0.2:1:5 0.4:1:5 0.6:1:5 0.8:1:5];   % L/Lc in the center
+%L_slp = [0.1:0.1:1.0 1.2:0.2:2.0 2.4:0.4:4.0 5:1:10 15:5:50 60:20:200 300:100:1000];        % slope left dDc/dx normalized by critical DDCC = sigma(b-a)/mu
 
+HC = [3];   % L/Lc in the center
+L_slp = [1.0 1.2:0.2:2.0 2.4:0.4:4.0 5:1:10 15:5:50 60:20:200 300:100:1000];        % slope left dDc/dx normalized by critical DDCC = sigma(b-a)/mu
 % HC = [1];   % L/Lc in the center
 % L_slp = [0.3];        % slope left dDc/dx normalized by critical DDCC = sigma(b-a)/mu
 
@@ -241,14 +243,18 @@ for iiHC = 1:1:numel(HC)
                         if id1 > numel(oxvmax)
                             id1 = numel(oxvmax);
                         end
+                        
                         ttvmax = max(ox.v(:,id0:id1),[],2);
-                        iXL = find(ttvmax >= v_th*Vdyn,1,'first');
-                        iXR = find(ttvmax >= v_th*Vdyn,1,'last');
-                        sL_rup(iipks_2) = p.X(iXL);
-                        sR_rup(iipks_2) = p.X(iXR);
-                        sLen_rup(iipks_2) = sR_rup(iipks_2) - sL_rup(iipks_2); 
-                        sDc_rup(iipks_2) = mean(p.DC(iXL:iXR));
-                        sLc_rup(iipks_2) = p.MU*sDc_rup(iipks_2)/(p.SIGMA*(p.B-p.A));                        
+                        if max(ttvmax) >= v_th*Vdyn 
+                            iipks_2 = 1+ iipks_2;
+                            iXL = find(ttvmax >= v_th*Vdyn,1,'first');
+                            iXR = find(ttvmax >= v_th*Vdyn,1,'last');
+                            sL_rup(iipks_2) = p.X(iXL);
+                            sR_rup(iipks_2) = p.X(iXR);
+                            sLen_rup(iipks_2) = sR_rup(iipks_2) - sL_rup(iipks_2); 
+                            sDc_rup(iipks_2) = mean(p.DC(iXL:iXR));
+                            sLc_rup(iipks_2) = p.MU*sDc_rup(iipks_2)/(p.SIGMA*(p.B-p.A));  
+                        end
                     end
                    
                 % find largest event
@@ -325,8 +331,8 @@ for iiHC = 1:1:numel(HC)
     end
 
             
-
-            clear ot ox
+            disp(['Done'])
+          %  clear ot ox
               
 end
 

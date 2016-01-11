@@ -376,7 +376,6 @@ for iibin_dcsigma = 1:1:numel(bin_dcsigma)
                     sVmax(iipks) = pks(iipks);
                     sT(iipks) = locs(iipks);
                     if sVmax(iipks) >= v_th*Vdyn 
-                        iipks_2 = 1+ iipks_2;
                         oxvmax = max(ox.v);
                         id0 = find(oxvmax(ox.t<= sT(iipks)) <= v_th*Vdyn,1,'last');
                         id1 = find(oxvmax(ox.t>= sT(iipks)) <= v_th*Vdyn,1,'first');
@@ -385,13 +384,16 @@ for iibin_dcsigma = 1:1:numel(bin_dcsigma)
                             id1 = numel(oxvmax);
                         end
                         ttvmax = max(ox.v(:,id0:id1),[],2);
-                        iXL = find(ttvmax >= v_th*Vdyn,1,'first');
-                        iXR = find(ttvmax >= v_th*Vdyn,1,'last');
-                        sL_rup(iipks_2) = p2.X(iXL);
-                        sR_rup(iipks_2) = p2.X(iXR);
-                        sLen_rup(iipks_2) = sR_rup(iipks_2) - sL_rup(iipks_2); 
-                        sDc_rup(iipks_2) = mean(p2.DC(iXL:iXR));
-                        sLc_rup(iipks_2) = p2.MU*sDc_rup(iipks_2)/(p2.SIGMA*(p2.B-p2.A));                        
+                        if max(ttvmax) >= v_th*Vdyn 
+                            iipks_2 = 1+ iipks_2;
+                            iXL = find(ttvmax >= v_th*Vdyn,1,'first');
+                            iXR = find(ttvmax >= v_th*Vdyn,1,'last');
+                            sL_rup(iipks_2) = p2.X(iXL);
+                            sR_rup(iipks_2) = p2.X(iXR);
+                            sLen_rup(iipks_2) = sR_rup(iipks_2) - sL_rup(iipks_2); 
+                            sDc_rup(iipks_2) = mean(p2.DC(iXL:iXR));
+                            sLc_rup(iipks_2) = p2.MU*sDc_rup(iipks_2)/(p2.SIGMA*(p2.B-p2.A)); 
+                        end
                     end
                    
                 % find largest event
