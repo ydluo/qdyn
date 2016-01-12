@@ -17,9 +17,10 @@ FINITE = 1;
 twm2 = 4000;     %simu time in years 
       % slope left dDc/dx normalized by critical DDCC = sigma(b-a)/mu
 
-bin_DC_mean = [0.01:0.005:0.1 0.012:0.005:0.1];		%mean DC
-bin_dcsigma = [0.25 0.5 0.125];		%Dv
-bin_col_l = [125:125:1000 1250:250:5000 6e3:1e3:10e3 12e3:2e3:30e3];	%r of col 
+%bin_DC_mean = [0.01:0.005:0.1 0.012:0.005:0.1];		%mean DC
+bin_DC_mean = [0.015:0.005:0.1 0.012:0.005:0.1];         %mean DC
+bin_dcsigma = [0.25];		%Dv
+bin_col_l = [125:125:1000 1250:250:5000 6e3:1e3:10e3 12e3:2e3:16e3]*2;	%r of col 
 
 %bin_DC_mean = [0.025];		%mean DC
 %bin_dcsigma = [0.25];		%Dv
