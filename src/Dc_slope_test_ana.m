@@ -18,8 +18,8 @@ FINITE = 1;
 twm = 4000;     %simu time in years 
 
 DCmax = 100;    % max DC cap
-HC = [0:1:10 0.2:1:5 0.4:1:5 0.6:1:5 0.8:1:5];   % L/Lc in the center
-L_slp = [0.1:0.1:1.0 1.2:0.2:2.0 2.4:0.4:4.0 5:1:10 15:5:50 60:20:200 300:100:1000];        % slope left dDc/dx normalized by critical DDCC = sigma(b-a)/mu
+HC_new = [0:1:10 0.2:1:5 0.4:1:5 0.6:1:5 0.8:1:5];   % L/Lc in the center
+L_slp_new = [0.1:0.1:1.0 1.2:0.2:2.0 2.4:0.4:4.0 5:1:10 15:5:50 60:20:200 300:100:1000];        % slope left dDc/dx normalized by critical DDCC = sigma(b-a)/mu
 
 % HC = [1];   % L/Lc in the center
 % L_slp = [0.3];        % slope left dDc/dx normalized by critical DDCC = sigma(b-a)/mu
@@ -50,28 +50,29 @@ ii_count_glb_new = 0;
 % dia.event_type = zeros(ttl_sim,1);
 
 
-for iiHC = 1:1:numel(HC)
-    tHC = HC(iiHC);
+for iiHC = 1:1:numel(HC_new)
+    tHC = HC_new(iiHC);
     
-    for iiL_slp = 1:1:numel(L_slp)
-        tL_slp = L_slp(iiL_slp);
+    for iiL_slp = 1:1:numel(L_slp_new)
+        tL_slp = L_slp_new(iiL_slp);
         
         tR_slp = tL_slp;  
             
            
             ii_count_glb_new = ii_count_glb_new + 1;
             
-            filename = ['Dc_slope_finite_Lslp' num2str(tL_slp) '_Rslp' num2str(tR_slp) ...
+            ffname = ['Dc_slope_finite_Lslp' num2str(tL_slp) '_Rslp' num2str(tR_slp) ...
                 '_cLc' num2str(tHC) '.mat'];
             
-            disp(['Processing' filename ' ...']);
+            disp(['Processing' ffname ' ...']);
 
-            load(filename);
+            load(ffname);
             
             Vdyn=2*mean(p.A.*p.SIGMA./p.MU.*p.VS);
 
-            filename_eps = [filename '.eps'];
-            filename_eps_z = [filename '_zoom.eps'];
+            filename_eps = [ffname '.eps'];
+            filename_eps_z = [ffname '_zoom.eps'];
+            filename_rup = [ffname '_rup.eps'];
 
             
              %------------ try to find event type
@@ -95,6 +96,7 @@ for iiHC = 1:1:numel(HC)
             
             if i_event_type == 5 || i_event_type ==6
                 disp('Recording rupture lengths and Dc in rupture area');
+                i_event_type = 6;
                 sL_rup = 0;
                 sR_rup = 0;
                 sLen_rup = 0;
@@ -103,12 +105,12 @@ for iiHC = 1:1:numel(HC)
                 iipks_2 = 0;
                 sVmax = zeros(size(pks));
                 sT = zeros(size(pks));
+                sT2 = 0;
 
                 for iipks =  1:1:numel(pks)
                     sVmax(iipks) = pks(iipks);
                     sT(iipks) = locs(iipks);
                     if sVmax(iipks) >= v_th*Vdyn 
-                        iipks_2 = 1+ iipks_2;
                         oxvmax = max(ox.v);
                         id0 = find(oxvmax(ox.t<= sT(iipks)) <= v_th*Vdyn,1,'last');
                         id1 = find(oxvmax(ox.t>= sT(iipks)) <= v_th*Vdyn,1,'first');
@@ -120,6 +122,7 @@ for iiHC = 1:1:numel(HC)
                         ttvmax = max(ox.v(:,id0:id1),[],2);
                         if max(ttvmax) >= v_th*Vdyn 
                             iipks_2 = 1+ iipks_2;
+                            sT2(iipks_2) = sT(iipks);
                             iXL = find(ttvmax >= v_th*Vdyn,1,'first');
                             iXR = find(ttvmax >= v_th*Vdyn,1,'last');
                             sL_rup(iipks_2) = p.X(iXL);
@@ -150,11 +153,31 @@ for iiHC = 1:1:numel(HC)
                 Dc_rup_mean = mean(sDc_rup);
                 Lc_rup_mean = mean(sLc_rup);                
 
-            if Len_rup_min < Len_rup_max * 0.8
-               i_event_type = 5;
-            end
-
+                if Len_rup_min < Len_rup_max * 0.95
+                   i_event_type = 5;
                 end
+                
+                end
+
+                h2 = figure(2);
+                for ii_pt = 1:1:numel(sLen_rup)
+                    plot([sT2(ii_pt) sT2(ii_pt)]/year,[sL_rup(ii_pt) sR_rup(ii_pt)]/1000,'r','Linewidth',1);
+                    hold on
+                    plot([sT2(ii_pt) sT2(ii_pt)]/year,([-.5*sLc_rup(ii_pt) .5*sLc_rup(ii_pt)]+(sL_rup(ii_pt)+sR_rup(ii_pt))/2)/1000,...
+                        'b','Linewidth',1);  
+                end
+    %             semilogy(ot.t/year,ones(size(ot.t/year))*Vdyn,'r--');
+    %             semilogy(ot.t/year,ones(size(ot.t/year))*p.V_SS,'--','color',[0.6 0.6 0.6]);
+                xlabel('Time: (Years)')
+                ylabel('X: (km)')
+                title([ffname '   Type: ' event_type{i_event_type}],'Interpreter','none');
+                xlim([twm*(1.0 - t_end_p) twm]);
+                ylim([min(p.X) max(p.X)]/1000);
+                legend('Rupture Area','Lc');
+                print(h2,'-depsc2',filename_rup);
+
+                clf                  
+                
             end
             
             %system(['scp ' filename_eps ' ' tardir]);
@@ -200,12 +223,14 @@ for iiHC = 1:1:numel(HC)
             semilogy(ot.t/year,ones(size(ot.t/year))*p.V_SS,'--','color',[0.6 0.6 0.6]);
             xlabel('Time: (Years)')
             ylabel('Vmax: (m/s)')
-            title([filename '   Type: ' event_type{i_event_type}],'Interpreter','none');
+            title([ffname '   Type: ' event_type{i_event_type}],'Interpreter','none');
             print(h,'-depsc2',filename_eps);
             xlim([twm*(1.0 - t_end_p) twm]);
             print(h,'-depsc2',filename_eps_z);
-            clf           
+            clf
 
+   
+            
             clear ot ox
             
     end
