@@ -355,62 +355,70 @@ end subroutine compute_stress_2d
 subroutine compute_stress_3d(tau,sigma_n,k3,v,i_sigma_cpl)
 
   type(kernel_3D), intent(in)  :: k3
-  double precision , intent(out) :: tau(:), sigma_n(:)
-  double precision , intent(in) :: v(:)
+  double precision, intent(out) :: tau(:), sigma_n(:)
+  double precision, intent(in) :: v(:)
+  integer, intent(in) :: i_sigma_cpl
 
-  integer :: nn,nw,nx,k,i,iw,ix,j,jw,jx,idx,jj,chunk,i_sigma_cpl
+  integer :: nnLocal,nnGlobal,nw,nxLocal,nxGlobal,k,i,iw,ix,j,jw,jx,idx,jj,ix0_proc
   double precision :: tsum
-
-  nn = size(v)
+  !double precision :: vGlobal(:) ! TO DO in MPI version
+  
+  nnLocal = size(tau)
   nw = size(k3%kernel,1)
-  nx = nn/nw
-
+  nxLocal = nnLocal/nw
+  
+  nnGlobal = size(v)  !TO DO in MPI version: nnGlobal = size(vGlobal)
+  nxGlobal = nnGlobal/nw
+ 
+  ix0_proc = 0 ! TO DO in MPI version: first horizontal index minus 1 in this processor
+ 
+  ! TO DO in MPI version: gather the global v from the pieces in all processors
+  ! call MPI_gatherall(..., v, vGlobal ...) 
+ 
   !$OMP PARALLEL PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j,k)
-
   !$OMP DO SCHEDULE(STATIC)
-   do k=1,nn
+   do k=1,nnLocal
      iw = (k-1)/nx +1
-     ix = k-(iw-1)*nx
+     ix = k-(iw-1)*nx + ix0_proc
        j = 0
        tsum = 0.0d0
        do jw=1,nw
-         do jx=1,nx
+         do jx=1,nxGlobal
            j = j+1
            idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the kernel
-           jj = (jw-1)*nx + idx + 1 
+           jj = (jw-1)*nxGlobal + idx + 1 
            tsum = tsum - k3%kernel(iw,jj) * v(j)
+           !TO DO in MPI version: use vGlobal instead of v
+           !NOTE: it could be more efficient to store kernel in (jj,iw) form
          end do
        end do
      tau(k) = tsum
    end do
   !$OMP END DO
-
   !$OMP END PARALLEL
-
 
 if (i_sigma_cpl == 1) then
 
   !$OMP PARALLEL PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j,k)
-
   !$OMP DO SCHEDULE(STATIC)
-   do k=1,nn
+   do k=1,nnLocal
      iw = (k-1)/nx +1
-     ix = k-(iw-1)*nx
+     ix = k-(iw-1)*nx + ix0_proc
        j = 0
        tsum = 0.0d0
        do jw=1,nw
-         do jx=1,nx
+         do jx=1,nxGlobal
            j = j+1
            idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the kernel
-           jj = (jw-1)*nx + idx + 1 
+           jj = (jw-1)*nxGlobal + idx + 1 
            tsum = tsum - k3%kernel_n(iw,jj) * v(j)
+           !TO DO in MPI version: use vGlobal instead of v
          end do
        end do
        sigma_n(k) = tsum
      end do
    end do
   !$OMP END DO
-
   !$OMP END PARALLEL
 
 end if
