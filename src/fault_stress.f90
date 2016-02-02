@@ -358,21 +358,19 @@ subroutine compute_stress_3d(tau,sigma_n,k3,v,i_sigma_cpl)
   double precision , intent(out) :: tau(:), sigma_n(:)
   double precision , intent(in) :: v(:)
 
-  integer :: nn,nw,nx,i,iw,ix,j,jw,jx,idx,jj,chunk,i_sigma_cpl
+  integer :: nn,nw,nx,k,i,iw,ix,j,jw,jx,idx,jj,chunk,i_sigma_cpl
   double precision :: tsum
-  double precision, allocatable :: tmp(:,:)
 
   nn = size(v)
   nw = size(k3%kernel,1)
   nx = nn/nw
 
-  allocate(tmp(nx,nw))
-
-  !$OMP PARALLEL SHARED(tmp) PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j)
+  !$OMP PARALLEL PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j,k)
 
   !$OMP DO SCHEDULE(STATIC)
-   do iw=1,nw
-     do ix=1,nx
+   do k=1,nn
+     iw = (k-1)/nx +1
+     ix = k-(iw-1)*nx
        j = 0
        tsum = 0.0d0
        do jw=1,nw
@@ -383,24 +381,21 @@ subroutine compute_stress_3d(tau,sigma_n,k3,v,i_sigma_cpl)
            tsum = tsum - k3%kernel(iw,jj) * v(j)
          end do
        end do
-       tmp(ix,iw) = tsum
-     end do
+     tau(k) = tsum
    end do
   !$OMP END DO
 
   !$OMP END PARALLEL
 
-  ! Transfer back to 1D array tau
-  tau = reshape(tmp, (/ nw*nx /))
-
 
 if (i_sigma_cpl == 1) then
 
-  !$OMP PARALLEL SHARED(tmp) PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j)
+  !$OMP PARALLEL PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j,k)
 
   !$OMP DO SCHEDULE(STATIC)
-   do iw=1,nw
-     do ix=1,nx
+   do k=1,nn
+     iw = (k-1)/nx +1
+     ix = k-(iw-1)*nx
        j = 0
        tsum = 0.0d0
        do jw=1,nw
@@ -411,19 +406,14 @@ if (i_sigma_cpl == 1) then
            tsum = tsum - k3%kernel_n(iw,jj) * v(j)
          end do
        end do
-       tmp(ix,iw) = tsum
+       sigma_n(k) = tsum
      end do
    end do
   !$OMP END DO
 
   !$OMP END PARALLEL
 
-  ! Transfer back to 1D array sigma_n
-  sigma_n = reshape(tmp), (/ nw*nx /))
-
 end if
-
-deallocate(tmp)
 
 end subroutine compute_stress_3d
 
