@@ -313,7 +313,14 @@ subroutine compute_stress(tau,sigma_n,K,v)
     case(1); call compute_stress_1d(tau,K%k1,v)
     case(2); call compute_stress_2d(tau,K%k2f,v)
     case(3); call compute_stress_3d_fft(tau,sigma_n,K%k3f,v,K%i_sigma_cpl)
-    case(4); call compute_stress_3d(tau,sigma_n,K%k3,v,K%i_sigma_cpl)
+    case(4)
+      ! if (not using MPI) then
+      call compute_stress_3d(tau,sigma_n,K%k3,v,K%i_sigma_cpl)
+      ! else
+      !  gather the global v from the pieces in all processors
+      !  call MPI_gatherall(..., v, vGlobal ...) 
+      !  call compute_stress_3d(tau,sigma_n,K%k3,vGlobal,K%i_sigma_cpl)
+      ! endif
     case(5); call compute_stress_3d_fft2d(tau,K%k3f2,v)
   end select
 
@@ -361,19 +368,15 @@ subroutine compute_stress_3d(tau,sigma_n,k3,v,i_sigma_cpl)
 
   integer :: nnLocal,nnGlobal,nw,nxLocal,nxGlobal,k,i,iw,ix,j,jw,jx,idx,jj,ix0_proc
   double precision :: tsum
-  !double precision :: vGlobal(:) ! TO DO in MPI version
-  
+
   nnLocal = size(tau)
   nw = size(k3%kernel,1)
   nxLocal = nnLocal/nw
   
-  nnGlobal = size(v)  !TO DO in MPI version: nnGlobal = size(vGlobal)
+  nnGlobal = size(v)
   nxGlobal = nnGlobal/nw
  
   ix0_proc = 0 ! TO DO in MPI version: first horizontal index minus 1 in this processor
- 
-  ! TO DO in MPI version: gather the global v from the pieces in all processors
-  ! call MPI_gatherall(..., v, vGlobal ...) 
  
   !$OMP PARALLEL PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j,k)
   !$OMP DO SCHEDULE(STATIC)
@@ -388,7 +391,6 @@ subroutine compute_stress_3d(tau,sigma_n,k3,v,i_sigma_cpl)
            idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the kernel
            jj = (jw-1)*nxGlobal + idx + 1 
            tsum = tsum - k3%kernel(iw,jj) * v(j)
-           !TO DO in MPI version: use vGlobal instead of v
            !NOTE: it could be more efficient to store kernel in (jj,iw) form
          end do
        end do
@@ -412,7 +414,6 @@ if (i_sigma_cpl == 1) then
            idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the kernel
            jj = (jw-1)*nxGlobal + idx + 1 
            tsum = tsum - k3%kernel_n(iw,jj) * v(j)
-           !TO DO in MPI version: use vGlobal instead of v
          end do
        end do
        sigma_n(k) = tsum
