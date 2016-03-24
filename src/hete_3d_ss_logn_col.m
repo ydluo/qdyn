@@ -5,9 +5,9 @@ clc;
 rand(1,floor(sum(100*clock)));
 %------------------------------
 
-DC_mean = 0.015;		%mean DC
-dcsigma = 0.25;		%Dv
-col_l = 1e3;	%r of col 
+DC_mean = 0.03;		%mean DC
+dcsigma = 0.5;		%Dv
+col_l = 2e3;	%r of col 
 DC_min = 0.01;		%min_DC
 
 DC_v = (exp((dcsigma)^2)-1)*DC_mean^2;

@@ -18,11 +18,11 @@ FINITE = 1;
 twm = 4000;     %simu time in years 
 
 DCmax = 100;    % max DC cap
-%HC = [4:1:10 0.2:1:5 0.4:1:5 0.6:1:5 0.8:1:5];   % L/Lc in the center
-%L_slp = [0.1:0.1:1.0 1.2:0.2:2.0 2.4:0.4:4.0 5:1:10 15:5:50 60:20:200 300:100:1000];        % slope left dDc/dx normalized by critical DDCC = sigma(b-a)/mu
+HC = [4:1:10 0.2:1:5 0.4:1:5 0.6:1:5 0.8:1:5];   % L/Lc in the center
+L_slp = [0.1:0.1:1.0 1.2:0.2:2.0 2.4:0.4:4.0 5:1:10 15:5:50 60:20:200 300:100:1000];        % slope left dDc/dx normalized by critical DDCC = sigma(b-a)/mu
 
-HC = [3];   % L/Lc in the center
-L_slp = [1.0 1.2:0.2:2.0 2.4:0.4:4.0 5:1:10 15:5:50 60:20:200 300:100:1000];        % slope left dDc/dx normalized by critical DDCC = sigma(b-a)/mu
+%HC = [3];   % L/Lc in the center
+%L_slp = [1.0 1.2:0.2:2.0 2.4:0.4:4.0 5:1:10 15:5:50 60:20:200 300:100:1000];        % slope left dDc/dx normalized by critical DDCC = sigma(b-a)/mu
 % HC = [1];   % L/Lc in the center
 % L_slp = [0.3];        % slope left dDc/dx normalized by critical DDCC = sigma(b-a)/mu
 

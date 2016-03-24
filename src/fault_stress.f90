@@ -382,8 +382,8 @@ subroutine compute_stress_3d(tau,sigma_n,k3,v)
   !$OMP PARALLEL PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j,k)
   !$OMP DO SCHEDULE(STATIC)
    do k=1,nnLocal
-     iw = (k-1)/nx +1
-     ix = k-(iw-1)*nx + ix0_proc
+     iw = (k-1)/nxLocal +1
+     ix = k-(iw-1)*nxLocal + ix0_proc
        j = 0
        tsum = 0.0d0
        do jw=1,nw
@@ -405,8 +405,8 @@ if (associated(k3f%kernel_n)) then
   !$OMP PARALLEL PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j,k)
   !$OMP DO SCHEDULE(STATIC)
    do k=1,nnLocal
-     iw = (k-1)/nx +1
-     ix = k-(iw-1)*nx + ix0_proc
+     iw = (k-1)/nxLocal +1
+     ix = k-(iw-1)*nxLocal + ix0_proc
        j = 0
        tsum = 0.0d0
        do jw=1,nw
@@ -417,8 +417,7 @@ if (associated(k3f%kernel_n)) then
            tsum = tsum - k3%kernel_n(iw,jj) * v(j)
          end do
        end do
-       sigma_n(k) = tsum
-     end do
+     sigma_n(k) = tsum
    end do
   !$OMP END DO
   !$OMP END PARALLEL
