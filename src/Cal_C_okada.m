@@ -1,7 +1,11 @@
 clear
 
- LL = [2e3:2e3:20e3,100e3,200e3,1000e3];
-%LL = [1e3];
+
+filename='C_test_Res_Ls_2.mat';
+%LL = [2e3:2e3:20e3,100e3,200e3,1000e3];
+LL = [1e3,5e3,20e3,50e3,100e3,200e3];
+
+RES_s = [1:1:10,12:2:25,30];
 
 mu = 40e9;
 lam = 40e9;
@@ -10,12 +14,23 @@ DIPs = 90;
 RES = 5;       %(2*RES-1)^2 points for a square rupture
 ZZc0 = -10e3;       %starting center Z of rupture 
 
-L_a = zeros(size(LL));      %actual L
-C = zeros(size(LL));
+nn_all = numel(LL)*numel(RES_s);
+L_a = zeros(nn_all,1);      %actual L
+C = zeros(nn_all,1);
+ii = 0;
 
-for  ii = 1:1:numel(LL)
+for  iL = 1:1:numel(LL)
     
-    L = LL(ii);
+    L = LL(iL);
+    
+    
+    for iRes = 1:1:numel(RES_s)
+        
+    ii = ii+1;
+    
+    RES = RES_s(iRes);
+    
+    display(['Calculating C from crack model [Okada]: #' num2str(ii) ' of ' num2str(nn_all)]);
     
     if L<=Ws
         W = L;
@@ -34,6 +49,7 @@ for  ii = 1:1:numel(LL)
         DIP = ones(size(X))*DIPs;
         XX = ones(size(X))*dx;
         WW = ones(size(X))*dw;
+        display(['Square rupture ' num2str(L/1000)  'km*' num2str(L/1000) 'km | Resolution = ' num2str(RES)])
     end
     
     if L > Ws
@@ -51,16 +67,23 @@ for  ii = 1:1:numel(LL)
         Y = zeros(size(X));
         DIP = ones(size(X))*DIPs;
         XX = ones(size(X))*dx;
-        WW = ones(size(X))*dw;             
+        WW = ones(size(X))*dw;  
+        display(['Rectangular rupture ' num2str(W/1000)  'km*' num2str(L_a(ii)/1000) 'km | Resolution = ' num2str(RES)])
+      
     end
         
         
 
 
 
-
+    
     K = qdyn_okada_kernel(N,mu,lam,X,Y,Z,DIP,XX,WW);
     D = K\ones(size(XX'));
+    display('Calcalation C value :...');
     C(ii) = W/(mean(D)*mu);
+    display(['C = ' num2str(C(ii))]);
+    end
 
 end
+
+save(filename);
