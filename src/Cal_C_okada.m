@@ -3,9 +3,9 @@ clear
 
 filename='C_test_Res_Ls_2.mat';
 %LL = [2e3:2e3:20e3,100e3,200e3,1000e3];
-LL = [1e3,5e3,20e3,50e3,100e3,200e3];
+LL = [1e3];
 
-RES_s = [1:1:10,12:2:25,30];
+RES_s = [10];
 
 mu = 40e9;
 lam = 40e9;
