@@ -89,10 +89,12 @@ subroutine read_mesh(iin,m)
                m%x(1+(i-1)*m%nx),m%y(1+(i-1)*m%nx),m%z(1+(i-1)*m%nx),   &
                m%dip(1+(i-1)*m%nx),m%temp_iret,m%temp_tau,m%temp_sigma_n)
         if (m%temp_iret == 0) then
-          write(68,'(4e24.16)') m%temp_tau,m%z(j),m%z(1+(i-1)*m%nx),(m%x(j)-m%x(1+(i-1)*m%nx))
+!          write(68,'(4e24.16)') m%temp_tau,m%z(j),m%z(1+(i-1)*m%nx),(m%x(j)-m%x(1+(i-1)*m%nx))
+          write(68,'(e16.8)') m%temp_tau
         else
           write(6,*) '!!WARNING!! : Kernel Singular, set value to 0,(i,j)',i,j
-          write(68,'(4e24.16)') 0d0,m%z(j),m%z(1+(i-1)*m%nx),(m%x(j)-m%x(1+(i-1)*m%nx))
+!          write(68,'(4e24.16)') 0d0,m%z(j),m%z(1+(i-1)*m%nx),(m%x(j)-m%x(1+(i-1)*m%nx))
+          write(68,'(e16.8)') 0d0
         endif
       end do
     end do
