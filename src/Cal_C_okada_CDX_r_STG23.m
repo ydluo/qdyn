@@ -293,6 +293,6 @@ fclose(fid_rs);
 fclose(fid_r1s);
 
 
-clear K
+clear K,Kr
 
 save(filename);
