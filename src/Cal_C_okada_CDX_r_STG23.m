@@ -1,23 +1,30 @@
 clear
 
 
-%filename='test_CDX_STG23_L500_RES40.mat';
-filename='test_CDX_STG23_L200_RES30.mat';
+filename='test_CDX_STG23_L800_RES15.mat';
+%filename='test_CDX_STG23_L200_RES30.mat';
 
 
 fid = fopen([filename '.txt'],'w');
 fid_r = fopen([filename '_r.txt'],'w');
-fprintf(fid,'C    W    L_a    Ws    Zc    RES\n');
-fprintf(fid_r,'C    W    L_a    Ws    Zc    RES\n');
+fid_r1 = fopen([filename '_r1.txt'],'w');
+fids = fopen([filename 's.txt'],'w');
+fid_rs = fopen([filename '_rs.txt'],'w');
+fid_r1s = fopen([filename '_r1s.txt'],'w');
 
 %LL = [2e3:2e3:20e3,100e3,200e3,1000e3];
 %LL = [1e3];
 %LLo = 1e3*[22:0.4:60,61:1:100,102:2:200,205:5:400,410:10:500];
-LLo = 1e3*[22:0.4:60,61:1:100,102:2:200];
-%LLo = 1e3*[22:2:100,120:10:500];
+%LLo = 1e3*[22:0.2:40,40.4:0.4:80];
+%LLo = 1e3*[22:0.4:80,61:1:100,102:2:200];
+LLo = 1e3*[22:2:60,65:5:200,210:10:800];
+%LLo = 1e3*[22:10:200,220:20:1000];
+%LLo = 100e3;
 
 %RES_s = [1:1:10 12:2:30 35:5:50];
-RES_s = [30];
+RES_s = [15];
+
+DsVS = 4e3;    %depth of shallow VS zone
 
 mu = 40e9;
 lam = 40e9;
@@ -26,12 +33,28 @@ DIPs = 90;
 %RES = 5;       %(2*RES-1)^2 points for a square rupture
 ZZc0 = -11e3;       %starting center Z of rupture 
 
+
+fprintf(fid,'C    W    L_a    Ws    Zc    A    RES\n');
+fprintf(fids,'C    W    L_a    Ws    Zc    A    RES\n');
+fprintf(fid_r,'C    W    L_a    Ws    Zc    A    RES\n');
+fprintf(fid_rs,'C    W    L_a    Ws    Zc    A    RES\n');
+fprintf(fid_r1,'C    W    L_a    Ws    Zc    A    RES\n');
+fprintf(fid_r1s,'C    W    L_a    Ws    Zc    A    RES\n');
+
+
 LLo = LLo(LLo>=Ws);
 
 nn_all = numel(LLo)*numel(RES_s);
 L_a = zeros(nn_all,1);      %actual L
+L_ar = L_a;
+L_ar1 = L_a;
 C = zeros(nn_all,1);
+Cs = C;
 Cr = C;
+Crs = C;
+Cr1 = C;
+Cr1s = C;
+
 ii = 0;
 
 LL = max(LLo);
@@ -146,12 +169,14 @@ system(['cp fort.68 STG23_Kernel_RES' num2str(RES) '_L' num2str(L/1000) '.txt'])
 
 L_a = zeros(size(LLo));
 L_ar = L_a;
+L_ar1 = L_a;
+
 
 for iL = 1:1:numel(LLo)
 
     L = LLo(iL);
+
     disp(['Generating Full Kernel for Rectangular Rupture: L = ' num2str(L/1000) 'km']);
-    
     IIr = find(X<L);
     L_a(iL) = max(X(IIr))+0.5*XX(1);
     Xr = X(IIr);
@@ -159,15 +184,21 @@ for iL = 1:1:numel(LLo)
     Zr = Z(IIr);
     Kr = K(IIr,IIr);
     display('Calculating C value :...');
-    D = Kr\ones(size(Xr'));
+    tau = ones(size(Xr'));
+    D = Kr\tau;
     C(iL) = W/(mean(D)*mu);
     display(['C = ' num2str(C(iL))]);
     Zc = -Ws/2;
-    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %u\n',C(iL),W,L_a(iL),Ws,Zc,RES);
+    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',C(iL),W,L_a(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
+    tau(Zr>= -DsVS) = 0;
+    Ds = Kr\tau;
+    Cs(iL) = W/(mean(Ds)*mu);
+    display(['Cs = ' num2str(Cs(iL)) ' | with ' num2str(DsVS/1000) 'km shallow VS zone']);
+    fprintf(fids,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cs(iL),W,L_a(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
      
 
-    disp(['Generating Full Kernel for Rect-Circular Rupture: L = ' num2str(L/1000) 'km']);
-    
+
+    disp(['Generating Full Kernel for Rect-Circular Rupture: L = ' num2str(L/1000) 'km']);    
     if L <= Ws*2
     disp(['Circular/Semi-Circular Rupture']);
     Xc = L/2;
@@ -178,11 +209,17 @@ for iL = 1:1:numel(LLo)
     Zr = Z(IIr);
     Kr = K(IIr,IIr);
     display('Calculating Cr value :...');    
-    Dr = Kr\ones(size(Xr'));
+    taur = ones(size(Xr'));
+    Dr = Kr\taur;
     Cr(iL) = W/(mean(Dr)*mu);
     display(['Cr = ' num2str(Cr(iL))]);
     L_ar(iL) = max(Xr)-min(Xr)+XX(1);
-    fprintf(fid_r,'%.15g %.15g %.15g %.15g %.15g %u\n',Cr(iL),W,L_a(iL),Ws,Zc,RES);
+    fprintf(fid_r,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cr(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
+    taur(Zr>= -DsVS) = 0;
+    Drs = Kr\taur;
+    Crs(iL) = W/(mean(Drs)*mu);
+    display(['Crs = ' num2str(Crs(iL)) ' | with ' num2str(DsVS/1000) 'km shallow VS zone']);
+    fprintf(fid_rs,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Crs(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
     else
     disp(['Elongated Semi-Circular Rupture']);
     IIr = find(X<L);
@@ -199,20 +236,62 @@ for iL = 1:1:numel(LLo)
     Zr = Z(IIr);
     Kr = K(IIr,IIr);
     display('Calculating Cr value :...');
-    Dr = Kr\ones(size(Xr'));
+    L_ar(iL) = max(Xr)-min(Xr)+XX(1);
+    taur = ones(size(Xr'));
+    Dr = Kr\taur;
     Cr(iL) = W/(mean(Dr)*mu);
     display(['Cr = ' num2str(Cr(iL))]);
     L_ar(iL) = max(Xr)-min(Xr)+XX(1);
-    fprintf(fid_r,'%.15g %.15g %.15g %.15g %.15g %u\n',Cr(iL),W,L_a(iL),Ws,Zc,RES);    
+    fprintf(fid_r,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cr(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);    
+    taur(Zr>= -DsVS) = 0;
+    Drs = Kr\taur;
+    Crs(iL) = W/(mean(Drs)*mu);
+    display(['Crs = ' num2str(Crs(iL)) ' | with ' num2str(DsVS/1000) 'km shallow VS zone']);
+    fprintf(fid_rs,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Crs(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
     end
 
+    disp(['Generating Full Kernel for Rect-Circular(2) Rupture: L = ' num2str(L/1000) 'km']);
     
+    disp(['Elongated Semi-Circular Rupture(2)']);
+    
+    IIr = find(X<L);
+    Zc = -Ws/2;
+    Xc1 = Ws/2;
+    Xc2 = max(X(IIr))+0.5*XX(1)-Ws/2;
+    II1 = find(((X-Xc1).^2+(Z-Zc).^2)<=(Ws/2)^2);
+    II2 = find(((X-Xc2).^2+(Z-Zc).^2)<=(Ws/2)^2);
+    II3 = find(X>=Xc1);
+    II4 = find(X<=Xc2);
+    IIr = union([II1,II2],intersect(II3,II4));
+    Xr = X(IIr);
+    Yr = Y(IIr);
+    Zr = Z(IIr);
+    Kr = K(IIr,IIr);
+    display('Calculating Cr1 value :...');
+    L_ar(iL) = max(Xr)-min(Xr)+XX(1);
+    taur = ones(size(Xr'));
+    Dr = Kr\taur;
+    Cr1(iL) = W/(mean(Dr)*mu);
+    display(['Cr1 = ' num2str(Cr1(iL))]);
+    L_ar1(iL) = max(Xr)-min(Xr)+XX(1);
+    fprintf(fid_r1,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cr1(iL),W,L_ar1(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
+    taur(Zr>= -DsVS) = 0;
+    Dr1s = Kr\taur;
+    Cr1s(iL) = W/(mean(Dr1s)*mu);
+    display(['Cr1s = ' num2str(Crs(iL)) ' | with ' num2str(DsVS/1000) 'km shallow VS zone']);
+    fprintf(fid_r1s,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cr1s(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
+
     
 
 end
 
 fclose(fid);
 fclose(fid_r);
+fclose(fid_r1);
+fclose(fids);
+fclose(fid_rs);
+fclose(fid_r1s);
+
 
 clear K
 

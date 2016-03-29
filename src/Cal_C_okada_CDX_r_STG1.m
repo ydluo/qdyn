@@ -1,14 +1,24 @@
 clear
 
 
-filename='test_CDX.mat';
+filename='CDX_STG1_sVS.mat';
 
 fid = fopen([filename '.txt'],'w');
 fid_r = fopen([filename '_r.txt'],'w');
-fprintf(fid,'C    W    L_a    Ws    Zc    RES\n');
+fids = fopen([filename '_s.txt'],'w');
+fid_rs = fopen([filename '_rs.txt'],'w');
+fprintf(fid,'C    W    L_a    Ws    Zc    A    RES\n');
+fprintf(fid_r,'C    W    L_a    Ws    Zc    A    RES\n');
+fprintf(fids,'C    W    L_a    Ws    Zc    A    RES\n');
+fprintf(fid_rs,'C    W    L_a    Ws    Zc    A    RES\n');
+
 %LL = [2e3:2e3:20e3,100e3,200e3,1000e3];
 %LL = [1e3];
-LL = 1e3*[0.1:0.1:22];
+LL = 1e3*[0.1:0.1:21.5,21.52:0.02:22];
+
+%LL = [22e3];
+
+DsVS = 4e3;		%depth of shallow VS zone
 
 %RES_s = [1:1:10 12:2:30 35:5:50];
 RES_s = [50];
@@ -18,12 +28,14 @@ lam = 40e9;
 Ws = 22e3;
 DIPs = 90;
 RES = 5;       %(2*RES-1)^2 points for a square rupture
-ZZc0 = -10e3;       %starting center Z of rupture 
+ZZc0 = -11e3;       %starting center Z of rupture 
 
 nn_all = numel(LL)*numel(RES_s);
 L_a = zeros(nn_all,1);      %actual L
 C = zeros(nn_all,1);
 Cr = C;
+Cs = C;
+Crs = Cr;
 ii = 0;
 
 for  iL = 1:1:numel(LL)
@@ -87,7 +99,7 @@ for  iL = 1:1:numel(LL)
     K0 = qdyn_okada_kernel_CDX(N,NW,NX,mu,lam,X,Y,Z,DIP,XX,WW);
     
     K = zeros(N);
-    Kii = zeros(N);
+%    Kii = zeros(N);
     disp('Generating Full Kernel');
     
     iiK = 0;
@@ -127,11 +139,19 @@ for  iL = 1:1:numel(LL)
     disp('Generated Full Kernel');
     
     display('Calcalation C value :...');    
-    D = K\ones(size(XX'));
+    tau = ones(size(XX'));
+    D = K\tau;
     C(ii) = W/(mean(D)*mu);
     display(['C = ' num2str(C(ii))]);
-    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %u\n',C(ii),W,L_a(ii),Ws,Zc,RES);
-    
+    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',C(ii),W,L_a(ii),Ws,Zc,numel(X)*dx*dw,RES);
+
+    tau(Z>= -DsVS) = 0;
+    Ds = K\tau;
+    Cs(ii) = W/(mean(Ds)*mu);
+    display(['Cs = ' num2str(Cs(ii)) ' | with ' num2str(DsVS/1000) 'km shallow VS zone']);
+    fprintf(fids,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cs(ii),W,L_a(ii),Ws,Zc,numel(X)*dx*dw,RES);
+ 
+
     disp('Generating Full Kernel for Circular Rupture');
     Xc = X(RES);
     IIr = find(((X-Xc).^2+(Z-Zc).^2)<=(L/2)^2);
@@ -140,11 +160,18 @@ for  iL = 1:1:numel(LL)
     Zr = Z(IIr);
     Kr = K(IIr,IIr);
     display('Calcalation Cr value :...');    
-    Dr = Kr\ones(size(Xr'));
+    taur = ones(size(Xr'));
+    Dr = Kr\taur;
     Cr(ii) = W/(mean(Dr)*mu);
     display(['Cr = ' num2str(Cr(ii))]);
-    fprintf(fid_r,'%.15g %.15g %.15g %.15g %.15g %u\n',Cr(ii),W,L_a(ii),Ws,Zc,RES);
-    
+    fprintf(fid_r,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cr(ii),W,L_a(ii),Ws,Zc,numel(Xr)*dx*dw,RES);
+
+    taur(Zr>= -DsVS) = 0;    
+    Drs = Kr\taur;
+    Crs(ii) = W/(mean(Drs)*mu);
+    display(['Crs = ' num2str(Crs(ii)) ' | with ' num2str(DsVS/1000) 'km shallow VS zone']);
+    fprintf(fid_rs,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Crs(ii),W,L_a(ii),Ws,Zc,numel(Xr)*dx*dw,RES);
+
     system(['cp fort.68 Kernel_RES' num2str(RES) '_L' num2str(L/1000) '.txt']);
     end
 
@@ -152,6 +179,8 @@ end
 
 fclose(fid);
 fclose(fid_r);
+fclose(fids);
+fclose(fid_rs);
 
 clear K
 
