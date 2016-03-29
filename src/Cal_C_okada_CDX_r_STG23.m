@@ -186,7 +186,7 @@ for iL = 1:1:numel(LLo)
     display('Calculating C value :...');
     tau = ones(size(Xr'));
     D = Kr\tau;
-    C(iL) = mean(tau)*/(mean(D)*mu);
+    C(iL) = mean(tau)*W/(mean(D)*mu);
     display(['C = ' num2str(C(iL))]);
     Zc = -Ws/2;
     fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',C(iL),W,L_a(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
@@ -271,13 +271,13 @@ for iL = 1:1:numel(LLo)
     L_ar(iL) = max(Xr)-min(Xr)+XX(1);
     taur = ones(size(Xr'));
     Dr = Kr\taur;
-    Cr1(iL) = W/(mean(Dr)*mu);
+    Cr1(iL) = mean(taur)*W/(mean(Dr)*mu);
     display(['Cr1 = ' num2str(Cr1(iL))]);
     L_ar1(iL) = max(Xr)-min(Xr)+XX(1);
     fprintf(fid_r1,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cr1(iL),W,L_ar1(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
     taur(Zr>= -DsVS) = 0;
     Dr1s = Kr\taur;
-    Cr1s(iL) = W/(mean(Dr1s)*mu);
+    Cr1s(iL) = mean(taur)*W/(mean(Dr1s)*mu);
     display(['Cr1s = ' num2str(Crs(iL)) ' | with ' num2str(DsVS/1000) 'km shallow VS zone']);
     fprintf(fid_r1s,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cr1s(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
 
