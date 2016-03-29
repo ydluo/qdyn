@@ -1,7 +1,7 @@
 clear
 
 
-filename='test_CDX_STG23_L800_RES15.mat';
+filename='test_CDX_STG23_L80_RES50.mat';
 %filename='test_CDX_STG23_L200_RES30.mat';
 
 
@@ -15,14 +15,14 @@ fid_r1s = fopen([filename '_r1s.txt'],'w');
 %LL = [2e3:2e3:20e3,100e3,200e3,1000e3];
 %LL = [1e3];
 %LLo = 1e3*[22:0.4:60,61:1:100,102:2:200,205:5:400,410:10:500];
-%LLo = 1e3*[22:0.2:40,40.4:0.4:80];
-%LLo = 1e3*[22:0.4:80,61:1:100,102:2:200];
-LLo = 1e3*[22:2:60,65:5:200,210:10:800];
+LLo = 1e3*[22:0.2:40,40.4:0.4:80];
+%LLo = 1e3*[22:0.4:80,61:1:100,102:2:250];
+%LLo = 1e3*[22:2:60,65:5:200,210:10:1000];
 %LLo = 1e3*[22:10:200,220:20:1000];
 %LLo = 100e3;
 
 %RES_s = [1:1:10 12:2:30 35:5:50];
-RES_s = [15];
+RES_s = [50];
 
 DsVS = 4e3;    %depth of shallow VS zone
 
@@ -186,13 +186,13 @@ for iL = 1:1:numel(LLo)
     display('Calculating C value :...');
     tau = ones(size(Xr'));
     D = Kr\tau;
-    C(iL) = W/(mean(D)*mu);
+    C(iL) = mean(tau)*/(mean(D)*mu);
     display(['C = ' num2str(C(iL))]);
     Zc = -Ws/2;
     fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',C(iL),W,L_a(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
     tau(Zr>= -DsVS) = 0;
     Ds = Kr\tau;
-    Cs(iL) = W/(mean(Ds)*mu);
+    Cs(iL) =  mean(tau)*W/(mean(Ds)*mu);
     display(['Cs = ' num2str(Cs(iL)) ' | with ' num2str(DsVS/1000) 'km shallow VS zone']);
     fprintf(fids,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cs(iL),W,L_a(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
      
@@ -211,13 +211,13 @@ for iL = 1:1:numel(LLo)
     display('Calculating Cr value :...');    
     taur = ones(size(Xr'));
     Dr = Kr\taur;
-    Cr(iL) = W/(mean(Dr)*mu);
+    Cr(iL) =  mean(taur)*W/(mean(Dr)*mu);
     display(['Cr = ' num2str(Cr(iL))]);
     L_ar(iL) = max(Xr)-min(Xr)+XX(1);
     fprintf(fid_r,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cr(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
     taur(Zr>= -DsVS) = 0;
     Drs = Kr\taur;
-    Crs(iL) = W/(mean(Drs)*mu);
+    Crs(iL) =  mean(taur)*W/(mean(Drs)*mu);
     display(['Crs = ' num2str(Crs(iL)) ' | with ' num2str(DsVS/1000) 'km shallow VS zone']);
     fprintf(fid_rs,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Crs(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
     else
@@ -239,13 +239,13 @@ for iL = 1:1:numel(LLo)
     L_ar(iL) = max(Xr)-min(Xr)+XX(1);
     taur = ones(size(Xr'));
     Dr = Kr\taur;
-    Cr(iL) = W/(mean(Dr)*mu);
+    Cr(iL) =  mean(taur)*W/(mean(Dr)*mu);
     display(['Cr = ' num2str(Cr(iL))]);
     L_ar(iL) = max(Xr)-min(Xr)+XX(1);
     fprintf(fid_r,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cr(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);    
     taur(Zr>= -DsVS) = 0;
     Drs = Kr\taur;
-    Crs(iL) = W/(mean(Drs)*mu);
+    Crs(iL) =  mean(taur)*W/(mean(Drs)*mu);
     display(['Crs = ' num2str(Crs(iL)) ' | with ' num2str(DsVS/1000) 'km shallow VS zone']);
     fprintf(fid_rs,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Crs(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
     end
