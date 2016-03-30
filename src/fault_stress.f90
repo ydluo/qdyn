@@ -65,8 +65,7 @@ subroutine init_kernel(lambda,mu,m,k)
   select case (k%kind)
     case(1); call init_kernel_1D(k%k1,mu,m%Lfault)
     case(2); call init_kernel_2D(k%k2f,mu,m)
-    case(3); call init_kernel_3D_fft(k%k3f,lambda,mu,m) ! 3D with FFT
-along-strike
+    case(3); call init_kernel_3D_fft(k%k3f,lambda,mu,m) ! 3D with FFT along-strike
     case(4); call init_kernel_3D(k%k3,lambda,mu,m) ! 3D no fft
     case(5); call init_kernel_3D_fft2d(k%k3f2,lambda,mu,m) ! 3D with 2DFFT 
   end select
@@ -117,8 +116,7 @@ subroutine init_kernel_2D(k,mu,m)
  !- Read coefficient I(n) from pre-calculated file.
   elseif (k%finite == 1) then
     open(57,file=KERNEL_FILE)
-    if (k%nnfft/2>32768) stop 'FINITE=1: finite kernel table is too small. See
-the QDYN manual for further instructions.'
+    if (k%nnfft/2>32768) stop 'FINITE=1: finite kernel table is too small. See the QDYN manual for further instructions.'
     do i=1,k%nnfft/2-1
       read(57,*) k%kernel(2*i+1)
     enddo
@@ -147,8 +145,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m)
   double precision, intent(in) :: lambda,mu
   type(mesh_type), intent(in) :: m
 
-  double precision :: tau,sigma_n, y_src, z_src, dip_src, dw_src, y_obs, z_obs,
-dip_obs
+  double precision :: tau,sigma_n, y_src, z_src, dip_src, dw_src, y_obs, z_obs,dip_obs
   double precision, allocatable :: tmp(:), tmp_n(:)   ! for FFT
   integer :: i, j, ii, jj, n, nn, IRET
 
@@ -207,8 +204,7 @@ subroutine init_kernel_3D_fft2d(k,lambda,mu,m)
   type(mesh_type), intent(in) :: m
 
   double precision, allocatable, dimension(:,:) :: Kij
-  double precision :: Im, Ip, Jm, Jp, ImJp, ImJm, IpJp, IpJm, T1, T2, T3, T4,
-koef
+  double precision :: Im, Ip, Jm, Jp, ImJp, ImJm, IpJp, IpJm, T1, T2, T3, T4, koef
   double precision, parameter :: PI = 3.14159265358979d0
   integer :: i, j, n, stat
 
@@ -372,8 +368,7 @@ subroutine compute_stress_3d(tau,sigma_n,k3,v)
   double precision, intent(inout) :: tau(:), sigma_n(:)
   double precision, intent(in) :: v(:)
 
-  integer ::
-nnLocal,nnGlobal,nw,nxLocal,nxGlobal,k,i,iw,ix,j,jw,jx,idx,jj,ix0_proc
+  integer :: nnLocal,nnGlobal,nw,nxLocal,nxGlobal,k,i,iw,ix,j,jw,jx,idx,jj,ix0_proc
   double precision :: tsum
 
   nnLocal = size(tau)
@@ -383,8 +378,7 @@ nnLocal,nnGlobal,nw,nxLocal,nxGlobal,k,i,iw,ix,j,jw,jx,idx,jj,ix0_proc
   nnGlobal = size(v)
   nxGlobal = nnGlobal/nw
  
-  ix0_proc = 0 ! TO DO in MPI version: first horizontal index minus 1 in this
-processor
+  ix0_proc = 0 ! TO DO in MPI version: first horizontal index minus 1 in this processor
  
   !$OMP PARALLEL PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j,k)
   !$OMP DO SCHEDULE(STATIC)
@@ -396,8 +390,7 @@ processor
        do jw=1,nw
          do jx=1,nxGlobal
            j = j+1
-           idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the
-kernel
+           idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the kernel
            jj = (jw-1)*nxGlobal + idx + 1 
            tsum = tsum - k3%kernel(iw,jj) * v(j)
            !NOTE: it could be more efficient to store kernel in (jj,iw) form
@@ -420,8 +413,7 @@ if (associated(k3f%kernel_n)) then
        do jw=1,nw
          do jx=1,nxGlobal
            j = j+1
-           idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the
-kernel
+           idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the kernel
            jj = (jw-1)*nxGlobal + idx + 1 
            tsum = tsum - k3%kernel_n(iw,jj) * v(j)
          end do
@@ -454,8 +446,7 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
   double precision , intent(inout) :: tau(:), sigma_n(:)
   double precision , intent(in) :: v(:)
 
-  double precision :: vzk(size(k3f%kernel,2),k3f%nxfft),
-tmpzk(k3f%nw,k3f%nxfft), tmpx(k3f%nxfft)
+  double precision :: vzk(size(k3f%kernel,2),k3f%nxfft), tmpzk(k3f%nw,k3f%nxfft), tmpx(k3f%nxfft)
   integer :: n,k
 
   !$OMP PARALLEL PRIVATE(tmpx,tmpz)
@@ -501,8 +492,7 @@ tmpzk(k3f%nw,k3f%nxfft), tmpx(k3f%nxfft)
   do n = 1,k3f%nw
     tmpx = - tmpzk(n,:)
     call my_rdft(-1,tmpx,k3f%m_fft)
-    tau( (n-1)*k3f%nx+1 : n*k3f%nx ) = tmpx(1:k3f%nx) ! take only first half of
-array
+    tau( (n-1)*k3f%nx+1 : n*k3f%nx ) = tmpx(1:k3f%nx) ! take only first half of array
   enddo
   !$OMP END DO
 
