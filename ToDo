@@ -1,6 +1,7 @@
 (Priorities are not indicated)
 
 Physics:
++ kernel for low-velocity fault zones
 + compute surface deformation to compare to GPS data
 + complete testing of slip to normal stress coupling 
 + slip-dependent friction law (Olivier Lengline is working on it)
