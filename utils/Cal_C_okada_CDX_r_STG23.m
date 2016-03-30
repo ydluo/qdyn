@@ -202,7 +202,7 @@ for iL = 1:1:numel(LLo)
     if L <= Ws*2
     disp(['Circular/Semi-Circular Rupture']);
     Xc = L/2;
-    Zc = -Ws/2-(L-Ws)/2;
+    Zc = -Ws/2+(L-Ws)/2;
     IIr = find(((X-Xc).^2+(Z-Zc).^2)<=(L/2)^2);
     Xr = X(IIr);
     Yr = Y(IIr);
@@ -223,7 +223,7 @@ for iL = 1:1:numel(LLo)
     else
     disp(['Elongated Semi-Circular Rupture']);
     IIr = find(X<L);
-    Zc = -Ws;
+    Zc = 0;
     Xc1 = Ws;
     Xc2 = max(X(IIr))+0.5*XX(1)-Ws;
     II1 = find(((X-Xc1).^2+(Z-Zc).^2)<=Ws^2);
