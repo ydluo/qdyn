@@ -65,7 +65,8 @@ subroutine init_kernel(lambda,mu,m,k)
   select case (k%kind)
     case(1); call init_kernel_1D(k%k1,mu,m%Lfault)
     case(2); call init_kernel_2D(k%k2f,mu,m)
-    case(3); call init_kernel_3D_fft(k%k3f,lambda,mu,m) ! 3D with FFT along-strike
+    case(3); call init_kernel_3D_fft(k%k3f,lambda,mu,m) ! 3D with FFT
+along-strike
     case(4); call init_kernel_3D(k%k3,lambda,mu,m) ! 3D no fft
     case(5); call init_kernel_3D_fft2d(k%k3f2,lambda,mu,m) ! 3D with 2DFFT 
   end select
@@ -116,7 +117,8 @@ subroutine init_kernel_2D(k,mu,m)
  !- Read coefficient I(n) from pre-calculated file.
   elseif (k%finite == 1) then
     open(57,file=KERNEL_FILE)
-    if (k%nnfft/2>32768) stop 'FINITE=1: finite kernel table is too small. See the QDYN manual for further instructions.'
+    if (k%nnfft/2>32768) stop 'FINITE=1: finite kernel table is too small. See
+the QDYN manual for further instructions.'
     do i=1,k%nnfft/2-1
       read(57,*) k%kernel(2*i+1)
     enddo
@@ -145,7 +147,8 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m)
   double precision, intent(in) :: lambda,mu
   type(mesh_type), intent(in) :: m
 
-  double precision :: tau,sigma_n, y_src, z_src, dip_src, dw_src, y_obs, z_obs, dip_obs
+  double precision :: tau,sigma_n, y_src, z_src, dip_src, dw_src, y_obs, z_obs,
+dip_obs
   double precision, allocatable :: tmp(:), tmp_n(:)   ! for FFT
   integer :: i, j, ii, jj, n, nn, IRET
 
@@ -176,7 +179,8 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m)
                 0d0, y_obs, z_obs, dip_obs, &
                 IRET,tau,sigma_n)
         ii = i+1
-        ! wrap up the negative relative-x-positions in the second half of the array
+        ! wrap up the negative relative-x-positions in the second half of the
+        ! array
         ! to comply with conventions of fft convolution
         if (i<0) ii = ii + k%nxfft  
         tmp(ii) = tau
@@ -203,7 +207,8 @@ subroutine init_kernel_3D_fft2d(k,lambda,mu,m)
   type(mesh_type), intent(in) :: m
 
   double precision, allocatable, dimension(:,:) :: Kij
-  double precision :: Im, Ip, Jm, Jp, ImJp, ImJm, IpJp, IpJm, T1, T2, T3, T4, koef
+  double precision :: Im, Ip, Jm, Jp, ImJp, ImJm, IpJp, IpJm, T1, T2, T3, T4,
+koef
   double precision, parameter :: PI = 3.14159265358979d0
   integer :: i, j, n, stat
 
@@ -312,8 +317,15 @@ subroutine compute_stress(tau,sigma_n,K,v)
   select case (K%kind)
     case(1); call compute_stress_1d(tau,K%k1,v)
     case(2); call compute_stress_2d(tau,K%k2f,v)
-    case(3); call compute_stress_3d_fft(tau,sigma_n,K%k3f,v,K%i_sigma_cpl)
-    case(4); call compute_stress_3d(tau,sigma_n,K%k3,v,K%i_sigma_cpl)
+    case(3); call compute_stress_3d_fft(tau,sigma_n,K%k3f,v)
+    case(4)
+      ! if (not using MPI) then
+      call compute_stress_3d(tau,sigma_n,K%k3,v)
+      ! else
+      !  gather the global v from the pieces in all processors
+      !  call MPI_gatherall(..., v, vGlobal ...) 
+      !  call compute_stress_3d(tau,sigma_n,K%k3,vGlobal)
+      ! endif
     case(5); call compute_stress_3d_fft2d(tau,K%k3f2,v)
   end select
 
@@ -352,80 +364,75 @@ subroutine compute_stress_2d(tau,k2f,v)
 end subroutine compute_stress_2d
 
 !--------------------------------------------------------
-subroutine compute_stress_3d(tau,sigma_n,k3,v,i_sigma_cpl)
+! MPI partitioning: each processor gets a range of along-strike positions
+
+subroutine compute_stress_3d(tau,sigma_n,k3,v)
 
   type(kernel_3D), intent(in)  :: k3
-  double precision , intent(out) :: tau(:), sigma_n(:)
-  double precision , intent(in) :: v(:)
+  double precision, intent(inout) :: tau(:), sigma_n(:)
+  double precision, intent(in) :: v(:)
 
-  integer :: nn,nw,nx,i,iw,ix,j,jw,jx,idx,jj,chunk,i_sigma_cpl
+  integer ::
+nnLocal,nnGlobal,nw,nxLocal,nxGlobal,k,i,iw,ix,j,jw,jx,idx,jj,ix0_proc
   double precision :: tsum
-  double precision, allocatable :: tmptau(:,:),tmpsigma_n(:,:)
 
-  nn = size(v)
+  nnLocal = size(tau)
   nw = size(k3%kernel,1)
-  nx = nn/nw
-
-  allocate(tmptau(nw,nx))
-
-  !$OMP PARALLEL SHARED(tmptau) PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j)
-
+  nxLocal = nnLocal/nw
+  
+  nnGlobal = size(v)
+  nxGlobal = nnGlobal/nw
+ 
+  ix0_proc = 0 ! TO DO in MPI version: first horizontal index minus 1 in this
+processor
+ 
+  !$OMP PARALLEL PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j,k)
   !$OMP DO SCHEDULE(STATIC)
-   do iw=1,nw
-     do ix=1,nx
+   do k=1,nnLocal
+     iw = (k-1)/nx +1
+     ix = k-(iw-1)*nx + ix0_proc
        j = 0
        tsum = 0.0d0
        do jw=1,nw
-         do jx=1,nx
+         do jx=1,nxGlobal
            j = j+1
-           idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the kernel
-           jj = (jw-1)*nx + idx + 1 
+           idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the
+kernel
+           jj = (jw-1)*nxGlobal + idx + 1 
            tsum = tsum - k3%kernel(iw,jj) * v(j)
+           !NOTE: it could be more efficient to store kernel in (jj,iw) form
          end do
        end do
-       tmptau(iw,ix) = tsum
-     end do
+     tau(k) = tsum
    end do
   !$OMP END DO
-
   !$OMP END PARALLEL
 
-  ! Transfer back to 1D array tau
-  tau = reshape(transpose(tmptau), (/ nw*nx /))
+if (associated(k3f%kernel_n)) then
 
-  deallocate(tmptau)
-
-if (i_sigma_cpl == 1) then
-  allocate(tmpsigma_n(nw,nx))
-
-  !$OMP PARALLEL SHARED(tmpsigma_n) PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j)
-
+  !$OMP PARALLEL PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j,k)
   !$OMP DO SCHEDULE(STATIC)
-   do iw=1,nw
-     do ix=1,nx
+   do k=1,nnLocal
+     iw = (k-1)/nx +1
+     ix = k-(iw-1)*nx + ix0_proc
        j = 0
        tsum = 0.0d0
        do jw=1,nw
-         do jx=1,nx
+         do jx=1,nxGlobal
            j = j+1
-           idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the kernel
-           jj = (jw-1)*nx + idx + 1 
+           idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the
+kernel
+           jj = (jw-1)*nxGlobal + idx + 1 
            tsum = tsum - k3%kernel_n(iw,jj) * v(j)
          end do
        end do
-       tmpsigma_n(iw,ix) = tsum
+       sigma_n(k) = tsum
      end do
    end do
   !$OMP END DO
-
   !$OMP END PARALLEL
 
-  ! Transfer back to 1D array sigma_n
-  sigma_n = reshape(transpose(tmpsigma_n), (/ nw*nx /))
-
-  deallocate(tmpsigma_n)
 end if
-
 
 end subroutine compute_stress_3d
 
@@ -433,19 +440,23 @@ end subroutine compute_stress_3d
 ! version with FFT along-strike
 ! Assumes kernel has been FFT'd during initialization
 ! Assumes storage with along-strike index running faster than along-dip
-! Note: to avoid periodic wrap-around, fft convolution requires twice longer arrays
+! Note: to avoid periodic wrap-around, fft convolution requires twice longer
+! arrays
 !       and zero-padding (pre-processing) and chop-in-half (post-processing)
+!
+! MPI partitioning: each processor gets a range of depths
 
-subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v,i_sigma_cpl)
+subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
 
   use fftsg, only : my_rdft
 
   type(kernel_3D_fft), intent(inout)  :: k3f
-  double precision , intent(out) :: tau(:), sigma_n(:)
+  double precision , intent(inout) :: tau(:), sigma_n(:)
   double precision , intent(in) :: v(:)
 
-  double precision :: tmpzk(k3f%nw,k3f%nxfft), tmpx(k3f%nxfft), tmpz(k3f%nw)
-  integer :: n,k,i_sigma_cpl 
+  double precision :: vzk(size(k3f%kernel,2),k3f%nxfft),
+tmpzk(k3f%nw,k3f%nxfft), tmpx(k3f%nxfft)
+  integer :: n,k
 
   !$OMP PARALLEL PRIVATE(tmpx,tmpz)
 
@@ -458,27 +469,31 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v,i_sigma_cpl)
   enddo
   !$OMP END DO
 
+  ! if MPI, gather the global vzk from the pieces in all processors
+  !  call MPI_gatherall(..., tmpzk, vzk ...) 
+  ! else
+    vzk = tmpzk
+  ! endif
+  
   ! convolution in Fourier domain is a product of complex numbers:
   ! K*V = (ReK + i*ImK)*(ReV+i*ImV) 
   !     = ReK*ReV - ImK*ImV  + i*( ReK*ImV + ImK*ReV )
   !
   !$OMP SINGLE
   ! wavenumber = 0, real
-  tmpzk(:,1) = matmul( k3f%kernel(:,:,1), tmpzk(:,1) ) 
+  tmpzk(:,1) = matmul( k3f%kernel(:,:,1), vzk(:,1) ) 
   ! wavenumber = Nyquist, real
-  tmpzk(:,2) = matmul( k3f%kernel(:,:,2), tmpzk(:,2) ) 
+  tmpzk(:,2) = matmul( k3f%kernel(:,:,2), vzk(:,2) ) 
   !$OMP END SINGLE
   ! higher wavenumbers, complex
   !$OMP DO SCHEDULE(STATIC)
   do k = 3,k3f%nxfft-1,2
     ! real part = ReK*ReV - ImK*ImV
-    ! use tmp to avoid scratching
-    tmpz         = matmul( k3f%kernel(:,:,k), tmpzk(:,k) )  &
-                 - matmul( k3f%kernel(:,:,k+1), tmpzk(:,k+1) )
+    tmpzk(:,k)   = matmul( k3f%kernel(:,:,k), vzk(:,k) )  &
+                 - matmul( k3f%kernel(:,:,k+1), vzk(:,k+1) )
     ! imaginary part = ReK*ImV + ImK*ReV
-    tmpzk(:,k+1) = matmul( k3f%kernel(:,:,k), tmpzk(:,k+1) )  &
-                 + matmul( k3f%kernel(:,:,k+1), tmpzk(:,k) )
-    tmpzk(:,k) = tmpz
+    tmpzk(:,k+1) = matmul( k3f%kernel(:,:,k), vzk(:,k+1) )  &
+                 + matmul( k3f%kernel(:,:,k+1), vzk(:,k) )
   enddo
   !$OMP END DO
   
@@ -486,41 +501,23 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v,i_sigma_cpl)
   do n = 1,k3f%nw
     tmpx = - tmpzk(n,:)
     call my_rdft(-1,tmpx,k3f%m_fft)
-    tau( (n-1)*k3f%nx+1 : n*k3f%nx ) = tmpx(1:k3f%nx) ! take only first half of array
+    tau( (n-1)*k3f%nx+1 : n*k3f%nx ) = tmpx(1:k3f%nx) ! take only first half of
+array
   enddo
   !$OMP END DO
 
-  if (i_sigma_cpl == 1) then
-    !$OMP DO SCHEDULE(STATIC) 
-    do n = 1,k3f%nw
-      tmpx( 1 : k3f%nx ) = v( (n-1)*k3f%nx+1 : n*k3f%nx )
-      tmpx( k3f%nx+1 : k3f%nxfft ) = 0d0  ! convolution requires zero-padding
-      call my_rdft(1,tmpx,k3f%m_fft) 
-      tmpzk(n,:) = tmpx
-    enddo
-    !$OMP END DO
+  if (associated(k3f%kernel_n)) then
   
-    ! convolution in Fourier domain is a product of complex numbers:
-    ! K*V = (ReK + i*ImK)*(ReV+i*ImV) 
-    !     = ReK*ReV - ImK*ImV  + i*( ReK*ImV + ImK*ReV )
-    !
     !$OMP SINGLE
-    ! wavenumber = 0, real
-    tmpzk(:,1) = matmul( k3f%kernel_n(:,:,1), tmpzk(:,1) ) 
-    ! wavenumber = Nyquist, real
-    tmpzk(:,2) = matmul( k3f%kernel_n(:,:,2), tmpzk(:,2) ) 
+    tmpzk(:,1) = matmul( k3f%kernel_n(:,:,1), vzk(:,1) ) 
+    tmpzk(:,2) = matmul( k3f%kernel_n(:,:,2), vzk(:,2) ) 
     !$OMP END SINGLE
-    ! higher wavenumbers, complex
     !$OMP DO SCHEDULE(STATIC)
     do k = 3,k3f%nxfft-1,2
-      ! real part = ReK*ReV - ImK*ImV
-      ! use tmp to avoid scratching
-      tmpz         = matmul( k3f%kernel_n(:,:,k), tmpzk(:,k) )  &
-                     - matmul( k3f%kernel_n(:,:,k+1), tmpzk(:,k+1) )
-      ! imaginary part = ReK*ImV + ImK*ReV
-      tmpzk(:,k+1) = matmul( k3f%kernel_n(:,:,k), tmpzk(:,k+1) )  &
-                     + matmul( k3f%kernel_n(:,:,k+1), tmpzk(:,k) )
-      tmpzk(:,k) = tmpz
+      tmpzk(:,k)   = matmul( k3f%kernel_n(:,:,k), vzk(:,k) )  &
+                   - matmul( k3f%kernel_n(:,:,k+1), vzk(:,k+1) )
+      tmpzk(:,k+1) = matmul( k3f%kernel_n(:,:,k), vzk(:,k+1) )  &
+                   + matmul( k3f%kernel_n(:,:,k+1), vzk(:,k) )
     enddo
     !$OMP END DO
  
@@ -528,7 +525,7 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v,i_sigma_cpl)
     do n = 1,k3f%nw
       tmpx = - tmpzk(n,:)
       call my_rdft(-1,tmpx,k3f%m_fft)
-      sigma_n( (n-1)*k3f%nx+1 : n*k3f%nx ) = tmpx(1:k3f%nx) ! take only first half of array
+      sigma_n( (n-1)*k3f%nx+1 : n*k3f%nx ) = tmpx(1:k3f%nx)
     enddo
     !$OMP END DO
     
@@ -541,8 +538,10 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v,i_sigma_cpl)
 end subroutine compute_stress_3d_fft
 
 ! ---------------------------------------------------------------------------
-! Version to perform the 2D-convolution using 2D-FFTs of the velocity on the fault
-! plane and a pre-computed 2D-FFT of an elastic kernel in an infinite medium. The
+! Version to perform the 2D-convolution using 2D-FFTs of the velocity on the
+! fault
+! plane and a pre-computed 2D-FFT of an elastic kernel in an infinite medium.
+! The
 ! kernel assumes slip is in the along-strike direction.
 
 subroutine compute_stress_3d_fft2d(tau, k, v)
