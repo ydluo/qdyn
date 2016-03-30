@@ -3,14 +3,21 @@ clear
 
 filename='CDX_STG1_sVS.mat';
 
-fid = fopen([filename '.txt'],'w');
-fid_r = fopen([filename '_r.txt'],'w');
-fids = fopen([filename '_s.txt'],'w');
-fid_rs = fopen([filename '_rs.txt'],'w');
+fid = fopen([filename '.txt'],'w');	%rect crack model
+fid_r = fopen([filename '_r.txt'],'w');		%circ. model
+fids = fopen([filename 's.txt'],'w');		%rect model w/ shallow VS
+fid_rs = fopen([filename '_rs.txt'],'w');	%circ. model w/ shallow VS
+
+fidDL = fopen([filename 'DL.txt'],'w');		%rect dislocation model
+fid_rDL = fopen([filename '_rDL.txt'],'w');	%circ. dislocation model
+
 fprintf(fid,'C    W    L_a    Ws    Zc    A    RES\n');
 fprintf(fid_r,'C    W    L_a    Ws    Zc    A    RES\n');
 fprintf(fids,'C    W    L_a    Ws    Zc    A    RES\n');
 fprintf(fid_rs,'C    W    L_a    Ws    Zc    A    RES\n');
+
+fprintf(fidDL,'C    W    L_a    Ws    Zc    A    RES\n');
+fprintf(fid_rDL,'C    W    L_a    Ws    Zc    A    RES\n');
 
 %LL = [2e3:2e3:20e3,100e3,200e3,1000e3];
 %LL = [1e3];
@@ -36,6 +43,9 @@ C = zeros(nn_all,1);
 Cr = C;
 Cs = C;
 Crs = Cr;
+CDL = C;
+CrDL = C;
+
 ii = 0;
 
 for  iL = 1:1:numel(LL)
@@ -139,7 +149,7 @@ for  iL = 1:1:numel(LL)
     disp('Generated Full Kernel');
     
     display('Calcalation C value :...');    
-    tau = ones(size(XX'));
+    tau = ones(size(X'));
     D = K\tau;
     C(ii) = mean(tau)*W/(mean(D)*mu);
     display(['C = ' num2str(C(ii))]);
@@ -151,6 +161,11 @@ for  iL = 1:1:numel(LL)
     display(['Cs = ' num2str(Cs(ii)) ' | with ' num2str(DsVS/1000) 'km shallow VS zone']);
     fprintf(fids,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cs(ii),W,L_a(ii),Ws,Zc,numel(X)*dx*dw,RES);
  
+    DDL = ones(size(X));
+    tauDL = DDL*K;
+    CDL(ii) = mean(tauDL)*W/mu;
+    display(['CDL = ' num2str(CDL(ii)) ' | Dislocation Model']);
+    fprintf(fidDL,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',CDL(ii),W,L_a(ii),Ws,Zc,numel(X)*dx*dw,RES);
 
     disp('Generating Full Kernel for Circular Rupture');
     Xc = X(RES);
@@ -172,6 +187,12 @@ for  iL = 1:1:numel(LL)
     display(['Crs = ' num2str(Crs(ii)) ' | with ' num2str(DsVS/1000) 'km shallow VS zone']);
     fprintf(fid_rs,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Crs(ii),W,L_a(ii),Ws,Zc,numel(Xr)*dx*dw,RES);
 
+    DrDL = ones(size(Xr));
+    taurDL = DrDL*Kr;
+    CrDL(ii) = mean(taurDL)*W/mu;
+    display(['CrDL = ' num2str(CrDL(ii)) ' | Dislocation Model']);
+    fprintf(fid_rDL,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',CrDL(ii),W,L_a(ii),Ws,Zc,numel(X)*dx*dw,RES);
+
     system(['cp fort.68 Kernel_RES' num2str(RES) '_L' num2str(L/1000) '.txt']);
     end
 
@@ -181,6 +202,8 @@ fclose(fid);
 fclose(fid_r);
 fclose(fids);
 fclose(fid_rs);
+fclose(fidDL);
+fclose(fid_rDL);
 
 clear K,Kr
 
