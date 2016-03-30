@@ -12,6 +12,11 @@ fids = fopen([filename 's.txt'],'w');
 fid_rs = fopen([filename '_rs.txt'],'w');
 fid_r1s = fopen([filename '_r1s.txt'],'w');
 
+fidDL = fopen([filename 'DL.txt'],'w');         %rect dislocation model
+fid_rDL = fopen([filename '_rDL.txt'],'w');     %circ. dislocation model
+fid_r1DL = fopen([filename '_r1DL.txt'],'w');     %circ. dislocation model
+
+
 %LL = [2e3:2e3:20e3,100e3,200e3,1000e3];
 %LL = [1e3];
 %LLo = 1e3*[22:0.4:60,61:1:100,102:2:200,205:5:400,410:10:500];
@@ -41,6 +46,10 @@ fprintf(fid_rs,'C    W    L_a    Ws    Zc    A    RES\n');
 fprintf(fid_r1,'C    W    L_a    Ws    Zc    A    RES\n');
 fprintf(fid_r1s,'C    W    L_a    Ws    Zc    A    RES\n');
 
+fprintf(fidDL,'C    W    L_a    Ws    Zc    A    RES\n');
+fprintf(fid_rDL,'C    W    L_a    Ws    Zc    A    RES\n');
+fprintf(fid_r1DL,'C    W    L_a    Ws    Zc    A    RES\n');
+
 
 LLo = LLo(LLo>=Ws);
 
@@ -54,6 +63,9 @@ Cr = C;
 Crs = C;
 Cr1 = C;
 Cr1s = C;
+CDL = C;
+CrDL = C;
+Cr1DL = C;
 
 ii = 0;
 
@@ -196,7 +208,11 @@ for iL = 1:1:numel(LLo)
     display(['Cs = ' num2str(Cs(iL)) ' | with ' num2str(DsVS/1000) 'km shallow VS zone']);
     fprintf(fids,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cs(iL),W,L_a(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
      
-
+    DDL = ones(size(Xr));
+    tauDL = DDL*K;
+    CDL(iL) = mean(tauDL)*W/mu;
+    display(['CDL = ' num2str(CDL(iL)) ' | Dislocation Model']);
+    fprintf(fidDL,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',CDL(iL),W,L_a(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
 
     disp(['Generating Full Kernel for Rect-Circular Rupture: L = ' num2str(L/1000) 'km']);    
     if L <= Ws*2

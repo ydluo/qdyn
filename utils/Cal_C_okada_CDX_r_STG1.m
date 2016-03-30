@@ -191,7 +191,7 @@ for  iL = 1:1:numel(LL)
     taurDL = DrDL*Kr;
     CrDL(ii) = mean(taurDL)*W/mu;
     display(['CrDL = ' num2str(CrDL(ii)) ' | Dislocation Model']);
-    fprintf(fid_rDL,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',CrDL(ii),W,L_a(ii),Ws,Zc,numel(X)*dx*dw,RES);
+    fprintf(fid_rDL,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',CrDL(ii),W,L_a(ii),Ws,Zc,numel(Xr)*dx*dw,RES);
 
     system(['cp fort.68 Kernel_RES' num2str(RES) '_L' num2str(L/1000) '.txt']);
     end
