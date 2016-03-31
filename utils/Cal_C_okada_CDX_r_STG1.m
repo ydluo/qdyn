@@ -9,9 +9,9 @@ fids = fopen([filename 's.txt'],'w');		%rect model w/ shallow VS
 fid_rs = fopen([filename '_rs.txt'],'w');	%circ. model w/ shallow VS
 
 fidDL = fopen([filename 'DL.txt'],'w');		%rect dislocation model
-fidDL_r = fopen([filename 'DL_r.txt'],'w');	%circ. dislocation model
+fid_rDL = fopen([filename 'DL_r.txt'],'w');	%circ. dislocation model
 fidDLc = fopen([filename 'DLc.txt'],'w');         %rect dislocation model, dtau at center
-fidDLc_r = fopen([filename 'DLc_r.txt'],'w');     %circ. dislocation model
+fid_rDLc = fopen([filename 'DLc_r.txt'],'w');     %circ. dislocation model
 
 fprintf(fid,'C    W    L_a    Ws    Zc    A    RES\n');
 fprintf(fid_r,'C    W    L_a    Ws    Zc    A    RES\n');
@@ -19,9 +19,9 @@ fprintf(fids,'C    W    L_a    Ws    Zc    A    RES\n');
 fprintf(fid_rs,'C    W    L_a    Ws    Zc    A    RES\n');
 
 fprintf(fidDL,'C    W    L_a    Ws    Zc    A    RES\n');
-fprintf(fidDL_r,'C    W    L_a    Ws    Zc    A    RES\n');
+fprintf(fid_rDL,'C    W    L_a    Ws    Zc    A    RES\n');
 fprintf(fidDLc,'C    W    L_a    Ws    Zc    A    RES\n');
-fprintf(fidDLc_r,'C    W    L_a    Ws    Zc    A    RES\n');
+fprintf(fid_rDLc,'C    W    L_a    Ws    Zc    A    RES\n');
 
 
 %LL = [2e3:2e3:20e3,100e3,200e3,1000e3];
@@ -203,11 +203,11 @@ for  iL = 1:1:numel(LL)
     taurDL = DrDL*Kr;
     CrDL(ii) = mean(taurDL)*W/mu;
     display(['CrDL = ' num2str(CrDL(ii)) ' | Dislocation Model']);
-    fprintf(fidDL_r,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',CrDL(ii),W,L_a(ii),Ws,Zc,numel(Xr)*dx*dw,RES);
+    fprintf(fid_rDL,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',CrDL(ii),W,L_a(ii),Ws,Zc,numel(Xr)*dx*dw,RES);
 
     CrDLc(ii) = taurDL(ceil(numel(taurDL)/2))*W/mu;
     display(['CrDLc = ' num2str(CrDLc(ii)) ' | Dislocation Model | Dtau at Center']);
-    fprintf(fidDLc_r,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',CrDLc(ii),W,L_a(ii),Ws,Zc,numel(Xr)*dx*dw,RES);
+    fprintf(fid_rDLc,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',CrDLc(ii),W,L_a(ii),Ws,Zc,numel(Xr)*dx*dw,RES);
 
     system(['cp fort.68 Kernel_RES' num2str(RES) '_L' num2str(L/1000) '.txt']);
     end
@@ -219,7 +219,9 @@ fclose(fid_r);
 fclose(fids);
 fclose(fid_rs);
 fclose(fidDL);
-fclose(fidDL_r);
+fclose(fid_rDL);
+fclose(fidDLc);
+fclose(fid_rDLc);
 
 clear K
 clear Kr

@@ -16,6 +16,9 @@ fidDL = fopen([filename 'DL.txt'],'w');         %rect dislocation model
 fid_rDL = fopen([filename '_rDL.txt'],'w');     %circ. dislocation model
 fid_r1DL = fopen([filename '_r1DL.txt'],'w');     %circ. dislocation model
 
+fidDLc = fopen([filename 'DLc.txt'],'w');         %rect dislocation model
+fid_rDLc = fopen([filename '_rDLc.txt'],'w');     %circ. dislocation model
+fid_r1DLc = fopen([filename '_r1DLc.txt'],'w');     %circ. dislocation model
 
 %LL = [2e3:2e3:20e3,100e3,200e3,1000e3];
 %LL = [1e3];
@@ -49,7 +52,9 @@ fprintf(fid_r1s,'C    W    L_a    Ws    Zc    A    RES\n');
 fprintf(fidDL,'C    W    L_a    Ws    Zc    A    RES\n');
 fprintf(fid_rDL,'C    W    L_a    Ws    Zc    A    RES\n');
 fprintf(fid_r1DL,'C    W    L_a    Ws    Zc    A    RES\n');
-
+fprintf(fidDLc,'C    W    L_a    Ws    Zc    A    RES\n');
+fprintf(fid_rDLc,'C    W    L_a    Ws    Zc    A    RES\n');
+fprintf(fid_r1DLc,'C    W    L_a    Ws    Zc    A    RES\n');
 
 LLo = LLo(LLo>=Ws);
 
@@ -66,6 +71,9 @@ Cr1s = C;
 CDL = C;
 CrDL = C;
 Cr1DL = C;
+CDLc = C;
+CrDLc = C;
+Cr1DcL = C;
 
 ii = 0;
 
@@ -213,6 +221,13 @@ for iL = 1:1:numel(LLo)
     CDL(iL) = mean(tauDL)*W/mu;
     display(['CDL = ' num2str(CDL(iL)) ' | Dislocation Model']);
     fprintf(fidDL,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',CDL(iL),W,L_a(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
+    
+    xc = mean(Xr);
+    zc = mean(Zr);
+    [mm,ic] = min((Xr-xc).^2+(Zr-zc).^2);
+    CDLc(iL) = tauDL(ic)*W/mu;
+    display(['CDLc = ' num2str(CDLc(iL)) ' | Dislocation Model | dtau at Center']);
+    fprintf(fidDLc,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',CDLc(iL),W,L_a(iL),Ws,Zc,numel(Xr)*dx*dw,RES); 
 
     disp(['Generating Full Kernel for Rect-Circular Rupture: L = ' num2str(L/1000) 'km']);    
     if L <= Ws*2
@@ -271,6 +286,13 @@ for iL = 1:1:numel(LLo)
     CrDL(iL) = mean(taurDL)*W/mu;
     display(['CrDL = ' num2str(CrDL(iL)) ' | Dislocation Model']);
     fprintf(fid_rDL,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',CrDL(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
+    
+    xc = mean(Xr);          
+    zc = mean(Zr);
+    [mm,ic] = min((Xr-xc).^2+(Zr-zc).^2);
+    CrDLc(iL) = taurDL(ic)*W/mu;
+    display(['CrDLc = ' num2str(CrDLc(iL)) ' | Dislocation Model | dtau at Center']);
+    fprintf(fid_rDLc,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',CrDLc(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
 
     disp(['Generating Full Kernel for Rect-Circular(2) Rupture: L = ' num2str(L/1000) 'km']);
     
@@ -310,6 +332,12 @@ for iL = 1:1:numel(LLo)
     display(['Cr1DL = ' num2str(Cr1DL(iL)) ' | Dislocation Model']);
     fprintf(fid_r1DL,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cr1DL(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
 
+    xc = mean(Xr);          
+    zc = mean(Zr);
+    [mm,ic] = min((Xr-xc).^2+(Zr-zc).^2);
+    Cr1DLc(iL) = taur1DL(ic)*W/mu;
+    display(['Cr1DLc = ' num2str(Cr1DLc(iL)) ' | Dislocation Model | dtau at Center']);
+    fprintf(fid_r1DLc,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cr1DLc(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
     
 
 end
@@ -324,6 +352,9 @@ fclose(fid_r1s);
 fclose(fidDL);
 fclose(fid_rDL);
 fclose(fid_r1DL);
+fclose(fidDLc);
+fclose(fid_rDLc);
+fclose(fid_r1DLc);
 
 clear K
 clear Kr
