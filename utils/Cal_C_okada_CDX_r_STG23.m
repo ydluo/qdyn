@@ -266,6 +266,12 @@ for iL = 1:1:numel(LLo)
     fprintf(fid_rs,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Crs(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
     end
 
+    DrDL = ones(size(Xr));
+    taurDL = DrDL*Kr;
+    CrDL(iL) = mean(taurDL)*W/mu;
+    display(['CrDL = ' num2str(CrDL(iL)) ' | Dislocation Model']);
+    fprintf(fid_rDL,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',CrDL(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
+
     disp(['Generating Full Kernel for Rect-Circular(2) Rupture: L = ' num2str(L/1000) 'km']);
     
     disp(['Elongated Semi-Circular Rupture(2)']);
@@ -297,6 +303,13 @@ for iL = 1:1:numel(LLo)
     display(['Cr1s = ' num2str(Crs(iL)) ' | with ' num2str(DsVS/1000) 'km shallow VS zone']);
     fprintf(fid_r1s,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cr1s(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
 
+
+    Dr1DL = ones(size(Xr));
+    taur1DL = Dr1DL*Kr;
+    Cr1DL(iL) = mean(taur1DL)*W/mu;
+    display(['Cr1DL = ' num2str(Cr1DL(iL)) ' | Dislocation Model']);
+    fprintf(fid_r1DL,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cr1DL(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
+
     
 
 end
@@ -308,7 +321,11 @@ fclose(fids);
 fclose(fid_rs);
 fclose(fid_r1s);
 
+fclose(fidDL);
+fclose(fid_rDL);
+fclose(fid_r1DL);
 
-clear K,Kr
+clear K
+clear Kr
 
 save(filename);
