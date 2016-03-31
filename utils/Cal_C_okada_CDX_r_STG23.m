@@ -209,7 +209,7 @@ for iL = 1:1:numel(LLo)
     fprintf(fids,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cs(iL),W,L_a(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
      
     DDL = ones(size(Xr));
-    tauDL = DDL*K;
+    tauDL = DDL*Kr;
     CDL(iL) = mean(tauDL)*W/mu;
     display(['CDL = ' num2str(CDL(iL)) ' | Dislocation Model']);
     fprintf(fidDL,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',CDL(iL),W,L_a(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
