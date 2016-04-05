@@ -40,7 +40,7 @@ subroutine read_mesh(iin,m)
     read(iin,*) m%nn
     read(iin,*) m%Lfault, m%W 
 
-  case(2,4) !3d problem
+  case(2) !3d problem
     read(iin,*) m%nx,m%nw
     m%nn = m%nx * m%nw
     read(iin,*) m%Lfault, m%W , m%Z_CORNER   ! JPA m%W is not used in this case, remove it
@@ -49,7 +49,9 @@ subroutine read_mesh(iin,m)
       read(iin,*) m%dw(i), m%DIP_W(i)
     end do
 
-  case(67)
+ ! JPA The two cases below are not for earthquake cycle computations, 
+ !     they should be in a separate code in utils/ linked to modules in src/
+  case(67) 
     write(6,*) 'Calculate Okada Kernel'
     read(iin,*) m%nn
     read(iin,*) m%temp_lam, m%temp_mu
@@ -71,7 +73,7 @@ subroutine read_mesh(iin,m)
         endif
       end do
     end do
-    stop 'Kernal calculation completed and stored in fort.67'
+    stop 'Kernel calculation completed and stored in fort.67'
         
   case(68)
     write(6,*) 'Calculate Okada Kernel: Const DX'
@@ -98,11 +100,11 @@ subroutine read_mesh(iin,m)
         endif
       end do
     end do
-    stop 'Kernal calculation completed and stored in fort.68'    
+    stop 'Kernel calculation completed and stored in fort.68'    
 
 
   case default
-    write(6,*) 'mesh dimension should be 0, 1, 2, 4 or 67/68'
+    write(6,*) 'mesh dimension should be 0, 1, 2 or 67/68'
 
   end select
 

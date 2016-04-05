@@ -39,16 +39,17 @@ subroutine read_main(pb)
       pb%kernel%kind = pb%mesh%dim+1       
   endif
      
-  if (pb%kernel%kind==2) then 
-    allocate(pb%kernel%k2f)
-    read(15,*) pb%kernel%k2f%finite
-  elseif (pb%kernel%kind==3) then 
-    allocate(pb%kernel%k3)
-  elseif (pb%kernel%kind==4) then     ! 
-    allocate(pb%kernel%k3f)
-  elseif (pb%kernel%kind==5) then
-    allocate(pb%kernel%k3f2)
-  end if
+  select case (pb%kernel%kind)
+    case(2)
+      allocate(pb%kernel%k2f)
+      read(15,*) pb%kernel%k2f%finite
+    case(3)
+      allocate(pb%kernel%k3)
+    case(4)
+      allocate(pb%kernel%k3f)
+    case(5)
+      allocate(pb%kernel%k3f2)
+  end select
    
   read(15,*) pb%itheta_law
   read(15,*) pb%i_rns_law

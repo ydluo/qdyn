@@ -10,16 +10,16 @@
 # 2. Comment/uncomment/add/modify the lines corresponding to your compiler:
 
 # GNU 
-F90 = gfortran
+#F90 = gfortran
 #OPT = -O3 -Wall
 # For parallel runs with OpenMP:
-OPT = -O3 -fopenmp
+#OPT = -O3 -fopenmp
 
 #-- Intel Fortran --
-#F90 = ifort
+F90 = ifort
 #OPT = -O3 -ip -ipo
 # For parallel runs with OpenMP:
-#OPT = -O3 -ip -ipo -parallel -openmp -par-threshold:50
+OPT = -O3 -ip -ipo -parallel -openmp -par-threshold:50
 #-no-inline-factor
 #OPT = -O3
 # OPT = -O0 -warn all -C

@@ -206,7 +206,7 @@ subroutine init_kernel_3D_fft2d(k,lambda,mu,m)
   double precision, allocatable, dimension(:,:) :: Kij
   double precision :: Im, Ip, Jm, Jp, ImJp, ImJm, IpJp, IpJm, T1, T2, T3, T4, koef
   double precision, parameter :: PI = 3.14159265358979d0
-  integer :: i, j, n, stat
+  integer :: i, j
 
   write(6,*) 'Generating 3D kernel...'
   write(6,*) 'Ooura FFT2 applied for fault plane'
@@ -368,7 +368,7 @@ subroutine compute_stress_3d(tau,sigma_n,k3,v)
   double precision, intent(inout) :: tau(:), sigma_n(:)
   double precision, intent(in) :: v(:)
 
-  integer :: nnLocal,nnGlobal,nw,nxLocal,nxGlobal,k,i,iw,ix,j,jw,jx,idx,jj,ix0_proc
+  integer :: nnLocal,nnGlobal,nw,nxLocal,nxGlobal,k,iw,ix,j,jw,jx,idx,jj,ix0_proc
   double precision :: tsum
 
   nnLocal = size(tau)
@@ -541,7 +541,6 @@ subroutine compute_stress_3d_fft2d(tau, k, v)
 
   double precision :: tmpx(k%nxfft, k%nwfft), tmpz(k%nxfft, k%nwfft)
   integer :: nw, nx, nwfft, nxfft, nw2, nw21
-  real :: time_begin, time_end
 
   ! Retrieve dimensions and half indices
   nw = k%nw
