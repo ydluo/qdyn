@@ -177,8 +177,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m)
                 IRET,tau,sigma_n)
         ii = i+1
         ! wrap up the negative relative-x-positions in the second half of the
-        ! array
-        ! to comply with conventions of fft convolution
+        ! array to comply with conventions of fft convolution
         if (i<0) ii = ii + k%nxfft  
         tmp(ii) = tau
         tmp_n(ii) = sigma_n
@@ -321,7 +320,7 @@ subroutine compute_stress(tau,sigma_n,K,v)
       !  call MPI_gatherall(..., v, vGlobal ...) 
       !  call compute_stress_3d(tau,sigma_n,K%k3,vGlobal)
       ! endif
-    case(4); call compute_stress_3d_fft(tau,sigma_n,K%k3f,v)
+    case(4); call compute_stress_3d_fft(tau,sigma_n,K%k3f,v,K%i_sigma_cpl)
     case(5); call compute_stress_3d_fft2d(tau,K%k3f2,v)
   end select
 
@@ -437,7 +436,7 @@ end subroutine compute_stress_3d
 !
 ! MPI partitioning: each processor gets a range of depths
 
-subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
+subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v,i_sigma_cpl)
 
   use fftsg, only : my_rdft
 
@@ -445,10 +444,11 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
   double precision , intent(inout) :: tau(:), sigma_n(:)
   double precision , intent(in) :: v(:)
 
-  double precision :: vzk(size(k3f%kernel,2),k3f%nxfft), tmpzk(k3f%nw,k3f%nxfft), tmpx(k3f%nxfft)
-  integer :: n,k
+! double precision :: vzk(size(k3f%kernel,2),k3f%nxfft), tmpzk(k3f%nw,k3f%nxfft), tmpx(k3f%nxfft)
+  double precision :: vzk(k3f%nw,k3f%nxfft), tmpzk(k3f%nw,k3f%nxfft), tmpx(k3f%nxfft), tmpz(k3f%nw)
+  integer :: n,k,i_sigma_cpl
 
-  !$OMP PARALLEL PRIVATE(tmpx)
+  !$OMP PARALLEL PRIVATE(tmpx,tmpz)
 
   !$OMP DO SCHEDULE(STATIC) 
   do n = 1,k3f%nw
@@ -458,11 +458,13 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
     tmpzk(n,:) = tmpx
   enddo
   !$OMP END DO
-
+  
   ! if MPI, gather the global vzk from the pieces in all processors
   !  call MPI_gatherall(..., tmpzk, vzk ...) 
   ! else
+  !$OMP SINGLE 
     vzk = tmpzk
+  !$OMP END SINGLE
   ! endif
   
   ! convolution in Fourier domain is a product of complex numbers:
@@ -474,6 +476,9 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
   tmpzk(:,1) = matmul( k3f%kernel(:,:,1), vzk(:,1) ) 
   ! wavenumber = Nyquist, real
   tmpzk(:,2) = matmul( k3f%kernel(:,:,2), vzk(:,2) ) 
+  vzk(:,1) = tmpzk(:,1)
+  vzk(:,2) = tmpzk(:,2)
+
   !$OMP END SINGLE
   ! higher wavenumbers, complex
   !$OMP DO SCHEDULE(STATIC)
@@ -484,6 +489,9 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
     ! imaginary part = ReK*ImV + ImK*ReV
     tmpzk(:,k+1) = matmul( k3f%kernel(:,:,k), vzk(:,k+1) )  &
                  + matmul( k3f%kernel(:,:,k+1), vzk(:,k) )
+    vzk(:,k)   = tmpzk(:,k)
+    vzk(:,k+1) = tmpzk(:,k+1)
+    tmpz=tmpzk(:,k)
   enddo
   !$OMP END DO
   
@@ -495,11 +503,24 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
   enddo
   !$OMP END DO
 
-  if (allocated(k3f%kernel_n)) then
+! if (allocated(k3f%kernel_n)) then !PG: k3fkernel_n is allways allocated in init_kernel_3D_fft
+  if (i_sigma_cpl==1) then 
+   !$OMP DO SCHEDULE(STATIC) 
+    do n = 1,k3f%nw
+      tmpx( 1 : k3f%nx ) = v( (n-1)*k3f%nx+1 : n*k3f%nx )
+      tmpx( k3f%nx+1 : k3f%nxfft ) = 0d0  ! convolution requires zero-padding
+      call my_rdft(1,tmpx,k3f%m_fft) 
+      tmpzk(n,:) = tmpx
+    enddo
+    !$OMP END DO
   
+    ! convolution in Fourier domain is a product of complex numbers:
+    ! K*V = (ReK + i*ImK)*(ReV+i*ImV) 
+    !     = ReK*ReV - ImK*ImV  + i*( ReK*ImV + ImK*ReV )
+    !
     !$OMP SINGLE
     tmpzk(:,1) = matmul( k3f%kernel_n(:,:,1), vzk(:,1) ) 
-    tmpzk(:,2) = matmul( k3f%kernel_n(:,:,2), vzk(:,2) ) 
+    tmpzk(:,2) = matmul( k3f%kernel_n(:,:,2), vzk(:,2) )
     !$OMP END SINGLE
     !$OMP DO SCHEDULE(STATIC)
     do k = 3,k3f%nxfft-1,2
@@ -507,6 +528,9 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
                    - matmul( k3f%kernel_n(:,:,k+1), vzk(:,k+1) )
       tmpzk(:,k+1) = matmul( k3f%kernel_n(:,:,k), vzk(:,k+1) )  &
                    + matmul( k3f%kernel_n(:,:,k+1), vzk(:,k) )
+      vzk(:,k) = tmpzk(:,k)
+      vzk(:,k+1) = tmpzk(:,k+1)
+      tmpz = tmpzk(:,k)
     enddo
     !$OMP END DO
  

@@ -16,7 +16,7 @@ module constants
 !   0 : no FFT
 !   1 : FFT along-strike
 !   2 : FFT along-strike and along-dip, only works for vertical faults
-  integer, parameter :: FFT_TYPE = 0
+  integer, parameter :: FFT_TYPE = 1
 
 !--- END of User Settings ---
 

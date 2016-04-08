@@ -65,7 +65,7 @@
 %		DIP_W	dipping angle (degree). If depthdependent, values must be given
 %			from deeper to shallower depth.
 %		Z_CORNER fault bottom depth (m, negative down)
-%		SIGMA_CPL normal stress coupling
+%		  normal stress coupling
 %			0 = disable
 %			1 = enable
 %		APER 	amplitude of additional time-dependent oscillatory shear stress loading (Pa)
@@ -401,12 +401,12 @@ switch mode
         return;
     end
     
-    % solve
-%     status = system('~/qdyn_svn/trunk/src/qdyn');
-%     status = system('./qdyn');
-     status = system('/Users/percy.galvez/Dropbox/qdyn_developer/src/qdyn');
+%    Solve
+%    status = system('~/qdyn_svn/trunk/src/qdyn');
+%    status = system('./qdyn');
+     status = system('/Users/percy.galvez/Dropbox/qdyn_developer/devel/qdyn');
 %    status = system('~/bin/qdyn');
-    % rename input and output files
+%    rename input and output files
     if length(NAME)
       movefile('fort.18',[NAME '.ot']); 
       movefile('fort.19',[NAME '.ox']); 
