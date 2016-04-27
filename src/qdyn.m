@@ -39,15 +39,13 @@
 %		
 %		The parameters that can be set through 'parsin' or 'Prop/Value' pairs are listed below.
 %		Their default values can be obtained by running:
-%			pars = qdyn(‘set’)
+%			pars = qdyn('set')
 %
 %		Parameters defining the geometry of the problem and loading:
 %		MESHDIM	dimension of the problem:
 %			0 = spring-block system
 %			1 = 1D fault in a 2D elastic medium
 %			2 = 2D fault in a 3D medium
-%           		4 = same as 2 but fault stresses computed via 2DFFT
-%			    (only if the grid spacings and dip angle are uniform)
 %		MU 	shear modulus (Pa)
 %		LAM 	elastic modulus LAMBDA for 3D simulations (Pa)
 %		VS 	shear wave velocity (m/s). If VS=0 radiation damping is turned off
@@ -58,14 +56,14 @@
 %			    loaded by steady displacement at distance W from the fault
 %			1 = fault is infinitely long but only a segment of length L has
 %			    rate-and-state friction, the rest has steady slip. If you get the
-%			    error message “finite kernel is too small”, create a larger kernel file 
+%			    error message ???finite kernel is too small???, create a larger kernel file 
 %			    using the function TabKernelFiniteFlt.m, update the file name in
 %			    subroutine init_kernel_2D of src/fault_stress.f90, and recompile
 %		W  	distance between displacement loading and fault if MESHDIM=1 and FINITE=0
 %		DIP_W	dipping angle (degree). If depthdependent, values must be given
 %			from deeper to shallower depth.
 %		Z_CORNER fault bottom depth (m, negative down)
-%		SIGMA_CPL normal stress coupling
+%		SIGMA_CPL  normal stress coupling (only for dipping faults)
 %			0 = disable
 %			1 = enable
 %		APER 	amplitude of additional time-dependent oscillatory shear stress loading (Pa)
@@ -106,7 +104,7 @@
 %			0 = stop at t=TMAX
 %			1 = stop end of slip localization phase
 %			2 = stop at first slip rate peak
-%           3 = stop at v > TMAX
+%			3 = stop at v > TMAX
 %		DTTRY 	first trial timestep (s)
 %		DTMAX	maximum timestep (0=unrestricted)
 %		ACC	solver accuracy
@@ -146,6 +144,9 @@
 %			    with seismic moment > DYN_M
 %		DYN_M	target seismic moment of a dynamic event
 %		DYN_SKIP number of dynamic events to skip (warm up cycles)
+%
+%		Other parameters:
+%		EXEC_PATH path to the Fortran qdyn executable
 %
 % OUTPUTS 	pars	structure containing the parameters listed above, and:
 %			X,Y,Z = fault coordinates
@@ -195,19 +196,19 @@ function [pars,ot,ox] = qdyn(mode,varargin)
 %	lower_case 	= local variables
 %	UPPER_CASE 	= variables that will be wrapped into output structure 'pars'
 
-%--------- DEFAULT PARAMETERS ------------------------------------
-
-MESHDIM=1;
-
-NEQS=2;
-
-
 %-- useful units
 day = 60*60*24;
 month = 30*day;
 year = 365*day;
 
+%--------- DEFAULT PARAMETERS ------------------------------------
+
+MESHDIM=1;
+NEQS=2;
 NAME ='';	% title for the simulation
+
+scriptName = mfilename('fullpath');
+EXEC_PATH = fileparts(scriptName);	% default is same directory as qdyn.m
 
 %-- medium
 L= 2e3; 	% fault length (L scales the stiffness for the spring-block case)
@@ -283,7 +284,7 @@ switch MESHDIM
     X = [];
   case 1
     X = (-N/2+0.5:N/2-0.5) *L/N; 
-  case {2, 4}
+  case 2
     % set x, y, z, dip of first row
     cd = cos(DIP_W(1)/180.*pi);
     sd = sin(DIP_W(1)/180.*pi);
@@ -305,7 +306,7 @@ switch MESHDIM
       DIP(j0+1:j0+NX) = DIP_W(i);
     end 
   otherwise
-    error('MESHDIM must be 0, 1, 2 or 4');
+    error('MESHDIM must be 0, 1 or 2');
 end  
 
 TH_SS = DC./V_SS;
@@ -363,7 +364,7 @@ switch mode
     if SIGMA_CPL == 1
       NEQS = 3;
     end
-    if MESHDIM == 2 || MESHDIM == 4;
+    if MESHDIM == 2;
       fprintf(1, 'MESHDIM = %d\n', MESHDIM); %JPA should "1" be "fid" instead?
       fprintf(fid,'%u %u     NX, NW\n' , NX, NW);      
       fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
@@ -401,11 +402,9 @@ switch mode
         return;
     end
     
-    % solve
-%     status = system('~/qdyn_svn/trunk/src/qdyn');
-     status = system('./qdyn');
-%    status = system('~/bin/qdyn');
-    % rename input and output files
+%    Solve
+     status = system([EXEC_PATH filesep 'qdyn'])
+%    rename input and output files
     if length(NAME)
       movefile('fort.18',[NAME '.ot']); 
       movefile('fort.19',[NAME '.ox']); 
