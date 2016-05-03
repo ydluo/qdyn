@@ -18,7 +18,7 @@ module fault_stress
   end type kernel_3D
 
   type kernel_3D_fft
-    integer :: nxfft, nw, nx
+    integer :: nxfft, nw, nx, nwLocal, nwGlobal
     double precision, dimension(:,:,:), allocatable :: kernel, kernel_n
     type (OouraFFT_type) :: m_fft
   end type kernel_3D_fft
@@ -153,6 +153,20 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   write(6,*) 'Generating 3D kernel...'
   write(6,*) 'OouraFFT applied along-strike'
   k%nw = m%nw
+  k%nwGlobal = k%nw
+  ! TO_DO_MPI :
+  ! if MPI
+  !   define nwLocal and nwGlobal: domain paritioning of depth ranges depending
+  !   on number of processors (NPROCS)
+  !   if MY_RANK< NPROCS-1
+  !     nwLocal = floor(nwGlobal/NPROCS)
+  !   else
+  !     nwLocal = nwGlobal - floor(nwGlobal/NPROCS)*(NPROCS-1)
+  !   endif
+  ! else
+    k%nwLocal = k%nw
+  ! endif
+   
   k%nx = m%nx
   k%nxfft = 2*m%nx ! fft convolution requires twice longer array
   allocate(k%kernel(m%nw,m%nw,k%nxfft))
@@ -447,15 +461,16 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
   double precision , intent(inout) :: tau(:), sigma_n(:)
   double precision , intent(in) :: v(:)
 
-  double precision :: vzk(k3f%nw,k3f%nxfft), tmpzk(k3f%nw,k3f%nxfft), tmpx(k3f%nxfft)
+  double precision :: vzk(k3f%nwGlobal,k3f%nxfft), tmpzk(k3f%nwLocal,k3f%nxfft)
+  double precision :: tmpx(k3f%nxfft)
   integer :: n,k
 
   !$OMP PARALLEL PRIVATE(tmpx)
 
-!-- load velocity and FFT it
+!-- load velocity and apply FFT along strike
 
   !$OMP DO SCHEDULE(STATIC) 
-  do n = 1,k3f%nw
+  do n = 1,k3f%nwLocal
     tmpx( 1 : k3f%nx ) = v( (n-1)*k3f%nx+1 : n*k3f%nx )
     tmpx( k3f%nx+1 : k3f%nxfft ) = 0d0  ! convolution requires zero-padding
     call my_rdft(1,tmpx,k3f%m_fft) 
@@ -463,6 +478,7 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
   enddo
   !$OMP END DO
   
+  ! TO_DO_MPI :
   ! if MPI, gather the global vzk from the pieces in all processors
   !  call MPI_gatherall(..., tmpzk, vzk ...) 
   ! else
@@ -497,7 +513,7 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
   !$OMP END DO
   
   !$OMP DO SCHEDULE(STATIC)
-  do n = 1,k3f%nw
+  do n = 1,k3f%nwLocal
     tmpx = - tmpzk(n,:)
     call my_rdft(-1,tmpx,k3f%m_fft)
     tau( (n-1)*k3f%nx+1 : n*k3f%nx ) = tmpx(1:k3f%nx) ! take only first half of array
@@ -523,7 +539,7 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
     !$OMP END DO
  
     !$OMP DO SCHEDULE(STATIC)
-    do n = 1,k3f%nw
+    do n = 1,k3f%nwLocal
       tmpx = - tmpzk(n,:)
       call my_rdft(-1,tmpx,k3f%m_fft)
       sigma_n( (n-1)*k3f%nx+1 : n*k3f%nx ) = tmpx(1:k3f%nx)
@@ -533,8 +549,6 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
   endif
 
   !$OMP END PARALLEL
-
-
 
 end subroutine compute_stress_3d_fft
 

@@ -26,9 +26,8 @@ subroutine read_main(pb)
   open(unit=15,FILE= 'qdyn.in') 
 
   call read_mesh(15,pb%mesh)
-  n = mesh_get_size(pb%mesh)
-
   write(6,*) '   Mesh input complete'
+
   if (pb%mesh%dim==2) then 
     pb%kernel%kind =3+FFT_TYPE
     if (pb%mesh%nx < 4) then
@@ -83,8 +82,9 @@ subroutine read_main(pb)
   read(15,*)pb%DYN_M,pb%DYN_th_on,pb%DYN_th_off
   write(6,*) '  Flags input complete'
 
-!JPA some of these arrays should be allocated elsewhere, unless it's better to do it
-!    here to optimize memory access
+!JPA some of these arrays should be allocated in initialize.f90, 
+!    unless it's better to do it here to optimize memory access
+  n = mesh_get_size(pb%mesh)
   allocate ( pb%tau(n),     &
              pb%dtau_dt(n), pb%dsigma_dt(n), &
              pb%tau_init(n), pb%sigma(n), &

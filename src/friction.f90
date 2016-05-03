@@ -107,8 +107,6 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
   double precision, dimension(pb%mesh%nn), intent(in) :: v, theta
   double precision, dimension(pb%mesh%nn), intent(out) :: dmu_dv,dmu_dtheta
 
-  double precision, dimension(pb%mesh%nn) :: dth_dt, omega
-
   select case (pb%i_rns_law)
 
   case(0)
