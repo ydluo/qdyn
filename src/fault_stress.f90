@@ -213,7 +213,7 @@ end subroutine init_kernel_3D_fft
 subroutine init_kernel_3D_fft2d(k,lambda,mu,m)
 
   use mesh, only : mesh_type
-  use fftsg, only : my_rdft2, conj2d
+  use fftsg, only : my_rdft2
 
   type(kernel_3d_fft2d), intent(inout) :: k
   double precision, intent(in) :: lambda, mu

@@ -132,59 +132,13 @@ for  iL = 1:1:numel(LL)
       
     end
         
-        
-
-
-
+    K = qdyn_okada_kernel_CDX(N,NW,NX,mu,lam,X,Y,Z,DIP,XX,WW);
     
-    K00 = qdyn_okada_kernel_CDX(N,NW,NX,mu,lam,X,Y,Z,DIP,XX,WW);
-    
-    K = zeros(N);
-%    Kii = zeros(N);
-    disp('Generating Full Kernel');
-    
-    iiK = 0;
-%     for i= 1:1:N
-%         for j = 1:1:N
-%             iiK = iiK+1;
-%             if mod(iiK,ceil(N*N/100)) == 0
-%                 disp([num2str(floor(iiK/N^2*100)) '%']);
-%             end
-%             K00 = K0(:,2:4) - repmat([Z(i),Z(j),abs(X(i)-X(j))],N*NW,1);
-%             [mm,II] = min(sum(abs(K00)'));
-%             Kii(iiK) = II;
-%             K(iiK) = K0(II,1);           
-%         end
-%     end
-%     
-
-               
-%    K00 = K0(:,1);    
-     % i:src,  j OBS
-    for j= 1:1:N
-        for i = 1:1:N
-            iiK = iiK+1;
-            isz = ceil(i/NX);
-            isx = i - (isz-1)*NX;
-            ioz = ceil(j/NX);
-            iox = j - (ioz-1)*NX;
-            if mod(iiK,ceil(N*N/100)) == 0
-                disp([num2str(floor(iiK/N^2*100)) '%']);
-            end    
-            II = N*(ioz-1) + NX*(isz-1) + 1 + abs(iox-isx);
-            K(iiK) = K00(II);           
-        end
-    end
-    
-
-    disp('Generated Full Kernel');
-    
-
     end
 
 end
 
-system(['cp fort.68 STG23_Kernel_RES' num2str(RES) '_L' num2str(L/1000) '.txt']);
+system(['cp kernel.out STG23_Kernel_RES' num2str(RES) '_L' num2str(L/1000) '.txt']);
 
 
 L_a = zeros(size(LLo));

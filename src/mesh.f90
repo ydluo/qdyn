@@ -10,10 +10,6 @@ module mesh
     double precision :: Lfault, W, Z_CORNER ! fault length, width, lower-left corner z (follow Okada's convention)
     double precision, allocatable :: dw(:), DIP_W(:) !along-dip grid size and dip (adjustable), nw count
     double precision, allocatable :: x(:), y(:), z(:), dip(:) !coordinates and dip of every grid (nx*nw count)
-    double precision, allocatable :: temp_xx(:), temp_ww(:)  !temp for Okada kernel output (nx*nw count)
-    double precision :: temp_mu, temp_lam, temp_tau, temp_sigma_n !temp for Okada kernel output  
-    integer :: temp_iret !temp for Okada kernel output 
-
   end type mesh_type
 
   public :: mesh_type, read_mesh, init_mesh, mesh_get_size
@@ -23,12 +19,10 @@ contains
 !=============================================================
 subroutine read_mesh(iin,m)
 
-  use okada, only : compute_kernel
-
   type(mesh_type), intent(inout) :: m
   integer, intent(in) :: iin
 
-  integer :: i,j
+  integer :: i
 
   ! problem dimension (1D, 2D or 3D), mesh type
   read(iin,*) m%dim
@@ -49,62 +43,8 @@ subroutine read_mesh(iin,m)
       read(iin,*) m%dw(i), m%DIP_W(i)
     end do
 
- ! JPA The two cases below are not for earthquake cycle computations, 
- !     they should be in a separate code in utils/ linked to modules in src/
-  case(67) 
-    write(6,*) 'Calculate Okada Kernel'
-    read(iin,*) m%nn
-    read(iin,*) m%temp_lam, m%temp_mu
-    allocate(m%x(m%nn),m%y(m%nn),m%z(m%nn),m%dip(m%nn))
-    allocate(m%temp_xx(m%nn),m%temp_ww(m%nn))
-    do i =1,m%nn
-       read(iin,*) m%x(i),m%y(i),m%z(i),m%dip(i),m%temp_xx(i),m%temp_ww(i)
-    end do
-    do i=1,m%nn
-      do j=1,m%nn
-        call compute_kernel(m%temp_lam,m%temp_mu,m%x(i),m%y(i),m%z(i),  &
-               m%dip(i),m%temp_xx(i),m%temp_ww(i),   &
-               m%x(j),m%y(j),m%z(j),m%dip(j),m%temp_iret,m%temp_tau,m%temp_sigma_n)
-        if (m%temp_iret == 0) then
-          write(67,*) m%temp_tau
-        else 
-          write(6,*) '!!WARNING!! : Kernel Singular, set value to 0,(i,j)',i,j
-          write(67,*) 0d0
-        endif
-      end do
-    end do
-    stop 'Kernel calculation completed and stored in fort.67'
-        
-  case(68)
-    write(6,*) 'Calculate Okada Kernel: Const DX'
-    read(iin,*) m%nn,m%nw,m%nx
-    read(iin,*) m%temp_lam, m%temp_mu
-    allocate(m%x(m%nn),m%y(m%nn),m%z(m%nn),m%dip(m%nn))
-    allocate(m%temp_xx(m%nn),m%temp_ww(m%nn))
-    do i =1,m%nn
-       read(iin,*) m%x(i),m%y(i),m%z(i),m%dip(i),m%temp_xx(i),m%temp_ww(i)
-    end do
-    do i=1,m%nw
-      do j=1,m%nn
-        call compute_kernel(m%temp_lam,m%temp_mu,m%x(j),m%y(j),m%z(j),  &
-               m%dip(j),m%temp_xx(j),m%temp_ww(j),   &
-               m%x(1+(i-1)*m%nx),m%y(1+(i-1)*m%nx),m%z(1+(i-1)*m%nx),   &
-               m%dip(1+(i-1)*m%nx),m%temp_iret,m%temp_tau,m%temp_sigma_n)
-        if (m%temp_iret == 0) then
-!          write(68,'(4e24.16)') m%temp_tau,m%z(j),m%z(1+(i-1)*m%nx),(m%x(j)-m%x(1+(i-1)*m%nx))
-          write(68,'(e16.8)') m%temp_tau
-        else
-          write(6,*) '!!WARNING!! : Kernel Singular, set value to 0,(i,j)',i,j
-!          write(68,'(4e24.16)') 0d0,m%z(j),m%z(1+(i-1)*m%nx),(m%x(j)-m%x(1+(i-1)*m%nx))
-          write(68,'(e16.8)') 0d0
-        endif
-      end do
-    end do
-    stop 'Kernel calculation completed and stored in fort.68'    
-
-
   case default
-    write(6,*) 'mesh dimension should be 0, 1, 2 or 67/68'
+    write(6,*) 'mesh dimension should be 0, 1 or 2'
 
   end select
 
