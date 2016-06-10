@@ -20,7 +20,7 @@ contains
 !
 subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau,sigma_n)
 
-  use constants, only : PI
+  use constants, only : PI, Ustrike, Udip, Unorm
 
   double precision, intent(in) :: LAM,MU, SX,SY,SZ,S_DIP, L,W,OX,OY,OZ,O_DIP 
   integer, intent(inout) :: IRET
@@ -29,16 +29,18 @@ subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau,sigm
   double precision :: ALPHA, S_DEPTH, U, X, Y, Z, &
     UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ
   double precision :: STRESS(3,3), STRAIN(3,3),TR, n_f(3), n_dir(3), tau_n(3) 
-  
+
   ALPHA = (LAM+MU)/(LAM+2d0*MU)
   S_DEPTH = -1d0*SZ
 
-  U = 1d0 
+ !U = 1d0
   X = OX-SX
   Y = OY-SY
   Z = OZ
  
-  call   DC3D(ALPHA,X,Y,Z,S_DEPTH,S_DIP,-0.5d0*L,0.5d0*L,-0.5d0*W,0.5d0*W,0d0,U,0d0,   &
+!  call   DC3D(ALPHA,X,Y,Z,S_DEPTH,S_DIP,-0.5d0*L,0.5d0*L,-0.5d0*W,0.5d0*W,0d0,U,0d0,   &
+!    UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)
+  call   DC3D(ALPHA,X,Y,Z,S_DEPTH,S_DIP,-0.5d0*L,0.5d0*L,-0.5d0*W,0.5d0*W,Ustrike,Udip,Unorm,   &
     UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)
 
   STRAIN(1,1) = UXX

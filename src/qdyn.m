@@ -147,7 +147,8 @@
 %
 %		Other parameters:
 %		EXEC_PATH path to the Fortran qdyn executable
-%
+%       NPROCS = 1  % Default for serial runs,
+%              > 1  % MPI runs, change MPI_parallel=.true. in constants.f90
 % OUTPUTS 	pars	structure containing the parameters listed above, and:
 %			X,Y,Z = fault coordinates
 %		ot	structure containing time series outputs 
@@ -191,6 +192,7 @@
 
 function [pars,ot,ox] = qdyn(mode,varargin)
 
+NPROCS = 1; % Default serial, no-MPI.
 
 % NOTE ON VARIABLE NAMING CONVENTIONS
 %	lower_case 	= local variables
@@ -403,7 +405,11 @@ switch mode
     end
     
 %    Solve
-     status = system([EXEC_PATH filesep 'qdyn'])
+     if (NPROCS==1) 
+       status = system([EXEC_PATH filesep 'qdyn']);
+     else
+       status = system(['mpirun -np ' num2str(NPROCS) ' ' EXEC_PATH filesep 'qdyn']);
+     end
 %    rename input and output files
     if length(NAME)
       movefile('fort.18',[NAME '.ot']); 
@@ -419,9 +425,6 @@ switch mode
     error('mode must be: set, read or run')
 
 end
-
-
-
 
 %-----------
 % PARSE_INPUTS sets variables in the caller function according to inputs.

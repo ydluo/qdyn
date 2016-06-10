@@ -11,13 +11,15 @@
 
 # GNU 
 #F90 = gfortran
+#MPI
+F90 = mpif90
 #OPT = -O3 -Wall
 # For parallel runs with OpenMP:
 #OPT = -O3 -fopenmp
-
+OPT = -O2 -w
 #-- Intel Fortran --
-F90 = ifort
-OPT = -O3 -ip -ipo
+#F90 = ifort
+#OPT = -O3 -ip -ipo
 # For parallel runs with OpenMP:
 #OPT = -O3 -ip -ipo -parallel -openmp -par-threshold:50
 #-no-inline-factor

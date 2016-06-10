@@ -1,5 +1,5 @@
 module constants
-
+use mpi
 ! By convention let's write the name of constants in capitals,
 ! but beware that Fortran does not make a difference between capitalized and non-capitalized names
 ! (i.e. pi and PI are the same)
@@ -18,12 +18,30 @@ module constants
 !   2 : FFT along-strike and along-dip, only works for vertical faults
   integer, parameter :: FFT_TYPE = 1
 
-!--- END of User Settings ---
-
+! Constants
   double precision, parameter :: PI = 3.141592653589793d0
   double precision, parameter :: DAY = 3600.d0*24.d0, &
                                  WEEK = 7d0*DAY, &
                                  MONTH = 30*DAY, &
                                  YEAR = 365*DAY
+! MPI run in parallel
+!   true  : run MPI parallel
+!   false : run serial or openMP
+   logical, parameter :: MPI_parallel = .true.
+
+! Adding real precision and type for MPI runs.
+!   CUSTOM_REAL = 4  (single precision)
+!   CUSTOM_REAL = 8  (double precision)
+   integer, parameter :: CUSTOM_REAL = 8
+!   integer, parameter :: CUSTOM_MPI_TYPE = MPI_REAL
+   integer, parameter :: CUSTOM_MPI_TYPE = MPI_DOUBLE_PRECISION
+
+! Faulting type for unitary slip (Ustrike,Udip,Unorm) used in Okada's function:
+!   (1,0,0) : right lateral strike-slip 
+!   (0,1,0) : normal dip-slip 
+!   (0,0,1) : Explosion 
+  double precision, parameter ::  Ustrike=0d0, Udip=1d0, Unorm=0d0
+ 
+!--- END of User Settings ---
 
 end module constants
