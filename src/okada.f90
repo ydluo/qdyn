@@ -11,37 +11,63 @@ module okada
 
 contains
 
-! Computes the along-dip shear stress (tau) at a point (SX,SY,SZ) 
-! on a fault with local dip angle S_DIP and strike parallel to X
-! induced by unit slip (1 m) on a fault cell of along-strike size L
-! and along-dip size W located at (OX,OY,OZ) with dip angle O_DIP
-! and strike parallel to X
-! in an elastic half-space with Lame moduli LAM and MU
+! Computes the slip-parallel shear stress (tau) and normal stress (sigma)
+! at a point (OX,OY,OZ)
+! on a fault with local dip angle O_DIP and strike parallel to X
+! induced by unit slip (1 m) on a rectangular fault cell 
+! of along-strike size L and along-dip size W 
+! centered at (SX,SY,SZ) with dip angle S_DIP and strike parallel to X
+! in a homogeneous elastic half-space with Lame moduli LAM and MU.
+! The source and receiver faults are either strike-slip or thrust (mode).
 !
-subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau,sigma_n)
+subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau,sigma,mode)
 
-  use constants, only : PI, Ustrike, Udip, Unorm
+  use constants, only : PI 
 
   double precision, intent(in) :: LAM,MU, SX,SY,SZ,S_DIP, L,W,OX,OY,OZ,O_DIP 
   integer, intent(inout) :: IRET
-  double precision, intent(inout) :: tau, sigma_n
+  double precision, intent(inout) :: tau, sigma
+  integer, intent(in) :: mode
 
-  double precision :: ALPHA, S_DEPTH, U, X, Y, Z, &
-    UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ
+  double precision :: ALPHA, S_DEPTH, X, Y, Z, &
+    UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ, &
+    Ustrike, Udip, Unorm
   double precision :: STRESS(3,3), STRAIN(3,3),TR, n_f(3), n_dir(3), tau_n(3) 
 
   ALPHA = (LAM+MU)/(LAM+2d0*MU)
+
   S_DEPTH = -1d0*SZ
 
- !U = 1d0
+  select case (mode)
+    case (1) ! strike-slip
+      Ustrike = 1d0
+      Udip = 0d0
+      n_dir(1) = 1d0
+      n_dir(2) = 0d0
+      n_dir(3) = 0d0
+    case (2) ! dip-slip (thrust)
+      Ustrike = 0d0
+      Udip = 1d0
+      n_dir(1) = 0d0
+      n_dir(2) = -cos(O_DIP/180d0*PI)
+      n_dir(3) = -sin(O_DIP/180d0*PI)
+    case default
+      stop 'FATAL ERROR in okada.compute_kernel : mode should be 1 (strike-slip) or 2 (thrust)'
+  end select
+  Unorm = 0d0 ! no opening
+
   X = OX-SX
   Y = OY-SY
   Z = OZ
  
-!  call   DC3D(ALPHA,X,Y,Z,S_DEPTH,S_DIP,-0.5d0*L,0.5d0*L,-0.5d0*W,0.5d0*W,0d0,U,0d0,   &
-!    UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)
-  call   DC3D(ALPHA,X,Y,Z,S_DEPTH,S_DIP,-0.5d0*L,0.5d0*L,-0.5d0*W,0.5d0*W,Ustrike,Udip,Unorm,   &
-    UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)
+  ! normal vector of receiver fault
+  n_f(1) = 0d0
+  n_f(2) = -sin(O_DIP/180d0*PI)
+  n_f(3) = cos(O_DIP/180d0*PI)
+ 
+  call DC3D(ALPHA,X,Y,Z,S_DEPTH,S_DIP,-0.5d0*L,0.5d0*L,-0.5d0*W,0.5d0*W, &
+            Ustrike,Udip,Unorm,   &
+            UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)
 
   STRAIN(1,1) = UXX
   STRAIN(1,2) = 0.5d0*(UXY+UYX)
@@ -59,19 +85,12 @@ subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau,sigm
   STRESS(2,2) = STRESS(2,2)+LAM*TR
   STRESS(3,3) = STRESS(3,3)+LAM*TR
   
-  n_f(1) = 0d0
-  n_f(2) = -sin(O_DIP/180d0*PI)
-  n_f(3) = cos(O_DIP/180d0*PI)
-  n_dir(1) = 0d0
-  n_dir(2) = -cos(O_DIP/180d0*PI)
-  n_dir(3) = -sin(O_DIP/180d0*PI)
- 
   tau_n(1) = STRESS(1,1)*n_f(1)+STRESS(1,2)*n_f(2)+STRESS(1,3)*n_f(3)
   tau_n(2) = STRESS(2,1)*n_f(1)+STRESS(2,2)*n_f(2)+STRESS(2,3)*n_f(3)
   tau_n(3) = STRESS(3,1)*n_f(1)+STRESS(3,2)*n_f(2)+STRESS(3,3)*n_f(3)
 
-  tau = tau_n(1)*n_DIR(1)+tau_n(2)*n_DIR(2)+tau_n(3)*n_DIR(3)
-  sigma_n = tau_n(1)*n_f(1)+tau_n(2)*n_f(2)+tau_n(3)*n_f(3)
+  tau = tau_n(1)*n_dir(1)+tau_n(2)*n_dir(2)+tau_n(3)*n_dir(3)
+  sigma = tau_n(1)*n_f(1)+tau_n(2)*n_f(2)+tau_n(3)*n_f(3)
 
 end subroutine compute_kernel
 

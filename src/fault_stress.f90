@@ -147,7 +147,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   use mesh, only : mesh_type
   use okada, only : compute_kernel
   use fftsg, only : my_rdft
-  use constants, only : MPI_parallel
+  use constants, only : MPI_parallel, FAULT_TYPE
 
   type(kernel_3d_fft), intent(inout) :: k
   double precision, intent(in) :: lambda,mu
@@ -227,12 +227,11 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
       z_obs = m%z(jj)
       dip_obs = m%dip(jj)
       do i=-m%nx+1,m%nx
-!PG: Pablo What does 0d0 in compute_kernel(....,dx_src,0d0,y_obs...), is it correct ?
-!Todo: Check if the kernel is properlly load for each processor.
+!Todo: Check if the kernel is properly loaded for each processor.
         call compute_kernel(lambda,mu, &
                 i*m%dx, y_src, z_src, dip_src, m%dx, dw_src,   &
                 0d0, y_obs, z_obs, dip_obs, &
-                IRET,tau,sigma_n)
+                IRET,tau,sigma_n,FAULT_TYPE)
         ii = i+1
         ! wrap up the negative relative-x-positions in the second half of the
         ! array to comply with conventions of fft convolution
@@ -329,6 +328,7 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling)
 
   use mesh, only : mesh_type
   use okada, only : compute_kernel
+  use constants, only : FAULT_TYPE
 
   type(kernel_3d), intent(inout) :: k
   double precision, intent(in) :: lambda,mu
@@ -350,7 +350,7 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling)
         call compute_kernel(lambda,mu,m%x(j),m%y(j),m%z(j),  &
                m%dip(j),m%dx,m%dw((j-1)/m%nx+1),   &
                m%x(1+(i-1)*m%nx),m%y(1+(i-1)*m%nx),   &
-               m%z(1+(i-1)*m%nx),m%dip(1+(i-1)*m%nx),IRET,tau,sigma_n)
+               m%z(1+(i-1)*m%nx),m%dip(1+(i-1)*m%nx),IRET,tau,sigma_n,FAULT_TYPE)
         if (IRET == 0) then
           k%kernel(i,j) = tau  
           if (sigma_coupling) k%kernel_n(i,j) = sigma_n    

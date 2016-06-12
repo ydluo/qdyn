@@ -6,6 +6,7 @@ program kernel
   use okada, only : compute_kernel
 
   integer, parameter :: iin =15, iout=16
+  integer, parameter :: FAULT_TYPE = 1 ! 1= strike-slip, 2=thrust
 
   double precision, dimension(:), allocatable :: x,y,z,dip,xx,ww 
   double precision :: mu, lam, tau, sigma
@@ -30,7 +31,7 @@ program kernel
     do i=1,nn
       do j=1,nn
         call compute_kernel(lam,mu,x(i),y(i),z(i),dip(i),xx(i),ww(i), &
-               x(j),y(j),z(j),dip(j),iret,tau,sigma)
+               x(j),y(j),z(j),dip(j),iret,tau,sigma,FAULT_TYPE)
         if (iret /= 0) then
           write(6,*) 'WARNING : Kernel singular, set value to 0, (i,j)=',i,j
           tau = 0d0
@@ -52,7 +53,7 @@ program kernel
       ii = 1+(i-1)*nx
       do j=1,nn
         call compute_kernel(lam,mu,x(j),y(j),z(j), dip(j),xx(j),ww(j), &
-               x(ii),y(ii),z(ii), dip(ii), iret,tau,sigma)
+               x(ii),y(ii),z(ii), dip(ii), iret,tau,sigma,FAULT_TYPE)
         if (iret /= 0) then
           write(6,*) 'WARNING : Kernel singular, set value to 0, (i,j)=',i,j
           tau = 0d0
