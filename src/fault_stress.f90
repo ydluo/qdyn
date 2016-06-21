@@ -154,7 +154,6 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   use fftsg, only : my_rdft
   use utils, only : save_vectorV
   use constants, only : MPI_parallel, FAULT_TYPE
-  use utils, only : save_vectorV
 
   type(kernel_3d_fft), intent(inout) :: k
   double precision, intent(in) :: lambda,mu
@@ -316,10 +315,10 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
     iglobal=0
     do iwglobal=1,k%nwGlobal
       do ixglobal=1,k%nxfft 
-            iglobal=iglobal+1
-         k%fault%xyzglobal(iwglobal,ixglobal,1)=k%fault%xglobalarray(iglobal)  
-         k%fault%xyzglobal(iwglobal,ixglobal,2)=k%fault%yglobalarray(iglobal)  
-         k%fault%xyzglobal(iwglobal,ixglobal,3)=k%fault%zglobalarray(iglobal)  
+        iglobal=iglobal+1
+        k%fault%xyzglobal(iwglobal,ixglobal,1)=k%fault%xglobalarray(iglobal)  
+        k%fault%xyzglobal(iwglobal,ixglobal,2)=k%fault%yglobalarray(iglobal)  
+        k%fault%xyzglobal(iwglobal,ixglobal,3)=k%fault%zglobalarray(iglobal)  
       enddo
     enddo
 !PG: Saving the collected global fault nodes in a file. 
