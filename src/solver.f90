@@ -16,15 +16,16 @@ contains
 !  
 subroutine solve(pb)
   
-  use output, only : screen_init, screen_write, ox_write, ot_write
+  use output,       only : screen_init, screen_write, ox_write, ot_write
+  use fault_stress, only: MY_RANK 
+  use constants,    only: MPI_parallel
   
   type(problem_type), intent(inout)  :: pb
 
-  call screen_init(pb)
+  if (MY_RANK==0) call screen_init(pb)
 
   ! Time loop
   do while (pb%it /= pb%itstop)
-
     pb%it = pb%it + 1
     call do_bsstep(pb)
 ! if stress exceeds yield call Coulomb_solver ! JPA Coulomb quick and dirty
@@ -37,9 +38,9 @@ subroutine solve(pb)
     call check_stop(pb)   ! here itstop will change
     !--------Output onestep to screen and ox file(snap_shot)
     if(mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
-      call screen_write(pb)
+        if (MY_RANK==0) call screen_write(pb)
     endif
-    call ox_write(pb)
+    if (MY_RANK==0) call ox_write(pb)
   enddo
 
 end subroutine solve
@@ -120,7 +121,7 @@ subroutine do_bsstep(pb)
     pb%dt_try = pb%dt_next
   endif
 
-  ! Unpack yt into v, theta
+! Unpack yt into v, theta
 !  pb%v(pb%rs_nodes) = yt(2::pb%neqs) ! JPA Coulomb
   pb%v = yt(2::pb%neqs)
   pb%theta = yt(1::pb%neqs)
@@ -166,7 +167,6 @@ subroutine update_field(pb)
     end do
   endif
     
-
   ! update crack size
   pb%ot%lcold = pb%ot%lcnew
   pb%ot%lcnew = crack_size(pb%slip,pb%mesh%nn)

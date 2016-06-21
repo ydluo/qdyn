@@ -15,7 +15,7 @@ subroutine init_all(pb)
   use problem_class
   use mesh, only : init_mesh
   use constants, only : PI
-  use fault_stress, only : init_kernel
+  use fault_stress, only : init_kernel,MY_RANK
   use output, only : ot_init, ox_init
   use friction, only : set_theta_star, friction_mu
 !$  use omp_lib
@@ -76,13 +76,12 @@ subroutine init_all(pb)
   pb%itstop = -1
   pb%it = 0
   !---------------------- init_value for solver ----------------- 
-   
   call init_kernel(pb%lam,pb%smu,pb%mesh,pb%kernel)
 
   call ot_init(pb)
   call ox_init(pb)
   
-  write(6,*) 'Initialization completed'
+  if (MY_RANK==0) write(6,*) 'Initialization completed'
 
   ! Info about threads 
 !$OMP PARALLEL PRIVATE(NTHREADS, TID)

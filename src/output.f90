@@ -285,9 +285,6 @@ endif
    
   endif  
 
-  
-
-
   if (pb%DYN_FLAG == 1) then
 
     if (pb%ox%dyn_stat == 0 .and. pb%v(pb%ot%ivmax) >= pb%DYN_th_on ) then

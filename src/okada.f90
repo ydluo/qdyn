@@ -39,8 +39,15 @@ subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau,sigm
   S_DEPTH = -1d0*SZ
 
   select case (mode)
-    case (1) ! strike-slip
+!PG : is this oly for vertical (dip=90) plannar strike-slip or for any dip?
+    case (1) ! strike-slip (right-lateral)
       Ustrike = 1d0
+      Udip = 0d0
+      n_dir(1) = 1d0
+      n_dir(2) = 0d0
+      n_dir(3) = 0d0
+    case (-1) ! strike-slip (left-lateral)
+      Ustrike = -1d0
       Udip = 0d0
       n_dir(1) = 1d0
       n_dir(2) = 0d0
@@ -48,6 +55,12 @@ subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau,sigm
     case (2) ! dip-slip (thrust)
       Ustrike = 0d0
       Udip = 1d0
+      n_dir(1) = 0d0
+      n_dir(2) = -cos(O_DIP/180d0*PI)
+      n_dir(3) = -sin(O_DIP/180d0*PI)
+    case (-2) ! dip-slip (normal)
+      Ustrike = 0d0
+      Udip = -1d0
       n_dir(1) = 0d0
       n_dir(2) = -cos(O_DIP/180d0*PI)
       n_dir(3) = -sin(O_DIP/180d0*PI)

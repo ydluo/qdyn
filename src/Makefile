@@ -10,12 +10,12 @@
 # 2. Comment/uncomment/add/modify the lines corresponding to your compiler:
 
 # GNU 
-#F90 = gfortran
-#MPI
+#Only MPI no openMP
 F90 = mpif90
 OPT = -O3 -Wall
 # For parallel runs with OpenMP:
-#OPT = -O3 -fopenmp
+#F90 = mpif90
+#OPT = -O3 -Wall -fopenmp 
 #OPT = -O2 -w
 #-- Intel Fortran --
 #F90 = ifort

@@ -1,7 +1,5 @@
 module constants
 
-use mpi
-
 ! By convention let's write the name of constants in capitals,
 ! but beware that Fortran does not make a difference between capitalized and non-capitalized names
 ! (i.e. pi and PI are the same)
@@ -15,8 +13,10 @@ use mpi
   character(*), parameter :: KERNEL_FILE = "~/3D_RUPTURE/qdyn/trunk/src/kernel_I_32768.tab"
 
 ! set the type of faulting:
-!   1 : strike-slip
+!   1 : strike-slip (right-lateral)
+!  -1 : strike-slip (left-lateral)
 !   2 : thrust
+!  -2 : Normal
   integer, parameter :: FAULT_TYPE = 2
 
 ! set usage of FFT in 3D
@@ -34,8 +34,6 @@ use mpi
 !   CUSTOM_REAL = 4  (single precision)
 !   CUSTOM_REAL = 8  (double precision)
    integer, parameter :: CUSTOM_REAL = 8
-!   integer, parameter :: CUSTOM_MPI_TYPE = MPI_REAL
-   integer, parameter :: CUSTOM_MPI_TYPE = MPI_DOUBLE_PRECISION
 
 !--- END of User Settings ---
 
