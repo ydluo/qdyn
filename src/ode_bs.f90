@@ -1,6 +1,7 @@
 ! Bulirsch-Stoer ODE solver from Numerical Recipes
 module ode_bs
 
+  implicit none
   private
 
   public :: bsstep
@@ -11,27 +12,31 @@ contains
 
       use problem_class, only : problem_type
 
-      implicit double precision (a-h,o-z)
-
-      type(problem_type), intent(inout)  :: pb
+      integer, intent(in) :: nv
+      double precision, intent(inout) :: y(nv), dydx(nv), x
+      double precision, intent(in) :: yscal(nv), htry, eps
+      double precision, intent(out) :: hdid, hnext
+      type(problem_type), intent(inout) :: pb
+                          !NOTE: inout needed by FFT in compute_stress
       
-      INTEGER nv,KMAXX,IMAX
-      REAL*8 eps,hdid,hnext,htry,dydx(nv),y(nv),yscal(nv),          &
-                SAFE1,SAFE2,REDMAX,REDMIN,TINY,SCALMX
-      real*8 x,xnew
-      PARAMETER (KMAXX=8,IMAX=KMAXX+1,SAFE1=.25d0,      &
-                SAFE2=.7d0,REDMAX=1.d-5,REDMIN=.7d0,TINY=1.d-30,    &
-                SCALMX=.5d0) !SCALMX=.1d0
-      INTEGER i,iq,k,kk,km,kmax,kopt,nseq(IMAX)
-      REAL*8 eps1,epsold,errmax,fact,red,h,scale,work,wrkmin,xest,  &
-                a(IMAX),alf(KMAXX,KMAXX),err(KMAXX),yerr(nv),     &
-                ysav(nv),yseq(nv)
-      LOGICAL first,reduct
-      SAVE a,alf,epsold,first,kmax,kopt,nseq,xnew
-      DATA first/.true./,epsold/-1.d0/
-      DATA nseq /2,4,6,8,10,12,14,16,18/
+      integer, parameter :: KMAXX=8, IMAX=KMAXX+1
+      double precision, parameter :: SAFE1=.25d0, SAFE2=.7d0, &
+                                     REDMAX=1.d-5, REDMIN=.7d0, &
+                                     TINY=1.d-30,    &
+                                     SCALMX=.5d0 !SCALMX=.1d0
+      integer :: i,iq,k,km
+      integer, dimension(IMAX) :: nseq = (/ 2,4,6,8,10,12,14,16,18 /)
+      integer, save :: kmax,kopt
+      double precision, save :: alf(KMAXX,KMAXX)
+      double precision :: err(KMAXX)
+      double precision, save :: a(IMAX)
+      double precision, save :: epsold = -1.d0,xnew
+      double precision :: eps1,errmax,err_km,fact,red,h,scale,wrkmin,xest,  &
+                yerr(nv),ysav(nv),yseq(nv)
+      logical, save :: first = .true.
+      logical :: reduct
 
-      if(eps.ne.epsold)then
+      if (eps /= epsold) then
         hnext=-1.d29
         xnew=-1.d29
         eps1=SAFE1*eps
@@ -41,56 +46,60 @@ contains
         enddo
         do iq=2,KMAXX
           do k=1,iq-1
-            alf(k,iq)=eps1**((a(k+1)-a(iq+1))/      &
-            ((a(iq+1)-a(1)+1.d0)*(2*k+1)))
+            alf(k,iq)=eps1**( (a(k+1)-a(iq+1))/ ((a(iq+1)-a(1)+1.d0)*(2*k+1)) )
           enddo
         enddo
         epsold=eps
         do kopt=2,KMAXX-1
-          if(a(kopt+1).gt.a(kopt)*alf(kopt-1,kopt)) exit
+          if (a(kopt+1) > a(kopt)*alf(kopt-1,kopt)) exit
         enddo
         kmax=kopt
       endif
       h=htry
       ysav=y
-      if(h.ne.hnext.or.x.ne.xnew)then
+      if (h /= hnext .or. x /= xnew) then
         first=.true.
         kopt=kmax
       endif
       reduct=.false.
-2     do k=1,kmax
+
+    main_loop: do
+
+      do k=1,kmax
         xnew=x+h
-!       if(xnew.eq.x)then
-        if(x+1.e10*h.eq.x)then
+!       if (xnew == x) then
+        if (x+1.e10*h == x) then  !NOTE: different than original code (above). Why???
           write(6,*)'dt_did,t= ',h,x
-          pause 'step size underflow in bsstep'
+          stop 'step size underflow in bsstep'
+!JPA: make it a safe MPI stop: all procs should stop if at least one has an error
         endif
         call mmid(ysav,dydx,nv,x,h,nseq(k),yseq,pb)
         xest=(h/nseq(k))**2
         call pzextr(k,xest,yseq,y,yerr,nv)
-        if(k.ne.1)then
-          errmax=maxval(dabs(yerr(i)/yscal(i))) /eps
-!JPA: call MPI_REDUCE here to compute max over all processors
-          km=k-1
-          err(km)=(errmax/SAFE1)**(1.d0/(2*km+1))
-        endif
-        if(k.ne.1.and.(k.ge.kopt-1.or.first))then
-          if(errmax.lt.1.)goto 4
-          if(k.eq.kmax.or.k.eq.kopt+1)then
-            red=SAFE2/err(km)
+        if (k == 1) cycle
+        errmax=maxval(dabs(yerr/yscal)) 
+!JPA: call MPI_REDUCE here to compute errmax = max over all processors
+        errmax=max(TINY,errmax)/eps
+        km=k-1
+        err_km=(errmax/SAFE1)**(1.d0/(2*km+1))
+        err(km)=err_km
+        if (k >= kopt-1 .or. first) then
+          if (errmax < 1.0) exit main_loop
+          if (k == kmax .or. k == kopt+1) then
+            red=SAFE2/err_km
             exit
-          else if(k.eq.kopt)then
-            if(alf(kopt-1,kopt).lt.err(km))then
-              red=1.d0/err(km)
+          else if (k == kopt) then
+            if (alf(kopt-1,kopt) < err_km) then
+              red=1.d0/err_km
               exit
             endif
-          else if(kopt.eq.kmax)then
-            if(alf(km,kmax-1).lt.err(km))then
-              red=alf(km,kmax-1)*SAFE2/err(km)
+          else if (kopt == kmax) then
+            if (alf(km,kmax-1) < err_km) then
+              red=alf(km,kmax-1)*SAFE2/err_km
               exit
             endif
-          else if(alf(km,kopt).lt.err(km))then
-            red=alf(km,kopt-1)/err(km)
+          else if (alf(km,kopt) < err_km) then
+            red=alf(km,kopt-1)/err_km
             exit
           endif
         endif
@@ -98,33 +107,25 @@ contains
       red=min(red,REDMIN)
       red=max(red,REDMAX)
       h=h*red
-!JPA "h" is the time step. It should be the same in all processors.
-!JPA I am not sure if that is automatically guaranteed or we need to enforce through MPI
       reduct=.true.
-      goto 2
-4     x=xnew
+
+    enddo main_loop
+
+      x=xnew
       hdid=h
       first=.false.
-      wrkmin=1.d35
-      do kk=1,km
-        fact=max(err(kk),SCALMX)
-        work=fact*a(kk+1)
-        if(work.lt.wrkmin)then
-          scale=fact
-          wrkmin=work
-          kopt=kk+1
-        endif
-      enddo
+      kopt=1+minloc(a(2:km+1)*max(err(1:km),SCALMX), 1)
+      scale=max(err(kopt-1),SCALMX)
+      wrkmin=scale*a(kopt)
       hnext=h/scale
-      if(kopt.ge.k.and.kopt.ne.kmax.and..not.reduct)then
+      if (kopt >= k .and. kopt /= kmax .and. .not. reduct) then
         fact=max(scale/alf(kopt-1,kopt),SCALMX)
-        if(a(kopt+1)*fact.le.wrkmin)then
+        if (a(kopt+1)*fact <= wrkmin) then
           hnext=h/fact
           kopt=kopt+1
         endif
       endif
-!JPA the final "hnext" should be the same in all processors
-!JPA should be MI_reduced (min or max among all processors?)
+!JPA if everything worked correctly, hdid and hnext should be the same in all processors
 
       END SUBROUTINE bsstep
 
@@ -134,15 +135,13 @@ contains
       use problem_class, only : problem_type
       use derivs_all, only : derivs
 
-      implicit double precision (a-h,o-z)
+      integer, intent(in) :: nstep,nvar
+      double precision, intent(in) :: y(nvar),dydx(nvar),xs,htot
+      double precision, intent(out) :: yout(nvar)
+      type(problem_type), intent(inout)  :: pb 
 
-      type(problem_type), intent(inout)  :: pb
-
-      INTEGER nstep,nvar
-      REAL*8 htot,dydx(nvar),y(nvar),yout(nvar)
-      real*8 xs,x
-      INTEGER i,n
-      REAL*8 h,h2,swap,ym(nvar),yn(nvar)
+      double precision :: x, h,h2,swap(nvar),ym(nvar),yn(nvar)
+      integer :: n
 
       h=htot/nstep
       ym=y
@@ -151,11 +150,9 @@ contains
       call derivs(x,yn,yout,pb)
       h2=2.d0*h
       do n=2,nstep
-        do i=1,nvar
-          swap=ym(i)+h2*yout(i)
-          ym(i)=yn(i)
-          yn(i)=swap
-        enddo
+        swap=ym+h2*yout
+        ym=yn
+        yn=swap
         x=x+h
         call derivs(x,yn,yout,pb)
       enddo
@@ -166,15 +163,15 @@ contains
 
       SUBROUTINE pzextr(iest,xest,yest,yz,dy,nv)
 
-      implicit double precision (a-h,o-z)
+      integer, intent(in) :: iest,nv
+      double precision, intent(in) :: xest,yest(nv)
+      double precision, intent(out) :: dy(nv),yz(nv)
 
-      INTEGER iest,nv,IMAX
-      REAL*8 xest,dy(nv),yest(nv),yz(nv)
-      PARAMETER (IMAX=13)
-      INTEGER j,k1
-      REAL*8 delta,f1,f2,q,d(nv),x(IMAX)
-      REAL*8, allocatable :: qcol(:,:)
-      SAVE qcol,x
+      integer, parameter :: IMAX=13
+      integer :: k1
+      double precision :: delta,q(nv),d(nv)
+      double precision, save :: x(IMAX)
+      double precision, allocatable, save :: qcol(:,:)
 
       if (.not.allocated(qcol)) then
         allocate(qcol(nv,IMAX))
@@ -186,22 +183,18 @@ contains
       x(iest)=xest
       dy=yest
       yz=yest
-      if(iest.eq.1) then
+      if (iest == 1) then
         qcol(:,1)=yest
       else
         d=yest
         do k1=1,iest-1
+          q=qcol(:,k1)
+          qcol(:,k1)=dy
           delta=1.d0/(x(iest-k1)-xest)
-          f1=xest*delta
-          f2=x(iest-k1)*delta
-          do j=1,nv
-            q=qcol(j,k1)
-            qcol(j,k1)=dy(j)
-            delta=d(j)-q
-            dy(j)=f1*delta
-            d(j)=f2*delta
-            yz(j)=yz(j)+dy(j)
-          enddo
+          d=delta*(d-q)
+          dy=xest*d
+          d=x(iest-k1)*d
+          yz=yz+dy
         enddo
         qcol(:,iest)=dy
       endif

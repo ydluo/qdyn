@@ -84,6 +84,8 @@ subroutine read_main(pb)
 
 !JPA some of these arrays should be allocated in initialize.f90, 
 !    unless it's better to do it here to optimize memory access
+
+!JPA if MPI n should be the number of nodes in this processor
   n = mesh_get_size(pb%mesh)
   allocate ( pb%tau(n),     &
              pb%dtau_dt(n), pb%dsigma_dt(n), &
@@ -98,6 +100,7 @@ subroutine read_main(pb)
              pb%v_star(n), pb%theta_star(n),   &
              pb%iot(n),pb%iasp(n),pb%coh(n))
  
+!JPA if MPI, read only the nodes of this processor
   do i=1,n
     read(15,*)pb%sigma(i), pb%v(i), pb%theta(i),  &
               pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
