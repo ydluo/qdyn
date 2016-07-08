@@ -5,11 +5,12 @@ module mesh
 
   type mesh_type
     integer :: dim = 0  ! dim = 1, 2 ,3 ~xD
-    integer :: nx, nw, nn ! along-strike, along-dip, total grid number
+    integer :: nx, nw, nn, nnglob ! along-strike, along-dip, total grid number
     double precision :: dx !along-strike grid size(constant)  
     double precision :: Lfault, W, Z_CORNER ! fault length, width, lower-left corner z (follow Okada's convention)
     double precision, allocatable :: dw(:), DIP_W(:) !along-dip grid size and dip (adjustable), nw count
     double precision, allocatable :: x(:), y(:), z(:), dip(:) !coordinates and dip of every grid (nx*nw count)
+    double precision, allocatable :: xglob(:), yglob(:), zglob(:), dipglob(:), dwglob(:) !coordinates and dip of every grid (nx*nwglobal count)
   end type mesh_type
 
   public :: mesh_type, read_mesh, init_mesh, mesh_get_size
@@ -40,6 +41,7 @@ subroutine read_mesh(iin,m)
     read(iin,*) m%Lfault, m%W , m%Z_CORNER   ! JPA m%W is not used in this case, remove it
 !JPA if MPI, we should do now the domain decomposition (along-dip)
 !JPA and then allocate and ready only the local depth chunks
+!PG : Done input.f90, each processor read its corresponding chunk.
     allocate(m%dw(m%nw), m%DIP_W(m%nw))
     do i=1,m%nw
       read(iin,*) m%dw(i), m%DIP_W(i)
@@ -124,13 +126,15 @@ end subroutine init_mesh_1D
   ! Storage scheme: faster index runs along-strike (x)
 subroutine init_mesh_2D(m)
 
-  use constants, only : PI
+  use constants, only : PI, MPI_parallel
 
   type(mesh_type), intent(inout) :: m
 
   double precision :: cd, sd, cd0, sd0
   integer :: i, j, j0
-
+! If MPI parallel, the mesh for each processor is taken directly from qdynxxx.in
+!                  and loaded in input.f90 
+ if (.not. MPI_parallel) then
   write(6,*) '2D fault, uniform grid along-strike'
   m%dx = m%Lfault/m%nx
   allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%dip(m%nn)) 
@@ -158,8 +162,7 @@ subroutine init_mesh_2D(m)
     write(66,*) m%z(j0+1:j0+m%nx) 
     m%dip(j0+1:j0+m%nx) = m%DIP_W(i)
   end do
-
-
+ endif
 end subroutine init_mesh_2D
 
 end module mesh

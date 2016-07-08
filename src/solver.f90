@@ -3,6 +3,7 @@
 module solver
 
   use problem_class, only : problem_type
+  use constants, only: MY_RANK, MPI_parallel, NPROCS 
 
   implicit none
   private
@@ -17,8 +18,6 @@ contains
 subroutine solve(pb)
   
   use output,       only : screen_init, screen_write, ox_write, ot_write
-  use fault_stress, only: MY_RANK 
-  use constants,    only: MPI_parallel
   
   type(problem_type), intent(inout)  :: pb
 
@@ -38,50 +37,15 @@ subroutine solve(pb)
     call check_stop(pb)   ! here itstop will change
     !--------Output onestep to screen and ox file(snap_shot)
     if(mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
-        if (MY_RANK==0) call screen_write(pb)
+      !  if (MY_RANK==0) call screen_write(pb)
+      call screen_write(pb)
     endif
-    if (MY_RANK==0) call ox_write(pb)
+  !  if (MY_RANK==0) call ox_write(pb)
+    call ox_write(pb)
   enddo
 
 end subroutine solve
 
-!=====================================================================
-! check stop: 
-!
-subroutine check_stop(pb)
-
-  use output, only : time_write
-
-  type(problem_type), intent(inout) :: pb
-
-  double precision :: vmax_old = 0d0, vmax_older = 0d0
-  save vmax_old, vmax_older
-
-  if (pb%itstop == -1) then
-      !         STOP soon after end of slip localization 
-    if (pb%NSTOP == 1) then
-      if (pb%ot%llocnew > pb%ot%llocold) pb%itstop=pb%it+2*pb%ot%ntout
-
-      ! STOP soon after maximum slip rate
-    elseif (pb%NSTOP == 2) then
-
-      if (pb%it > 2 .and. vmax_old > vmax_older .and. pb%v(pb%ot%ivmax) < vmax_old)  &
-          pb%itstop = pb%it+10*pb%ot%ntout
-      vmax_older = vmax_old
-      vmax_old = pb%v(pb%ot%ivmax)
-
-        !         STOP at a slip rate threshold
-    elseif (pb%NSTOP == 3) then    
-      if (pb%v(pb%ot%ivmax) > pb%tmax) pb%itstop = pb%it    !here tmax is threshhold velocity
-
-        !         STOP if time > tmax
-    else
-      call time_write(pb)
-      if (pb%tmax > 0.d0 .and. pb%time > pb%tmax) pb%itstop = pb%it
-    endif
-  endif
-    
-end subroutine check_stop
 
 
 !=====================================================================
@@ -114,7 +78,7 @@ subroutine do_bsstep(pb)
   yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
   ! One step 
   call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb)
-
+!PG: Here is necessary a global min, or dt_next and dt_max is the same in all processors?.
   if (pb%dt_max >  0.d0) then
     pb%dt_try = min(pb%dt_next,pb%dt_max)
   else
@@ -166,14 +130,13 @@ subroutine update_field(pb)
       end do
     end do
   endif
-    
+!PG: is this (crack_size) only in local processor or it should global?.    
   ! update crack size
   pb%ot%lcold = pb%ot%lcnew
   pb%ot%lcnew = crack_size(pb%slip,pb%mesh%nn)
   pb%ot%llocold = pb%ot%llocnew
   pb%ot%llocnew = crack_size(pb%dtau_dt,pb%mesh%nn)
   ! Output time series at max(v) location
-  
   vtemp=0d0
   do i=1,pb%mesh%nn
      if ( pb%v(i) > vtemp) then
@@ -181,8 +144,82 @@ subroutine update_field(pb)
        pb%ot%ivmax = i
      end if
   end do
+! if (MPI_parallel) then
+! Finding global vmax
+!   call max_allproc(vtemp,pb%vmaxglob)
+!   if.not.(vtemp==vtempglob) pb%ot%ivmax=-1 !This processor does not host the maximum vel.
+! endif
 
 end subroutine update_field
+
+!=====================================================================
+! check stop: 
+!
+subroutine check_stop(pb)
+
+  use output, only : time_write
+
+  type(problem_type), intent(inout) :: pb
+
+  double precision :: vmax_old = 0d0, vmax_older = 0d0
+  save vmax_old, vmax_older
+
+if (MPI_parallel) then 
+! In progress
+  if (pb%itstop == -1) then
+      !         STOP soon after end of slip localization 
+    if (pb%NSTOP == 1) then
+    !  if (pb%ot%llocnew > pb%ot%llocold) pb%itstop=pb%it+2*pb%ot%ntout
+
+      ! STOP soon after maximum slip rate
+    elseif (pb%NSTOP == 2) then
+
+    !  if (pb%it > 2 .and. vmax_old > vmax_older .and. pb%v(pb%ot%ivmax) < vmax_old)  &
+    !      pb%itstop = pb%it+10*pb%ot%ntout
+    !  vmax_older = vmax_old
+    !  vmax_old = pb%v(pb%ot%ivmax)
+
+        !         STOP at a slip rate threshold
+    elseif (pb%NSTOP == 3) then    
+      if (pb%v(pb%ot%ivmax) > pb%tmax) pb%itstop = pb%it    !here tmax is threshhold velocity
+!PG, Add Broadcast here to comunicate that one processor reach threshold velocity
+        !         STOP if time > tmax
+    else
+    !  call time_write(pb)
+    !  if (pb%tmax > 0.d0 .and. pb%time > pb%tmax) pb%itstop = pb%it
+    endif
+  endif
+
+else
+
+  if (pb%itstop == -1) then
+      !         STOP soon after end of slip localization 
+    if (pb%NSTOP == 1) then
+      if (pb%ot%llocnew > pb%ot%llocold) pb%itstop=pb%it+2*pb%ot%ntout
+
+      ! STOP soon after maximum slip rate
+    elseif (pb%NSTOP == 2) then
+
+      if (pb%it > 2 .and. vmax_old > vmax_older .and. pb%v(pb%ot%ivmax) < vmax_old)  &
+          pb%itstop = pb%it+10*pb%ot%ntout
+      vmax_older = vmax_old
+      vmax_old = pb%v(pb%ot%ivmax)
+
+        !         STOP at a slip rate threshold
+    elseif (pb%NSTOP == 3) then    
+      if (pb%v(pb%ot%ivmax) > pb%tmax) pb%itstop = pb%it    !here tmax is threshhold velocity
+
+        !         STOP if time > tmax
+    else
+      call time_write(pb)
+      if (pb%tmax > 0.d0 .and. pb%time > pb%tmax) pb%itstop = pb%it
+    endif
+  endif
+
+endif
+    
+end subroutine check_stop
+
 
 
 end module solver

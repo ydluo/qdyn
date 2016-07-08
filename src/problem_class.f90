@@ -13,11 +13,13 @@ module problem_class
   type ot_type
     double precision :: lcold,lcnew,llocnew,llocold
     integer :: unit,ic,ntout,ivmax
+!For MPI
+    integer :: ivmaxglob
   end type ot_type
 
  ! snapshot outputs: at every fault point, but only at few selected times
   type ox_type
-    integer :: count,dyn_count2,unit,nxout,nxout_dyn,        &
+    integer :: count,dyn_count2,unit,nxout,nxout_dyn,countglob,&
                 i_ox_seq, i_ox_dyn, dyn_stat, dyn_stat2, dyn_count 
   end type ox_type
 
@@ -29,6 +31,13 @@ module problem_class
       slip, v, dv_dt, theta, dtheta_dt,  &
       a, b, dc, v1, v2, mu_star, v_star, &
       theta_star, iot, iasp, coh
+!For MPI
+    double precision, dimension(:), allocatable :: &
+      tau_glob, dtau_dt_glob,&
+      sigma_glob,&
+      slip_glob, v_glob, dv_dt_glob, theta_glob, dtheta_dt_glob
+    double precision :: vmaxglob,sigma_vmaxglob
+
     double precision :: pot, pot_rate, pot_pre
     double precision :: beta=0d0, smu=0d0, lam=0d0, zimpedance=0d0, v_th
 

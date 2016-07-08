@@ -25,6 +25,9 @@ module constants
 !   2 : FFT along-strike and along-dip, only works for vertical faults
   integer, parameter :: FFT_TYPE = 1
 
+  integer :: MY_RANK=0, NPROCS=1 !Default for serial 
+                                 !but automatically changes if MPI_parallel=.true.
+
 ! MPI run in parallel
 !   true  : run MPI parallel
 !   false : run serial or openMP

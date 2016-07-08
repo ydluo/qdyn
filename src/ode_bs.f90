@@ -10,7 +10,8 @@ contains
 
       SUBROUTINE bsstep(y,dydx,nv,x,htry,eps,yscal,hdid,hnext,pb)
 
-      use problem_class, only : problem_type
+      use problem_class, only : problem_type 
+      use constants, only : MPI_parallel,MY_RANK
 
       integer, intent(in) :: nv
       double precision, intent(inout) :: y(nv), dydx(nv), x
@@ -32,7 +33,7 @@ contains
       double precision, save :: a(IMAX)
       double precision, save :: epsold = -1.d0,xnew
       double precision :: eps1,errmax,err_km,fact,red,h,scale,wrkmin,xest,  &
-                yerr(nv),ysav(nv),yseq(nv)
+                yerr(nv),ysav(nv),yseq(nv),errmaxglob
       logical, save :: first = .true.
       logical :: reduct
 
@@ -79,6 +80,11 @@ contains
         if (k == 1) cycle
         errmax=maxval(dabs(yerr/yscal)) 
 !JPA: call MPI_REDUCE here to compute errmax = max over all processors
+!PG: Adding MPI_ALLREDUCE global
+      if (MPI_parallel) then  
+        call max_allproc(errmax,errmaxglob)
+        errmax=errmaxglob
+      endif
         errmax=max(TINY,errmax)/eps
         km=k-1
         err_km=(errmax/SAFE1)**(1.d0/(2*km+1))
@@ -104,6 +110,7 @@ contains
           endif
         endif
       enddo
+!PG: is red local or global or it should the same in all processors?.
       red=min(red,REDMIN)
       red=max(red,REDMAX)
       h=h*red
@@ -126,6 +133,7 @@ contains
         endif
       endif
 !JPA if everything worked correctly, hdid and hnext should be the same in all processors
+!PG, checked both hdid and hnext are the same in all processors
 
       END SUBROUTINE bsstep
 

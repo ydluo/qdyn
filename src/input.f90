@@ -2,10 +2,15 @@
 
 module input
 
+  use constants, only: MY_RANK, NPROCS !Predefined in serial.
+
   implicit none
   private 
 
-  public :: read_main
+!  integer, save :: MY_RANK=0, NPROCS=1 !Predifined in serial.
+
+ 
+  public :: read_main, MY_RANK, NPROCS 
 
 contains
 !=====================================================================
@@ -15,16 +20,27 @@ subroutine read_main(pb)
   
   use problem_class
   use mesh, only : read_mesh, mesh_get_size
-  use constants, only : FFT_TYPE
+  use constants, only : FFT_TYPE, MPI_parallel
  
   type(problem_type), intent(inout)  :: pb
 
   integer :: i,n
+  character(len=6) :: iprocnum
   
   write(6,*) 'Start reading input: ...'
-
+!PG, if MPI then read processor of each chunck
+if (MPI_parallel) then
+  call init_mpi()
+  call world_rank(MY_RANK)
+  call world_size(NPROCS)
+  write(iprocnum,'(i6.6)') MY_RANK
+  iprocnum=adjustl(iprocnum)
+  write(6,*) 'iprocnum:', iprocnum
+! Reading each chunk
+  open(unit=15, FILE='qdyn'//iprocnum(1:len_trim(iprocnum))//'.in')
+else
   open(unit=15,FILE= 'qdyn.in') 
-
+endif
   call read_mesh(15,pb%mesh)
   write(6,*) '   Mesh input complete'
 
@@ -107,6 +123,16 @@ subroutine read_main(pb)
               pb%v2(i), pb%mu_star(i), pb%v_star(i), &
               pb%iot(i), pb%iasp(i), pb%coh(i)                 
   end do
+
+  if (MPI_parallel) then 
+    allocate(pb%mesh%x(pb%mesh%nn), pb%mesh%y(pb%mesh%nn),& 
+             pb%mesh%z(pb%mesh%nn), pb%mesh%dip(pb%mesh%nn))     
+    pb%mesh%dx = pb%mesh%Lfault/pb%mesh%nx !Check if dx is needed 
+!Reading mesh chunck.
+    do i=1,n
+      read(15,*) pb%mesh%x(i),pb%mesh%y(i),pb%mesh%z(i),pb%mesh%dip(i)
+    enddo
+  endif
 
   close(15)
   write(6,*) 'Input complete'

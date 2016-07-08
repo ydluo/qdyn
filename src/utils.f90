@@ -12,21 +12,20 @@ subroutine save_vectorV(x,y,z,V,iproc,typ,nw,nx)
 
   double precision, dimension(nw,nx), intent(in) :: V
   double precision, dimension(nw,nx), intent(in) :: x,y,z
-  character(len=256) :: filenameproc
-  character(len=3)   :: typ !PG, 'loc' or 'glo'
+  character(len=256) :: fileproc
+  character(len=16)   :: typ !PG, 'loc' or 'glo'
 
   integer :: i,j,n,iproc,nx,nw
 
  ! nw=size(V,1)
  ! nx=size(V,2)
 
-  write(filenameproc,'(a,a,i1,a)') 'snap_v_',typ,iproc,'.dat'
+  write(fileproc,'(a,i6.6,a)') 'snap_v_',iproc,typ
  
-  open(101,file=trim(filenameproc),status='replace',form='formatted',action='write')
+  open(101,file=fileproc(1:len_trim(fileproc)),status='replace',form='formatted',action='write')
   
   do i=1,nw
     do j=1,nx
-!      write(101,*) "x, y, z, data"
       write(101,'(4(D15.7))') x(i,j),y(i,j),z(i,j),V(i,j)  
     enddo
   enddo

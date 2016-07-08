@@ -111,6 +111,29 @@ subroutine gather_allvdouble(sendbuf, scounts, recvbufall, recvcountsall, recvof
 end subroutine gather_allvdouble
 
 !-------------------------------------------------------------------------------------------------
+!Gather all MPI to root MY_RANK=0
+subroutine gather_allvdouble_root(sendbuf, scounts, recvbufall, recvcountsall, recvoffsetall,recvcountstotal, NPROC)
+
+  use my_mpi
+
+  implicit none
+  
+  integer :: NPROC
+  integer :: scounts,recvcountstotal
+  double precision, dimension(scounts) :: sendbuf
+  double precision, dimension(recvcountstotal) :: recvbufall
+  integer, dimension(0:NPROC-1) :: recvcountsall,recvoffsetall
+
+  integer ier
+
+  !PG: sending the each processor data to the corresponding index in the recvbufall array.
+  
+  call MPI_GATHERV(sendbuf,scounts,MPI_DOUBLE_PRECISION,recvbufall,recvcountsall,&
+                      recvoffsetall,MPI_DOUBLE_PRECISION,0,my_local_mpi_comm_world,ier)
+
+end subroutine gather_allvdouble_root
+
+!-------------------------------------------------------------------------------------------------
 subroutine gather_alli(sendbuf, recvbuf, NPROC)
 
   use my_mpi
@@ -146,7 +169,6 @@ end subroutine synchronize_all
 
 !-------------------------------------------------------------------------------------------------
 !
-
   subroutine sum_allreduce(buffer,countval)
 
   use my_mpi
@@ -173,5 +195,19 @@ end subroutine synchronize_all
 
   end subroutine sum_allreduce
 
+!-------------------------------------------------------------------------------------------------
+!
+  subroutine max_allproc(sendbuf, recvbuf)
+
+  use my_mpi
+
+  implicit none
+
+  double precision :: sendbuf, recvbuf
+  integer ier
+
+  call MPI_ALLREDUCE(sendbuf,recvbuf,1,MPI_DOUBLE_PRECISION,MPI_MAX,my_local_mpi_comm_world,ier)
+
+  end subroutine max_allproc
 
 !-------------------------------------------------------------------------------------------------

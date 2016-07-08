@@ -361,6 +361,70 @@ switch mode
     IASP(1:N)=IASP;
     CO(1:N)=CO;
     % export qdyn.in
+if (NPROCS>1); % MPI parallel 
+   % Defining nwLocal 
+   nwLocal(1:NPROCS)=floor(NW/NPROCS);
+   % In case NW/NPRCOS is not integer. Leaving the rest the last processor
+   nwLocal(NPROCS) = mod(NW,NPROCS) + nwLocal(NPROCS);
+   nnLocal = 0;
+ for iproc=0:NPROCS-1  
+    iprocstr = num2str(sprintf('%06i',iproc));
+    filename = ['qdyn' iprocstr '.in']
+    fid=fopen(filename,'w');
+    fprintf(fid,'%u     meshdim\n' , MESHDIM); 
+    if SIGMA_CPL == 1
+      NEQS = 3;
+    end
+    if MESHDIM == 2;
+      fprintf(1, 'MESHDIM = %d\n', MESHDIM); %JPA should "1" be "fid" instead?
+      fprintf(fid,'%u %u     NX, NW\n' , NX, nwLocal(iproc+1));      
+      fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
+      fprintf(fid,'%.15g %.15g \n', [DW(nnLocal/NX+1:nwLocal(iproc+1)+nnLocal/NX),...
+                                     DIP_W(nnLocal/NX+1:nwLocal(iproc+1)+nnLocal/NX)]');
+    else  
+      fprintf(fid,'%u     NN\n' , N);      
+      fprintf(fid,'%.15g %.15g      L, W\n', L, W);
+    end
+    
+    if MESHDIM == 1;
+        fprintf(fid,'%u   finite\n', FINITE);
+    end   
+    
+    fprintf(fid,'%u   itheta_law\n', THETA_LAW);
+    fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
+    fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);    
+    fprintf(fid,'%u   n_equations\n', NEQS);
+    fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);     
+    fprintf(fid,'%.15g %.15g %.15g %.15g    beta, smu, lambda, v_th\n', VS, MU, LAM, V_TH);
+    fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
+    fprintf(fid,'%.15g %.15g %.15g %.15g    dt_try, dtmax, tmax, accuracy\n',DTTRY,DTMAX,TMAX,ACC);
+    fprintf(fid,'%u   nstop\n',NSTOP);
+    fprintf(fid,'%u %u  DYN_FLAG, DYN_SKIP\n',DYN_FLAG,DYN_SKIP);
+    fprintf(fid,'%.15g %.15g %.15g    M0, DYN_th_on, DYN_th_off\n', DYN_M,DYN_TH_ON,DYN_TH_OFF);
+
+  for wloc=1:nwLocal(iproc+1)
+   for xloc=1:NX
+    iloc = xloc + (wloc-1)*NX + nnLocal;
+    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
+        SIGMA(iloc),V_0(iloc),TH_0(iloc),A(iloc),B(iloc),DC(iloc),V1(iloc),V2(iloc),MU_SS(iloc),V_SS(iloc),IOT(iloc),IASP(iloc),CO(iloc));
+   end;
+  end;
+  
+  for wloc=1:nwLocal(iproc+1)
+   for xloc=1:NX
+    iloc = xloc + (wloc-1)*NX + nnLocal;
+    fprintf(fid,'%.15g %.15g %.15g %.15g\n',...
+        X(iloc),Y(iloc),Z(iloc),DIP(iloc));
+   end;
+  end;
+     
+  % next processor
+  nnLocal=NX*nwLocal(iproc+1) + nnLocal;
+  % hold on
+  %scatter(X(1+nnLocal:iloc),Z(1+nnLocal:iloc),[],Z(1+nnLocal:iloc))
+  fclose(fid);
+ end
+else %Serial or openMP
     fid=fopen('qdyn.in','w');
     fprintf(fid,'%u     meshdim\n' , MESHDIM); 
     if SIGMA_CPL == 1
@@ -397,7 +461,7 @@ switch mode
         [SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:),IOT(:),IASP(:),CO(:)]');
  
     fclose(fid);
-
+end
     if strcmp(mode, 'write')
         ot = 0;
         ox = 0;
