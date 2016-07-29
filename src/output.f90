@@ -50,8 +50,10 @@ end subroutine screen_init
 !output one step to screen
 subroutine screen_write(pb)
   
-  use constants, only : YEAR, MPI_parallel, MY_RANK
+  use constants, only : YEAR, MPI_parallel 
+  use my_mpi, only : MY_RANK
   use problem_class
+
   type (problem_type), intent(inout) :: pb
 
 if (MPI_parallel) then 
@@ -86,6 +88,7 @@ subroutine ot_init(pb)
 
   use problem_class
   use constants, only: MPI_parallel
+
   type (problem_type), intent(inout) :: pb
   integer :: i
   pb%ot%lcnew = dble(pb%mesh%nn)
@@ -222,7 +225,8 @@ end subroutine ot_write
 subroutine ox_write(pb)
  
   use problem_class
-  use constants, only: MPI_parallel,MY_RANK
+  use constants, only: MPI_parallel
+  use my_mpi, only: MY_RANK
 
   type (problem_type), intent(inout) :: pb
 
@@ -464,7 +468,7 @@ end function crack_size
 
   use fault_stress, only: nnLocal_perproc,nnoffset_glob_perproc 
   use problem_class 
-  use constants, only: MY_RANK, NPROCS
+  use my_mpi, only: MY_RANK, NPROCS
 
   type(problem_type), intent(inout) :: pb
   integer :: nLocal,nnGlobal

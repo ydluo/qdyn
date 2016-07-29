@@ -17,9 +17,6 @@ subroutine save_vectorV(x,y,z,V,iproc,typ,nw,nx)
 
   integer :: i,j,n,iproc,nx,nw
 
- ! nw=size(V,1)
- ! nx=size(V,2)
-
   write(fileproc,'(a,i6.6,a)') 'snap_v_',iproc,typ
  
   open(101,file=fileproc(1:len_trim(fileproc)),status='replace',form='formatted',action='write')
@@ -33,5 +30,53 @@ subroutine save_vectorV(x,y,z,V,iproc,typ,nw,nx)
   close(101)
 
 end subroutine save_vectorV
+
+! -----------------------------------------------
+subroutine save_vector(V,iproc,typ,nw,nx)
+
+  double precision, dimension(nw,nx), intent(in) :: V
+  character(len=256) :: fileproc
+  character(len=16)   :: typ !PG, 'loc' or 'glo'
+
+  integer :: i,j,n,iproc,nx,nw
+
+  write(fileproc,'(a,i6.6,a)') 'snap_v_',iproc,typ
+ 
+  open(101,file=fileproc(1:len_trim(fileproc)),status='replace',form='formatted',action='write')
+  
+  do i=1,nw
+    do j=1,nx
+      write(101,'(D15.7)') V(i,j)  
+    enddo
+  enddo
+
+  close(101)
+
+end subroutine save_vector
+
+! -----------------------------------------------
+subroutine save_vector3(V,iproc,typ,nwloc,nwglob,nx)
+
+  double precision, dimension(nwloc,nwglob,nx), intent(in) :: V
+  character(len=256) :: fileproc
+  character(len=16)   :: typ !PG, 'loc' or 'glo'
+
+  integer :: i,j,k,n,iproc,nx,nwloc,nwglob
+
+  write(fileproc,'(a,i6.6,a)') 'snap_v_',iproc,typ
+ 
+  open(101,file=fileproc(1:len_trim(fileproc)),status='replace',form='formatted',action='write')
+  
+ do k=1,nwloc
+  do i=1,nwglob
+    do j=1,nx
+      write(101,'(D15.7)') V(k,i,j)  
+    enddo
+  enddo
+ enddo
+
+  close(101)
+
+end subroutine save_vector3
 
 end module utils

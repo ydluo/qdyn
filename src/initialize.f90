@@ -14,7 +14,8 @@ subroutine init_all(pb)
   
   use problem_class
   use mesh, only : init_mesh
-  use constants, only : PI, MPI_parallel, MY_RANK, NPROCS
+  use constants, only : PI, MPI_parallel 
+  use my_mpi, only: MY_RANK, NPROCS
   use fault_stress, only : init_kernel,nnLocalfft_perproc,nnoffset_perproc,& 
                            nnLocal_perproc,nnoffset_glob_perproc,&
                            nwLocal_perproc,nwoffset_glob_perproc 
@@ -83,7 +84,6 @@ if (MPI_parallel) then
     allocate(pb%mesh%xglob(nnGlobal),pb%mesh%yglob(nnGlobal),&
              pb%mesh%zglob(nnGlobal),pb%mesh%dwglob(nwGlobal),pb%mesh%dipglob(nnGlobal))
 ! Adding global mesh for computing the kernel(ilocal,global,nxfft)
-    call synchronize_all() 
     call gather_allvdouble(pb%mesh%x,nLocal,pb%mesh%xglob,nnLocal_perproc, & 
                            nnoffset_glob_perproc,nnGlobal,NPROCS)
     call gather_allvdouble(pb%mesh%y,nLocal,pb%mesh%yglob,nnLocal_perproc, & 
@@ -94,13 +94,10 @@ if (MPI_parallel) then
                            nnoffset_glob_perproc,nnGlobal,NPROCS)
     call gather_allvdouble(pb%mesh%dw,nwLocal,pb%mesh%dwglob,nwLocal_perproc, & 
                            nwoffset_glob_perproc,nwGlobal,NPROCS)
-    call synchronize_all() 
     call save_vectorV(pb%mesh%xglob,pb%mesh%yglob,pb%mesh%zglob,pb%mesh%zglob,&
                       MY_RANK,'fault_xyz_global',nwGlobal,nx)
-    call synchronize_all() 
     call save_vectorV(pb%mesh%x,pb%mesh%y,pb%mesh%z,pb%mesh%z,&
                       MY_RANK,'fault_xyz_ilocal',nwLocal,nx)
-    call synchronize_all()     
 endif
   
   write(6,*) 'Initializing parameters: ...'

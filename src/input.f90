@@ -2,13 +2,10 @@
 
 module input
 
-  use constants, only: MY_RANK, NPROCS !Predefined in serial.
+  use my_mpi, only: MY_RANK, NPROCS
 
   implicit none
   private 
-
-!  integer, save :: MY_RANK=0, NPROCS=1 !Predifined in serial.
-
  
   public :: read_main, MY_RANK, NPROCS 
 

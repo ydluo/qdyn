@@ -2,15 +2,18 @@
 ! MPI parallel routines for QDYN. 
 ! This file containes all the MPI routines used in QDYN to run in parallel.
 ! Modified from Parallel.f90 SPECFEM3D.
-module my_mpi
 
-! main parameter module for specfem simulations
+module my_mpi
 
   use mpi
 
   implicit none
 
+  integer :: MY_RANK=0, NPROCS=1
+
   integer :: my_local_mpi_comm_world, my_local_mpi_comm_for_bcast
+
+  public MY_RANK, NPROCS
 
 end module my_mpi
 
@@ -111,7 +114,7 @@ subroutine gather_allvdouble(sendbuf, scounts, recvbufall, recvcountsall, recvof
 end subroutine gather_allvdouble
 
 !-------------------------------------------------------------------------------------------------
-!Gather all MPI to root MY_RANK=0
+!Gather all MPI to root processor=0
 subroutine gather_allvdouble_root(sendbuf, scounts, recvbufall, recvcountsall, recvoffsetall,recvcountstotal, NPROC)
 
   use my_mpi

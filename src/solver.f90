@@ -3,7 +3,8 @@
 module solver
 
   use problem_class, only : problem_type
-  use constants, only: MY_RANK, MPI_parallel, NPROCS 
+  use constants, only: MPI_parallel 
+  use my_mpi, only: MY_RANK, NPROCS 
 
   implicit none
   private

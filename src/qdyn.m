@@ -376,11 +376,13 @@ if (NPROCS>1); % MPI parallel
       NEQS = 3;
     end
     if MESHDIM == 2;
+      DWnnlocal=[];DIP_Wnnlocal=[];
       fprintf(1, 'MESHDIM = %d\n', MESHDIM); %JPA should "1" be "fid" instead?
       fprintf(fid,'%u %u     NX, NW\n' , NX, nwLocal(iproc+1));      
       fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
-      fprintf(fid,'%.15g %.15g \n', [DW(nnLocal/NX+1:nwLocal(iproc+1)+nnLocal/NX),...
-                                     DIP_W(nnLocal/NX+1:nwLocal(iproc+1)+nnLocal/NX)]');
+      DWnnlocal = DW(nnLocal/NX+1:nwLocal(iproc+1)+nnLocal/NX);
+      DIP_Wnnlocal = DIP_W(nnLocal/NX+1:nwLocal(iproc+1)+nnLocal/NX);
+      fprintf(fid,'%.15g %.15g \n', [DWnnlocal(:),DIP_Wnnlocal(:)]');
     else  
       fprintf(fid,'%u     NN\n' , N);      
       fprintf(fid,'%.15g %.15g      L, W\n', L, W);

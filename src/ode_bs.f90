@@ -11,7 +11,7 @@ contains
       SUBROUTINE bsstep(y,dydx,nv,x,htry,eps,yscal,hdid,hnext,pb)
 
       use problem_class, only : problem_type 
-      use constants, only : MPI_parallel,MY_RANK
+      use constants, only : MPI_parallel
 
       integer, intent(in) :: nv
       double precision, intent(inout) :: y(nv), dydx(nv), x
@@ -80,7 +80,6 @@ contains
         if (k == 1) cycle
         errmax=maxval(dabs(yerr/yscal)) 
 !JPA: call MPI_REDUCE here to compute errmax = max over all processors
-!PG: Adding MPI_ALLREDUCE global
       if (MPI_parallel) then  
         call max_allproc(errmax,errmaxglob)
         errmax=errmaxglob
@@ -110,7 +109,6 @@ contains
           endif
         endif
       enddo
-!PG: is red local or global or it should the same in all processors?.
       red=min(red,REDMIN)
       red=max(red,REDMAX)
       h=h*red
@@ -133,7 +131,6 @@ contains
         endif
       endif
 !JPA if everything worked correctly, hdid and hnext should be the same in all processors
-!PG, checked both hdid and hnext are the same in all processors
 
       END SUBROUTINE bsstep
 
