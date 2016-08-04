@@ -507,7 +507,7 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
   double precision :: tmpx(k3f%nxfft)
   integer :: n,k
   integer :: iglobal,ilocal,iwlocal,ixlocal,iwglobal,ixglobal
-  double precision :: tmpzkarray(k3f%nnLocalfft),vzkarray(k3f%nnGlobalfft)
+!  double precision :: tmpzkarray(k3f%nnLocalfft),vzkarray(k3f%nnGlobalfft)
 
 !  if (MPI_parallel) then
 !PG: tau and sigma_n=0 to avoid double summation with other processors.
@@ -539,25 +539,27 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
 !   tmpzkarray   = reshape(tmpzk,(/nnLocalfft,1/))
 !   vzkarray     = reshape(vzk,(/nnGlobalfft,1/))
 !Local
-    ilocal=0
-    do iwlocal=1,k3f%nwLocal
-      do ixlocal=1,k3f%nxfft 
-            ilocal=ilocal+1
-         tmpzkarray(ilocal)  = tmpzk(iwlocal,ixlocal) 
-      enddo
-    enddo  
-!    call synchronize_all()
-    call gather_allvdouble(tmpzkarray,k3f%nnLocalfft,vzkarray,nnLocalfft_perproc, & 
+!    ilocal=0
+!    do iwlocal=1,k3f%nwLocal
+!      do ixlocal=1,k3f%nxfft 
+!            ilocal=ilocal+1
+!         tmpzkarray(ilocal)  = tmpzk(iwlocal,ixlocal) 
+!      enddo
+!    enddo  
+!!    call synchronize_all()
+!    call gather_allvdouble(tmpzkarray,k3f%nnLocalfft,vzkarray,nnLocalfft_perproc, & 
+!                     nnoffset_perproc,k3f%nnGlobalfft,NPROCS)
+!!    call synchronize_all()
+    call gather_allvdouble(tmpzk(1,1),k3f%nnLocalfft,vzk(1,1),nnLocalfft_perproc, & 
                      nnoffset_perproc,k3f%nnGlobalfft,NPROCS)
-!    call synchronize_all()
-!Global
-    iglobal=0
-    do iwglobal=1,k3f%nwGlobal
-      do ixglobal=1,k3f%nxfft 
-            iglobal=iglobal+1
-         vzk(iwglobal,ixglobal)=vzkarray(iglobal)  
-      enddo
-    enddo
+!!Global
+!    iglobal=0
+!    do iwglobal=1,k3f%nwGlobal
+!      do ixglobal=1,k3f%nxfft 
+!            iglobal=iglobal+1
+!         vzk(iwglobal,ixglobal)=vzkarray(iglobal)  
+!      enddo
+!    enddo
 !    call synchronize_all()
 !    call save_vector(vzk,MY_RANK,'fault_vel_global',k3f%nwGlobal,k3f%nxfft)
 !    call synchronize_all()
