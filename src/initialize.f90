@@ -94,10 +94,10 @@ if (MPI_parallel) then
                            nnoffset_glob_perproc,nnGlobal,NPROCS)
     call gather_allvdouble(pb%mesh%dw,nwLocal,pb%mesh%dwglob,nwLocal_perproc, & 
                            nwoffset_glob_perproc,nwGlobal,NPROCS)
-    call save_vectorV(pb%mesh%xglob,pb%mesh%yglob,pb%mesh%zglob,pb%mesh%zglob,&
-                      MY_RANK,'fault_xyz_global',nwGlobal,nx)
-    call save_vectorV(pb%mesh%x,pb%mesh%y,pb%mesh%z,pb%mesh%z,&
-                      MY_RANK,'fault_xyz_ilocal',nwLocal,nx)
+!    call save_vectorV(pb%mesh%xglob,pb%mesh%yglob,pb%mesh%zglob,pb%mesh%zglob,&
+!                      MY_RANK,'fault_xyz_global',nwGlobal,nx)
+!    call save_vectorV(pb%mesh%x,pb%mesh%y,pb%mesh%z,pb%mesh%z,&
+!                      MY_RANK,'fault_xyz_ilocal',nwLocal,nx)
 endif
   
   write(6,*) 'Initializing parameters: ...'

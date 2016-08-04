@@ -133,7 +133,7 @@ end subroutine ot_init
 subroutine ox_init(pb)
  
   use problem_class
-  use constants, only : MPI_parallel
+  use constants, only : MPI_parallel,OUT_MASTER
 
   type (problem_type), intent(inout) :: pb
   integer :: i
@@ -150,12 +150,17 @@ subroutine ox_init(pb)
     pb%ox%count = pb%ox%count+1
   enddo
 
-  if (MPI_parallel) then 
+  if (MPI_parallel) then
+   if (OUT_MASTER) then  
     pb%ox%countglob=0
     do i=1,pb%mesh%nnglob, pb%ox%nxout
       pb%ox%countglob = pb%ox%countglob+1
     enddo
     write(pb%ox%unit,'(a,i10)')'# nx= ',pb%ox%countglob
+   else
+    write(pb%ox%unit,'(a,i10)')'# nx= ',pb%ox%count
+    close(pb%ox%unit)
+   endif
   else
     write(pb%ox%unit,'(a,i10)')'# nx= ',pb%ox%count    
   endif
@@ -225,41 +230,57 @@ end subroutine ot_write
 subroutine ox_write(pb)
  
   use problem_class
-  use constants, only: MPI_parallel
+  use constants, only: MPI_parallel,OUT_MASTER
   use my_mpi, only: MY_RANK
 
   type (problem_type), intent(inout) :: pb
 
   integer :: ixout,i
   double precision :: vtempglob
+  character(len=256) :: fileproc
 
 if (MPI_parallel) then
 ! In progress
  if (mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
-! Collecting global nodes
-  call synchronize_all()
-  call pb_global(pb)
-  if (MY_RANK==0) then
-    vtempglob=0d0
-    do i=1,pb%mesh%nnglob
-      if ( pb%v_glob(i) > vtempglob) then
-        vtempglob = pb%v_glob(i)
-        pb%ot%ivmaxglob = i
-      end if
-    end do
-!Writing in File output.
-    pb%ox%unit = pb%ox%unit + 1
-    write(pb%ox%unit,'(3i10,e24.14)') pb%it,pb%ot%ivmaxglob,pb%ox%countglob,pb%time
-    write(pb%ox%unit,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip '
-    do ixout=1,pb%mesh%nnglob,pb%ox%nxout
-      write(pb%ox%unit,'(3e15.7,e24.14,7e15.7)')       &
-        pb%mesh%xglob(ixout),pb%mesh%yglob(ixout),pb%mesh%zglob(ixout),pb%time,     &
-        pb%v_glob(ixout),pb%theta_glob(ixout),pb%dv_dt_glob(ixout)/pb%v_glob(ixout),pb%tau_glob(ixout),   &
-        pb%dtau_dt_glob(ixout),pb%slip_glob(ixout), pb%sigma_glob(ixout)
-    enddo
+  if (OUT_MASTER) then
+  ! Collecting global nodes
+    call synchronize_all()
+    call pb_global(pb)
+    if (MY_RANK==0) then
+      vtempglob=0d0
+      do i=1,pb%mesh%nnglob
+        if ( pb%v_glob(i) > vtempglob) then
+          vtempglob = pb%v_glob(i)
+          pb%ot%ivmaxglob = i
+        end if
+      end do
+      !Writing in File output.
+      pb%ox%unit = pb%ox%unit + 1
+      write(pb%ox%unit,'(3i10,e24.14)') pb%it,pb%ot%ivmaxglob,pb%ox%countglob,pb%time
+      write(pb%ox%unit,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip '
+      do ixout=1,pb%mesh%nnglob,pb%ox%nxout
+        write(pb%ox%unit,'(3e15.7,e24.14,7e15.7)')       &
+          pb%mesh%xglob(ixout),pb%mesh%yglob(ixout),pb%mesh%zglob(ixout),pb%time,     &
+          pb%v_glob(ixout),pb%theta_glob(ixout),pb%dv_dt_glob(ixout)/pb%v_glob(ixout),pb%tau_glob(ixout),   &
+          pb%dtau_dt_glob(ixout),pb%slip_glob(ixout), pb%sigma_glob(ixout)
+      enddo 
+    endif  
+  else
+  !local
+      !Each processor writes an output file.
+      pb%ox%unit = pb%ox%unit + 1
+      write(fileproc,'(a,i6.6,a,i6.6)') 'fort.',pb%ox%unit,'_proc',MY_RANK
+      open(pb%ox%unit,file=fileproc(1:len_trim(fileproc)),status='replace',form='formatted',action='write')
+      write(pb%ox%unit,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
+      write(pb%ox%unit,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip '
+      do ixout=1,pb%mesh%nn,pb%ox%nxout
+        write(pb%ox%unit,'(3e15.7,e24.14,7e15.7)')       &
+          pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
+          pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
+          pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
+      enddo
   endif
   close(pb%ox%unit)
-  call synchronize_all()  
  endif
 
 else

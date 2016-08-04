@@ -11,7 +11,7 @@ module my_mpi
 
   integer :: MY_RANK=0, NPROCS=1
 
-  integer :: my_local_mpi_comm_world, my_local_mpi_comm_for_bcast
+  integer :: my_local_mpi_comm_world=MPI_COMM_WORLD, my_local_mpi_comm_for_bcast
 
   public MY_RANK, NPROCS
 

@@ -238,13 +238,13 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   enddo
 
 
-  if (MPI_parallel) then
-
-    call synchronize_all()
-    call save_vector3(k%kernel,MY_RANK,'fault_ker_glob',k%nwLocal,k%nwGlobal,k%nxfft)
-    call synchronize_all() 
-
-  endif
+!  if (MPI_parallel) then
+!
+!    call synchronize_all()
+!    call save_vector3(k%kernel,MY_RANK,'fault_kernl_glob',k%nwLocal,k%nwGlobal,k%nxfft)
+!    call synchronize_all() 
+!
+!  endif
 
 end subroutine init_kernel_3D_fft
 
@@ -509,13 +509,12 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
   integer :: iglobal,ilocal,iwlocal,ixlocal,iwglobal,ixglobal
   double precision :: tmpzkarray(k3f%nnLocalfft),vzkarray(k3f%nnGlobalfft)
 
-  if (MPI_parallel) then
-    call synchronize_all()
+!  if (MPI_parallel) then
 !PG: tau and sigma_n=0 to avoid double summation with other processors.
 !    each processor computes tau and sigma_n on its local fault nodes. 
-    tau(:)=0d0
-    sigma_n(:)=0d0
-  endif
+!    tau(:)=0d0
+!    sigma_n(:)=0d0
+!  endif
 
   !$OMP PARALLEL PRIVATE(tmpx)
 
@@ -547,10 +546,10 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
          tmpzkarray(ilocal)  = tmpzk(iwlocal,ixlocal) 
       enddo
     enddo  
-    call synchronize_all()
+!    call synchronize_all()
     call gather_allvdouble(tmpzkarray,k3f%nnLocalfft,vzkarray,nnLocalfft_perproc, & 
                      nnoffset_perproc,k3f%nnGlobalfft,NPROCS)
-    call synchronize_all()
+!    call synchronize_all()
 !Global
     iglobal=0
     do iwglobal=1,k3f%nwGlobal

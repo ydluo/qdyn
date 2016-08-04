@@ -35,6 +35,7 @@ if (MPI_parallel) then
   write(6,*) 'iprocnum:', iprocnum
 ! Reading each chunk
   open(unit=15, FILE='qdyn'//iprocnum(1:len_trim(iprocnum))//'.in')
+  call synchronize_all()
 else
   open(unit=15,FILE= 'qdyn.in') 
 endif

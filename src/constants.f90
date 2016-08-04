@@ -32,6 +32,7 @@ module constants
 !   true  : run MPI parallel
 !   false : run serial or openMP
    logical, parameter :: MPI_parallel = .true.
+   logical, parameter :: OUT_MASTER = .true. !To write ouput with the master MY_RANK=0
 
 ! Adding real precision and type for MPI runs.
 !   CUSTOM_REAL = 4  (single precision)

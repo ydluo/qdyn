@@ -27,6 +27,7 @@ subroutine solve(pb)
   ! Time loop
   do while (pb%it /= pb%itstop)
     pb%it = pb%it + 1
+    if (MY_RANK==0) write(6,*) 'it:',pb%it
     call do_bsstep(pb)
 ! if stress exceeds yield call Coulomb_solver ! JPA Coulomb quick and dirty
 !                         or (cleaner version) do linear adjustment of
