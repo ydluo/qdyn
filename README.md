@@ -16,7 +16,12 @@
 
 ## News 
 
-*QDYN* was previously hosted on [GoogleCode] (https://code.google.com/p/qdyn/) and is now moved to [GITHUB] (http://ydluo.github.io/qdyn) , both [SVN] (https://subversion.apache.org) and [GIT] (https://git-scm.com) version control system are supported 
+August 2016: We submitted the following paper, in which we use *QDYN* to run earthquake cycle simulations producing events with a broad range of magnitude to study earthquake scaling relations:
+  Y. Luo, Jean Paul Ampuero and K. Irikura
+  Free surface effects on earthquake moment-area scaling relations
+  PAGEOPH, Topical Volume on "Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"
+
+*QDYN* was previously hosted on [GoogleCode] (https://code.google.com/p/qdyn/) and is now on [Github] (http://ydluo.github.io/qdyn). Both [SVN] (https://subversion.apache.org) and [GIT] (https://git-scm.com) version control systems are supported. 
 
 A *QDYN* tutorial session was offered at the [School on "Earthquakes: nucleation, triggering and relationship with aseismic processes"] (http://earthquakes.sciencesconf.org/) at Cargese, Corsica, 3 - 10 November 2014 
 
@@ -26,7 +31,7 @@ A *QDYN* tutorial session was offered at the [School on "Earthquakes: nucleation
 ## Summary
 *QDYN* is a boundary element software package to simulate earthquake cycles (tectonic fault slip) under the quasi-dynamic approximation (quasi-static elasticity with radiation damping).  
 
-The code implements adaptive time stepping, shared-memory parallelization, and is capable to deal with multi-scale earthquake cycle simulations with fine details in both time and space. QDYN includes various forms of rate-and-state friction and state evolution laws, and handles complex fault geometry in 3D and 2D media, as well as spring-block simulations. It features normal stress coupling and is equipped with a user-friendly interface and well-formatted graphical output.
+The code implements adaptive time stepping and shared-memory parallelization to simulate earthquake cycles including seismic and aseismic slip. QDYN includes various forms of rate-and-state friction and state evolution laws. It handles non-planar fault geometries in 3D and 2D elastic media, as well as spring-block simulations. It has a user-friendly matlab interface and graphical output.
 
 --------------------------------
 
@@ -42,7 +47,7 @@ The code implements adaptive time stepping, shared-memory parallelization, and i
   * matlab wrapper and graphic output display utilities
   * parallelized for shared memory systems (OpenMP)
   * normal stress coupling
-  * fully coupled with SPECFEM3D with QSB (QDYN-SPECFEM Bridge)
+  * fully coupled with SPECFEM3D via QSB (QDYN-SPECFEM Bridge)
 
 
 
