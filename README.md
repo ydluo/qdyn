@@ -8,18 +8,18 @@
 
 ## Downloads
 
-[User's manual] (https://docs.google.com/document/d/11FkfCGAwbjfrn9U07EkIZRNuXmvY6PJt67DFNQU_mW8/pub) online (most up-to-date version) or [PDF] (https://drive.google.com/file/d/0B13IeWPRjYq8WFFTUk1FemRSdzA/view?usp=sharing). 
+[User's manual] (https://docs.google.com/document/d/11FkfCGAwbjfrn9U07EkIZRNuXmvY6PJt67DFNQU_mW8/pub) online (most up-to-date version) or [PDF] (https://drive.google.com/file/d/0B13IeWPRjYq8WFFTUk1FemRSdzA/view?usp=sharing).
 
-[QDYN software and examples] (https://drive.google.com/folderview?id=0B13IeWPRjYq8c2h5SGFsWDVyZ1k&usp=sharing) .
+[QDYN software and examples] (https://drive.google.com/folderview?id=0B13IeWPRjYq8c2h5SGFsWDVyZ1k&usp=sharing).
 
 --------------------------------
 
 ## News 
 
-August 2016: We submitted the following paper, in which we use *QDYN* to run earthquake cycle simulations producing events with a broad range of magnitude to study earthquake scaling relations:
-  Y. Luo, Jean Paul Ampuero and K. Irikura
-  Free surface effects on earthquake moment-area scaling relations
-  PAGEOPH, Topical Volume on "Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"
+August 2016: We submitted the following paper, in which we used *QDYN* to simulate earthquake cycles, with events spanning a broad range of magnitudes, to study earthquake scaling relations:  
+  Y. Luo, J. P. Ampuero and K. Irikura  
+  *Free surface effects on earthquake moment-area scaling relations*  
+  PAGEOPH, Topical Volume on *"Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"*
 
 *QDYN* was previously hosted on [GoogleCode] (https://code.google.com/p/qdyn/) and is now on [Github] (http://ydluo.github.io/qdyn). Both [SVN] (https://subversion.apache.org) and [GIT] (https://git-scm.com) version control systems are supported. 
 
