@@ -1,6 +1,6 @@
 # qdyn
 ## Welcome to QDYN
-## A Quasi-DYNmatic earthquake simulator
+## A Quasi-DYNamic earthquake simulator
 
 --------------------------------
 ## [Access to QDYN Wiki](https://github.com/ydluo/qdyn/wiki)
@@ -16,10 +16,10 @@
 
 ## News 
 
-August 2016: We submitted the following paper, in which we used *QDYN* to simulate earthquake cycles, with events spanning a broad range of magnitudes, to study earthquake scaling relations:  
+*August 2016*: In the following paper we used *QDYN* to simulate earthquake cycles and obtained events spanning a broad range of magnitudes to study earthquake scaling relations:  
   Y. Luo, J. P. Ampuero and K. Irikura  
   *Free surface effects on earthquake moment-area scaling relations*  
-  PAGEOPH, Topical Volume on *"Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"*
+  Submitted to PAGEOPH, Topical Volume on *"Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"*
 
 *QDYN* was previously hosted on [GoogleCode] (https://code.google.com/p/qdyn/) and is now on [Github] (http://ydluo.github.io/qdyn). Both [SVN] (https://subversion.apache.org) and [GIT] (https://git-scm.com) version control systems are supported. 
 
@@ -77,13 +77,15 @@ The code implements adaptive time stepping and shared-memory parallelization to 
 
 QuakeID Group, Caltech Seismo Lab:
 
-Yingdi Luo [http://www.seismolab.caltech.edu/luo_y.html] (http://www.seismolab.caltech.edu/luo_y.html)
+[Yingdi Luo] (http://www.seismolab.caltech.edu/luo_y.html)
 
-Jean-Paul Ampuero [http://www.seismolab.caltech.edu/ampuero_jp.html] (http://www.seismolab.caltech.edu/ampuero_jp.html)
+[Jean-Paul Ampuero] (http://www.seismolab.caltech.edu/ampuero_jp.html)
 
-Bryan Riel [http://www.seismolab.caltech.edu/riel_b.html] (http://www.seismolab.caltech.edu/riel_b.html)
+[Bryan Riel] (http://www.seismolab.caltech.edu/riel_b.html)
 
-For questions, feedback or suggestions, please contact the developers via the [Issue] (https://github.com/ydluo/qdyn/issues) on GITHUB.
+Percy Galvez (AECOM, Switzerland)
+
+For questions, feedback or suggestions, please contact the developers via the [issue tracking system] (https://github.com/ydluo/qdyn/issues).
 
 -------------------------
 
