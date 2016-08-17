@@ -8,10 +8,11 @@ module ode_bs
 
 contains
 
-      SUBROUTINE bsstep(y,dydx,nv,x,htry,eps,yscal,hdid,hnext,pb)
+      SUBROUTINE bsstep(y,dydx,nv,x,htry,eps,yscal,hdid,hnext,pb,ik)
 
       use problem_class, only : problem_type 
       use constants, only : MPI_parallel
+      use my_mpi, only: MY_RANK
 
       integer, intent(in) :: nv
       double precision, intent(inout) :: y(nv), dydx(nv), x
@@ -25,7 +26,7 @@ contains
                                      REDMAX=1.d-5, REDMIN=.7d0, &
                                      TINY=1.d-30,    &
                                      SCALMX=.5d0 !SCALMX=.1d0
-      integer :: i,iq,k,km
+      integer :: i,iq,k,km,ik
       integer, dimension(IMAX) :: nseq = (/ 2,4,6,8,10,12,14,16,18 /)
       integer, save :: kmax,kopt
       double precision, save :: alf(KMAXX,KMAXX)
@@ -63,7 +64,8 @@ contains
         kopt=kmax
       endif
       reduct=.false.
-
+!PG      
+    ik=0
     main_loop: do
 
       do k=1,kmax
@@ -75,6 +77,7 @@ contains
 !JPA: make it a safe MPI stop: all procs should stop if at least one has an error
         endif
         call mmid(ysav,dydx,nv,x,h,nseq(k),yseq,pb)
+        ik=ik+nseq(k)
         xest=(h/nseq(k))**2
         call pzextr(k,xest,yseq,y,yerr,nv)
         if (k == 1) cycle
@@ -115,7 +118,7 @@ contains
       reduct=.true.
 
     enddo main_loop
-
+!PG
       x=xnew
       hdid=h
       first=.false.

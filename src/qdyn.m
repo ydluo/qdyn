@@ -477,6 +477,11 @@ end
        status = system(['mpirun -np ' num2str(NPROCS) ' ' EXEC_PATH filesep 'qdyn']);
      end
 %    rename input and output files
+if (NPROCS>1); % MPI parallel
+% In process
+  ot=0;
+  ox=0;
+else
     if length(NAME)
       movefile('fort.18',[NAME '.ot']); 
       movefile('fort.19',[NAME '.ox']); 
@@ -486,6 +491,7 @@ end
 
     % output
     [ot,ox]= read_qdyn_out(NAME);
+end
 
   otherwise,
     error('mode must be: set, read or run')

@@ -16,6 +16,7 @@ module fault_stress
 
   type kernel_3D
     double precision, dimension(:,:), allocatable :: kernel, kernel_n
+    integer :: nw, nx, nwLocal, nwGlobal, nnLocal, nnGlobal    
   end type kernel_3D
 
   type fault_coord  
@@ -320,7 +321,7 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling)
 
   use mesh, only : mesh_type
   use okada, only : compute_kernel
-  use constants, only : FAULT_TYPE
+  use constants, only : FAULT_TYPE, MPI_parallel
 
   type(kernel_3d), intent(inout) :: k
   double precision, intent(in) :: lambda,mu
@@ -334,6 +335,9 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling)
     write(6,*) 'NO FFT applied'
     !kernel(i,j): response at i of source at j
     !because dx = constant, only need to calculate i at first column
+
+
+  if (.not. MPI_parallel) then
     allocate (k%kernel(m%nw,m%nn))
     if (sigma_coupling) allocate (k%kernel_n(m%nw,m%nn))
 
@@ -357,6 +361,36 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling)
       write(99,*) k%kernel(1,j)
       if (sigma_coupling) write(99,*) k%kernel_n(1,j)
     end do
+  else 
+!MPI version.
+! In progress.
+!    k%nwLocal=m%nw
+!    k%nx = m%nx 
+!    k%nwGlobal=sum(nwLocal_perproc)
+!    k%nnGlobal=k%nwGlobal*k%nx
+!
+!    allocate (k%kernel(k%nwLocal,k%nnGlobal))
+!    if (sigma_coupling) allocate (k%kernel_n(k%nwLocal,k%nnGlobal))
+!
+!    do i = 1,k%nwLocal
+!        nn = ()
+!      do j = 1,k%nnGlobal
+!        call compute_kernel(lambda,mu,m%xglob(j),m%yglob(j),m%zglob(j),  &
+!               m%dipglob(j),m%dx,m%dw((j-1)/m%nx+1),   &
+ !              m%x(1+(i-1)*m%nx),m%y(1+(i-1)*m%nx),   &
+ !              m%z(1+(i-1)*m%nx),m%dip(1+(i-1)*m%nx),IRET,tau,sigma_n,FAULT_TYPE)
+ !       if (IRET == 0) then
+ !         k%kernel(i,j) = tau  
+ !         if (sigma_coupling) k%kernel_n(i,j) = sigma_n    
+ !       else
+ !         write(6,*) '!!WARNING!! : Kernel Singular, set value to 0,(i,j)',i,j
+ !         k%kernel(i,j) = 0d0
+ !         if (sigma_coupling) k%kernel_n(i,j) = 0d0
+ !       end if
+ !     end do
+ !   end do
+!
+  endif
 
 end subroutine init_kernel_3D
 
@@ -459,6 +493,7 @@ subroutine compute_stress_3d(tau,sigma_n,k3,v)
   !$OMP END DO
   !$OMP END PARALLEL
 
+
   if (allocated(k3%kernel_n)) then
 
   !$OMP PARALLEL PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j,k)
@@ -505,15 +540,12 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
   double precision , intent(in) :: v(:) 
   double precision :: vzk(k3f%nwGlobal,k3f%nxfft), tmpzk(k3f%nwLocal,k3f%nxfft)
   double precision :: tmpx(k3f%nxfft)
-  integer :: n,k
+  integer :: n,k,iproc
   integer :: iglobal,ilocal,iwlocal,ixlocal,iwglobal,ixglobal
-!  double precision :: tmpzkarray(k3f%nnLocalfft),vzkarray(k3f%nnGlobalfft)
+  double precision :: tmpzkarray(k3f%nnLocalfft),vzkarray(k3f%nnGlobalfft)
 
 !  if (MPI_parallel) then
-!PG: tau and sigma_n=0 to avoid double summation with other processors.
-!    each processor computes tau and sigma_n on its local fault nodes. 
-!    tau(:)=0d0
-!    sigma_n(:)=0d0
+!    vzkarray(:)=0d0
 !  endif
 
   !$OMP PARALLEL PRIVATE(tmpx)
@@ -539,27 +571,61 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
 !   tmpzkarray   = reshape(tmpzk,(/nnLocalfft,1/))
 !   vzkarray     = reshape(vzk,(/nnGlobalfft,1/))
 !Local
+    ilocal=0
+    do iwlocal=1,k3f%nwLocal
+      do ixlocal=1,k3f%nxfft 
+            ilocal=ilocal+1
+         tmpzkarray(ilocal)  = tmpzk(iwlocal,ixlocal) 
+      enddo
+    enddo 
+
 !    ilocal=0
-!    do iwlocal=1,k3f%nwLocal
-!      do ixlocal=1,k3f%nxfft 
+!    do ixlocal=1,k3f%nxfft 
+!      do iwlocal=1,k3f%nwLocal
 !            ilocal=ilocal+1
 !         tmpzkarray(ilocal)  = tmpzk(iwlocal,ixlocal) 
 !      enddo
-!    enddo  
+!    enddo 
+
+  !   tmpzk=reshape(tmpzk,(/k3f%nwLocal*k3f%nxfft,1/))
+  !   vzk=reshape(vzk,(/k3f%nwGlobal*k3f%nxfft,1/))
+     
 !!    call synchronize_all()
-!    call gather_allvdouble(tmpzkarray,k3f%nnLocalfft,vzkarray,nnLocalfft_perproc, & 
-!                     nnoffset_perproc,k3f%nnGlobalfft,NPROCS)
-!!    call synchronize_all()
-    call gather_allvdouble(tmpzk(1,1),k3f%nnLocalfft,vzk(1,1),nnLocalfft_perproc, & 
+    call gather_allvdouble(tmpzkarray,k3f%nnLocalfft,vzkarray,nnLocalfft_perproc, & 
                      nnoffset_perproc,k3f%nnGlobalfft,NPROCS)
+
+!    vzkarray(nnoffset_perproc(MY_RANK)+1:nnoffset_perproc(MY_RANK)+k3f%nnLocalfft)=tmpzkarray
+!    call synchronize_all()
+!    call sum_allreduce(vzkarray,k3f%nnGlobalfft)
+    
+!!    call synchronize_all()
+!    call gather_allvdouble(tmpzk(1,1),k3f%nnLocalfft,vzk(1,1),nnLocalfft_perproc, & 
+!                     nnoffset_perproc,k3f%nnGlobalfft,NPROCS)
+
+!!    call synchronize_all()
+!    call gather_allvdouble(transpose(tmpzk),k3f%nnLocalfft,vzkarray,nnLocalfft_perproc, & 
+!                     nnoffset_perproc,k3f%nnGlobalfft,NPROCS)
+
 !!Global
-!    iglobal=0
-!    do iwglobal=1,k3f%nwGlobal
-!      do ixglobal=1,k3f%nxfft 
+    iglobal=0
+    do iwglobal=1,k3f%nwGlobal
+      do ixglobal=1,k3f%nxfft 
+            iglobal=iglobal+1
+         vzk(iwglobal,ixglobal)=vzkarray(iglobal)  
+      enddo
+    enddo
+
+!!Global
+!   iglobal=0
+!   do iproc=0,NPROCS-1
+!    do ixglobal=1,k3f%nxfft 
+!      do iwglobal=1,nwLocal_perproc(iproc)
 !            iglobal=iglobal+1
 !         vzk(iwglobal,ixglobal)=vzkarray(iglobal)  
 !      enddo
 !    enddo
+!   enddo
+
 !    call synchronize_all()
 !    call save_vector(vzk,MY_RANK,'fault_vel_global',k3f%nwGlobal,k3f%nxfft)
 !    call synchronize_all()

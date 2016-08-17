@@ -241,7 +241,8 @@ subroutine ox_write(pb)
 
 if (MPI_parallel) then
 ! In progress
- if (mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
+! if (mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
+ if (mod(pb%it,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
   if (OUT_MASTER) then
   ! Collecting global nodes
     call synchronize_all()

@@ -31,6 +31,24 @@ subroutine init_mpi()
   if (ier /= 0 ) stop 'Error initializing MPI'
 
 end subroutine init_mpi 
+!-------------------------------------------------------------------------------------------------
+! Finalize mpi
+  subroutine finalize_mpi()
+
+  use my_mpi
+
+  implicit none
+
+  integer :: ier
+
+! do NOT remove the barrier here, it is critical in order for the failsafe mechanism to work fine when it is activated
+  call MPI_BARRIER(MPI_COMM_WORLD,ier)
+
+! stop all the MPI processes, and exit
+  call MPI_FINALIZE(ier)
+  if (ier /= 0) stop 'Error finalizing MPI'
+
+  end subroutine finalize_mpi
 
 !-------------------------------------------------------------------------------------------------
 subroutine world_size(sizeval)

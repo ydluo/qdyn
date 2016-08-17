@@ -8,6 +8,8 @@ module solver
 
   implicit none
   private
+  
+  integer(kind=8), save :: iktotal
 
   public  :: solve 
 
@@ -23,7 +25,7 @@ subroutine solve(pb)
   type(problem_type), intent(inout)  :: pb
 
   if (MY_RANK==0) call screen_init(pb)
-
+  iktotal=0
   ! Time loop
   do while (pb%it /= pb%itstop)
     pb%it = pb%it + 1
@@ -38,7 +40,8 @@ subroutine solve(pb)
     call ot_write(pb)
     call check_stop(pb)   ! here itstop will change
     !--------Output onestep to screen and ox file(snap_shot)
-    if(mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
+!    if(mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
+    if(mod(pb%it,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
       !  if (MY_RANK==0) call screen_write(pb)
       call screen_write(pb)
     endif
@@ -46,6 +49,7 @@ subroutine solve(pb)
     call ox_write(pb)
   enddo
 
+  call finalize_mpi()
 end subroutine solve
 
 
@@ -63,6 +67,7 @@ subroutine do_bsstep(pb)
   type(problem_type), intent(inout) :: pb
 
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
+  integer :: ik
 
   ! Pack v, theta into yt
 ! yt(2::pb%neqs) = pb%v(pb%rs_nodes) ! JPA Coulomb
@@ -79,14 +84,15 @@ subroutine do_bsstep(pb)
   call derivs(pb%time,yt,dydt,pb)
   yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
   ! One step 
-  call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb)
+  call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb,ik)
 !PG: Here is necessary a global min, or dt_next and dt_max is the same in all processors?.
   if (pb%dt_max >  0.d0) then
     pb%dt_try = min(pb%dt_next,pb%dt_max)
   else
     pb%dt_try = pb%dt_next
   endif
-
+  iktotal=ik*pb%it+iktotal
+  if (MY_RANK==0) write(6,*) 'iktotal=',iktotal,'pb%time=',pb%time
 ! Unpack yt into v, theta
 !  pb%v(pb%rs_nodes) = yt(2::pb%neqs) ! JPA Coulomb
   pb%v = yt(2::pb%neqs)
@@ -187,8 +193,8 @@ if (MPI_parallel) then
 !PG, Add Broadcast here to comunicate that one processor reach threshold velocity
         !         STOP if time > tmax
     else
-    !  call time_write(pb)
-    !  if (pb%tmax > 0.d0 .and. pb%time > pb%tmax) pb%itstop = pb%it
+!      if (MY_RANK==0) call time_write(pb)
+      if (pb%tmax > 0.d0 .and. pb%time > pb%tmax) pb%itstop = pb%it
     endif
   endif
 
