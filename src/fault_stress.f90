@@ -206,11 +206,19 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   allocate(tmp_n(k%nxfft))
   ! assumes faster index runs along-strike
   do n=1,k%nwGlobal
-    nn = (n-1)*m%nx+1
-    y_src = m%yglob(nn)
-    z_src = m%zglob(nn)
-    dip_src = m%dipglob(nn)
-    dw_src = m%dwglob(n)
+    if (MPI_parallel) then
+     nn = (n-1)*m%nx+1
+     y_src = m%yglob(nn)
+     z_src = m%zglob(nn)
+     dip_src = m%dipglob(nn)
+     dw_src = m%dwglob(n)
+    else
+     nn = (n-1)*m%nx+1
+     y_src = m%y(nn)
+     z_src = m%z(nn)
+     dip_src = m%dip(nn)
+     dw_src = m%dw(n)
+    endif
     do j=1,k%nwLocal
 !PG: taking the nodes corresponding to each processor.
       jj = (j-1)*m%nx+1 
@@ -237,7 +245,6 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
       endif
     enddo
   enddo
-
 
 !  if (MPI_parallel) then
 !
@@ -340,7 +347,6 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling)
   if (.not. MPI_parallel) then
     allocate (k%kernel(m%nw,m%nn))
     if (sigma_coupling) allocate (k%kernel_n(m%nw,m%nn))
-
     do i = 1,m%nw
       do j = 1,m%nn
         call compute_kernel(lambda,mu,m%x(j),m%y(j),m%z(j),  &
@@ -548,28 +554,27 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
 !    vzkarray(:)=0d0
 !  endif
 
-  !$OMP PARALLEL PRIVATE(tmpx)
+!tmpx needs to be private to avoid superposition with the other threads.
+!$OMP PARALLEL PRIVATE(tmpx)
 
 !-- load velocity and apply FFT along strike
 
-  !$OMP DO SCHEDULE(STATIC)
+!$OMP DO SCHEDULE(STATIC)
   do n = 1,k3f%nwLocal
     tmpx( 1 : k3f%nx ) = v( (n-1)*k3f%nx+1 : n*k3f%nx )
     tmpx( k3f%nx+1 : k3f%nxfft ) = 0d0  ! convolution requires zero-padding
     call my_rdft(1,tmpx,k3f%m_fft) 
     tmpzk(n,:) = tmpx
   enddo
-  !$OMP END DO
+!$OMP END DO
   
   if (MPI_parallel) then
+  !$OMP SINGLE
   !  gather the global vzk from the pieces in all processors
   !  call MPI_gatherall(..., tmpzk, vzk ...) 
- !   vzk is the global of tmpzk
- !   allocate(tmpzkarray(k3f%nnLocalfft))
- !   allocate(vzkarray(k3f%nnGlobalfft))
-!!PG inefficient, temporal solution to convert 2d to 1d, better use pointer or another way, reliable anyway.
-!   tmpzkarray   = reshape(tmpzk,(/nnLocalfft,1/))
-!   vzkarray     = reshape(vzk,(/nnGlobalfft,1/))
+  !   vzk is the global of tmpzk
+  !   allocate(tmpzkarray(k3f%nnLocalfft))
+  !   allocate(vzkarray(k3f%nnGlobalfft))
 !Local
     ilocal=0
     do iwlocal=1,k3f%nwLocal
@@ -577,36 +582,25 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
             ilocal=ilocal+1
          tmpzkarray(ilocal)  = tmpzk(iwlocal,ixlocal) 
       enddo
-    enddo 
+    enddo
 
-!    ilocal=0
-!    do ixlocal=1,k3f%nxfft 
-!      do iwlocal=1,k3f%nwLocal
-!            ilocal=ilocal+1
+!  !$OMP& DO SCHEDULE(STATIC) REDUCTION(+:ilocal)
+!    iwxlocal=0
+!    do iwx=1,k3f%nwLocal*k3f%nxfft
+!            iwxlocal=iwxlocal+1
 !         tmpzkarray(ilocal)  = tmpzk(iwlocal,ixlocal) 
 !      enddo
-!    enddo 
-
-  !   tmpzk=reshape(tmpzk,(/k3f%nwLocal*k3f%nxfft,1/))
-  !   vzk=reshape(vzk,(/k3f%nwGlobal*k3f%nxfft,1/))
+!    enddo
+!  !$OMP END DO 
      
-!!    call synchronize_all()
+!!  !$OMP SINGLE
     call gather_allvdouble(tmpzkarray,k3f%nnLocalfft,vzkarray,nnLocalfft_perproc, & 
                      nnoffset_perproc,k3f%nnGlobalfft,NPROCS)
+!!  !$OMP END SINGLE
 
-!    vzkarray(nnoffset_perproc(MY_RANK)+1:nnoffset_perproc(MY_RANK)+k3f%nnLocalfft)=tmpzkarray
-!    call synchronize_all()
-!    call sum_allreduce(vzkarray,k3f%nnGlobalfft)
     
-!!    call synchronize_all()
-!    call gather_allvdouble(tmpzk(1,1),k3f%nnLocalfft,vzk(1,1),nnLocalfft_perproc, & 
-!                     nnoffset_perproc,k3f%nnGlobalfft,NPROCS)
-
-!!    call synchronize_all()
-!    call gather_allvdouble(transpose(tmpzk),k3f%nnLocalfft,vzkarray,nnLocalfft_perproc, & 
-!                     nnoffset_perproc,k3f%nnGlobalfft,NPROCS)
-
 !!Global
+!  !$OMP DO SCHEDULE(STATIC) REDUCTION(+:iglobal)
     iglobal=0
     do iwglobal=1,k3f%nwGlobal
       do ixglobal=1,k3f%nxfft 
@@ -614,22 +608,9 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
          vzk(iwglobal,ixglobal)=vzkarray(iglobal)  
       enddo
     enddo
+!  !$OMP END DO
 
-!!Global
-!   iglobal=0
-!   do iproc=0,NPROCS-1
-!    do ixglobal=1,k3f%nxfft 
-!      do iwglobal=1,nwLocal_perproc(iproc)
-!            iglobal=iglobal+1
-!         vzk(iwglobal,ixglobal)=vzkarray(iglobal)  
-!      enddo
-!    enddo
-!   enddo
-
-!    call synchronize_all()
-!    call save_vector(vzk,MY_RANK,'fault_vel_global',k3f%nwGlobal,k3f%nxfft)
-!    call synchronize_all()
-!    stop
+  !$OMP END SINGLE
   else
   !$OMP SINGLE 
      vzk = tmpzk
@@ -697,7 +678,7 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
     
   endif
 
-  !$OMP END PARALLEL
+!$OMP END PARALLEL
 
 end subroutine compute_stress_3d_fft
 

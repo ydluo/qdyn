@@ -23,7 +23,7 @@ subroutine init_all(pb)
   use friction, only : set_theta_star, friction_mu
   use utils, only : save_vectorV
 
-!$  use omp_lib
+!!$  use omp_lib
 
   type(problem_type), intent(inout) :: pb
 
@@ -152,21 +152,23 @@ endif
   !---------------------- init_value for solver ----------------- 
   call init_kernel(pb%lam,pb%smu,pb%mesh,pb%kernel)
 
+  write(6,*) "MY_RANK=",MY_RANK,',begin init_kernel'
   call ot_init(pb)
   call ox_init(pb)
-  
+  write(6,*) "MY_RANK=",MY_RANK,',finish init_kernel'
+
   if (MY_RANK==0) write(6,*) 'Initialization completed'
 
   ! Info about threads 
-!$OMP PARALLEL PRIVATE(NTHREADS, TID)
-!$  TID = OMP_GET_THREAD_NUM()
-!$  write(6,*) 'Thread index = ', TID
-!$OMP BARRIER
-!$  if (TID == 0) then
-!$    NTHREADS = OMP_GET_NUM_THREADS()
-!$    write(6,*) 'Total number of threads = ', NTHREADS
-!$  end if
-!$OMP END PARALLEL
+!!$OMP PARALLEL PRIVATE(NTHREADS, TID)
+!!$  TID = OMP_GET_THREAD_NUM()
+!!$  write(6,*) 'Thread index = ', TID
+!!$OMP BARRIER
+!!$  if (TID == 0) then
+!!$    NTHREADS = OMP_GET_NUM_THREADS()
+!!$    write(6,*) 'Total number of threads = ', NTHREADS
+!!$  end if
+!!$OMP END PARALLEL
 
 end subroutine init_all
 

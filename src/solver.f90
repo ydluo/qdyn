@@ -91,7 +91,7 @@ subroutine do_bsstep(pb)
   else
     pb%dt_try = pb%dt_next
   endif
-  iktotal=ik*pb%it+iktotal
+  iktotal=ik+iktotal
   if (MY_RANK==0) write(6,*) 'iktotal=',iktotal,'pb%time=',pb%time
 ! Unpack yt into v, theta
 !  pb%v(pb%rs_nodes) = yt(2::pb%neqs) ! JPA Coulomb
