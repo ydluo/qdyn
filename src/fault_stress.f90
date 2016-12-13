@@ -113,7 +113,7 @@ subroutine init_kernel_2D(k,mu,m)
   type(mesh_type), intent(in) :: m
   double precision, intent(in) :: mu
 
-  double precision :: tau_co, wl2
+  double precision, allocatable :: kk(:)
   integer :: i
 
   k%nnfft = (k%finite+1)*m%nn 
@@ -122,14 +122,42 @@ subroutine init_kernel_2D(k,mu,m)
   write(6,*) 'FFT applied'
 
   if (k%finite == 0) then
-    tau_co = PI*mu/m%Lfault *2.d0/m%nn
-    wl2 = (m%Lfault/m%W)**2
-    do i=0,m%nn/2-1
-      k%kernel(2*i+1) = tau_co*sqrt(i*i+wl2)
-      k%kernel(2*i+2) = k%kernel(2*i+1)
-    enddo
-    k%kernel(2) = tau_co*sqrt(m%nn**2/4.d0+wl2) ! Nyquist
-     
+  
+   ! Kernel for a 1D in a 2D homogeneous elastic medium, 
+   ! assuming antiplane deformation (slip in the direction off the 2D plane)
+   !   kernel(k) = 1/2*mu*|k|
+   ! where
+   !   mu = shear modulus
+   !   k = wavenumber
+   !
+   ! Kernel for 1D fault surrounded by a damaged zone of uniform thickness and compliance
+   ! derived from equations 47-49 of Ampuero et al (2002, http://onlinelibrary.wiley.com/doi/10.1029/2001JB000452/full)
+   ! by setting s=0 (low frequency limit = static)
+   !   kernel(k) = 1/2*mu*(1-D)*|k| * cotanh[ H*|k| + arctanh(1-D) ]
+   ! where 
+   !   H = half-thickness of the fault damage zone
+   !   D = damage level = 1 - (damaged shear modulus) / (intact shear modulus)
+   
+   ! Define wavenumber
+    allocate( kk(k%nnfft) )
+    kk(1:2:m%nn-1) = 2d0*PI/m%Lfault*(/ i, i=0:m%nn/2-1 /)
+    kk(2:2:m%nn) = kk(1:2:m%nn-1)
+    kk(2) = PI*m%nn/m%Lfault ! Nyquist
+    
+   ! To mimic the width W of the fault in the dimension normal to the 2D plane, 
+   ! we introduce a "2.5D" approximation: we replace k by sqrt(k^2 + (2*pi/W)^2) 
+    kk = sqrt( kk*kk + (2*PI/m%W)**2 ) 
+   
+   ! Compute kernel for homogeneous medium
+    k%kernel = 0.5d0*mu*kk
+
+   ! Compute kernel for damaged medium
+   ! TO DO : define D and H as inputs, then uncomment the lines below
+   ! if (D>0 .and. H>0) k%kernel = k%kernel * (1-D) * cotanh( H*kk + arctanh(1-D) )
+   
+   ! factor 2/N from the inverse FFT convention
+    k%kernel = k%kernel *2.d0/m%nn
+    
  !- Read coefficient I(n) from pre-calculated file.
   elseif (k%finite == 1) then
     open(57,file=KERNEL_FILE)
