@@ -32,18 +32,19 @@ subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau,sigm
   double precision :: ALPHA, S_DEPTH, X, Y, Z, &
     UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ, &
     Ustrike, Udip, Unorm
-  double precision :: STRESS(3,3), STRAIN(3,3),TR, n_f(3), n_dir(3), tau_n(3) 
+  double precision :: STRESS(3,3), STRAIN(3,3),TR, n_f(3), tau_n(3)
+  double precision :: tau1, tau2, n_dir_str(3),n_dir_dip(3),n_dir(3) 
 
   ALPHA = (LAM+MU)/(LAM+2d0*MU)
 
   S_DEPTH = -1d0*SZ
 
   select case (mode)
-!PG : is this oly for vertical (dip=90) plannar strike-slip or for any dip?
+!PG : For planar faults and fault-strike along X axis !. 
     case (1) ! strike-slip (right-lateral)
       Ustrike = 1d0
       Udip = 0d0
-      n_dir(1) = 1d0
+      n_dir(1) = -1d0
       n_dir(2) = 0d0
       n_dir(3) = 0d0
     case (-1) ! strike-slip (left-lateral)
@@ -72,8 +73,16 @@ subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau,sigm
   X = OX-SX
   Y = OY-SY
   Z = OZ
- 
-  ! normal vector of receiver fault
+!Unitary vector :  
+!Along strike of receiver fault
+!      n_dir_str(1)=-1d0
+!      n_dir_str(2)=0d0
+!      n_dir_str(3)=0d0
+!Along dip of receiver fault
+!      n_dir_dip(1)=0d0
+!      n_dir_dip(2)=-cos(O_DIP/180d0*PI)
+!      n_dir_dip(3)=-sin(O_DIP/180d0*PI)
+!Normal vector of receiver fault
   n_f(1) = 0d0
   n_f(2) = -sin(O_DIP/180d0*PI)
   n_f(3) = cos(O_DIP/180d0*PI)
@@ -103,6 +112,10 @@ subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau,sigm
   tau_n(3) = STRESS(3,1)*n_f(1)+STRESS(3,2)*n_f(2)+STRESS(3,3)*n_f(3)
 
   tau = tau_n(1)*n_dir(1)+tau_n(2)*n_dir(2)+tau_n(3)*n_dir(3)
+!  tau1 = tau_n(1)*n_dir_str(1)+tau_n(2)*n_dir_str(2)+tau_n(3)*n_dir_str(3)
+!  tau2 = tau_n(1)*n_dir_dip(1)+tau_n(2)*n_dir_dip(2)+tau_n(3)*n_dir_dip(3)
+!  tau = sqrt(tau1*tau1+tau2*tau2)
+!  tau = tau1   
   sigma = tau_n(1)*n_f(1)+tau_n(2)*n_f(2)+tau_n(3)*n_f(3)
 
 end subroutine compute_kernel

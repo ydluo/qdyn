@@ -158,6 +158,7 @@ endif
   write(6,*) "MY_RANK=",MY_RANK,',finish init_kernel'
 
   if (MY_RANK==0) write(6,*) 'Initialization completed'
+  call synchronize_all()
 
   ! Info about threads 
 !!$OMP PARALLEL PRIVATE(NTHREADS, TID)

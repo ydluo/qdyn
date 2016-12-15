@@ -1,5 +1,6 @@
 clear
 
+setenv('DYLD_LIBRARY_PATH', '/usr/local/bin/')
 
 filename='C_test_Res_Ls_2.mat';
 %LL = [2e3:2e3:20e3,100e3,200e3,1000e3];
@@ -72,11 +73,6 @@ for  iL = 1:1:numel(LL)
       
     end
         
-        
-
-
-
-    
     K = qdyn_okada_kernel(N,mu,lam,X,Y,Z,DIP,XX,WW);
     D = K\ones(size(XX'));
     display('Calcalation C value :...');

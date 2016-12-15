@@ -17,7 +17,7 @@ module constants
 !  -1 : strike-slip (left-lateral)
 !   2 : thrust
 !  -2 : Normal
-  integer, parameter :: FAULT_TYPE = 2
+  integer, parameter :: FAULT_TYPE = 1 
 
 ! set usage of FFT in 3D
 !   0 : no FFT

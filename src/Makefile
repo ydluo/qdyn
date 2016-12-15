@@ -11,11 +11,11 @@
 
 # GNU 
 #Only MPI no openMP
-#F90 = mpif90
-#OPT = -O3 -Wall
-# For parallel runs with MPI+OpenMP:
 F90 = mpif90
-OPT = -O3 -Wall -fopenmp 
+OPT = -O3 -Wall
+# For parallel runs with MPI+OpenMP:
+#F90 = mpif90
+#OPT = -O3 -Wall -fopenmp 
 #OPT = -O2 -w
 #-- Intel Fortran --
 #F90 = ifort

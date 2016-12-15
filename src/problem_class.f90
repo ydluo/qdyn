@@ -35,7 +35,8 @@ module problem_class
     double precision, dimension(:), allocatable :: &
       tau_glob, dtau_dt_glob,&
       sigma_glob,&
-      slip_glob, v_glob, dv_dt_glob, theta_glob, dtheta_dt_glob
+      slip_glob, v_glob, dv_dt_glob, theta_glob, dtheta_dt_glob,&
+      tau_max_glob, t_rup_glob, v_max_glob, t_vmax_glob
     double precision :: vmaxglob,sigma_vmaxglob
 
     double precision :: pot, pot_rate, pot_pre

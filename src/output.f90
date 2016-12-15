@@ -55,11 +55,21 @@ subroutine screen_write(pb)
   use problem_class
 
   type (problem_type), intent(inout) :: pb
+  double precision :: vtempglob
+  integer :: i
+
 
 if (MPI_parallel) then 
     !Finding the global max
+    vtempglob=0d0
+    do i=1,pb%mesh%nn
+     if ( pb%v(i) > vtempglob) then
+       vtempglob = pb%v(i)
+       pb%ot%ivmax = i
+     end if
+    end do
     call max_allproc(pb%v(pb%ot%ivmax),pb%vmaxglob) 
-    call max_allproc(pb%sigma(pb%ot%ivmax),pb%sigma_vmaxglob) 
+    call max_allproc(pb%sigma(pb%ot%ivmax),pb%sigma_vmaxglob)
     if (MY_RANK==0) write(6,'(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,&
                               pb%vmaxglob, pb%sigma_vmaxglob/1.0D6
 else
@@ -140,7 +150,8 @@ subroutine ox_init(pb)
   if (pb%ox%i_ox_seq == 0) then
     pb%ox%unit = 19
   else
-    pb%ox%unit = 1000
+!    pb%ox%unit = 1000
+    pb%ox%unit = 999 
   endif
 
   pb%ox%count=0
@@ -282,6 +293,74 @@ if (MPI_parallel) then
       enddo
   endif
   close(pb%ox%unit)
+ endif
+
+ if (pb%ox%i_ox_dyn == 1) then 
+   if (OUT_MASTER) then
+     call synchronize_all()
+     call pb_global(pb)
+     if (MY_RANK==0) then 
+      if (pb%ox%dyn_stat2 == 0 .and. pb%vmaxglob >= pb%DYN_th_on ) then
+        pb%ox%dyn_stat2 = 1
+        do ixout=1,pb%mesh%nnglob,pb%ox%nxout_dyn
+          pb%tau_max_glob(ixout) = pb%tau_glob(ixout)
+          pb%t_rup_glob(ixout) = pb%time
+          pb%v_max_glob(ixout) = pb%v_glob(ixout)
+          pb%t_vmax_glob(ixout) = pb%time
+        enddo
+        write(20001+3*pb%ox%dyn_count2,'(3i10,e24.14)')   &
+              pb%it,pb%ot%ivmaxglob,pb%ox%countglob,pb%time
+        write(20001+3*pb%ox%dyn_count2,'(2a)') '#  x  y  z  t  v  theta',  &
+              '  V./V  dtau  tau_dot  slip sigma'
+        do ixout=1,pb%mesh%nnglob,pb%ox%nxout_dyn
+           write(20001+3*pb%ox%dyn_count2,'(3e15.7,e24.14,7e15.7)')       &
+           pb%mesh%xglob(ixout),pb%mesh%yglob(ixout),pb%mesh%zglob(ixout),pb%time,     &
+           pb%v_glob(ixout),pb%theta_glob(ixout),pb%dv_dt_glob(ixout)/pb%v_glob(ixout),pb%tau_glob(ixout),   &
+           pb%dtau_dt_glob(ixout),pb%slip_glob(ixout), pb%sigma_glob(ixout)
+        enddo
+        close(20001+3*pb%ox%dyn_count2)
+      endif
+
+      if (pb%ox%dyn_stat2 == 1) then
+        do ixout=1,pb%mesh%nnglob,pb%ox%nxout_dyn
+          if (pb%tau_glob(ixout) > pb%tau_max_glob(ixout)) then
+             pb%tau_max_glob(ixout) = pb%tau_glob(ixout)
+             pb%t_rup_glob(ixout) = pb%time
+          endif
+          if (pb%v_glob(ixout) > pb%v_max_glob(ixout)) then
+             pb%v_max_glob(ixout) = pb%v_glob(ixout)
+             pb%t_vmax_glob(ixout) = pb%time
+          endif
+        enddo
+      endif
+
+      if (pb%ox%dyn_stat2 == 1 .and. pb%vmaxglob <= pb%DYN_th_off ) then
+        pb%ox%dyn_stat2 = 0
+        write(20002+3*pb%ox%dyn_count2,'(3i10,e24.14)')   &
+              pb%it,pb%ot%ivmaxglob,pb%ox%countglob,pb%time
+        write(20002+3*pb%ox%dyn_count2,'(2a)') '#  x  y  z  t  v  theta',  &
+              '  V./V  dtau  tau_dot  slip sigma'
+        do ixout=1,pb%mesh%nnglob,pb%ox%nxout_dyn
+           write(20002+3*pb%ox%dyn_count2,'(3e15.7,e24.14,7e15.7)')       &
+           pb%mesh%xglob(ixout),pb%mesh%yglob(ixout),pb%mesh%zglob(ixout),pb%time,     &
+           pb%v_glob(ixout),pb%theta_glob(ixout),pb%dv_dt_glob(ixout)/pb%v_glob(ixout),pb%tau_glob(ixout),   &
+           pb%dtau_dt_glob(ixout),pb%slip_glob(ixout),pb%sigma_glob(ixout)
+        enddo
+        close(20002+3*pb%ox%dyn_count2)
+
+        write(20003+3*pb%ox%dyn_count2,'(2a)') '#  x  y  z  t_rup tau_max t_vmax vmax'
+        do ixout=1,pb%mesh%nnglob,pb%ox%nxout_dyn
+           write(20003+3*pb%ox%dyn_count2,'(3e15.7,4e28.20)')       &
+           pb%mesh%xglob(ixout),pb%mesh%yglob(ixout),pb%mesh%zglob(ixout),       &
+           pb%t_rup_glob(ixout),pb%tau_max_glob(ixout),pb%t_vmax_glob(ixout),pb%v_max_glob(ixout)
+        enddo
+        close(20003+3*pb%ox%dyn_count2)
+        pb%ox%dyn_count2 = pb%ox%dyn_count2 + 1      
+      endif
+     endif
+   else
+   ! writing in chuncks
+   endif 
  endif
 
 else
@@ -503,6 +582,10 @@ end function crack_size
     allocate(pb%v_glob(nnGlobal),pb%theta_glob(nnGlobal),pb%tau_glob(nnGlobal),&
            pb%slip_glob(nnGlobal),pb%sigma_glob(nnGlobal),pb%dv_dt_glob(nnGlobal),&
            pb%dtheta_dt_glob(nnGlobal),pb%dtau_dt_glob(nnGlobal))
+
+    allocate(pb%tau_max_glob(nnGlobal),pb%t_rup_glob(nnGlobal),&
+             pb%v_max_glob(nnGlobal),pb%t_vmax_glob(nnGlobal))
+
   endif
 
   pb%v_glob=0
@@ -513,6 +596,11 @@ end function crack_size
   pb%dv_dt_glob=0
   pb%dtheta_dt_glob=0
   pb%dtau_dt_glob=0
+
+  pb%tau_max_glob=0
+  pb%t_rup_glob=0
+  pb%v_max_glob=0
+  pb%t_vmax=0
 
   call gather_allvdouble_root(pb%v,nLocal,pb%v_glob,nnLocal_perproc, & 
                            nnoffset_glob_perproc,nnGlobal,NPROCS)  

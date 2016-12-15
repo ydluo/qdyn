@@ -25,11 +25,15 @@ subroutine solve(pb)
   type(problem_type), intent(inout)  :: pb
 
   if (MY_RANK==0) call screen_init(pb)
+  call screen_write(pb)
+  call ox_write(pb)
+
   iktotal=0
   ! Time loop
   do while (pb%it /= pb%itstop)
+!  do while (pb%it+1 /= pb%itstop)
     pb%it = pb%it + 1
-    if (MY_RANK==0) write(6,*) 'it:',pb%it
+!   if (MY_RANK==0) write(6,*) 'it:',pb%it
     call do_bsstep(pb)
 ! if stress exceeds yield call Coulomb_solver ! JPA Coulomb quick and dirty
 !                         or (cleaner version) do linear adjustment of
@@ -39,13 +43,13 @@ subroutine solve(pb)
     call update_field(pb)
     call ot_write(pb)
     call check_stop(pb)   ! here itstop will change
-    !--------Output onestep to screen and ox file(snap_shot)
-!    if(mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
+!--------Output onestep to screen and ox file(snap_shot)
+! if(mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
     if(mod(pb%it,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
-      !  if (MY_RANK==0) call screen_write(pb)
+!      if (MY_RANK==0) write(6,*) 'it:',pb%it,'iktotal=',iktotal,'pb%time=',pb%time
       call screen_write(pb)
     endif
-  !  if (MY_RANK==0) call ox_write(pb)
+! if (MY_RANK==0) call ox_write(pb)
     call ox_write(pb)
   enddo
 
@@ -92,7 +96,7 @@ subroutine do_bsstep(pb)
     pb%dt_try = pb%dt_next
   endif
   iktotal=ik+iktotal
-  if (MY_RANK==0) write(6,*) 'iktotal=',iktotal,'pb%time=',pb%time
+!  if (MY_RANK==0) write(6,*) 'iktotal=',iktotal,'pb%time=',pb%time
 ! Unpack yt into v, theta
 !  pb%v(pb%rs_nodes) = yt(2::pb%neqs) ! JPA Coulomb
   pb%v = yt(2::pb%neqs)
@@ -152,11 +156,11 @@ subroutine update_field(pb)
        pb%ot%ivmax = i
      end if
   end do
-! if (MPI_parallel) then
+ if (MPI_parallel) then
 ! Finding global vmax
-!   call max_allproc(vtemp,pb%vmaxglob)
+   call max_allproc(pb%v(pb%ot%ivmax),pb%vmaxglob)
 !   if.not.(vtemp==vtempglob) pb%ot%ivmax=-1 !This processor does not host the maximum vel.
-! endif
+ endif
 
 end subroutine update_field
 
@@ -188,9 +192,8 @@ if (MPI_parallel) then
     !  vmax_old = pb%v(pb%ot%ivmax)
 
         !         STOP at a slip rate threshold
-    elseif (pb%NSTOP == 3) then    
-      if (pb%v(pb%ot%ivmax) > pb%tmax) pb%itstop = pb%it    !here tmax is threshhold velocity
-!PG, Add Broadcast here to comunicate that one processor reach threshold velocity
+    elseif (pb%NSTOP == 3) then 
+      if (pb%vmaxglob > pb%tmax) pb%itstop = pb%it    !here tmax is threshhold velocity
         !         STOP if time > tmax
     else
 !      if (MY_RANK==0) call time_write(pb)

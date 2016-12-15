@@ -569,7 +569,7 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
 !$OMP END DO
   
   if (MPI_parallel) then
-  !$OMP SINGLE
+!$OMP SINGLE
   !  gather the global vzk from the pieces in all processors
   !  call MPI_gatherall(..., tmpzk, vzk ...) 
   !   vzk is the global of tmpzk
@@ -584,14 +584,14 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
       enddo
     enddo
 
-!  !$OMP& DO SCHEDULE(STATIC) REDUCTION(+:ilocal)
+!!$OMP& DO SCHEDULE(STATIC) REDUCTION(+:ilocal)
 !    iwxlocal=0
 !    do iwx=1,k3f%nwLocal*k3f%nxfft
 !            iwxlocal=iwxlocal+1
 !         tmpzkarray(ilocal)  = tmpzk(iwlocal,ixlocal) 
 !      enddo
 !    enddo
-!  !$OMP END DO 
+!!$OMP END DO 
      
 !!  !$OMP SINGLE
     call gather_allvdouble(tmpzkarray,k3f%nnLocalfft,vzkarray,nnLocalfft_perproc, & 
@@ -600,7 +600,7 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
 
     
 !!Global
-!  !$OMP DO SCHEDULE(STATIC) REDUCTION(+:iglobal)
+!!$OMP DO SCHEDULE(STATIC) REDUCTION(+:iglobal)
     iglobal=0
     do iwglobal=1,k3f%nwGlobal
       do ixglobal=1,k3f%nxfft 
@@ -608,13 +608,13 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
          vzk(iwglobal,ixglobal)=vzkarray(iglobal)  
       enddo
     enddo
-!  !$OMP END DO
+!!$OMP END DO
 
-  !$OMP END SINGLE
+!$OMP END SINGLE
   else
-  !$OMP SINGLE 
+!$OMP SINGLE 
      vzk = tmpzk
-  !$OMP END SINGLE
+!$OMP END SINGLE
   endif
 
   !-- compute shear stress 
