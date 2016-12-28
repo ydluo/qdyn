@@ -9,7 +9,7 @@
 
 # 2. Comment/uncomment/add/modify the lines corresponding to your compiler:
 
-# GNU 
+# GNU, serial
 #Only MPI no openMP
 F90 = mpif90
 OPT = -O3 -Wall

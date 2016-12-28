@@ -114,6 +114,7 @@ subroutine init_kernel_2D(k,mu,m)
   double precision, intent(in) :: mu
 
   double precision, allocatable :: kk(:)
+  double precision :: tau_co
   integer :: i
 
   k%nnfft = (k%finite+1)*m%nn 
@@ -140,7 +141,10 @@ subroutine init_kernel_2D(k,mu,m)
    
    ! Define wavenumber
     allocate( kk(k%nnfft) )
-    kk(1:2:m%nn-1) = 2d0*PI/m%Lfault*(/ i, i=0:m%nn/2-1 /)
+   !kk(1:2:m%nn-1) = 2d0*PI/m%Lfault*(/ i, i=0:m%nn/2-1 /)
+    do i=0,m%nn/2-1
+      kk(2*i+1) = 2d0*PI/m%Lfault*i
+    enddo
     kk(2:2:m%nn) = kk(1:2:m%nn-1)
     kk(2) = PI*m%nn/m%Lfault ! Nyquist
     

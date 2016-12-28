@@ -21,8 +21,10 @@ subroutine read_main(pb)
  
   type(problem_type), intent(inout)  :: pb
 
-  integer :: i,n
+  integer :: i,n,nsta,ista,ik
   character(len=6) :: iprocnum
+
+  double precision :: xsta, ysta, zsta, dmin=1d0, d
   
   write(6,*) 'Start reading input: ...'
 !PG, if MPI then read processor of each chunck
@@ -133,6 +135,30 @@ endif
   endif
 
   close(15)
+
+  if (MPI_parallel) then 
+!Finding stations in this processor
+   dmin = 1d0
+   if (.not.(pb%ot%ic==1)) then !Reading stations, pb%ot%ic==1 is by default
+     open(unit=200,file='stations.dat',action='read',status='unknown')
+     read(200,*) nsta
+     do ista=1,nsta 
+      read(200,*) xsta, ysta, zsta
+       sta_loop: do
+        do ik=1,pb%mesh%nn
+         d=(pb%mesh%x(ik)-xsta)**2+(pb%mesh%y(ik)-ysta)**2+(pb%mesh%z(ik)-zsta)**2
+         if (d<=dmin) then
+           pb%ot%ic=ik
+           exit sta_loop
+         endif
+         if (ik==pb%mesh%nn) exit sta_loop
+        enddo
+       enddo sta_loop
+      close(200)
+     enddo
+   endif
+  endif
+
   write(6,*) 'Input complete'
 
 end subroutine read_main

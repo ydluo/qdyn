@@ -97,7 +97,7 @@ end subroutine time_write
 subroutine ot_init(pb)
 
   use problem_class
-  use constants, only: MPI_parallel
+  use constants, only: MPI_parallel, OUT_MASTER
 
   type (problem_type), intent(inout) :: pb
   integer :: i
@@ -107,7 +107,28 @@ subroutine ot_init(pb)
 
 if (MPI_parallel) then
 
+  if (OUT_MASTER) then
+    pb%ot%unit = 18 
+    write(pb%ot%unit,'(a)')'# macroscopic values:'
+    write(pb%ot%unit,'(a)')'# 1=t,2=loc_size,3=crack_size,4=potcy,5=pot_rate'
+    write(pb%ot%unit,'(a)')'# values at selected point:'
+    write(pb%ot%unit,'(a)')'# 6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip'
+    write(pb%ot%unit,'(a)')'# values at max(V) location:'
+    write(pb%ot%unit,'(a)')'# 11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip, 17=sigma'
+
+    pb%ot%unit = 22
+    write(pb%ot%unit,'(a)')'# Seismicity record:' 
+    write(pb%ot%unit,'(a)')'# 1=loc, 2=t, 3=v'
+  endif
 ! In progress
+!  pb%ot%unit = 10000
+!  do i=1,pb%mesh%nn
+!    if (pb%iot(i) == 1) then
+!      pb%ot%unit = pb%ot%unit+1
+!      write(pb%ot%unit,'(a,i10)')'# nx= ', i
+!      write(pb%ot%unit,'(a)')'# 1=t, 2=V, 3=theta, 4=tau, 5=slip, 6=sigma'
+!    endif
+!  enddo
 
 else
 
@@ -183,7 +204,7 @@ end subroutine ox_init
 subroutine ot_write(pb)
  
   use problem_class
-  use constants, only : OCTAVE_OUTPUT, MPI_parallel
+  use constants, only : OCTAVE_OUTPUT, MPI_parallel, OUT_MASTER
 
   type (problem_type), intent(inout) :: pb
   integer :: i
@@ -191,8 +212,19 @@ subroutine ot_write(pb)
 
 
 if (MPI_parallel) then 
-   
-   ! Working on parallel outputs for timeseries
+
+  pb%ot%unit = 18
+! Working on parallel outputs for timeseries
+  if (OUT_MASTER) then
+    ! if one station is found in this processor 
+    if (.not.(pb%ot%ic/=1)) then
+      !Writing in File output.
+      ot_fmt = '(e24.16,5e14.6)'
+      write(pb%ot%unit,ot_fmt) pb%time, pb%v(pb%ot%ic), pb%theta(pb%ot%ic), &
+      pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
+      pb%tau(pb%ot%ic), pb%slip(pb%ot%ic)
+    endif
+  endif  
 
 else
 
@@ -208,6 +240,7 @@ else
     pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
     pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
     pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
+!   for ivmax
     pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
     pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
     pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
@@ -266,7 +299,18 @@ if (MPI_parallel) then
           pb%ot%ivmaxglob = i
         end if
       end do
-      !Writing in File output.
+      ! Writting fault points in single file fort.19
+      if (pb%ox%i_ox_seq == 0) then
+        write(pb%ox%unit,'(2a,2i8,e14.6)') '# x y z t v theta',' V_dot/V dtau tau_dot slip sigma ',&
+                                          pb%it,pb%ot%ivmaxglob,pb%time
+        do ixout=1,pb%mesh%nnglob,pb%ox%nxout
+          write(pb%ox%unit,'(3e15.7,e24.16,7e15.7)') pb%mesh%xglob(ixout),pb%mesh%yglob(ixout),&
+          pb%mesh%zglob(ixout),pb%time,pb%v_glob(ixout),pb%theta_glob(ixout),&
+          pb%dv_dt_glob(ixout)/pb%v_glob(ixout),&
+          pb%tau_glob(ixout),pb%dtau_dt_glob(ixout),pb%slip_glob(ixout), pb%sigma_glob(ixout)
+        enddo
+      else
+      !Writing in File output in snapshots. fort.XXXXXX
       pb%ox%unit = pb%ox%unit + 1
       write(pb%ox%unit,'(3i10,e24.14)') pb%it,pb%ot%ivmaxglob,pb%ox%countglob,pb%time
       write(pb%ox%unit,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip '
@@ -275,7 +319,8 @@ if (MPI_parallel) then
           pb%mesh%xglob(ixout),pb%mesh%yglob(ixout),pb%mesh%zglob(ixout),pb%time,     &
           pb%v_glob(ixout),pb%theta_glob(ixout),pb%dv_dt_glob(ixout)/pb%v_glob(ixout),pb%tau_glob(ixout),   &
           pb%dtau_dt_glob(ixout),pb%slip_glob(ixout), pb%sigma_glob(ixout)
-      enddo 
+      enddo
+      endif 
     endif  
   else
   !local

@@ -29,6 +29,7 @@ subroutine init_all(pb)
 
   integer :: TID, NTHREADS, iproc, nwLocal, nLocal, nx, &
              nxfft, nwGlobal, nnGlobal
+
 ! Reading mesh partitions.
   call init_mesh(pb%mesh)
 
@@ -98,9 +99,8 @@ if (MPI_parallel) then
 !                      MY_RANK,'fault_xyz_global',nwGlobal,nx)
 !    call save_vectorV(pb%mesh%x,pb%mesh%y,pb%mesh%z,pb%mesh%z,&
 !                      MY_RANK,'fault_xyz_ilocal',nwLocal,nx)
-endif
-  
-  write(6,*) 'Initializing parameters: ...'
+
+endif  
 !YD This part we may want to modify it later to be able to
 !impose more complicated loading/pertubation
 !functions involved: problem_class/problem_type; input/read_main 
@@ -152,13 +152,11 @@ endif
   !---------------------- init_value for solver ----------------- 
   call init_kernel(pb%lam,pb%smu,pb%mesh,pb%kernel)
 
-  write(6,*) "MY_RANK=",MY_RANK,',begin init_kernel'
   call ot_init(pb)
   call ox_init(pb)
-  write(6,*) "MY_RANK=",MY_RANK,',finish init_kernel'
 
   if (MY_RANK==0) write(6,*) 'Initialization completed'
-  call synchronize_all()
+  if (MPI_parallel) call synchronize_all()
 
   ! Info about threads 
 !!$OMP PARALLEL PRIVATE(NTHREADS, TID)

@@ -24,7 +24,11 @@ subroutine solve(pb)
   
   type(problem_type), intent(inout)  :: pb
 
-  if (MY_RANK==0) call screen_init(pb)
+  if (MPI_parallel) then
+      if (MY_RANK==0) call screen_init(pb)
+  else
+      call screen_init(pb)
+  endif
   call screen_write(pb)
   call ox_write(pb)
 
@@ -53,7 +57,8 @@ subroutine solve(pb)
     call ox_write(pb)
   enddo
 
-  call finalize_mpi()
+  if (MPI_parallel) call finalize_mpi()
+
 end subroutine solve
 
 
@@ -142,7 +147,7 @@ subroutine update_field(pb)
       end do
     end do
   endif
-!PG: is this (crack_size) only in local processor or it should global?.    
+!PG: the crack size only work in serial.    
   ! update crack size
   pb%ot%lcold = pb%ot%lcnew
   pb%ot%lcnew = crack_size(pb%slip,pb%mesh%nn)

@@ -380,7 +380,12 @@ switch mode
         ox = 0;
      return;
    end;
-    
+  %% Station
+  fids=fopen('stations.dat','w');
+  nsta=1; % For now one station but later will be extended to more stations
+  fprintf(fids,'%d\n',nsta);
+  fprintf(fids,'%.15g %.15g %.15g\n',X(IC),Y(IC),Z(IC));
+  fclose(fids);
     % export qdyn.in
   if (NPROCS>1); % MPI parallel 
    % Defining nwLocal 
@@ -612,6 +617,44 @@ fpars = who;
 for k= find( strcmp(fpars,upper(fpars)) )' ,
   pars.(fpars{k}) = eval(fpars{k}) ;
 end
+
+
+% read outputs from qdyn.f
+function [ot,ox] = read_qdyn_out_mpi(name)
+
+if exist('name','var') && length(name)
+  namet = [name '.ot'];
+  namex = [name '.ox'];
+else
+  namet = 'fort.18';
+  namex = 'fort.19';
+end
+
+  % time series
+  [ot.t,ot.vc, ot.thc, ot.omc, ot.tauc, ot.dc, ...
+   ot.xm, ot.v, ot.th, ot.om, ot.tau, ot.d, ot.sigma ] = ...
+    textread(namet,'','headerlines',6);
+  
+  % snapshots
+  fid=fopen(namex);
+  NSX=fscanf(fid,'# nx=%u');
+  fclose(fid);
+  cosa = textread(namex,'','commentstyle','shell');
+  ncosa = size(cosa);
+  NST=ncosa(1)/NSX;
+  cosa=reshape(cosa,NSX,NST,ncosa(2));
+  ox.x = cosa(:,1,1);
+  ox.y = cosa(:,1,1);
+  ox.z = cosa(:,1,1);
+
+  ox.t = cosa(1,:,2)';
+  ox.v = cosa(:,:,3);
+  ox.th= cosa(:,:,4);
+  ox.vd= cosa(:,:,5);
+  ox.dtau = cosa(:,:,6);
+  ox.dtaud = cosa(:,:,7);
+  ox.d = cosa(:,:,8);
+  ox.sigma = cosa(:,:,9);
 
 %-----------
 % read outputs from qdyn.f
