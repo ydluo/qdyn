@@ -62,6 +62,9 @@ subroutine set_theta_star(pb)
   case (1)
     pb%theta_star = pb%dc/pb%v2
 
+  case (3)
+    pb%theta_star = 1
+
 ! new friction law:
 !  case(xxx)
 !    implement here your definition of theta_star (could be none)
@@ -92,8 +95,8 @@ function friction_mu(v,theta,pb) result(mu)
     mu = pb%mu_star - pb%a*log(pb%v1/v+1d0) + pb%b*log(theta/pb%theta_star+1d0)
 
   case (3) ! SEISMIC: Chen's model
-    mu_tilde = calc_mu_tilde(v, pb)
-    tan_psi = calc_tan_psi(theta, pb)
+    mu_tilde = pb%chen_params%mu_tilde_star + pb%chen_params%a * log(v*pb%chen_params%slowness_star)
+    tan_psi = 2*pb%chen_params%H*(pb%chen_params%phi0 - theta)
     mu = (mu_tilde + tan_psi)/(1.0 - mu_tilde*tan_psi)
 
 ! new friction law:
@@ -128,9 +131,10 @@ function dtheta_dt(v,theta,pb) result(dth_dt)
     dth_dt = -omega*log(omega)
 
   case (3) ! SEISMIC: Chen's model
-    tan_psi = calc_tan_psi(theta, pb)
+    tan_psi = 2*pb%chen_params%H*(pb%chen_params%phi0 - theta)
     e_ps_dot = pb%chen_params%IPS_const*pb%sigma/(2*pb%chen_params%phi0 - 2*theta)**2
     dth_dt = (1.0 - theta)*(tan_psi*v/pb%chen_params%w - e_ps_dot)
+
 
 ! new friction law:
 !  case(xxx)
@@ -144,12 +148,12 @@ function dtheta_dt(v,theta,pb) result(dth_dt)
 end function dtheta_dt
 
 !--------------------------------------------------------------------------------------
-subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,dv_dt,theta,pb)
+subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
 
   type(problem_type), intent(in) :: pb
-  double precision, dimension(pb%mesh%nn), intent(in) :: v, dv_dt, theta
+  double precision, dimension(pb%mesh%nn), intent(in) :: v, theta
   double precision, dimension(pb%mesh%nn), intent(out) :: dmu_dv, dmu_dtheta
-  double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, dth_dt, denom
+  double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, dth_dt, denom, e_ps_dot
 
   select case (pb%i_rns_law)
 
@@ -162,16 +166,17 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,dv_dt,theta,pb)
     dmu_dv = pb%a * pb%v1 / v / ( pb%v1 + v )
 
   case(3) ! SEISMIC: Chen's model
-    tan_psi = calc_tan_psi(theta, pb)
-    mu_tilde = calc_mu_tilde(v, pb)
-    dth_dt = dtheta_dt(v, theta, pb)
+    tan_psi = 2*pb%chen_params%H*(pb%chen_params%phi0 - theta)
+    mu_tilde = pb%chen_params%mu_tilde_star + pb%chen_params%a * log(v*pb%chen_params%slowness_star)
+    e_ps_dot = pb%chen_params%IPS_const*pb%sigma/(2*pb%chen_params%phi0 - 2*theta)**2
+    dth_dt = (1.0 - theta)*(tan_psi*v/pb%chen_params%w - e_ps_dot)
     ! SEISMIC: pre-define the denominator
     denom = 1.0/(1.0 - mu_tilde*tan_psi)**2
-    dmu_dtheta = 2.0*pb%chen_params%H*( mu_tilde*(2.0*tan_psi + mu_tilde) - 1.0 )*denom
-    dmu_dv = &
-      (1.0 - mu_tilde*tan_psi)*(pb%chen_params%a/v - 2.0*pb%chen_params%H*dth_dt/dv_dt) &
-      - (mu_tilde + tan_psi)*(2.0*pb%chen_params%H*mu_tilde*dth_dt/dv_dt - tan_psi*pb%chen_params%a/v) &
-      * denom
+    dmu_dtheta = -2.0*pb%chen_params%H*( mu_tilde**2 + 1.0 )*denom
+    dmu_dv = (&
+      (1.0 - mu_tilde*tan_psi)*(pb%chen_params%a/v - 2.0*pb%chen_params%H*dth_dt/pb%dv_dt) &
+      - (mu_tilde + tan_psi)*(2.0*pb%chen_params%H*mu_tilde*dth_dt/pb%dv_dt - tan_psi*pb%chen_params%a/v) &
+      )* denom
 
 ! new friction law:
 !  case(xxx)

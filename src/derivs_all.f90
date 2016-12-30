@@ -58,10 +58,7 @@ subroutine derivs(time,yt,dydt,pb)
   !  dtau_load/dt + dtau_elastostatic/dt -impedance*dv/dt = sigma*( dmu/dv*dv/dt + dmu/dtheta*dtheta/dt )
   ! Rearranged in the following form:
   !  dv/dt = ( dtau_load/dt + dtau_elastostatic/dt - sigma*dmu/dtheta*dtheta/dt )/( sigma*dmu/dv + impedance )
-
-  ! SEISMIC: the acceleration of slip (dv/dt = dydt(2::pb%neqs)) has been added to the input parameters
-  ! TODO: how does this affect integration? dv/dt is updated again after this call
-  call dmu_dv_dtheta(dmu_dv,dmu_dtheta,yt(2::pb%neqs),dydt(2::pb%neqs),yt(1::pb%neqs),pb)
+  call dmu_dv_dtheta(dmu_dv,dmu_dtheta,yt(2::pb%neqs),yt(1::pb%neqs),pb)
   dydt(2::pb%neqs) = ( dtau_per + pb%dtau_dt - pb%sigma*dmu_dtheta*dydt(1::pb%neqs) ) &
                    / ( pb%sigma*dmu_dv + pb%zimpedance )
 
