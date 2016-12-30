@@ -5,6 +5,8 @@ p = qdyn('set');
 
 % reset some parameters:
 p.N = 16; 
+p.NW = 1;
+p.NX = 16;
 p.TMAX = 6e9; 
 p.V_0=1.01*p.V_SS;
 

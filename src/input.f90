@@ -5,27 +5,27 @@ module input
   use my_mpi, only: MY_RANK, NPROCS
 
   implicit none
-  private 
- 
-  public :: read_main, MY_RANK, NPROCS 
+  private
+
+  public :: read_main, MY_RANK, NPROCS
 
 contains
 !=====================================================================
 ! read in all parameters
-! 
+!
 subroutine read_main(pb)
-  
+
   use problem_class
   use mesh, only : read_mesh, mesh_get_size
   use constants, only : FFT_TYPE, MPI_parallel
- 
+
   type(problem_type), intent(inout)  :: pb
 
   integer :: i,n,nsta,ista,ik
   character(len=6) :: iprocnum
 
   double precision :: xsta, ysta, zsta, dmin=1d0, d
-  
+
   write(6,*) 'Start reading input: ...'
 !PG, if MPI then read processor of each chunck
 if (MPI_parallel) then
@@ -39,22 +39,27 @@ if (MPI_parallel) then
   open(unit=15, FILE='qdyn'//iprocnum(1:len_trim(iprocnum))//'.in')
   call synchronize_all()
 else
-  open(unit=15,FILE= 'qdyn.in') 
+  open(unit=15,FILE= 'qdyn.in')
 endif
   call read_mesh(15,pb%mesh)
   write(6,*) '   Mesh input complete'
 
-  if (pb%mesh%dim==2) then 
+  if (pb%mesh%dim==2) then
     pb%kernel%kind =3+FFT_TYPE
     if (pb%mesh%nx < 4) then
       write(6,*) 'nx < 4, FFT disabled'
       pb%kernel%kind = 3
     endif
   else
-      pb%kernel%kind = pb%mesh%dim+1       
+      pb%kernel%kind = pb%mesh%dim+1
   endif
-     
+
   select case (pb%kernel%kind)
+    ! SEISMIC: in case of spring-block, allocate kernel%k2f or it may
+    ! trigger a segmentation fault in output.f90::screen_init()
+    case (1)
+      allocate(pb%kernel%k2f)
+      pb%kernel%k2f%finite = -1
     case(2)
       allocate(pb%kernel%k2f)
       read(15,*) pb%kernel%k2f%finite
@@ -65,11 +70,11 @@ endif
     case(5)
       allocate(pb%kernel%k3f2)
   end select
-   
+
   read(15,*) pb%itheta_law
   read(15,*) pb%i_rns_law
   read(15,*) pb%kernel%i_sigma_cpl
-  read(15,*) pb%neqs 
+  read(15,*) pb%neqs
 
 !JPA neqs should not be setup explicitly by the user
 !    It should be inferred from the type of problem:
@@ -78,7 +83,7 @@ endif
 !          are coupled to slip, the 3rd variable is the normal stress)
 !YD we may want to determine the neqs and other value in matlab script, then read-in
 ! as far as it will not make conflict with other variables/parameters
-! because matlab is using more human-like language 
+! because matlab is using more human-like language
 !However, it will be safer to deal with variable/parameters here
 !--?? Leave AS IS till we complete benchmark this 2D version ??--
 
@@ -88,8 +93,8 @@ endif
 
 !YD This part we may want to modify it later to be able to
 !impose more complicated loading/pertubation
-!functions involved: problem_class/problem_type; input/read_main 
-!                    initialize/init_field;  derivs_all/derivs 
+!functions involved: problem_class/problem_type; input/read_main
+!                    initialize/init_field;  derivs_all/derivs
 
   read(15,*)pb%Tper, pb%Aper
   read(15,*)pb%dt_try, pb%dt_max,pb%tmax, pb%acc
@@ -98,7 +103,7 @@ endif
   read(15,*)pb%DYN_M,pb%DYN_th_on,pb%DYN_th_off
   write(6,*) '  Flags input complete'
 
-!JPA some of these arrays should be allocated in initialize.f90, 
+!JPA some of these arrays should be allocated in initialize.f90,
 !    unless it's better to do it here to optimize memory access
 
 !JPA if MPI n should be the number of nodes in this processor
@@ -112,23 +117,53 @@ endif
              pb%v_pre(n), pb%v_pre2(n), &
              pb%t_rup(n), pb%tau_max(n),   &
              pb%v_max(n), pb%t_vmax(n),   &
-             pb%v1(n), pb%v2(n), pb%mu_star(n),& 
+             pb%v1(n), pb%v2(n), pb%mu_star(n),&
              pb%v_star(n), pb%theta_star(n),   &
              pb%iot(n),pb%iasp(n),pb%coh(n))
- 
+
 !JPA if MPI, read only the nodes of this processor
   do i=1,n
     read(15,*)pb%sigma(i), pb%v(i), pb%theta(i),  &
               pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
               pb%v2(i), pb%mu_star(i), pb%v_star(i), &
-              pb%iot(i), pb%iasp(i), pb%coh(i)                 
+              pb%iot(i), pb%iasp(i), pb%coh(i)
   end do
 
-  if (MPI_parallel) then 
-    allocate(pb%mesh%x(pb%mesh%nn), pb%mesh%y(pb%mesh%nn),& 
-             pb%mesh%z(pb%mesh%nn), pb%mesh%dip(pb%mesh%nn))     
-    pb%mesh%dx = pb%mesh%Lfault/pb%mesh%nx !Check if dx is needed 
-!Reading mesh chunck.
+  ! SEISMIC:
+  ! Read input parameters for Chen's model. These parameters are (in order):
+  !   a:                coefficient of logarithmic rate dependence
+  !   mu_tilde_star:    reference friction coefficient at slowness_star
+  !   slowness_star:    reference slowness (1/velocity)
+  !   H:                dilatancy geometric factor
+  !   phi0:             initial (reference) porosity
+  !   IPS_const:        pressure solution (temperature-dependent) constant
+  !   w:                thickness of the (localised) fault zone
+  !
+  ! Note that these parameters are material (gouge) properties, and are
+  ! generally not spatically uniform, and hence are allocatable
+  ! See friction.f90 for a description of and references to Chen's model
+
+  if (pb%i_rns_law == 3) then
+    allocate( pb%chen_params%a(n), pb%chen_params%mu_tilde_star(n), &
+              pb%chen_params%slowness_star(n), pb%chen_params%H(n), &
+              pb%chen_params%phi0(n), pb%chen_params%IPS_const(n), &
+              pb%chen_params%w(n) )
+
+    do i=1,n
+      read(15,*)pb%chen_params%a(i), pb%chen_params%mu_tilde_star(i), &
+                pb%chen_params%slowness_star(i), pb%chen_params%H(i), &
+                pb%chen_params%phi0(i), pb%chen_params%IPS_const(i), &
+                pb%chen_params%w(i)
+    end do
+  endif
+
+  ! End reading Chen's model parameters
+
+  if (MPI_parallel) then
+    allocate(pb%mesh%x(pb%mesh%nn), pb%mesh%y(pb%mesh%nn),&
+             pb%mesh%z(pb%mesh%nn), pb%mesh%dip(pb%mesh%nn))
+    pb%mesh%dx = pb%mesh%Lfault/pb%mesh%nx !Check if dx is needed
+!Reading mesh chunck
     do i=1,n
       read(15,*) pb%mesh%x(i),pb%mesh%y(i),pb%mesh%z(i),pb%mesh%dip(i)
     enddo
@@ -136,13 +171,13 @@ endif
 
   close(15)
 
-  if (MPI_parallel) then 
+  if (MPI_parallel) then
 !Finding stations in this processor
    dmin = 1d0
    if (.not.(pb%ot%ic==1)) then !Reading stations, pb%ot%ic==1 is by default
      open(unit=200,file='stations.dat',action='read',status='unknown')
      read(200,*) nsta
-     do ista=1,nsta 
+     do ista=1,nsta
       read(200,*) xsta, ysta, zsta
        sta_loop: do
         do ik=1,pb%mesh%nn

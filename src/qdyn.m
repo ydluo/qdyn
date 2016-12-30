@@ -288,7 +288,10 @@ switch MESHDIM
   case 0
     X = [];
   case 1
-    X = (-N/2+0.5:N/2-0.5) *L/N; 
+    X = (-N/2+0.5:N/2-0.5) *L/N;
+    Y = ones(NX)*W;
+    Z = zeros(NX);
+    DIP = zeros(NX);
   case 2
     % set x, y, z, dip of first row
     cd = cos(DIP_W(1)/180.*pi);
@@ -381,13 +384,13 @@ switch mode
      return;
    end;
   %% Station
-  fids=fopen('stations.dat','w');
-  nsta=1; % For now one station but later will be extended to more stations
-  fprintf(fids,'%d\n',nsta);
-  fprintf(fids,'%.15g %.15g %.15g\n',X(IC),Y(IC),Z(IC));
-  fclose(fids);
+%   fids=fopen('stations.dat','w');
+%   nsta=1; % For now one station but later will be extended to more stations
+%   fprintf(fids,'%d\n',nsta);
+%   fprintf(fids,'%.15g %.15g %.15g\n',X(IC),Y(IC),Z(IC));
+%   fclose(fids);
     % export qdyn.in
-  if (NPROCS>1); % MPI parallel 
+  %if (NPROCS>1); % MPI parallel 
    % Defining nwLocal 
    nwLocal(1:NPROCS)=floor(NW/NPROCS);
    % In case NW/NPRCOS is not integer. Leaving the rest the last processor
@@ -396,6 +399,8 @@ switch mode
    for iproc=0:NPROCS-1  
     iprocstr = num2str(sprintf('%06i',iproc));
     filename = ['qdyn' iprocstr '.in'];
+    disp('export qdyn.in, filename:');
+    disp(filename);
     fid=fopen(filename,'w');
     fprintf(fid,'%u     meshdim\n' , MESHDIM); 
     if SIGMA_CPL == 1
@@ -452,7 +457,9 @@ switch mode
     %scatter(X(1+nnLocal:iloc),Z(1+nnLocal:iloc),[],Z(1+nnLocal:iloc))
     fclose(fid);    
    end;
-  end;
+  %end;
+  
+  
 
   fid=fopen('qdyn.in','w');
    fprintf(fid,'%u     meshdim\n' , MESHDIM); 
@@ -498,6 +505,7 @@ switch mode
     end
     
 %    Solve
+    %status = system(['mpirun -np ' num2str(NPROCS) ' ' EXEC_PATH filesep 'qdyn']);
     if (NPROCS==1) 
        status = system([EXEC_PATH filesep 'qdyn']);
     else
@@ -670,6 +678,7 @@ end
 
 if uimatlab
   % time series
+  disp(namet);
   [ot.t, ot.locl, ot.cl, ot.p, ot.pdot, ...
    ot.vc, ot.thc, ot.omc, ot.tauc, ot.dc, ...
    ot.xm, ot.v, ot.th, ot.om, ot.tau, ot.d, ot.sigma ] = ...

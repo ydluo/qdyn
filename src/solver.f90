@@ -3,25 +3,25 @@
 module solver
 
   use problem_class, only : problem_type
-  use constants, only: MPI_parallel 
-  use my_mpi, only: MY_RANK, NPROCS 
+  use constants, only: MPI_parallel
+  use my_mpi, only: MY_RANK, NPROCS
 
   implicit none
   private
-  
+
   integer(kind=8), save :: iktotal
 
-  public  :: solve 
+  public  :: solve
 
 contains
 
 !=====================================================================
-! Master Solver    
-!  
+! Master Solver
+!
 subroutine solve(pb)
-  
+
   use output,       only : screen_init, screen_write, ox_write, ot_write
-  
+
   type(problem_type), intent(inout)  :: pb
 
   if (MPI_parallel) then
@@ -64,7 +64,7 @@ end subroutine solve
 
 
 !=====================================================================
-! pack, do bs_step and unpack 
+! pack, do bs_step and unpack
 !
 ! IMPORTANT NOTE : between pack/unpack pb%v & pb%theta are not up-to-date
 !
@@ -92,7 +92,7 @@ subroutine do_bsstep(pb)
   ! this update of derivatives is only needed to set up the scaling (yt_scale)
   call derivs(pb%time,yt,dydt,pb)
   yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
-  ! One step 
+  ! One step
   call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb,ik)
 !PG: Here is necessary a global min, or dt_next and dt_max is the same in all processors?.
   if (pb%dt_max >  0.d0) then
@@ -107,29 +107,29 @@ subroutine do_bsstep(pb)
   pb%v = yt(2::pb%neqs)
   pb%theta = yt(1::pb%neqs)
   pb%dv_dt = dydt(2::pb%neqs)
-  pb%dtheta_dt = dydt(1::pb%neqs) 
+  pb%dtheta_dt = dydt(1::pb%neqs)
   if ( pb%neqs == 3) then           ! Temp solution for normal stress coupling
-    pb%sigma = yt(3::pb%neqs)  
-    pb%dsigma_dt = dydt(3::pb%neqs)  
+    pb%sigma = yt(3::pb%neqs)
+    pb%dsigma_dt = dydt(3::pb%neqs)
   endif
-  
+
 end subroutine do_bsstep
 
 
 !=====================================================================
-! Update field: slip, tau, potency potency rate, crack,    
+! Update field: slip, tau, potency potency rate, crack,
 !
 subroutine update_field(pb)
-  
+
   use output, only : crack_size
   use friction, only : friction_mu
 
   type(problem_type), intent(inout) :: pb
 
-  integer :: i,ix,iw  
-  double precision :: vtemp 
+  integer :: i,ix,iw
+  double precision :: vtemp
 
-  ! Update slip, stress. 
+  ! Update slip, stress.
   pb%slip = pb%slip + pb%v*pb%dt_did
   pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
   ! update potency and potency rate
@@ -147,7 +147,7 @@ subroutine update_field(pb)
       end do
     end do
   endif
-!PG: the crack size only work in serial.    
+!PG: the crack size only work in serial.
   ! update crack size
   pb%ot%lcold = pb%ot%lcnew
   pb%ot%lcnew = crack_size(pb%slip,pb%mesh%nn)
@@ -170,7 +170,7 @@ subroutine update_field(pb)
 end subroutine update_field
 
 !=====================================================================
-! check stop: 
+! check stop:
 !
 subroutine check_stop(pb)
 
@@ -181,10 +181,10 @@ subroutine check_stop(pb)
   double precision :: vmax_old = 0d0, vmax_older = 0d0
   save vmax_old, vmax_older
 
-if (MPI_parallel) then 
+if (MPI_parallel) then
 ! In progress
   if (pb%itstop == -1) then
-      !         STOP soon after end of slip localization 
+      !         STOP soon after end of slip localization
     if (pb%NSTOP == 1) then
     !  if (pb%ot%llocnew > pb%ot%llocold) pb%itstop=pb%it+2*pb%ot%ntout
 
@@ -197,7 +197,7 @@ if (MPI_parallel) then
     !  vmax_old = pb%v(pb%ot%ivmax)
 
         !         STOP at a slip rate threshold
-    elseif (pb%NSTOP == 3) then 
+    elseif (pb%NSTOP == 3) then
       if (pb%vmaxglob > pb%tmax) pb%itstop = pb%it    !here tmax is threshhold velocity
         !         STOP if time > tmax
     else
@@ -209,7 +209,7 @@ if (MPI_parallel) then
 else
 
   if (pb%itstop == -1) then
-      !         STOP soon after end of slip localization 
+      !         STOP soon after end of slip localization
     if (pb%NSTOP == 1) then
       if (pb%ot%llocnew > pb%ot%llocold) pb%itstop=pb%it+2*pb%ot%ntout
 
@@ -222,7 +222,7 @@ else
       vmax_old = pb%v(pb%ot%ivmax)
 
         !         STOP at a slip rate threshold
-    elseif (pb%NSTOP == 3) then    
+    elseif (pb%NSTOP == 3) then
       if (pb%v(pb%ot%ivmax) > pb%tmax) pb%itstop = pb%it    !here tmax is threshhold velocity
 
         !         STOP if time > tmax
@@ -233,7 +233,7 @@ else
   endif
 
 endif
-    
+
 end subroutine check_stop
 
 

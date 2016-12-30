@@ -14,4 +14,4 @@ program main
   call init_all(pb)
   call solve(pb)
 
-end program main 
+end program main

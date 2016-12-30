@@ -1,7 +1,7 @@
-!define problem 
+!define problem
 
 module problem_class
- 
+
   use fault_stress, only : kernel_type
   use mesh, only : mesh_type
 
@@ -20,8 +20,16 @@ module problem_class
  ! snapshot outputs: at every fault point, but only at few selected times
   type ox_type
     integer :: count,dyn_count2,unit,nxout,nxout_dyn,countglob,&
-                i_ox_seq, i_ox_dyn, dyn_stat, dyn_stat2, dyn_count 
+                i_ox_seq, i_ox_dyn, dyn_stat, dyn_stat2, dyn_count
   end type ox_type
+
+  ! SEISMIC: definition of structure that holds Chen's model parameters
+  ! See input.f90 for a description of the parameters
+  type chen_type
+    double precision, dimension(:), allocatable :: &
+      a, mu_tilde_star, IPS_const, H, w, slowness_star, phi0
+  end type chen_type
+  ! End of Chen's model structure
 
   type problem_type
     double precision, dimension(:), allocatable :: &
@@ -44,8 +52,8 @@ module problem_class
 
 !YD This part we may want to modify it later to be able to
 !impose more complicated loading/pertubation
-!functions involved: problem_class/problem_type; input/read_main 
-!                    initialize/init_field;  derivs_all/derivs 
+!functions involved: problem_class/problem_type; input/read_main
+!                    initialize/init_field;  derivs_all/derivs
 
     double precision :: Tper=0d0, Aper=0d0, Omper=0d0
     double precision :: time=0d0
@@ -59,9 +67,8 @@ module problem_class
     type (ot_type) :: ot
     type (ox_type) :: ox
     type (kernel_type) :: kernel
+    ! SEISMIC: add structure that holds Chen model parameters
+    type (chen_type) :: chen_params
   end type problem_type
 
 end module problem_class
-
-
-
