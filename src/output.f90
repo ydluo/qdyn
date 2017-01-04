@@ -98,6 +98,7 @@ subroutine ot_init(pb)
 
   use problem_class
   use constants, only: MPI_parallel, OUT_MASTER
+  use my_mpi, only: MY_RANK
 
   type (problem_type), intent(inout) :: pb
   integer :: i
@@ -108,19 +109,19 @@ subroutine ot_init(pb)
 if (MPI_parallel) then
 
   if (OUT_MASTER) then
-    pb%ot%unit = 18 
-    write(pb%ot%unit,'(a)')'# macroscopic values:'
-    write(pb%ot%unit,'(a)')'# 1=t,2=loc_size,3=crack_size,4=potcy,5=pot_rate'
-    write(pb%ot%unit,'(a)')'# values at selected point:'
-    write(pb%ot%unit,'(a)')'# 6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip'
-    write(pb%ot%unit,'(a)')'# values at max(V) location:'
-    write(pb%ot%unit,'(a)')'# 11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip, 17=sigma'
-
-    pb%ot%unit = 22
-    write(pb%ot%unit,'(a)')'# Seismicity record:' 
-    write(pb%ot%unit,'(a)')'# 1=loc, 2=t, 3=v'
+     if (MY_RANK==0) then
+      pb%ot%unit = 18
+      write(pb%ot%unit,'(a)')'# macroscopic values:'
+      write(pb%ot%unit,'(a)')'# 1=t'
+      write(pb%ot%unit,'(a)')'# values at selected point:'
+      write(pb%ot%unit,'(a)')'# 2=V, 3=theta, 4=V*theta/dc, 5=tau, 6=slip'
+      close(pb%ot%unit)
+     endif
   endif
 ! In progress
+!    pb%ot%unit = 22
+!    write(pb%ot%unit,'(a)')'# Seismicity record:' 
+!    write(pb%ot%unit,'(a)')'# 1=loc, 2=t, 3=v'
 !  pb%ot%unit = 10000
 !  do i=1,pb%mesh%nn
 !    if (pb%iot(i) == 1) then
@@ -165,6 +166,7 @@ subroutine ox_init(pb)
  
   use problem_class
   use constants, only : MPI_parallel,OUT_MASTER
+  use my_mpi, only: MY_RANK
 
   type (problem_type), intent(inout) :: pb
   integer :: i
@@ -183,15 +185,17 @@ subroutine ox_init(pb)
   enddo
 
   if (MPI_parallel) then
-   if (OUT_MASTER) then  
-    pb%ox%countglob=0
-    do i=1,pb%mesh%nnglob, pb%ox%nxout
-      pb%ox%countglob = pb%ox%countglob+1
-    enddo
-    write(pb%ox%unit,'(a,i10)')'# nx= ',pb%ox%countglob
-   else
-    write(pb%ox%unit,'(a,i10)')'# nx= ',pb%ox%count
-    close(pb%ox%unit)
+   if (OUT_MASTER) then
+    if (MY_RANK==0) then 
+      pb%ox%countglob=0
+      do i=1,pb%mesh%nnglob, pb%ox%nxout
+        pb%ox%countglob = pb%ox%countglob+1
+      enddo
+     if (pb%ox%unit==19) write(pb%ox%unit,'(a,i10)')'# nx= ',pb%ox%countglob
+    endif
+!   else
+!    write(pb%ox%unit,'(a,i10)')'# nx= ',pb%ox%count
+!    close(pb%ox%unit)
    endif
   else
     write(pb%ox%unit,'(a,i10)')'# nx= ',pb%ox%count    
@@ -207,22 +211,27 @@ subroutine ot_write(pb)
   use constants, only : OCTAVE_OUTPUT, MPI_parallel, OUT_MASTER
 
   type (problem_type), intent(inout) :: pb
-  integer :: i
+  integer :: i,ios
   character(30) :: ot_fmt
 
 
 if (MPI_parallel) then 
 
-  pb%ot%unit = 18
 ! Working on parallel outputs for timeseries
   if (OUT_MASTER) then
     ! if one station is found in this processor 
-    if (.not.(pb%ot%ic/=1)) then
+    if (pb%station_found) then
+      pb%ot%unit = 18
+      open(pb%ot%unit,access='APPEND',status='old',iostat=ios)
+      if (ios==0) then
       !Writing in File output.
       ot_fmt = '(e24.16,5e14.6)'
       write(pb%ot%unit,ot_fmt) pb%time, pb%v(pb%ot%ic), pb%theta(pb%ot%ic), &
       pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
       pb%tau(pb%ot%ic), pb%slip(pb%ot%ic)
+      else 
+       stop 'Error opening a fort.18 file'
+      endif
     endif
   endif  
 
@@ -320,6 +329,7 @@ if (MPI_parallel) then
           pb%v_glob(ixout),pb%theta_glob(ixout),pb%dv_dt_glob(ixout)/pb%v_glob(ixout),pb%tau_glob(ixout),   &
           pb%dtau_dt_glob(ixout),pb%slip_glob(ixout), pb%sigma_glob(ixout)
       enddo
+      close(pb%ox%unit) !Closing snapshot      
       endif 
     endif  
   else
@@ -336,8 +346,9 @@ if (MPI_parallel) then
           pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
           pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
       enddo
+      close(pb%ox%unit) !Closing snapshot
   endif
-  close(pb%ox%unit)
+!  close(pb%ox%unit)
  endif
 
  if (pb%ox%i_ox_dyn == 1) then 

@@ -138,7 +138,7 @@ endif
 
   if (MPI_parallel) then 
 !Finding stations in this processor
-   dmin = 1d0
+   dmin = 10d0
    if (.not.(pb%ot%ic==1)) then !Reading stations, pb%ot%ic==1 is by default
      open(unit=200,file='stations.dat',action='read',status='unknown')
      read(200,*) nsta
@@ -146,9 +146,11 @@ endif
       read(200,*) xsta, ysta, zsta
        sta_loop: do
         do ik=1,pb%mesh%nn
-         d=(pb%mesh%x(ik)-xsta)**2+(pb%mesh%y(ik)-ysta)**2+(pb%mesh%z(ik)-zsta)**2
+         d=sqrt((pb%mesh%x(ik)-xsta)**2+(pb%mesh%y(ik)-ysta)**2+(pb%mesh%z(ik)-zsta)**2)
          if (d<=dmin) then
            pb%ot%ic=ik
+           write(6,*) 'processor:',MY_RANK,' Station found, index:',ik
+           pb%station_found=.true.
            exit sta_loop
          endif
          if (ik==pb%mesh%nn) exit sta_loop

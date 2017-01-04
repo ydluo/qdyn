@@ -506,8 +506,16 @@ switch mode
 %    rename input and output files
     if (NPROCS>1); % MPI parallel
        % In process
-       ot=0;
-       ox=0;
+      if length(NAME)
+        movefile('fort.18',[NAME '.ot']); 
+        movefile('fort.19',[NAME '.ox']); 
+        copyfile('qdyn.in',[NAME '.in']); 
+        copyfile(fullfile(pathstr,'qdyn.h') ,[NAME '.h']); 
+      end
+     % output
+      [ot,ox]= read_qdyn_out_mpi(NAME);
+      % ot=0;
+      % ox=0;
     else
       if length(NAME)
         movefile('fort.18',[NAME '.ot']); 
@@ -631,9 +639,8 @@ else
 end
 
   % time series
-  [ot.t,ot.vc, ot.thc, ot.omc, ot.tauc, ot.dc, ...
-   ot.xm, ot.v, ot.th, ot.om, ot.tau, ot.d, ot.sigma ] = ...
-    textread(namet,'','headerlines',6);
+  [ot.t,ot.vc, ot.thc, ot.omc, ot.tauc, ot.dc ] = ...
+    textread(namet,'','headerlines',4);
   
   % snapshots
   fid=fopen(namex);
@@ -644,17 +651,17 @@ end
   NST=ncosa(1)/NSX;
   cosa=reshape(cosa,NSX,NST,ncosa(2));
   ox.x = cosa(:,1,1);
-  ox.y = cosa(:,1,1);
-  ox.z = cosa(:,1,1);
+  ox.y = cosa(:,1,2);
+  ox.z = cosa(:,1,3);
 
-  ox.t = cosa(1,:,2)';
-  ox.v = cosa(:,:,3);
-  ox.th= cosa(:,:,4);
-  ox.vd= cosa(:,:,5);
-  ox.dtau = cosa(:,:,6);
-  ox.dtaud = cosa(:,:,7);
-  ox.d = cosa(:,:,8);
-  ox.sigma = cosa(:,:,9);
+  ox.t = cosa(1,:,4)';
+  ox.v = cosa(:,:,5);
+  ox.th= cosa(:,:,6);
+  ox.vd= cosa(:,:,7);
+  ox.dtau = cosa(:,:,8);
+  ox.dtaud = cosa(:,:,9);
+  ox.d = cosa(:,:,10);
+  ox.sigma = cosa(:,:,11);
 
 %-----------
 % read outputs from qdyn.f
