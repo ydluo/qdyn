@@ -109,11 +109,11 @@ subroutine init_mesh_1D(m)
   m%dx = m%Lfault/m%nn
   ! SEISMIC
   ! Problem here with previously allocated memory, needs de-allocation first?
-  !if ( allocated(m%x) ) then
-  !  deallocate(m%x)
-  !  deallocate(m%y)
-  !  deallocate(m%z)
-  !endif
+  if ( allocated(m%x) ) then
+    deallocate(m%x)
+    deallocate(m%y)
+    deallocate(m%z)
+  endif
   allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn))
   do i=1,m%nn
     m%x(i) = (i-m%nn*0.5d0-0.5d0)*m%dx
