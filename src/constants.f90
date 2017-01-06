@@ -10,7 +10,7 @@ module constants
   logical, parameter :: OCTAVE_OUTPUT = .false.
 
  ! set the name of the kernel*.tab file, including its full path
-  character(*), parameter :: KERNEL_FILE = "~/3D_RUPTURE/qdyn/trunk/src/kernel_I_32768.tab"
+  character(*), parameter :: KERNEL_FILE = "/Users/percy.galvez/Dropbox/qdyn_developer/src/kernel_I_32768.tab"
 
 ! set the type of faulting:
 !   1 : strike-slip (right-lateral)
@@ -31,7 +31,7 @@ module constants
 ! MPI run in parallel
 !   true  : run MPI parallel
 !   false : run serial or openMP
-   logical, parameter :: MPI_parallel = .true.
+   logical, parameter :: MPI_parallel = .false.
    logical, parameter :: OUT_MASTER = .true. !To write ouput with the master MY_RANK=0
 
 ! Adding real precision and type for MPI runs.

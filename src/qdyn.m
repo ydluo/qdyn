@@ -147,7 +147,7 @@
 %
 %		Other parameters:
 %		EXEC_PATH path to the Fortran qdyn executable
-%       NPROCS = 1  % Default for serial runs,
+%       NPROCS = 1  % Default for serial runs
 %              > 1  % MPI runs, change MPI_parallel=.true. in constants.f90
 % OUTPUTS 	pars	structure containing the parameters listed above, and:
 %			X,Y,Z = fault coordinates
@@ -381,11 +381,13 @@ switch mode
      return;
    end;
   %% Station
-  fids=fopen('stations.dat','w');
-  nsta=1; % For now one station but later will be extended to more stations
-  fprintf(fids,'%d\n',nsta);
-  fprintf(fids,'%.15g %.15g %.15g\n',X(IC),Y(IC),Z(IC));
-  fclose(fids);
+  if (MESHDIM==2);
+   fids=fopen('stations.dat','w');
+   nsta=1; % For now one station but later will be extended to more stations
+   fprintf(fids,'%d\n',nsta);
+   fprintf(fids,'%.15g %.15g %.15g\n',X(IC),Y(IC),Z(IC));
+   fclose(fids);
+  end;
     % export qdyn.in
   if (NPROCS>1); % MPI parallel 
    % Defining nwLocal 
