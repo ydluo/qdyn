@@ -505,27 +505,17 @@ switch mode
     else
        status = system(['mpirun -np ' num2str(NPROCS) ' ' EXEC_PATH filesep 'qdyn']);
     end
-%    rename input and output files
+%   rename input and output files
+    if length(NAME)
+      movefile('fort.18',[NAME '.ot']); 
+      movefile('fort.19',[NAME '.ox']); 
+      copyfile('qdyn.in',[NAME '.in']); 
+      copyfile(fullfile(pathstr,'qdyn.h') ,[NAME '.h']); 
+    end
+    % output
     if (NPROCS>1); % MPI parallel
-       % In process
-      if length(NAME)
-        movefile('fort.18',[NAME '.ot']); 
-        movefile('fort.19',[NAME '.ox']); 
-        copyfile('qdyn.in',[NAME '.in']); 
-        copyfile(fullfile(pathstr,'qdyn.h') ,[NAME '.h']); 
-      end
-     % output
       [ot,ox]= read_qdyn_out_mpi(NAME);
-      % ot=0;
-      % ox=0;
     else
-      if length(NAME)
-        movefile('fort.18',[NAME '.ot']); 
-        movefile('fort.19',[NAME '.ox']); 
-        copyfile('qdyn.in',[NAME '.in']); 
-        copyfile(fullfile(pathstr,'qdyn.h') ,[NAME '.h']); 
-      end
-     % output
       [ot,ox]= read_qdyn_out(NAME);
     end
 

@@ -59,5 +59,8 @@ clean:
 %.o: %.f90
 	$(F90) $(OPT) -c $<
 
+constants.o: constants.f90
+	$(F90) $(OPT) -D_FPP_PWD_=$(CURDIR) -c $<
+
 include Makefile.depend
 # DO NOT DELETE

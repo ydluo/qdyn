@@ -1,13 +1,15 @@
 derivs_all.o: fault_stress.o friction.o problem_class.o
-fault_stress.o: fftsg.o mesh.o okada.o utils.o parallel.o 
+fault_stress.o: constants.o fftsg.o mesh.o okada.o parallel.o utils.o
 friction.o: problem_class.o
-initialize.o: friction.o mesh.o output.o \
-	problem_class.o
-input.o: mesh.o problem_class.o constants.o parallel.o
+initialize.o: constants.o fault_stress.o friction.o mesh.o output.o \
+	parallel.o problem_class.o utils.o
+input.o: constants.o mesh.o parallel.o problem_class.o
 main.o: initialize.o input.o problem_class.o solver.o
-mesh.o: constants.o 
-ode_bs.o: derivs_all.o problem_class.o parallel.o 
+mesh.o: constants.o
+ode_bs.o: derivs_all.o parallel.o problem_class.o
 okada.o: constants.o
-output.o: constants.o problem_class.o
-problem_class.o: fault_stress.o
-solver.o: derivs_all.o ode_bs.o output.o 
+output.o: constants.o fault_stress.o parallel.o problem_class.o
+parallel.o: constants.o
+problem_class.o: fault_stress.o mesh.o
+solver.o: constants.o derivs_all.o friction.o ode_bs.o output.o parallel.o \
+	problem_class.o

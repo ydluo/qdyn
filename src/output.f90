@@ -51,7 +51,7 @@ end subroutine screen_init
 subroutine screen_write(pb)
   
   use constants, only : YEAR, MPI_parallel 
-  use my_mpi, only : MY_RANK
+  use my_mpi, only : MY_RANK, max_allproc
   use problem_class
 
   type (problem_type), intent(inout) :: pb
@@ -284,7 +284,7 @@ subroutine ox_write(pb)
  
   use problem_class
   use constants, only: MPI_parallel,OUT_MASTER
-  use my_mpi, only: MY_RANK
+  use my_mpi, only: MY_RANK, synchronize_all
 
   type (problem_type), intent(inout) :: pb
 
@@ -308,7 +308,7 @@ if (MPI_parallel) then
           pb%ot%ivmaxglob = i
         end if
       end do
-      ! Writting fault points in single file fort.19
+      ! Writing fault points in single file fort.19
       if (pb%ox%i_ox_seq == 0) then
         write(pb%ox%unit,'(2a,2i8,e14.6)') '# x y z t v theta',' V_dot/V dtau tau_dot slip sigma ',&
                                           pb%it,pb%ot%ivmaxglob,pb%time
@@ -625,7 +625,7 @@ end function crack_size
 
   use fault_stress, only: nnLocal_perproc,nnoffset_glob_perproc 
   use problem_class 
-  use my_mpi, only: MY_RANK, NPROCS
+  use my_mpi, only: MY_RANK, gather_allvdouble_root
 
   type(problem_type), intent(inout) :: pb
   integer :: nLocal,nnGlobal
@@ -659,21 +659,21 @@ end function crack_size
   pb%t_vmax=0
 
   call gather_allvdouble_root(pb%v,nLocal,pb%v_glob,nnLocal_perproc, & 
-                           nnoffset_glob_perproc,nnGlobal,NPROCS)  
+                           nnoffset_glob_perproc,nnGlobal)  
   call gather_allvdouble_root(pb%dv_dt,nLocal,pb%dv_dt_glob,nnLocal_perproc, & 
-                           nnoffset_glob_perproc,nnGlobal,NPROCS)
+                           nnoffset_glob_perproc,nnGlobal)
   call gather_allvdouble_root(pb%theta,nLocal,pb%theta_glob,nnLocal_perproc, & 
-                           nnoffset_glob_perproc,nnGlobal,NPROCS)
+                           nnoffset_glob_perproc,nnGlobal)
   call gather_allvdouble_root(pb%dtheta_dt,nLocal,pb%dtheta_dt_glob,nnLocal_perproc, & 
-                           nnoffset_glob_perproc,nnGlobal,NPROCS)   
+                           nnoffset_glob_perproc,nnGlobal)   
   call gather_allvdouble_root(pb%tau,nLocal,pb%tau_glob,nnLocal_perproc, & 
-                           nnoffset_glob_perproc,nnGlobal,NPROCS)
+                           nnoffset_glob_perproc,nnGlobal)
   call gather_allvdouble_root(pb%dtau_dt,nLocal,pb%dtau_dt_glob,nnLocal_perproc, & 
-                           nnoffset_glob_perproc,nnGlobal,NPROCS)
+                           nnoffset_glob_perproc,nnGlobal)
   call gather_allvdouble_root(pb%slip,nLocal,pb%slip_glob,nnLocal_perproc, & 
-                           nnoffset_glob_perproc,nnGlobal,NPROCS)
+                           nnoffset_glob_perproc,nnGlobal)
   call gather_allvdouble_root(pb%sigma,nLocal,pb%sigma_glob,nnLocal_perproc, & 
-                           nnoffset_glob_perproc,nnGlobal,NPROCS)         
+                           nnoffset_glob_perproc,nnGlobal)         
 
   end subroutine pb_global
 !=====================================================================

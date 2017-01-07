@@ -11,8 +11,7 @@ contains
       SUBROUTINE bsstep(y,dydx,nv,x,htry,eps,yscal,hdid,hnext,pb,ik)
 
       use problem_class, only : problem_type 
-      use constants, only : MPI_parallel
-      use my_mpi, only: MY_RANK
+      use my_mpi, only: NPROCS, max_allproc
 
       integer, intent(in) :: nv
       double precision, intent(inout) :: y(nv), dydx(nv), x
@@ -26,7 +25,7 @@ contains
                                      REDMAX=1.d-5, REDMIN=.7d0, &
                                      TINY=1.d-30,    &
                                      SCALMX=.5d0 !SCALMX=.1d0
-      integer :: i,iq,k,km,ik
+      integer :: iq,k,km,ik
       integer, dimension(IMAX) :: nseq = (/ 2,4,6,8,10,12,14,16,18 /)
       integer, save :: kmax,kopt
       double precision, save :: alf(KMAXX,KMAXX)
@@ -82,11 +81,10 @@ contains
         call pzextr(k,xest,yseq,y,yerr,nv)
         if (k == 1) cycle
         errmax=maxval(dabs(yerr/yscal)) 
-!JPA: call MPI_REDUCE here to compute errmax = max over all processors
-      if (MPI_parallel) then  
-        call max_allproc(errmax,errmaxglob)
-        errmax=errmaxglob
-      endif
+        if (NPROCS>1) then  
+          call max_allproc(errmax,errmaxglob)
+          errmax=errmaxglob
+        endif
         errmax=max(TINY,errmax)/eps
         km=k-1
         err_km=(errmax/SAFE1)**(1.d0/(2*km+1))
