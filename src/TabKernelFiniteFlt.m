@@ -44,3 +44,5 @@ save(strcat(name,'.mat'),'I');
 function s=mysinc(x)
 iszero= (x==0);
 s=sin(x)./(x+iszero) +iszero; % avoids division by zero
+
+

@@ -412,7 +412,8 @@ if (MPI_parallel) then
 else
  if (mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
   if (pb%ox%i_ox_seq == 0) then
-    write(pb%ox%unit,'(2a,2i8,e14.6)')'# x v theta',' V./V dtau tau_dot slip ',pb%it,pb%ot%ivmax,pb%time
+    ! SEISMIC: added time to header
+    write(pb%ox%unit,'(2a,2i8,e14.6)')'# x t v theta',' V./V dtau tau_dot slip ',pb%it,pb%ot%ivmax,pb%time
   ! JPA: this output should also contain y and z
     do ixout=1,pb%mesh%nn,pb%ox%nxout
       write(pb%ox%unit,'(e15.7,e24.16,7e15.7)') pb%mesh%x(ixout),pb%time,pb%v(ixout),   &

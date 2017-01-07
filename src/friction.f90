@@ -99,7 +99,9 @@ function friction_mu(v,theta,pb) result(mu)
     mu_tilde = calc_mu_tilde(v, pb)
     mu_gr = (mu_tilde + tan_psi)/(1 - mu_tilde*tan_psi)
     mu_ps = v*((2*pb%chen_params%phi0 - 2*theta)**2)/(pb%chen_params%w*pb%chen_params%IPS_const*pb%sigma)
-    mu = min(mu_gr, mu_ps)
+    ! SEISMIC: this weird looking function approximates the min(mu_gr, mu_ps) function,
+    ! but is continuously differentiable, so that the solver doesn't complain
+    mu = 1/(1/mu_gr**5 + 1/mu_ps**5)**(1.0/5.0)
 
 ! new friction law:
 !  case(xxx)
@@ -238,7 +240,7 @@ function calc_mu_tilde(v,pb) result(mu_tilde)
   double precision, dimension(pb%mesh%nn) :: mu_tilde
 
   ! SEISMIC: slowness_star is defined as 1/V_star in the input script
-  mu_tilde = pb%chen_params%mu_tilde_star + pb%chen_params%a * log(v*pb%chen_params%slowness_star)
+  mu_tilde = pb%chen_params%mu_tilde_star + pb%chen_params%a * log(abs(v)*pb%chen_params%slowness_star)
 
 end function calc_mu_tilde
 

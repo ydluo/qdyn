@@ -49,7 +49,7 @@ subroutine solve(pb)
     call check_stop(pb)   ! here itstop will change
 !--------Output onestep to screen and ox file(snap_shot)
 ! if(mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
-    if(mod(pb%it,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
+    if(mod(pb%it,pb%ot%ntout*100) == 0 .or. pb%it == pb%itstop) then
 !      if (MY_RANK==0) write(6,*) 'it:',pb%it,'iktotal=',iktotal,'pb%time=',pb%time
       call screen_write(pb)
     endif
