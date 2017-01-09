@@ -87,6 +87,8 @@ subroutine init_mesh_0D(m)
   type(mesh_type), intent(inout) :: m
 
   write(6,*) 'Spring-block System'
+  ! SEISMIC
+  ! Problem here with previously allocated memory, needs de-allocation first?
   if (.not. allocated(m%x)) then
     allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn))
   endif

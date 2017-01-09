@@ -129,19 +129,25 @@ endif
               pb%iot(i), pb%iasp(i), pb%coh(i)
   end do
 
-  ! SEISMIC:
+  ! <SEISMIC>
   ! Read input parameters for Chen's model. These parameters are (in order):
   !   a:                coefficient of logarithmic rate dependence
   !   mu_tilde_star:    reference friction coefficient at slowness_star
   !   slowness_star:    reference slowness (1/velocity)
   !   H:                dilatancy geometric factor
   !   phi0:             initial (reference) porosity
-  !   IPS_const:        pressure solution (temperature-dependent) constant
+  !   IPS_const_diff:   pressure solution (temperature-dependent) constant
+  !                     for diffusion controlled pressure solution creep
+  !   IPS_const_diss1:  pressure solution (temperature-dependent) constant
+  !                     for dissolution controlled pressure solution creep
+  !   IPS_const_diss2:  pressure solution (temperature-dependent) constant
+  !                     for dissolution controlled pressure solution creep
   !   w:                thickness of the (localised) fault zone
   !
   ! Note that these parameters are material (gouge) properties, and are
   ! generally not spatically uniform, and hence are allocatable
   ! See friction.f90 for a description of and references to Chen's model
+  ! See user manual for detailed definitions of the above parameters (TODO)
 
   if (pb%i_rns_law == 3) then
     if (pb%itheta_law == 3) then
@@ -177,6 +183,7 @@ endif
   endif
 
   ! End reading Chen's model parameters
+  ! </SEISMIC>
 
   if (MPI_parallel) then
     allocate(pb%mesh%x(pb%mesh%nn), pb%mesh%y(pb%mesh%nn),&
