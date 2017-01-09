@@ -45,12 +45,13 @@ subroutine solve(pb)
 !                         or (cleanest version) iterate tiemstep adjustment and
 !                         bsstep until stress is exactly equal to yield
     call update_field(pb)
-    call ot_write(pb)
+    !call ot_write(pb)
     call check_stop(pb)   ! here itstop will change
 !--------Output onestep to screen and ox file(snap_shot)
 ! if(mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
-    if(mod(pb%it,pb%ot%ntout*100) == 0 .or. pb%it == pb%itstop) then
+    if(mod(pb%it,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
 !      if (MY_RANK==0) write(6,*) 'it:',pb%it,'iktotal=',iktotal,'pb%time=',pb%time
+      call ot_write(pb)
       call screen_write(pb)
     endif
 ! if (MY_RANK==0) call ox_write(pb)

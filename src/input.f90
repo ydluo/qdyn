@@ -144,17 +144,36 @@ endif
   ! See friction.f90 for a description of and references to Chen's model
 
   if (pb%i_rns_law == 3) then
-    allocate( pb%chen_params%a(n), pb%chen_params%mu_tilde_star(n), &
-              pb%chen_params%slowness_star(n), pb%chen_params%H(n), &
-              pb%chen_params%phi0(n), pb%chen_params%IPS_const(n), &
-              pb%chen_params%w(n) )
+    if (pb%itheta_law == 3) then
+      allocate( pb%chen_params%a(n), pb%chen_params%mu_tilde_star(n), &
+                pb%chen_params%slowness_star(n), pb%chen_params%H(n), &
+                pb%chen_params%phi0(n), pb%chen_params%IPS_const_diff(n), &
+                pb%chen_params%w(n) )
 
-    do i=1,n
-      read(15,*)pb%chen_params%a(i), pb%chen_params%mu_tilde_star(i), &
-                pb%chen_params%slowness_star(i), pb%chen_params%H(i), &
-                pb%chen_params%phi0(i), pb%chen_params%IPS_const(i), &
-                pb%chen_params%w(i)
-    end do
+      do i=1,n
+        read(15,*)pb%chen_params%a(i), pb%chen_params%mu_tilde_star(i), &
+                  pb%chen_params%slowness_star(i), pb%chen_params%H(i), &
+                  pb%chen_params%phi0(i), pb%chen_params%IPS_const_diff(i), &
+                  pb%chen_params%w(i)
+      end do
+    elseif (pb%itheta_law == 4) then
+      allocate( pb%chen_params%a(n), pb%chen_params%mu_tilde_star(n), &
+                pb%chen_params%slowness_star(n), pb%chen_params%H(n), &
+                pb%chen_params%phi0(n), pb%chen_params%IPS_const_diss1(n), &
+                pb%chen_params%IPS_const_diss2(n), pb%chen_params%w(n) )
+
+      do i=1,n
+        read(15,*)pb%chen_params%a(i), pb%chen_params%mu_tilde_star(i), &
+                  pb%chen_params%slowness_star(i), pb%chen_params%H(i), &
+                  pb%chen_params%phi0(i), pb%chen_params%IPS_const_diss1(i), &
+                  pb%chen_params%IPS_const_diss2(i), pb%chen_params%w(i)
+      end do
+    else
+      write(6,*) "input.f90: incompatible theta law with chosen rate-and-state law"
+      write(6,*) "If Chen's friction law is chosen, theta law must be either 3 or 4"
+      write(6,*) "Pressure solution rate-limiting mechanism: 3 = diffusion, 4 = dissolution"
+      stop
+    endif
   endif
 
   ! End reading Chen's model parameters

@@ -98,7 +98,17 @@ function friction_mu(v,theta,pb) result(mu)
     tan_psi = calc_tan_psi(theta, pb)
     mu_tilde = calc_mu_tilde(v, pb)
     mu_gr = (mu_tilde + tan_psi)/(1 - mu_tilde*tan_psi)
-    mu_ps = v*((2*pb%chen_params%phi0 - 2*theta)**2)/(pb%chen_params%w*pb%chen_params%IPS_const*pb%sigma)
+
+    select case (pb%itheta_law)
+      case (3) ! SEISMIC: Chen's model, diffusion controlled
+        mu_ps = v*((2*pb%chen_params%phi0 - 2*theta)**2)/(pb%chen_params%w*pb%chen_params%IPS_const_diff*pb%sigma)
+      case (4) ! SEISMIC: Chen's model, dissolution controlled
+        mu_ps = (pb%chen_params%phi0 - theta)/(pb%sigma*pb%chen_params%phi0*pb%chen_params%IPS_const_diss2)* &
+                log(abs(v)/(pb%chen_params%w*pb%chen_params%IPS_const_diss1) + 1)
+      case default
+        stop 'calc_e_ps: unsupported pressure solution law (3 = diffusion, 4 = dissolution controlled)'
+    end select
+
     ! SEISMIC: this weird looking function approximates the min(mu_gr, mu_ps) function,
     ! but is continuously differentiable, so that the solver doesn't complain
     mu = 1/(1/mu_gr**5 + 1/mu_ps**5)**(1.0/5.0)
@@ -134,9 +144,9 @@ function dtheta_dt(v,theta,pb) result(dth_dt)
   case(2) ! "slip" law
     dth_dt = -omega*log(omega)
 
-  case (3) ! SEISMIC: Chen's model
+  case (3, 4) ! SEISMIC: Chen's model
     tan_psi = calc_tan_psi(theta, pb)
-    e_ps_dot = 0.5*(1 + erf(100*(theta-0.03)))*pb%chen_params%IPS_const*pb%sigma/(2*pb%chen_params%phi0 - 2*theta)**2
+    e_ps_dot = calc_e_ps(pb%sigma, theta, .true., pb)
     dth_dt = (1 - theta)*(tan_psi*v/pb%chen_params%w - e_ps_dot)
 
 
@@ -157,8 +167,9 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
   type(problem_type), intent(in) :: pb
   double precision, dimension(pb%mesh%nn), intent(in) :: v, theta
   double precision, dimension(pb%mesh%nn), intent(out) :: dmu_dv, dmu_dtheta
-  double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, dth_dt, denom, e_ps_dot, delta
-  double precision, dimension(pb%mesh%nn) :: mu_star, dummy_var, f_phi_sqrt, V_gr, dv_dtau, dv_dtheta, y_gr
+  double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, dth_dt, denom, y_ps, delta
+  double precision, dimension(pb%mesh%nn) :: mu_star, dummy_var, f_phi_sqrt, V_gr, y_gr
+  double precision, dimension(pb%mesh%nn) :: dv_dtau_ps, dv_dtheta_ps, dv_dtau, dv_dtheta
 
   select case (pb%i_rns_law)
 
@@ -183,10 +194,23 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
     dummy_var = (pb%tau*(1 - mu_star*tan_psi) - pb%sigma*(mu_star + tan_psi))*denom
     f_phi_sqrt = 1.0/(2*(pb%chen_params%phi0 - theta))
     V_gr = (1.0/pb%chen_params%slowness_star)*exp(dummy_var)
-    dv_dtau = pb%chen_params%w*pb%chen_params%IPS_const*f_phi_sqrt**2 + &
-              V_gr*((1-mu_star*tan_psi)*denom - tan_psi*dummy_var*pb%chen_params%a*denom)
-    dv_dtheta = 4*pb%chen_params%w*pb%chen_params%IPS_const*pb%tau*f_phi_sqrt**3 + &
-                -V_gr*(2*pb%chen_params%H*(pb%sigma + mu_star*pb%tau)*denom + &
+    y_ps = calc_e_ps(pb%tau, theta, .false., pb)
+
+    select case (pb%itheta_law)
+      case (3) ! SEISMIC: Chen's model, diffusion controlled
+        dv_dtau_ps = pb%chen_params%w*pb%chen_params%IPS_const_diff*f_phi_sqrt**2
+        dv_dtheta_ps = 4*pb%chen_params%w*pb%chen_params%IPS_const_diff*pb%tau*f_phi_sqrt**3
+      case (4) ! SEISMIC: Chen's model, dissolution controlled
+        dv_dtau_ps =  pb%chen_params%w*(y_ps + pb%chen_params%IPS_const_diss1)* &
+                      pb%chen_params%IPS_const_diss2*2*pb%chen_params%phi0*f_phi_sqrt
+        dv_dtheta_ps =  4*pb%chen_params%w*(y_ps + pb%chen_params%IPS_const_diss1)* &
+                        pb%chen_params%IPS_const_diss2*pb%tau*pb%chen_params%phi0*f_phi_sqrt**2
+      case default
+        stop 'calc_e_ps: unsupported pressure solution law (3 = diffusion, 4 = dissolution controlled)'
+    end select
+
+    dv_dtau = dv_dtau_ps + V_gr*((1-mu_star*tan_psi)*denom - tan_psi*dummy_var*pb%chen_params%a*denom)
+    dv_dtheta = dv_dtheta_ps - V_gr*(2*pb%chen_params%H*(pb%sigma + mu_star*pb%tau)*denom + &
                 2*pb%chen_params%H*pb%tau*dummy_var*pb%chen_params%a*denom)
 
     !f_phi_sqrt = 1.0/(2*(pb%chen_params%phi0 - theta))
@@ -243,5 +267,32 @@ function calc_mu_tilde(v,pb) result(mu_tilde)
   mu_tilde = pb%chen_params%mu_tilde_star + pb%chen_params%a * log(abs(v)*pb%chen_params%slowness_star)
 
 end function calc_mu_tilde
+
+!--------------------------------------------------------------------------------------
+! SEISMIC: calculate the rate of pressure solution as a function of effective
+! normal or shear stress, and porosity. To prevent porosities from going negative
+! compaction rates are truncated by an error function.
+!--------------------------------------------------------------------------------------
+function calc_e_ps(sigma,theta,truncate,pb) result(e_ps_dot)
+
+  type(problem_type), intent(in) :: pb
+  double precision, dimension(pb%mesh%nn), intent(in) :: sigma, theta
+  double precision, dimension(pb%mesh%nn) :: e_ps_dot
+  logical, intent(in) :: truncate
+
+  select case (pb%itheta_law)
+
+  case (3) ! SEISMIC: Chen's model, diffusion controlled
+    e_ps_dot = pb%chen_params%IPS_const_diff*pb%sigma/(2*pb%chen_params%phi0 - 2*theta)**2
+  case (4) ! SEISMIC: Chen's model, dissolution controlled
+    e_ps_dot =  pb%chen_params%IPS_const_diss1*(exp(pb%chen_params%IPS_const_diss2*sigma* &
+                pb%chen_params%phi0/(pb%chen_params%phi0 - theta)) - 1)
+  case default
+    stop 'calc_e_ps: unsupported pressure solution law (3 = diffusion, 4 = dissolution controlled)'
+  end select
+
+  if (truncate .eqv. .true.) e_ps_dot = 0.5*(1 + erf(100*(theta-0.03)))*e_ps_dot
+
+end function calc_e_ps
 
 end module friction
