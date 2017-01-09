@@ -3,7 +3,6 @@
 module fault_stress
 
   use fftsg, only : OouraFFT_type
-  use my_mpi, only : MY_RANK, NPROCS
 
   implicit none
   private
@@ -107,7 +106,7 @@ end subroutine init_kernel_1D
 subroutine init_kernel_2D(k,mu,m)
 
   use mesh, only : mesh_type
-  use constants, only : PI, KERNEL_FILE
+  use constants, only : PI, SRC_PATH
 
   type(kernel_2d_fft), intent(inout) :: k
   type(mesh_type), intent(in) :: m
@@ -164,12 +163,11 @@ subroutine init_kernel_2D(k,mu,m)
 
  !- Read coefficient I(n) from pre-calculated file.
   elseif (k%finite == 1) then
-    open(57,file=KERNEL_FILE)
-    if (k%nnfft/2>32768) stop 'FINITE=1: finite kernel table is too small. See the QDYN manual for further instructions.'
+    open(57,file=SRC_PATH//'/kernel_I.tab')
     do i=1,k%nnfft/2-1
-      read(57,*) k%kernel(2*i+1)
+      read(57,*,end=100) k%kernel(2*i+1)
     enddo
-    read(57,*) k%kernel(2) ! Nyquist
+    read(57,*,end=100) k%kernel(2) ! Nyquist
     close(57)
     ! The factor 2/N comes from the inverse FFT convention
     tau_co = PI*mu / (2d0*m%Lfault) *2.d0/k%nnfft
@@ -181,6 +179,10 @@ subroutine init_kernel_2D(k,mu,m)
     enddo
   end if
 
+  return
+
+100 stop 'Kernel file src/kernel_I.tab is too short. Use src/TabKernelFiniteFlt.m to create a longer one.'
+
 end subroutine init_kernel_2D
 
 !----------------------------------------------------------------------
@@ -191,6 +193,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   use fftsg, only : my_rdft
   use utils, only : save_vector3
   use constants, only : MPI_parallel, FAULT_TYPE
+  use my_mpi, only : MY_RANK
 
   type(kernel_3d_fft), intent(inout) :: k
   double precision, intent(in) :: lambda,mu
@@ -199,8 +202,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
 
   double precision :: tau,sigma_n, y_src, z_src, dip_src, dw_src, y_obs, z_obs,dip_obs
   double precision, allocatable :: tmp(:), tmp_n(:)   ! for FFT
-  integer :: i, j, ii, jj, n, nn, IRET,iproc
-  integer :: iwlocal,ixlocal,ilocal,iwglobal,ixglobal,iglobal
+  integer :: i, j, ii, jj, n, nn, IRET
 
   if (MY_RANK==0) then
     write(6,*) 'Generating 3D kernel...'
@@ -572,14 +574,15 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
   use fftsg, only : my_rdft
   use utils, only : save_vector
   use constants, only : MPI_parallel
+  use my_mpi
 
   type(kernel_3D_fft), intent(inout)  :: k3f
   double precision , intent(inout) :: tau(:), sigma_n(:) !PG: Collect tau and sigma_n in all processor.
   double precision , intent(in) :: v(:)
   double precision :: vzk(k3f%nwGlobal,k3f%nxfft), tmpzk(k3f%nwLocal,k3f%nxfft)
   double precision :: tmpx(k3f%nxfft)
-  integer :: n,k,iproc
-  integer :: iglobal,ilocal,iwlocal,ixlocal,iwglobal,ixglobal
+  integer :: n,k
+  integer :: iglobal,ilocal,iwlocal,iwglobal,ixlocal,ixglobal
   double precision :: tmpzkarray(k3f%nnLocalfft),vzkarray(k3f%nnGlobalfft)
 
 !  if (MPI_parallel) then
@@ -627,7 +630,7 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
 
 !!  !$OMP SINGLE
     call gather_allvdouble(tmpzkarray,k3f%nnLocalfft,vzkarray,nnLocalfft_perproc, &
-                     nnoffset_perproc,k3f%nnGlobalfft,NPROCS)
+                     nnoffset_perproc,k3f%nnGlobalfft)
 !!  !$OMP END SINGLE
 
 

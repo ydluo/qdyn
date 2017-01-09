@@ -2,12 +2,10 @@
 
 module input
 
-  use my_mpi, only: MY_RANK, NPROCS
-
   implicit none
   private
 
-  public :: read_main, MY_RANK, NPROCS
+  public :: read_main
 
 contains
 !=====================================================================
@@ -18,6 +16,7 @@ subroutine read_main(pb)
   use problem_class
   use mesh, only : read_mesh, mesh_get_size
   use constants, only : FFT_TYPE, MPI_parallel
+  use my_mpi, only: MY_RANK, NPROCS, init_mpi
 
   type(problem_type), intent(inout)  :: pb
 
@@ -27,20 +26,18 @@ subroutine read_main(pb)
   double precision :: xsta, ysta, zsta, dmin=1d0, d
 
   write(6,*) 'Start reading input: ...'
-!PG, if MPI then read processor of each chunck
-if (MPI_parallel) then
-  call init_mpi()
-  call world_rank(MY_RANK)
-  call world_size(NPROCS)
-  write(iprocnum,'(i6.6)') MY_RANK
-  iprocnum=adjustl(iprocnum)
-  write(6,*) 'iprocnum:', iprocnum
-! Reading each chunk
-  open(unit=15, FILE='qdyn'//iprocnum(1:len_trim(iprocnum))//'.in')
-  call synchronize_all()
-else
-  open(unit=15,FILE= 'qdyn.in')
-endif
+
+  if (MPI_parallel) call init_mpi()
+  if (NPROCS>1) then
+    !PG, if MPI then read one input file per processor
+    write(iprocnum,'(i6.6)') MY_RANK
+    iprocnum=adjustl(iprocnum)
+    write(6,*) 'iprocnum:', iprocnum
+    open(unit=15, FILE='qdyn'//iprocnum(1:len_trim(iprocnum))//'.in')
+!    call synchronize_all()
+  else
+    open(unit=15,FILE= 'qdyn.in')
+  endif
   call read_mesh(15,pb%mesh)
   write(6,*) '   Mesh input complete'
 
@@ -199,7 +196,7 @@ endif
 
   if (MPI_parallel) then
 !Finding stations in this processor
-   dmin = 1d0
+   dmin = 10d0
    if (.not.(pb%ot%ic==1)) then !Reading stations, pb%ot%ic==1 is by default
      open(unit=200,file='stations.dat',action='read',status='unknown')
      read(200,*) nsta
@@ -207,9 +204,11 @@ endif
       read(200,*) xsta, ysta, zsta
        sta_loop: do
         do ik=1,pb%mesh%nn
-         d=(pb%mesh%x(ik)-xsta)**2+(pb%mesh%y(ik)-ysta)**2+(pb%mesh%z(ik)-zsta)**2
+         d=sqrt((pb%mesh%x(ik)-xsta)**2+(pb%mesh%y(ik)-ysta)**2+(pb%mesh%z(ik)-zsta)**2)
          if (d<=dmin) then
            pb%ot%ic=ik
+           write(6,*) 'processor:',MY_RANK,' Station found, index:',ik
+           pb%station_found=.true.
            exit sta_loop
          endif
          if (ik==pb%mesh%nn) exit sta_loop

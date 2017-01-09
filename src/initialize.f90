@@ -14,8 +14,8 @@ subroutine init_all(pb)
   
   use problem_class
   use mesh, only : init_mesh
-  use constants, only : PI, MPI_parallel 
-  use my_mpi, only: MY_RANK, NPROCS
+  use constants, only : PI
+  use my_mpi, only: MY_RANK, NPROCS, gather_alli, gather_allvdouble
   use fault_stress, only : init_kernel,nnLocalfft_perproc,nnoffset_perproc,& 
                            nnLocal_perproc,nnoffset_glob_perproc,&
                            nwLocal_perproc,nwoffset_glob_perproc 
@@ -34,13 +34,13 @@ subroutine init_all(pb)
   call init_mesh(pb%mesh)
 
 ! If MPI parallel then gather the whole fault to compute the Kernel(iloc,iglob,nxfft)
-if (MPI_parallel) then
+if (NPROCS>1) then
     nwLocal = pb%mesh%nw !nw along dip taken by processor i.
     nx = pb%mesh%nx 
     nxfft = 2*pb%mesh%nx !For the kernel
     nLocal=nx*nwLocal !For fault nodes
     if (MY_RANK==0) write(6,*) 'NPROCS:',NPROCS
-!  Assamble the array of nwLocal_perproc taken from each processor.
+!  Assemble the array of nwLocal_perproc taken from each processor.
     allocate(nwLocal_perproc(0:NPROCS-1))
     allocate(nnLocalfft_perproc(0:NPROCS-1))
     allocate(nnLocal_perproc(0:NPROCS-1))
@@ -55,14 +55,12 @@ if (MPI_parallel) then
     nnoffset_perproc=0
     nnoffset_glob_perproc=0
     nwoffset_glob_perproc=0
-! Assambled array of number of points per processor and send to all processors.
+! Assembled array of number of points per processor and send to all processors.
     write(6,*) 'nwlocal*nxfft:',nwLocal*nxfft
     write(6,*) 'nwlocal:',nwLocal
-    call synchronize_all()
-    call gather_alli(nwLocal,nwLocal_perproc,NPROCS)
-    call gather_alli(nwLocal*nxfft,nnLocalfft_perproc,NPROCS)
-    call gather_alli(nwLocal*nx,nnLocal_perproc,NPROCS)
-    call synchronize_all()
+    call gather_alli(nwLocal,nwLocal_perproc)
+    call gather_alli(nwLocal*nxfft,nnLocalfft_perproc)
+    call gather_alli(nwLocal*nx,nnLocal_perproc)
     do iproc=0,NPROCS-1
       nnoffset_perproc(iproc)=sum(nnLocalfft_perproc(0:iproc))-nnLocalfft_perproc(iproc)
       nnoffset_glob_perproc(iproc)=sum(nnLocal_perproc(0:iproc))-nnLocal_perproc(iproc)
@@ -86,22 +84,23 @@ if (MPI_parallel) then
              pb%mesh%zglob(nnGlobal),pb%mesh%dwglob(nwGlobal),pb%mesh%dipglob(nnGlobal))
 ! Adding global mesh for computing the kernel(ilocal,global,nxfft)
     call gather_allvdouble(pb%mesh%x,nLocal,pb%mesh%xglob,nnLocal_perproc, & 
-                           nnoffset_glob_perproc,nnGlobal,NPROCS)
+                           nnoffset_glob_perproc,nnGlobal)
     call gather_allvdouble(pb%mesh%y,nLocal,pb%mesh%yglob,nnLocal_perproc, & 
-                           nnoffset_glob_perproc,nnGlobal,NPROCS)
+                           nnoffset_glob_perproc,nnGlobal)
     call gather_allvdouble(pb%mesh%z,nLocal,pb%mesh%zglob,nnLocal_perproc, & 
-                           nnoffset_glob_perproc,nnGlobal,NPROCS)
+                           nnoffset_glob_perproc,nnGlobal)
     call gather_allvdouble(pb%mesh%dip,nLocal,pb%mesh%dipglob,nnLocal_perproc, & 
-                           nnoffset_glob_perproc,nnGlobal,NPROCS)
+                           nnoffset_glob_perproc,nnGlobal)
     call gather_allvdouble(pb%mesh%dw,nwLocal,pb%mesh%dwglob,nwLocal_perproc, & 
-                           nwoffset_glob_perproc,nwGlobal,NPROCS)
+                           nwoffset_glob_perproc,nwGlobal)
 !    call save_vectorV(pb%mesh%xglob,pb%mesh%yglob,pb%mesh%zglob,pb%mesh%zglob,&
 !                      MY_RANK,'fault_xyz_global',nwGlobal,nx)
 !    call save_vectorV(pb%mesh%x,pb%mesh%y,pb%mesh%z,pb%mesh%z,&
 !                      MY_RANK,'fault_xyz_ilocal',nwLocal,nx)
 
 endif  
-!YD This part we may want to modify it later to be able to
+
+!YD This part we may want to modify later to be able to
 !impose more complicated loading/pertubation
 !functions involved: problem_class/problem_type; input/read_main 
 !                    initialize/init_all;  derivs_all/derivs
@@ -156,7 +155,6 @@ endif
   call ox_init(pb)
 
   if (MY_RANK==0) write(6,*) 'Initialization completed'
-  if (MPI_parallel) call synchronize_all()
 
   ! Info about threads 
 !!$OMP PARALLEL PRIVATE(NTHREADS, TID)

@@ -11,10 +11,8 @@ Physics:
 + triangular elements: Meade's code (buggy?) or Gausian quadrature of Okada point sources
 + layered media: EDKS (Luis Rivera) or Relax (Sylvain Barbot)?
 + heterogeneous media: import kernel from Relax, Pylith, SPECFEM3D ?
-+ set two-spring-blocks model
 
 Code engineering and optimization:
-+ MPI parallelization
 + hierarchical matrix techniques (interface to Andrew Bradley's code)
 + inputs as fortran namelists
 + use object oriented matlab

@@ -1,24 +1,49 @@
-Some rules and advice for new developers:
+Guidelines for QDYN developers 
 
-DEVELOPING:
------------
+HOW TO JOIN THE QDYN DEVELOPERS TEAM:
+-------------------------------------
 
-  + Do "svn update" regularly, very often
-  + Do "svn update" before any "svn commit"
-  + Run "devel_tools/mymakedepend.perl" if you have added a new module or a new "use" command
-    (this perl script updates the list of module dependencies in the file Makefile.depend)
-  + If you modified the usage of qdyn.m, document it in qdyn.m and in the manual
-  + If you modified the manual, update doc/QDYN_man.pdf in the svn repository
+To join the QDYN developers team contact the QDYN software managers, 
+Yingdi Luo and Pablo Ampuero.
+You will be granted permission to edit the code in github
+and the manual in Google docs.
+Our preferred version control system for QDYN is svn. We recommend you 
+to be familiar with svn. Github also supports git and online edit.
 
-  + Use the ToDo list file
-  + Look often for comment lines in the code that contain the keyword "JPA". These are questions, issues 
-    or suggestions noted by J.-P. Ampuero. They need to be addressed.
-  + Learn from other developer's modifications: browse code changes online
+CODE DEVELOPMENT:
+-----------------
 
+  + Do "svn update" regularly, very often. This keeps your working version
+    synchronized with the last updates by the rest of the team
+  + Do "svn update" before any "svn commit". This facilitates merging your work.
+  + Work in the
+  + Run "devel_tools/mymakedepend.perl" if you have added a new Fortran module 
+    or a new "use" command in a Fortran source file. This perl script updates 
+    the list of module dependencies in the file Makefile.depend, needed to
+    compile the code
+  + If you modified the usage of qdyn.m, document it in qdyn.m and 
+    in the manual in Google docs.
+  + If you modified the manual, export if as pdf and replace by it the file
+    doc/QDYN_man_GIT.pdf in github
+  + Do not modify the tags/ directory. It contains code releases: versions
+    that have been tested and are archived for public release. 
+    Discuss release plans with the software managers.
+
+  + Use the ToDo file. Write there missing features, pending tasks and 
+    known bugs. Remove items from the list once they have been addressed.
+  + Look often for comment lines in the code that contain the keyword "JPA". 
+    These are questions, issues or suggestions noted by Pablo Ampuero 
+    that need to be addressed.
+  + Learn from modifications by other developers. You can browse code changes 
+    online on github
 
 CODE STYLE CONVENTIONS :
 ------------------------
 
+  + Add sufficient comments in the code to allow others to understand it. 
+  + Add "!WARNING" or "!NOTE" to your comments
+    if part of the code is incomplete, preliminary, only works under 
+    specific assumptions, or has a non-trivial impact on other parts of the code
   + Indentation by two spaces
   + Names of variables must be short but meaningful
-  + Name of constants are capitalized
+  + Name of constants and global variables are CAPITALIZED

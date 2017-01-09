@@ -3,8 +3,7 @@
 module solver
 
   use problem_class, only : problem_type
-  use constants, only: MPI_parallel
-  use my_mpi, only: MY_RANK, NPROCS
+  use constants, only: MPI_parallel 
 
   implicit none
   private
@@ -20,15 +19,12 @@ contains
 !
 subroutine solve(pb)
 
-  use output,       only : screen_init, screen_write, ox_write, ot_write
+  use output, only : screen_init, screen_write, ox_write, ot_write
+  use my_mpi, only: MY_RANK, finalize_mpi
 
   type(problem_type), intent(inout)  :: pb
 
-  if (MPI_parallel) then
-      if (MY_RANK==0) call screen_init(pb)
-  else
-      call screen_init(pb)
-  endif
+  if (MY_RANK==0) call screen_init(pb)
   call screen_write(pb)
   call ox_write(pb)
 
@@ -76,6 +72,7 @@ subroutine do_bsstep(pb)
 
   use derivs_all
   use ode_bs
+  use my_mpi, only: MY_RANK
 
   type(problem_type), intent(inout) :: pb
 
@@ -127,6 +124,7 @@ subroutine update_field(pb)
 
   use output, only : crack_size
   use friction, only : friction_mu
+  use my_mpi, only: max_allproc
 
   type(problem_type), intent(inout) :: pb
 

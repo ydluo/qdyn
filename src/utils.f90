@@ -15,7 +15,7 @@ subroutine save_vectorV(x,y,z,V,iproc,typ,nw,nx)
   character(len=256) :: fileproc
   character(len=16)   :: typ !PG, 'loc' or 'glo'
 
-  integer :: i,j,n,iproc,nx,nw
+  integer :: i,j,iproc,nx,nw
 
   write(fileproc,'(a,i6.6,a)') 'snap_v_',iproc,typ
  
@@ -38,7 +38,7 @@ subroutine save_vector(V,iproc,typ,nw,nx)
   character(len=256) :: fileproc
   character(len=16)   :: typ !PG, 'loc' or 'glo'
 
-  integer :: i,j,n,iproc,nx,nw
+  integer :: i,j,iproc,nx,nw
 
   write(fileproc,'(a,i6.6,a)') 'snap_v_',iproc,typ
  
@@ -61,7 +61,7 @@ subroutine save_vector3(V,iproc,typ,nwloc,nwglob,nx)
   character(len=256) :: fileproc
   character(len=16)   :: typ !PG, 'loc' or 'glo'
 
-  integer :: i,j,k,n,iproc,nx,nwloc,nwglob
+  integer :: i,j,k,iproc,nx,nwloc,nwglob
 
   write(fileproc,'(a,i6.6,a)') 'snap_v_',iproc,typ
  
