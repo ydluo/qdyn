@@ -146,9 +146,12 @@
 %		DYN_SKIP number of dynamic events to skip (warm up cycles)
 %
 %		Other parameters:
-%		EXEC_PATH path to the Fortran qdyn executable
-%       NPROCS = 1  % Default for serial runs
-%              > 1  % MPI runs, change MPI_parallel=.true. in constants.f90
+%		EXEC_PATH path to the Fortran qdyn executable. 
+%     The default path is the directory containing qdyn.m
+%   NPROCS number of processors for parallel MPI runs
+%     The default value is 1 (serial run)
+%     If NPROCS > 1, set MPI_parallel=.true. in constants.f90 and re-compile
+%
 % OUTPUTS 	pars	structure containing the parameters listed above, and:
 %			X,Y,Z = fault coordinates
 %		ot	structure containing time series outputs 
