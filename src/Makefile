@@ -1,11 +1,10 @@
 #== BEGIN USER SETTINGS =============================================
 
-# 1. Modify next line if you need to place the executable elsewhere:
-# yingdi
-#EXEC = $(HOME)/qdyn_svn/trunk/src/qdyn 
-# pablo
-#EXEC = $(HOME)/bin/qdyn 
- EXEC = ./qdyn
+# 1. Modify the path to the executable file only if you really need to place it elsewhere.
+#    If you change it, when you call qdyn.m you must set the input EXEC_PATH as set here
+EXEC_PATH = .
+#EXEC_PATH = $(HOME)/qdyn_svn/trunk/src/
+#EXEC_PATH = $(HOME)/bin/
 
 # 2. Comment/uncomment/add/modify the lines corresponding to your compiler:
 
@@ -41,6 +40,8 @@ OPT = -O3 -Wall
 #OPT = -fast
 
 #== END USER SETTINGS =============================================
+
+EXEC = $(EXEC_PATH)/qdyn
 
 OBJS := $(patsubst %.f90,%.o,$(wildcard *.f90)) 
 #OBJS := $($(wildcard *.f90):.f90=.o) 
