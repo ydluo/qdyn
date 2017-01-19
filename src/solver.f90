@@ -3,7 +3,7 @@
 module solver
 
   use problem_class, only : problem_type
-  use constants, only: MPI_parallel 
+  use constants, only: MPI_parallel
 
   implicit none
   private
@@ -129,11 +129,13 @@ subroutine update_field(pb)
   type(problem_type), intent(inout) :: pb
 
   integer :: i,ix,iw
-  double precision :: vtemp
+  double precision :: vtemp, k
 
   ! Update slip, stress.
   pb%slip = pb%slip + pb%v*pb%dt_did
-  pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
+  !pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
+  !write(6,*) pb%v_star*pb%time, pb%slip
+  pb%tau = pb%tau + pb%kernel%k1 * (pb%v_star - pb%v) * pb%dt_did
   ! update potency and potency rate
   pb%pot=0d0;
   pb%pot_rate=0d0;

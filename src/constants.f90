@@ -14,7 +14,7 @@ module constants
 !  -1 : strike-slip (left-lateral)
 !   2 : thrust
 !  -2 : Normal
-  integer, parameter :: FAULT_TYPE = 1
+  integer, parameter :: FAULT_TYPE = 2
 !JPA this should be an input in qdyn.in, not a parameter here
 
 ! set usage of FFT in 3D
@@ -36,7 +36,7 @@ module constants
 
 !--- END of User Settings ---
 
-  character(*), parameter :: SRC_PATH = "_FPP_SRC_PATH_"
+  character(*), parameter :: SRC_PATH = "/home/martijn/QDyn/src"
 
   double precision, parameter :: PI = 3.141592653589793d0
   double precision, parameter :: DAY = 3600.d0*24.d0, &
