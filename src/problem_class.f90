@@ -27,7 +27,7 @@ module problem_class
   ! See input.f90 for a description of the parameters
   type chen_type
     double precision, dimension(:), allocatable :: &
-      a, mu_tilde_star, IPS_const_diff, IPS_const_diss1, IPS_const_diss2, H, w, slowness_star, phi0
+      a, mu_tilde_star, IPS_const_diff, IPS_const_diss1, IPS_const_diss2, H, w, y_gr_star, phi0
   end type chen_type
   ! End of Chen's model structure
 

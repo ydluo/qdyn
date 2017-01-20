@@ -114,7 +114,9 @@ function friction_mu(v,theta,pb) result(mu)
     ! input (i.e. set state of stress from input file)
 
     tan_psi = calc_tan_psi(theta, pb)   ! Dilatation angle
-    mu_tilde = calc_mu_tilde(v, pb)     ! Grain-boundary friction
+    ! SEISMIC: calculate the grain-boundary friction, assuming all deformation
+    ! is accommodated by granular flow (i.e. v_total = v_gr)
+    mu_tilde = calc_mu_tilde(v/pb%chen_params%w, pb)
 
     ! SEISMIC: Calculate the frictional strength controlled by granular flow
     mu_gr = (mu_tilde + tan_psi)/(1 - mu_tilde*tan_psi)
@@ -161,7 +163,7 @@ function dtheta_dt(v,theta,pb) result(dth_dt)
   double precision, dimension(pb%mesh%nn), intent(in) :: v, theta
   double precision, dimension(pb%mesh%nn) :: dth_dt, omega
   double precision, dimension(pb%mesh%nn) :: tan_psi, e_ps_dot
-  double precision, dimension(pb%mesh%nn) :: y_ps_dot, y_gr_dot
+  double precision, dimension(pb%mesh%nn) :: y_ps, y_gr
 
   omega = v * theta / pb%dc
   select case (pb%itheta_law)
@@ -178,14 +180,14 @@ function dtheta_dt(v,theta,pb) result(dth_dt)
   case (3, 4) ! SEISMIC: Chen's model
     tan_psi = calc_tan_psi(theta, pb)   ! Dilatation angle
     e_ps_dot = calc_e_ps(pb%sigma, theta, .true., pb)   ! Compaction rate
-    y_ps_dot = calc_e_ps(pb%tau, theta, .false., pb)   ! Press. soln. shear rate
-    y_gr_dot = v/pb%chen_params%w - y_ps_dot
+    y_ps = calc_e_ps(pb%tau, theta, .false., pb)   ! Press. soln. shear rate
+    y_gr = v/pb%chen_params%w - y_ps
     ! SEISMIC: the nett rate of change of porosity is given by the relation
     ! phi_dot = -(1 - phi)*strain_rate, where the strain rate equals
     ! the compaction rate by pressure solution (e_ps_dot) minus the dilatation
     ! rate by granular flow (tan_psi*v/w). Note that compaction is measured
     ! positive, dilatation negative
-    dth_dt = (1 - theta)*(tan_psi*y_gr_dot - e_ps_dot)
+    dth_dt = (1 - theta)*(tan_psi*y_gr - e_ps_dot)
 
 
 ! new friction law:
@@ -237,38 +239,35 @@ function compute_velocity(tau,sigma,theta,pb) result(v)
 
   ! SEISMIC: define some extra parameters for Chen's friction law
   double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, denom, y_ps
-  double precision, dimension(pb%mesh%nn) :: mu_star, v_gr, tau_gr
+  double precision, dimension(pb%mesh%nn) :: mu_star, y_gr, tau_gr
 
   tan_psi = calc_tan_psi(theta, pb)         ! Dilatation angle
 
   ! Pre-compute the denominator for efficiency
   denom = 1.0/(pb%chen_params%a*(sigma+tau*tan_psi))
-
-  ! Granular flow _velocity_ [unit m/s]
-  ! NOTE: it is physically more correct to use a reference strain rate
-  ! and use velocity = strain_rate * thickness instead
   mu_star = pb%chen_params%mu_tilde_star
-  ! The granular flow velocity for the case when the shear stress approaches
+
+  ! The granular flow strain rate for the case when the shear stress approaches
   ! the shear strength of the grain contacts
-  v_gr = (1.0/pb%chen_params%slowness_star)*exp((tau*(1 - mu_star*tan_psi) - sigma*(mu_star + tan_psi))*denom)
+  y_gr = pb%chen_params%y_gr_star*exp((tau*(1 - mu_star*tan_psi) - sigma*(mu_star + tan_psi))*denom)
 
   ! Shear strain rate [1/s] due to viscous flow (pressure solution)
   y_ps = calc_e_ps(tau, theta, .false., pb)
-  mu_tilde = calc_mu_tilde(v_gr, pb)           ! Grain-boundary friction
+  mu_tilde = calc_mu_tilde(y_gr, pb)           ! Grain-boundary friction
 
   ! Calculate the shear strength of the grain contacts, if the gouge were
-  ! to deform by granular flow. To allow for granular flow (v_gr != 0),
+  ! to deform by granular flow. To allow for granular flow (y_gr != 0),
   ! tau_gr should be near tau (frictional 'yield')
   tau_gr = (mu_tilde + tan_psi)/(1 - mu_tilde*tan_psi)*sigma
   ! Use the error function to approximate the frictional yielding of the
   ! contacts. If tau_gr < 0.9*tau, this function quickly approaches zero
   ! NOTE: the use of an error function is more expensive than an if-statement
   ! but is continuously differentiable, which is required for the solver
-  v_gr = 0.5*(1 + erf(100*(tau-0.9*tau_gr)/tau_gr))*v_gr
+  y_gr = 0.5*(1 + erf(100*(tau-0.9*tau_gr)/tau_gr))*y_gr
 
   ! The total slip velocity is the combined contribution of granular flow
   ! and pressure solution (parallel processes)
-  v = v_gr + pb%chen_params%w*y_ps
+  v = pb%chen_params%w*(y_gr + y_ps)
 
 
 end function compute_velocity
@@ -291,16 +290,15 @@ end function calc_tan_psi
 ! SEISMIC: calculate the grain-boundary coefficient of friction, which is
 ! logarithmically rate-strengthening, assuming some atomic scale jump process
 !--------------------------------------------------------------------------------------
-function calc_mu_tilde(v,pb) result(mu_tilde)
+function calc_mu_tilde(y_gr,pb) result(mu_tilde)
 
   type(problem_type), intent(in) :: pb
-  double precision, dimension(pb%mesh%nn), intent(in) :: v
+  double precision, dimension(pb%mesh%nn), intent(in) :: y_gr
   double precision, dimension(pb%mesh%nn) :: mu_tilde
 
-  ! SEISMIC: slowness_star is defined as 1/V_star in the input script
-  ! NOTE: it is physically more correct to use a reference strain rate
-  ! and use velocity = strain_rate * thickness instead
-  mu_tilde = pb%chen_params%mu_tilde_star + pb%chen_params%a * log(abs(v)*pb%chen_params%slowness_star)
+  ! SEISMIC NOTE: the granular flow strain rate should be used here,
+  ! not the total strain rate
+  mu_tilde = pb%chen_params%mu_tilde_star + pb%chen_params%a * log(abs(y_gr)/pb%chen_params%y_gr_star)
 
 end function calc_mu_tilde
 

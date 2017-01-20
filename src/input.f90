@@ -129,8 +129,8 @@ subroutine read_main(pb)
   ! <SEISMIC>
   ! Read input parameters for Chen's model. These parameters are (in order):
   !   a:                coefficient of logarithmic rate dependence
-  !   mu_tilde_star:    reference friction coefficient at slowness_star
-  !   slowness_star:    reference slowness (1/velocity)
+  !   mu_tilde_star:    reference friction coefficient at y_gr_star
+  !   y_gr_star:        reference granular fow strain rate
   !   H:                dilatancy geometric factor
   !   phi0:             initial (reference) porosity
   !   IPS_const_diff:   pressure solution (temperature-dependent) constant
@@ -149,25 +149,25 @@ subroutine read_main(pb)
   if (pb%i_rns_law == 3) then
     if (pb%itheta_law == 3) then
       allocate( pb%chen_params%a(n), pb%chen_params%mu_tilde_star(n), &
-                pb%chen_params%slowness_star(n), pb%chen_params%H(n), &
+                pb%chen_params%y_gr_star(n), pb%chen_params%H(n), &
                 pb%chen_params%phi0(n), pb%chen_params%IPS_const_diff(n), &
                 pb%chen_params%w(n) )
 
       do i=1,n
         read(15,*)pb%chen_params%a(i), pb%chen_params%mu_tilde_star(i), &
-                  pb%chen_params%slowness_star(i), pb%chen_params%H(i), &
+                  pb%chen_params%y_gr_star(i), pb%chen_params%H(i), &
                   pb%chen_params%phi0(i), pb%chen_params%IPS_const_diff(i), &
                   pb%chen_params%w(i)
       end do
     elseif (pb%itheta_law == 4) then
       allocate( pb%chen_params%a(n), pb%chen_params%mu_tilde_star(n), &
-                pb%chen_params%slowness_star(n), pb%chen_params%H(n), &
+                pb%chen_params%y_gr_star(n), pb%chen_params%H(n), &
                 pb%chen_params%phi0(n), pb%chen_params%IPS_const_diss1(n), &
                 pb%chen_params%IPS_const_diss2(n), pb%chen_params%w(n) )
 
       do i=1,n
         read(15,*)pb%chen_params%a(i), pb%chen_params%mu_tilde_star(i), &
-                  pb%chen_params%slowness_star(i), pb%chen_params%H(i), &
+                  pb%chen_params%y_gr_star(i), pb%chen_params%H(i), &
                   pb%chen_params%phi0(i), pb%chen_params%IPS_const_diss1(i), &
                   pb%chen_params%IPS_const_diss2(i), pb%chen_params%w(i)
       end do
