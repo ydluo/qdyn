@@ -53,6 +53,7 @@ module friction
   private
 
   public  :: set_theta_star, friction_mu, dmu_dv_dtheta, dtheta_dt
+  public  :: compute_velocity
   private  :: calc_tan_psi, calc_mu_tilde, calc_e_ps
 
 contains
@@ -103,8 +104,18 @@ function friction_mu(v,theta,pb) result(mu)
     mu = pb%mu_star - pb%a*log(pb%v1/v+1d0) + pb%b*log(theta/pb%theta_star+1d0)
 
   case (3) ! SEISMIC: Chen's model
+
+    ! SEISMIC: this function should only be called once to determine the
+    ! initial state of stress (in initialze.f90). After that, the state of stress
+    ! is solved for from a kinematic balance equation. This function calculates
+    ! the steady-state friction corresponding to the slip velocity and the porosity
+    ! as read from the input file.
+    ! TODO: replace the initiation through this function entirely by the mesh
+    ! input (i.e. set state of stress from input file)
+
     tan_psi = calc_tan_psi(theta, pb)   ! Dilatation angle
     mu_tilde = calc_mu_tilde(v, pb)     ! Grain-boundary friction
+
     ! SEISMIC: Calculate the frictional strength controlled by granular flow
     mu_gr = (mu_tilde + tan_psi)/(1 - mu_tilde*tan_psi)
 
@@ -150,6 +161,7 @@ function dtheta_dt(v,theta,pb) result(dth_dt)
   double precision, dimension(pb%mesh%nn), intent(in) :: v, theta
   double precision, dimension(pb%mesh%nn) :: dth_dt, omega
   double precision, dimension(pb%mesh%nn) :: tan_psi, e_ps_dot
+  double precision, dimension(pb%mesh%nn) :: y_ps_dot, y_gr_dot
 
   omega = v * theta / pb%dc
   select case (pb%itheta_law)
@@ -166,12 +178,14 @@ function dtheta_dt(v,theta,pb) result(dth_dt)
   case (3, 4) ! SEISMIC: Chen's model
     tan_psi = calc_tan_psi(theta, pb)   ! Dilatation angle
     e_ps_dot = calc_e_ps(pb%sigma, theta, .true., pb)   ! Compaction rate
+    y_ps_dot = calc_e_ps(pb%tau, theta, .false., pb)   ! Press. soln. shear rate
+    y_gr_dot = v/pb%chen_params%w - y_ps_dot
     ! SEISMIC: the nett rate of change of porosity is given by the relation
     ! phi_dot = -(1 - phi)*strain_rate, where the strain rate equals
     ! the compaction rate by pressure solution (e_ps_dot) minus the dilatation
     ! rate by granular flow (tan_psi*v/w). Note that compaction is measured
     ! positive, dilatation negative
-    dth_dt = (1 - theta)*(tan_psi*v/pb%chen_params%w - e_ps_dot)
+    dth_dt = (1 - theta)*(tan_psi*y_gr_dot - e_ps_dot)
 
 
 ! new friction law:
@@ -192,11 +206,6 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
   double precision, dimension(pb%mesh%nn), intent(in) :: v, theta
   double precision, dimension(pb%mesh%nn), intent(out) :: dmu_dv, dmu_dtheta
 
-  ! SEISMIC: define some extra parameters for Chen's friction law
-  double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, dth_dt, denom, y_ps, delta
-  double precision, dimension(pb%mesh%nn) :: mu_star, dummy_var, f_phi_sqrt, V_gr, y_gr, tau
-  double precision, dimension(pb%mesh%nn) :: dv_dtau_ps, dv_dtheta_ps, dv_dtau, dv_dtheta
-
   select case (pb%i_rns_law)
 
   case(0)
@@ -207,73 +216,11 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
     dmu_dtheta = pb%b * pb%v2 / ( pb%v2*theta + pb%dc )
     dmu_dv = pb%a * pb%v1 / v / ( pb%v1 + v )
 
-  case(3) ! SEISMIC: Chen's model
-    tan_psi = calc_tan_psi(theta, pb)         ! Dilatation angle
-    mu_tilde = calc_mu_tilde(v, pb)           ! Grain-boundary friction
-    mu_star = pb%chen_params%mu_tilde_star
-
-    !tau = friction_mu(v, theta, pb)*pb%sigma
-    tau = pb%kernel%k1 * (pb%v_star * pb%time - (pb%slip + v*pb%dt_did))
-    !tau = pb%tau
-
-    ! Pre-compute the denominator for efficiency
-    denom = 1.0/(pb%chen_params%a*(pb%sigma+tau*tan_psi))
-    ! Pre-compute a dummy variable that we will re-use a few times
-    dummy_var = (tau*(1 - mu_star*tan_psi) - pb%sigma*(mu_star + tan_psi))*denom
-
-    ! Pre-compute the square root of the porosity function. This will serve as
-    ! a basis for calculating the full porosity functions for either itheta_law
-    f_phi_sqrt = 1.0/(2*(pb%chen_params%phi0 - theta))
-
-    ! Granular flow _velocity_ [unit m/s]
-    ! NOTE: it is physically more correct to use a reference strain rate
-    ! and use velocity = strain_rate * thickness instead
-    V_gr = (1.0/pb%chen_params%slowness_star)*exp(dummy_var)
-    ! Shear strain rate [1/s] due to viscous flow (pressure solution)
-    y_ps = calc_e_ps(tau, theta, .false., pb)
-
-    ! Next, calculate the partial derivatives dv_dtau and dv_dtheta for the
-    ! pressure solution creep. The functional form depends on the rate-limiting
-    ! mechanism (diffusion, dissolution, or precipitation)
-    ! Note that the pressure solution strain rate is multiplied by the
-    ! the gouge layer thickness (pb%chen_params%w) to obtain a velocity
-    select case (pb%itheta_law)
-
-    case (3) ! Diffusion controlled pressure solution
-      dv_dtau_ps = pb%chen_params%w*pb%chen_params%IPS_const_diff*f_phi_sqrt**2
-      dv_dtheta_ps = 4*pb%chen_params%w*pb%chen_params%IPS_const_diff*tau*f_phi_sqrt**3
-    case (4) ! Dissolution controlled pressure solution
-      dv_dtau_ps =  pb%chen_params%w*(y_ps + pb%chen_params%IPS_const_diss1)* &
-                    pb%chen_params%IPS_const_diss2*2*pb%chen_params%phi0*f_phi_sqrt
-      dv_dtheta_ps =  4*pb%chen_params%w*(y_ps + pb%chen_params%IPS_const_diss1)* &
-                      pb%chen_params%IPS_const_diss2*tau*pb%chen_params%phi0*f_phi_sqrt**2
-    case default
-      write(6,*) "dmu_dv_dtheta: Chen's friction model is selected (i_rns_law == 3),"
-      write(6,*) "but itheta_law is unsupported (must be either 3 or 4)"
-      write(6,*) "3 = diffusion-, 4 = dissolution controlled pressure solution creep"
-      stop
-
-    end select
-
-    ! The partial derivatives dv_dtau and dv_dtheta of the overall slip velocity
-    ! are the sum of the partial derivatives of the pressure solution and
-    ! granular flow velocities.
-    dv_dtau = dv_dtau_ps + V_gr*((1-mu_star*tan_psi)*denom - tan_psi*dummy_var*pb%chen_params%a*denom)
-    dv_dtheta = dv_dtheta_ps - V_gr*(2*pb%chen_params%H*(pb%sigma + mu_star*tau)*denom + &
-                2*pb%chen_params%H*tau*dummy_var*pb%chen_params%a*denom)
-
-    ! The partial derivatives dmu_dv and dmu_dtheta can then be obtained from dv_dtau and dv_dtheta
-    dmu_dv = 1/(pb%sigma*dv_dtau)
-    dmu_dtheta = dmu_dv*dv_dtheta
-
-! new friction law:
-!  case(xxx)
-!    implement here the partial derivatives of the friction coefficient
-!    dmu_dtheta = ...
-!    dmu_dv = ...
-
   case default
-    stop 'dmu_dv_dtheta: unknown friction law type'
+    write (6,*) "dmu_dv_dtheta: unkown friction law type"
+    write (6,*) "This function should only be called for i_rns_law = 0 and 1"
+    write (6,*) "Chen's model (i_rns_law = 3) does not compute these partial derivatives"
+    stop
   end select
 
 end subroutine dmu_dv_dtheta
@@ -282,97 +229,49 @@ end subroutine dmu_dv_dtheta
 ! SEISMIC: calculate the dilatation angle, which is a geometric consequence
 ! of the instantaneous porosity (theta)
 !--------------------------------------------------------------------------------------
-subroutine compute_velocity(v,tau,theta,pb)
+function compute_velocity(tau,sigma,theta,pb) result(v)
 
   type(problem_type), intent(in) :: pb
-  double precision, dimension(pb%mesh%nn), intent(in) :: tau, theta
-  double precision, dimension(pb%mesh%nn), intent(out) :: v
+  double precision, dimension(pb%mesh%nn), intent(in) :: tau, sigma, theta
+  double precision, dimension(pb%mesh%nn) :: v
 
   ! SEISMIC: define some extra parameters for Chen's friction law
-  double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, dth_dt, denom, y_ps, delta
-  double precision, dimension(pb%mesh%nn) :: mu_star, dummy_var, f_phi_sqrt, V_gr, y_gr, tau
-  double precision, dimension(pb%mesh%nn) :: dv_dtau_ps, dv_dtheta_ps, dv_dtau, dv_dtheta
+  double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, denom, y_ps
+  double precision, dimension(pb%mesh%nn) :: mu_star, v_gr, tau_gr
 
-  select case (pb%i_rns_law)
+  tan_psi = calc_tan_psi(theta, pb)         ! Dilatation angle
 
-  case(0)
-    dmu_dtheta = pb%b / theta
-    dmu_dv = pb%a / v
+  ! Pre-compute the denominator for efficiency
+  denom = 1.0/(pb%chen_params%a*(sigma+tau*tan_psi))
 
-  case(1)
-    dmu_dtheta = pb%b * pb%v2 / ( pb%v2*theta + pb%dc )
-    dmu_dv = pb%a * pb%v1 / v / ( pb%v1 + v )
+  ! Granular flow _velocity_ [unit m/s]
+  ! NOTE: it is physically more correct to use a reference strain rate
+  ! and use velocity = strain_rate * thickness instead
+  mu_star = pb%chen_params%mu_tilde_star
+  ! The granular flow velocity for the case when the shear stress approaches
+  ! the shear strength of the grain contacts
+  v_gr = (1.0/pb%chen_params%slowness_star)*exp((tau*(1 - mu_star*tan_psi) - sigma*(mu_star + tan_psi))*denom)
 
-  case(3) ! SEISMIC: Chen's model
-    tan_psi = calc_tan_psi(theta, pb)         ! Dilatation angle
-    mu_tilde = calc_mu_tilde(v, pb)           ! Grain-boundary friction
-    mu_star = pb%chen_params%mu_tilde_star
+  ! Shear strain rate [1/s] due to viscous flow (pressure solution)
+  y_ps = calc_e_ps(tau, theta, .false., pb)
+  mu_tilde = calc_mu_tilde(v_gr, pb)           ! Grain-boundary friction
 
-    !tau = friction_mu(v, theta, pb)*pb%sigma
-    tau = pb%kernel%k1 * (pb%v_star * pb%time - (pb%slip + v*pb%dt_did))
-    !tau = pb%tau
+  ! Calculate the shear strength of the grain contacts, if the gouge were
+  ! to deform by granular flow. To allow for granular flow (v_gr != 0),
+  ! tau_gr should be near tau (frictional 'yield')
+  tau_gr = (mu_tilde + tan_psi)/(1 - mu_tilde*tan_psi)*sigma
+  ! Use the error function to approximate the frictional yielding of the
+  ! contacts. If tau_gr < 0.9*tau, this function quickly approaches zero
+  ! NOTE: the use of an error function is more expensive than an if-statement
+  ! but is continuously differentiable, which is required for the solver
+  v_gr = 0.5*(1 + erf(100*(tau-0.9*tau_gr)/tau_gr))*v_gr
 
-    ! Pre-compute the denominator for efficiency
-    denom = 1.0/(pb%chen_params%a*(pb%sigma+tau*tan_psi))
-    ! Pre-compute a dummy variable that we will re-use a few times
-    dummy_var = (tau*(1 - mu_star*tan_psi) - pb%sigma*(mu_star + tan_psi))*denom
+  ! The total slip velocity is the combined contribution of granular flow
+  ! and pressure solution (parallel processes)
+  v = v_gr + pb%chen_params%w*y_ps
 
-    ! Pre-compute the square root of the porosity function. This will serve as
-    ! a basis for calculating the full porosity functions for either itheta_law
-    f_phi_sqrt = 1.0/(2*(pb%chen_params%phi0 - theta))
 
-    ! Granular flow _velocity_ [unit m/s]
-    ! NOTE: it is physically more correct to use a reference strain rate
-    ! and use velocity = strain_rate * thickness instead
-    V_gr = (1.0/pb%chen_params%slowness_star)*exp(dummy_var)
-    ! Shear strain rate [1/s] due to viscous flow (pressure solution)
-    y_ps = calc_e_ps(tau, theta, .false., pb)
-
-    ! Next, calculate the partial derivatives dv_dtau and dv_dtheta for the
-    ! pressure solution creep. The functional form depends on the rate-limiting
-    ! mechanism (diffusion, dissolution, or precipitation)
-    ! Note that the pressure solution strain rate is multiplied by the
-    ! the gouge layer thickness (pb%chen_params%w) to obtain a velocity
-    select case (pb%itheta_law)
-
-    case (3) ! Diffusion controlled pressure solution
-      dv_dtau_ps = pb%chen_params%w*pb%chen_params%IPS_const_diff*f_phi_sqrt**2
-      dv_dtheta_ps = 4*pb%chen_params%w*pb%chen_params%IPS_const_diff*tau*f_phi_sqrt**3
-    case (4) ! Dissolution controlled pressure solution
-      dv_dtau_ps =  pb%chen_params%w*(y_ps + pb%chen_params%IPS_const_diss1)* &
-                    pb%chen_params%IPS_const_diss2*2*pb%chen_params%phi0*f_phi_sqrt
-      dv_dtheta_ps =  4*pb%chen_params%w*(y_ps + pb%chen_params%IPS_const_diss1)* &
-                      pb%chen_params%IPS_const_diss2*tau*pb%chen_params%phi0*f_phi_sqrt**2
-    case default
-      write(6,*) "dmu_dv_dtheta: Chen's friction model is selected (i_rns_law == 3),"
-      write(6,*) "but itheta_law is unsupported (must be either 3 or 4)"
-      write(6,*) "3 = diffusion-, 4 = dissolution controlled pressure solution creep"
-      stop
-
-    end select
-
-    ! The partial derivatives dv_dtau and dv_dtheta of the overall slip velocity
-    ! are the sum of the partial derivatives of the pressure solution and
-    ! granular flow velocities.
-    dv_dtau = dv_dtau_ps + V_gr*((1-mu_star*tan_psi)*denom - tan_psi*dummy_var*pb%chen_params%a*denom)
-    dv_dtheta = dv_dtheta_ps - V_gr*(2*pb%chen_params%H*(pb%sigma + mu_star*tau)*denom + &
-                2*pb%chen_params%H*tau*dummy_var*pb%chen_params%a*denom)
-
-    ! The partial derivatives dmu_dv and dmu_dtheta can then be obtained from dv_dtau and dv_dtheta
-    dmu_dv = 1/(pb%sigma*dv_dtau)
-    dmu_dtheta = dmu_dv*dv_dtheta
-
-! new friction law:
-!  case(xxx)
-!    implement here the partial derivatives of the friction coefficient
-!    dmu_dtheta = ...
-!    dmu_dv = ...
-
-  case default
-    stop 'dmu_dv_dtheta: unknown friction law type'
-  end select
-
-end subroutine compute_velocity
+end function compute_velocity
 
 !--------------------------------------------------------------------------------------
 ! SEISMIC: calculate the dilatation angle, which is a geometric consequence
@@ -422,9 +321,9 @@ function calc_e_ps(sigma,theta,truncate,pb) result(e_ps_dot)
 
   select case (pb%itheta_law)
 
-  case (3) ! SEISMIC: Chen's model, diffusion controlled
-    e_ps_dot = pb%chen_params%IPS_const_diff*pb%sigma/(2*pb%chen_params%phi0 - 2*theta)**2
-  case (4) ! SEISMIC: Chen's model, dissolution controlled
+  case (3) ! Chen's model, diffusion controlled
+    e_ps_dot = pb%chen_params%IPS_const_diff*sigma/(2*pb%chen_params%phi0 - 2*theta)**2
+  case (4) ! Chen's model, dissolution controlled
     e_ps_dot =  pb%chen_params%IPS_const_diss1*(exp(pb%chen_params%IPS_const_diss2*sigma* &
                 pb%chen_params%phi0/(pb%chen_params%phi0 - theta)) - 1)
   case default

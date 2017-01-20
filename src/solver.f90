@@ -67,6 +67,7 @@ end subroutine solve
 ! pack, do bs_step and unpack
 !
 ! IMPORTANT NOTE : between pack/unpack pb%v & pb%theta are not up-to-date
+! SEISMIC IMPORTANT NOTE: when Chen's model is used, pb%tau is not up-to-date
 !
 subroutine do_bsstep(pb)
 
@@ -80,11 +81,20 @@ subroutine do_bsstep(pb)
   integer :: ik
 
   ! Pack v, theta into yt
-! yt(2::pb%neqs) = pb%v(pb%rs_nodes) ! JPA Coulomb
-  yt(2::pb%neqs) = pb%v
+  ! yt(2::pb%neqs) = pb%v(pb%rs_nodes) ! JPA Coulomb
+
+  ! SEISMIC: in the case of Chen's model, solve for tau and not v
+  if (pb%i_rns_law == 3) then   ! SEISMIC: Chen's model
+    yt(2::pb%neqs) = pb%tau
+    dydt(2::pb%neqs) = pb%dtau_dt
+  else  ! SEISMIC: not Chen's model (i.e. rate-and-state)
+    yt(2::pb%neqs) = pb%v
+    dydt(2::pb%neqs) = pb%dv_dt
+  endif
   yt(1::pb%neqs) = pb%theta
-  dydt(2::pb%neqs) = pb%dv_dt
   dydt(1::pb%neqs) = pb%dtheta_dt
+  ! SEISMIC NOTE/WARNING: I don't know how permanent this temporary solution is,
+  ! but in case it gets fixed more permanently, derivs_all.f90 needs adjustment
   if ( pb%neqs == 3) then           ! Temp solution for normal stress coupling
     yt(3::pb%neqs) = pb%sigma
     dydt(3::pb%neqs) = pb%dsigma_dt
@@ -95,20 +105,31 @@ subroutine do_bsstep(pb)
   yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
   ! One step
   call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb,ik)
-!PG: Here is necessary a global min, or dt_next and dt_max is the same in all processors?.
+  !PG: Here is necessary a global min, or dt_next and dt_max is the same in all processors?.
   if (pb%dt_max >  0.d0) then
     pb%dt_try = min(pb%dt_next,pb%dt_max)
   else
     pb%dt_try = pb%dt_next
   endif
   iktotal=ik+iktotal
-!  if (MY_RANK==0) write(6,*) 'iktotal=',iktotal,'pb%time=',pb%time
-! Unpack yt into v, theta
-!  pb%v(pb%rs_nodes) = yt(2::pb%neqs) ! JPA Coulomb
-  pb%v = yt(2::pb%neqs)
+  !  if (MY_RANK==0) write(6,*) 'iktotal=',iktotal,'pb%time=',pb%time
+  ! Unpack yt into v, theta
+  !  pb%v(pb%rs_nodes) = yt(2::pb%neqs) ! JPA Coulomb
+
+  ! SEISMIC: retrieve the solution for tau in the case of Chen's model, else
+  ! retreive the solution for slip velocity
+  if (pb%i_rns_law == 3) then
+    pb%tau = yt(2::pb%neqs)
+    pb%dtau_dt = dydt(2::pb%neqs)
+  else
+    pb%v = yt(2::pb%neqs)
+    pb%dv_dt = dydt(2::pb%neqs)
+  endif
+
   pb%theta = yt(1::pb%neqs)
-  pb%dv_dt = dydt(2::pb%neqs)
   pb%dtheta_dt = dydt(1::pb%neqs)
+  ! SEISMIC NOTE/WARNING: I don't know how permanent this temporary solution is,
+  ! but in case it gets fixed more permanently, derivs_all.f90 needs adjustment
   if ( pb%neqs == 3) then           ! Temp solution for normal stress coupling
     pb%sigma = yt(3::pb%neqs)
     pb%dsigma_dt = dydt(3::pb%neqs)
@@ -123,7 +144,7 @@ end subroutine do_bsstep
 subroutine update_field(pb)
 
   use output, only : crack_size
-  use friction, only : friction_mu
+  use friction, only : friction_mu, compute_velocity
   use my_mpi, only: max_allproc
 
   type(problem_type), intent(inout) :: pb
@@ -131,11 +152,18 @@ subroutine update_field(pb)
   integer :: i,ix,iw
   double precision :: vtemp, k
 
-  ! Update slip, stress.
+  ! SEISMIC: in case of Chen's model, re-compute the slip velocity with
+  ! the final value of tau, sigma, and porosity. Otherwise, use the standard
+  ! rate-and-state expression to calculate tau as a function of velocity
+  if (pb%i_rns_law == 3) then
+    pb%v = compute_velocity(pb%tau, pb%sigma, pb%theta, pb)
+  else
+    pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
+  endif
+  ! Update slip
+  ! SEISMIC NOTE: slip needs to be calculated after velocity!
   pb%slip = pb%slip + pb%v*pb%dt_did
-  !pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
-  !write(6,*) pb%v_star*pb%time, pb%slip
-  pb%tau = pb%tau + pb%kernel%k1 * (pb%v_star - pb%v) * pb%dt_did
+
   ! update potency and potency rate
   pb%pot=0d0;
   pb%pot_rate=0d0;
