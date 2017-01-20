@@ -105,8 +105,8 @@ function friction_mu(v,theta,pb) result(mu)
 
   case (3) ! SEISMIC: Chen's model
 
-    ! SEISMIC: this function should only be called once to determine the
-    ! initial state of stress (in initialze.f90). After that, the state of stress
+    ! SEISMIC: this function should no longer be called to determine the
+    ! state of shear stress, but is kept here for reference. The state of stress
     ! is solved for from a kinematic balance equation. This function calculates
     ! the steady-state friction corresponding to the slip velocity and the porosity
     ! as read from the input file.

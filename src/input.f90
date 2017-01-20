@@ -118,13 +118,24 @@ subroutine read_main(pb)
              pb%v_star(n), pb%theta_star(n),   &
              pb%iot(n),pb%iasp(n),pb%coh(n))
 
-!JPA if MPI, read only the nodes of this processor
-  do i=1,n
-    read(15,*)pb%sigma(i), pb%v(i), pb%theta(i),  &
-              pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
-              pb%v2(i), pb%mu_star(i), pb%v_star(i), &
-              pb%iot(i), pb%iasp(i), pb%coh(i)
-  end do
+  !JPA if MPI, read only the nodes of this processor
+  ! SEISMIC: Chen's model allows for an initial state of stress that is
+  ! read from the input file
+  if (pb%i_rns_law == 3) then
+    do i=1,n
+      read(15,*)pb%sigma(i), pb%tau(i), pb%v(i), pb%theta(i),  &
+                pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
+                pb%v2(i), pb%mu_star(i), pb%v_star(i), &
+                pb%iot(i), pb%iasp(i), pb%coh(i)
+    end do
+  else
+    do i=1,n
+      read(15,*)pb%sigma(i), pb%v(i), pb%theta(i),  &
+                pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
+                pb%v2(i), pb%mu_star(i), pb%v_star(i), &
+                pb%iot(i), pb%iasp(i), pb%coh(i)
+    end do
+  endif
 
   ! <SEISMIC>
   ! Read input parameters for Chen's model. These parameters are (in order):
