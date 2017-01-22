@@ -1,28 +1,39 @@
 !----------------------------------------------------------------------------
-! MPI parallel routines for QDYN. 
-! This file containes all the MPI routines used in QDYN to run in parallel.
-! Modified from Parallel.f90 SPECFEM3D.
+! Wrapper to MPI parallel routines for QDYN
+! Modified from SPECFEM3D's parallel.f90
 
 module my_mpi
 
   use mpi
 
   implicit none
+  private
 
-  integer, public :: MY_RANK=0, NPROCS=1
+  integer, save :: MY_RANK=0, NPROCS=1
+
+  public :: init_mpi, finalize_mpi, &
+            my_mpi_tag, my_mpi_rank, my_mpi_NPROCS, is_mpi_parallel, is_mpi_master, &
+            gather_allv, gather_allvdouble, gather_allvdouble_root, gather_alli, &
+            synchronize_all, sum_allreduce, max_allproc
 
 contains
 
 !----------------------------------------------------------------------------
 ! Subroutine to initialize MPI 
+! If only one processor is found, MPI is finalized
 subroutine init_mpi()
 
   integer :: ier 
 
   call MPI_INIT(ier)
   if (ier /= 0 ) stop 'Error initializing MPI'
-  call world_rank(MY_RANK)
-  call world_size(NPROCS)
+  call MPI_COMM_RANK(MPI_COMM_WORLD,MY_RANK,ier)
+  if (ier /= 0 ) stop 'Error getting MPI rank'
+  call MPI_COMM_SIZE(MPI_COMM_WORLD,NPROCS,ier)
+  if (ier /= 0 ) stop 'Error getting MPI world size'
+
+  if (NPROCS<2) call MPI_FINALIZE(ier)
+  if (MY_RANK==0) write(6,*) 'Number of processors = ',NPROCS
 
 end subroutine init_mpi 
 
@@ -41,33 +52,44 @@ subroutine finalize_mpi()
 
 end subroutine finalize_mpi
 
-!-------------------------------------------------------------------------------------------------
-subroutine world_size(sizeval)
-
-  integer,intent(out) :: sizeval
-
-  ! local parameters
-  integer :: ier
-
-  call MPI_COMM_SIZE(MPI_COMM_WORLD,sizeval,ier)
-  if (ier /= 0 ) stop 'Error getting MPI world size'
-
-end subroutine world_size
 
 !----------------------------------------------------------------------------
-! Retrieve processor number
-subroutine world_rank(rank)
+! Make a 6-character text tag based on processor rank 
+! The tag is blank if this is not an MPI parallel run.
+! Use trim(my_mpi_tag) to include rank in file names if one file per processor is needed
+function my_mpi_tag() result(iprocnum)
 
-  integer,intent(out) :: rank
+  character(6) :: iprocnum
 
-  integer :: ier
+  if (NPROCS>1) then
+    write(iprocnum,'(i6.6)') MY_RANK
+  else
+    iprocnum = ""
+  endif
 
-  call MPI_COMM_RANK(MPI_COMM_WORLD,rank,ier)
-  if (ier /= 0 ) stop 'Error getting MPI rank'
+end function my_mpi_tag
 
-end subroutine world_rank
+!----------------------------------------------------------------------------
+integer function my_mpi_rank()
+  my_mpi_rank = MY_RANK
+end function my_mpi_rank
 
-!-------------------------------------------------------------------------------------------------
+!----------------------------------------------------------------------------
+integer function my_mpi_NPROCS()
+  my_mpi_NPROCS = NPROCS
+end function my_mpi_NPROCS
+
+!----------------------------------------------------------------------------
+logical function is_mpi_parallel()
+  is_mpi_parallel = (NPROCS>1)
+end function is_mpi_parallel
+
+!----------------------------------------------------------------------------
+logical function is_mpi_master()
+  is_mpi_master = (MY_RANK==0)
+end function is_mpi_master
+
+!----------------------------------------------------------------------------
 !Gather all MPI.
 subroutine gather_allv(sendbuf, scounts, recvbufall, recvcountsall, recvoffsetall,recvcountstotal)
 

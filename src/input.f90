@@ -15,29 +15,18 @@ subroutine read_main(pb)
   
   use problem_class
   use mesh, only : read_mesh, mesh_get_size
-  use constants, only : FFT_TYPE, MPI_parallel
-  use my_mpi, only: MY_RANK, NPROCS, init_mpi
+  use constants, only : FFT_TYPE
+  use my_mpi, only: my_mpi_tag, is_MPI_parallel
  
   type(problem_type), intent(inout)  :: pb
 
   integer :: i,n,nsta,ista,ik
-  character(len=6) :: iprocnum
-
-  double precision :: xsta, ysta, zsta, dmin=1d0, d
+  double precision :: xsta, ysta, zsta, dmin, d
   
   write(6,*) 'Start reading input: ...'
 
-  if (MPI_parallel) call init_mpi()
-  if (NPROCS>1) then
-    !PG, if MPI then read one input file per processor
-    write(iprocnum,'(i6.6)') MY_RANK
-    iprocnum=adjustl(iprocnum)
-    write(6,*) 'iprocnum:', iprocnum
-    open(unit=15, FILE='qdyn'//iprocnum(1:len_trim(iprocnum))//'.in')
-!    call synchronize_all()
-  else
-    open(unit=15,FILE= 'qdyn.in') 
-  endif
+  !PG, if MPI then read one input file per processor
+  open(unit=15, FILE='qdyn'//trim(my_mpi_tag())//'.in')
   call read_mesh(15,pb%mesh)
   write(6,*) '   Mesh input complete'
 
@@ -98,8 +87,7 @@ subroutine read_main(pb)
 !JPA some of these arrays should be allocated in initialize.f90, 
 !    unless it's better to do it here to optimize memory access
 
-!JPA if MPI n should be the number of nodes in this processor
-  n = mesh_get_size(pb%mesh)
+  n = mesh_get_size(pb%mesh) ! number of nodes in this processor
   allocate ( pb%tau(n),     &
              pb%dtau_dt(n), pb%dsigma_dt(n), &
              pb%tau_init(n), pb%sigma(n), &
@@ -113,7 +101,6 @@ subroutine read_main(pb)
              pb%v_star(n), pb%theta_star(n),   &
              pb%iot(n),pb%iasp(n),pb%coh(n))
  
-!JPA if MPI, read only the nodes of this processor
   do i=1,n
     read(15,*)pb%sigma(i), pb%v(i), pb%theta(i),  &
               pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
@@ -121,32 +108,27 @@ subroutine read_main(pb)
               pb%iot(i), pb%iasp(i), pb%coh(i)                 
   end do
 
-  if (MPI_parallel) then 
+  if (is_MPI_parallel()) then 
     allocate(pb%mesh%x(pb%mesh%nn), pb%mesh%y(pb%mesh%nn),& 
              pb%mesh%z(pb%mesh%nn), pb%mesh%dip(pb%mesh%nn))     
     pb%mesh%dx = pb%mesh%Lfault/pb%mesh%nx !Check if dx is needed 
-!Reading mesh chunck.
     do i=1,n
       read(15,*) pb%mesh%x(i),pb%mesh%y(i),pb%mesh%z(i),pb%mesh%dip(i)
     enddo
-  endif
 
-  close(15)
-
-  if (MPI_parallel) then 
-!Finding stations in this processor
-   dmin = 10d0
-   if (.not.(pb%ot%ic==1)) then !Reading stations, pb%ot%ic==1 is by default
+  !Finding stations in this processor
+    dmin = huge(dmin)
+    if (.not.(pb%ot%ic==1)) then !Reading stations, pb%ot%ic==1 is default
      open(unit=200,file='stations.dat',action='read',status='unknown')
      read(200,*) nsta
      do ista=1,nsta 
-      read(200,*) xsta, ysta, zsta
+       read(200,*) xsta, ysta, zsta
        sta_loop: do
         do ik=1,pb%mesh%nn
          d=sqrt((pb%mesh%x(ik)-xsta)**2+(pb%mesh%y(ik)-ysta)**2+(pb%mesh%z(ik)-zsta)**2)
          if (d<=dmin) then
            pb%ot%ic=ik
-           write(6,*) 'processor:',MY_RANK,' Station found, index:',ik
+           write(6,*) 'processor: ',my_mpi_tag(),' Station found, index:',ik
            pb%station_found=.true.
            exit sta_loop
          endif
@@ -155,9 +137,11 @@ subroutine read_main(pb)
        enddo sta_loop
       close(200)
      enddo
-   endif
+    endif
+
   endif
 
+  close(15)
   write(6,*) 'Input complete'
 
 end subroutine read_main

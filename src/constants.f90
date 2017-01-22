@@ -23,11 +23,8 @@ module constants
 !   2 : FFT along-strike and along-dip, only works for vertical faults
   integer, parameter :: FFT_TYPE = 1
 
-! MPI run in parallel
-!   true  : run MPI parallel
-!   false : run serial or openMP
-   logical, parameter :: MPI_parallel = .false.
-   logical, parameter :: OUT_MASTER = .true. !To write ouput with the master MY_RANK=0
+! For parallel MPI runs: to write global outputs only by the master processor
+   logical, parameter :: OUT_MASTER = .true. 
 
 ! Adding real precision and type for MPI runs.
 !   CUSTOM_REAL = 4  (single precision)

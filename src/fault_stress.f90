@@ -18,17 +18,16 @@ module fault_stress
     integer :: nw, nx, nwLocal, nwGlobal, nnLocal, nnGlobal    
   end type kernel_3D
 
-  type fault_coord  
-!    double precision, dimension(:,:,:), allocatable :: xyzlocal,xyzglobal
-    double precision, dimension(:), allocatable :: xlocarray,ylocarray,zlocarray 
-    double precision, dimension(:), allocatable :: xglobarray,yglobarray,zglobarray 
-  end type fault_coord
+!  type fault_coord  
+!    double precision, dimension(:), allocatable :: xlocarray,ylocarray,zlocarray 
+!    double precision, dimension(:), allocatable :: xglobarray,yglobarray,zglobarray 
+!  end type fault_coord
 
   type kernel_3D_fft
     integer :: nxfft, nw, nx, nwLocal, nwGlobal, nnLocalfft, nnGlobalfft, nnLocal, nnGlobal
     double precision, dimension(:,:,:), allocatable :: kernel, kernel_n
     type (OouraFFT_type) :: m_fft
-    type (fault_coord) :: fault
+!    type (fault_coord) :: fault
   end type kernel_3D_fft
 
   type kernel_3D_fft2d
@@ -48,11 +47,10 @@ module fault_stress
   end type kernel_type
 
 
-! For MPI_parallel
+! For MPI parallel
   integer, allocatable, save :: nnLocalfft_perproc(:),nnoffset_perproc(:),& 
                                 nnLocal_perproc(:),nnoffset_glob_perproc(:),nwLocal_perproc(:),&
                                 nwoffset_glob_perproc(:)
-
   
   public :: init_kernel, compute_stress, kernel_type, nnLocalfft_perproc,nnoffset_perproc,& 
             nnLocal_perproc,nnoffset_glob_perproc,nwLocal_perproc,nwoffset_glob_perproc   
@@ -192,8 +190,8 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   use okada, only : compute_kernel
   use fftsg, only : my_rdft
   use utils, only : save_vector3
-  use constants, only : MPI_parallel, FAULT_TYPE
-  use my_mpi, only : MY_RANK
+  use constants, only : FAULT_TYPE
+  use my_mpi, only : is_mpi_parallel, is_mpi_master, my_mpi_rank
 
   type(kernel_3d_fft), intent(inout) :: k
   double precision, intent(in) :: lambda,mu
@@ -204,7 +202,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   double precision, allocatable :: tmp(:), tmp_n(:)   ! for FFT
   integer :: i, j, ii, jj, n, nn, IRET
 
-  if (MY_RANK==0) then
+  if (is_mpi_master()) then
     write(6,*) 'Generating 3D kernel...'
     write(6,*) 'OouraFFT applied along-strike'
   endif
@@ -212,12 +210,10 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   k%nx = m%nx
   k%nxfft = 2*m%nx ! fft convolution requires twice longer array
 
-  ! TO_DO_MPI :
-  if (MPI_parallel) then
+  if (is_MPI_parallel()) then
+    write(6,*) 'MY_RANK:', my_mpi_rank()
     k%nwLocal = m%nw
-
-    write(6,*) 'MY_RANK:',MY_RANK
-    k%nnLocal=nnoffset_glob_perproc(MY_RANK)
+    k%nnLocal=nnoffset_glob_perproc(my_mpi_rank())
     k%nwGlobal=sum(nwLocal_perproc)
     k%nnGlobal=k%nwGlobal*k%nx     
 
@@ -228,9 +224,9 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
     k%nnLocal=0
   endif
 
-    write(6,*) 'nwGlobal:',k%nwGlobal
-    write(6,*) 'nwLocal:',k%nwLocal
-    write(6,*) 'nnLocal:',k%nnLocal
+  write(6,*) 'nwGlobal:',k%nwGlobal
+  write(6,*) 'nwLocal:',k%nwLocal
+  write(6,*) 'nnLocal:',k%nnLocal
   k%nnLocalfft  = k%nwLocal*k%nxfft
   k%nnGlobalfft = k%nwGlobal*k%nxfft
 
@@ -240,21 +236,13 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   allocate(tmp_n(k%nxfft))
   ! assumes faster index runs along-strike
   do n=1,k%nwGlobal
-    if (MPI_parallel) then
-     nn = (n-1)*m%nx+1
-     y_src = m%yglob(nn)
-     z_src = m%zglob(nn)
-     dip_src = m%dipglob(nn)
-     dw_src = m%dwglob(n)
-    else
-     nn = (n-1)*m%nx+1
-     y_src = m%y(nn)
-     z_src = m%z(nn)
-     dip_src = m%dip(nn)
-     dw_src = m%dw(n)
-    endif
+    nn = (n-1)*m%nx+1
+    ! note that if serial (no MPI) the glob arrays point to the local arrays
+    y_src = m%yglob(nn)
+    z_src = m%zglob(nn)
+    dip_src = m%dipglob(nn)
+    dw_src = m%dwglob(n)
     do j=1,k%nwLocal
-!PG: taking the nodes corresponding to each processor.
       jj = (j-1)*m%nx+1 
       y_obs = m%y(jj)
       z_obs = m%z(jj)
@@ -279,14 +267,6 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
       endif
     enddo
   enddo
-
-!  if (MPI_parallel) then
-!
-!    call synchronize_all()
-!    call save_vector3(k%kernel,MY_RANK,'fault_kernl_glob',k%nwLocal,k%nwGlobal,k%nxfft)
-!    call synchronize_all() 
-!
-!  endif
 
 end subroutine init_kernel_3D_fft
 
@@ -362,7 +342,7 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling)
 
   use mesh, only : mesh_type
   use okada, only : compute_kernel
-  use constants, only : FAULT_TYPE, MPI_parallel
+  use constants, only : FAULT_TYPE
 
   type(kernel_3d), intent(inout) :: k
   double precision, intent(in) :: lambda,mu
@@ -377,8 +357,6 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling)
     !kernel(i,j): response at i of source at j
     !because dx = constant, only need to calculate i at first column
 
-
-  if (.not. MPI_parallel) then
     allocate (k%kernel(m%nw,m%nn))
     if (sigma_coupling) allocate (k%kernel_n(m%nw,m%nn))
     do i = 1,m%nw
@@ -401,36 +379,6 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling)
       write(99,*) k%kernel(1,j)
       if (sigma_coupling) write(99,*) k%kernel_n(1,j)
     end do
-  else 
-!MPI version.
-! In progress.
-!    k%nwLocal=m%nw
-!    k%nx = m%nx 
-!    k%nwGlobal=sum(nwLocal_perproc)
-!    k%nnGlobal=k%nwGlobal*k%nx
-!
-!    allocate (k%kernel(k%nwLocal,k%nnGlobal))
-!    if (sigma_coupling) allocate (k%kernel_n(k%nwLocal,k%nnGlobal))
-!
-!    do i = 1,k%nwLocal
-!        nn = ()
-!      do j = 1,k%nnGlobal
-!        call compute_kernel(lambda,mu,m%xglob(j),m%yglob(j),m%zglob(j),  &
-!               m%dipglob(j),m%dx,m%dw((j-1)/m%nx+1),   &
- !              m%x(1+(i-1)*m%nx),m%y(1+(i-1)*m%nx),   &
- !              m%z(1+(i-1)*m%nx),m%dip(1+(i-1)*m%nx),IRET,tau,sigma_n,FAULT_TYPE)
- !       if (IRET == 0) then
- !         k%kernel(i,j) = tau  
- !         if (sigma_coupling) k%kernel_n(i,j) = sigma_n    
- !       else
- !         write(6,*) '!!WARNING!! : Kernel Singular, set value to 0,(i,j)',i,j
- !         k%kernel(i,j) = 0d0
- !         if (sigma_coupling) k%kernel_n(i,j) = 0d0
- !       end if
- !     end do
- !   end do
-!
-  endif
 
 end subroutine init_kernel_3D
 
@@ -446,13 +394,7 @@ subroutine compute_stress(tau,sigma_n,K,v)
     case(1); call compute_stress_1d(tau,K%k1,v)
     case(2); call compute_stress_2d(tau,K%k2f,v)
     case(3)
-      ! if (not using MPI) then
       call compute_stress_3d(tau,sigma_n,K%k3,v)
-      ! else
-      !  gather the global v from the pieces in all processors
-      !  call MPI_gatherall(..., v, vGlobal ...) 
-      !  call compute_stress_3d(tau,sigma_n,K%k3,vGlobal)
-      ! endif
     case(4); call compute_stress_3d_fft(tau,sigma_n,K%k3f,v)
     case(5); call compute_stress_3d_fft2d(tau,K%k3f2,v)
   end select
@@ -492,7 +434,6 @@ subroutine compute_stress_2d(tau,k2f,v)
 end subroutine compute_stress_2d
 
 !--------------------------------------------------------
-! MPI partitioning: each processor gets a range of along-strike positions
 
 subroutine compute_stress_3d(tau,sigma_n,k3,v)
 
@@ -510,7 +451,7 @@ subroutine compute_stress_3d(tau,sigma_n,k3,v)
   nnGlobal = size(v)
   nxGlobal = nnGlobal/nw
  
-  ix0_proc = 0 ! TO DO in MPI version: first horizontal index minus 1 in this processor
+  ix0_proc = 0
  
   !$OMP PARALLEL PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j,k)
   !$OMP DO SCHEDULE(STATIC)
@@ -573,8 +514,7 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
 
   use fftsg, only : my_rdft
   use utils, only : save_vector
-  use constants, only : MPI_parallel 
-  use my_mpi
+  use my_mpi, only : is_MPI_parallel, gather_allvdouble
 
   type(kernel_3D_fft), intent(inout)  :: k3f
   double precision , intent(inout) :: tau(:), sigma_n(:) !PG: Collect tau and sigma_n in all processor. 
@@ -584,10 +524,6 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
   integer :: n,k
   integer :: iglobal,ilocal,iwlocal,iwglobal,ixlocal,ixglobal
   double precision :: tmpzkarray(k3f%nnLocalfft),vzkarray(k3f%nnGlobalfft)
-
-!  if (MPI_parallel) then
-!    vzkarray(:)=0d0
-!  endif
 
 !tmpx needs to be private to avoid superposition with the other threads.
 !$OMP PARALLEL PRIVATE(tmpx)
@@ -602,40 +538,23 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
     tmpzk(n,:) = tmpx
   enddo
 !$OMP END DO
-  
-  if (MPI_parallel) then
+
 !$OMP SINGLE
-  !  gather the global vzk from the pieces in all processors
-  !  call MPI_gatherall(..., tmpzk, vzk ...) 
-  !   vzk is the global of tmpzk
-  !   allocate(tmpzkarray(k3f%nnLocalfft))
-  !   allocate(vzkarray(k3f%nnGlobalfft))
-!Local
+  if (is_MPI_parallel()) then
+   !Local array, convert from matrix to vector form
     ilocal=0
     do iwlocal=1,k3f%nwLocal
       do ixlocal=1,k3f%nxfft 
-            ilocal=ilocal+1
-         tmpzkarray(ilocal)  = tmpzk(iwlocal,ixlocal) 
+        ilocal = ilocal+1
+        tmpzkarray(ilocal) = tmpzk(iwlocal,ixlocal) 
       enddo
     enddo
 
-!!$OMP& DO SCHEDULE(STATIC) REDUCTION(+:ilocal)
-!    iwxlocal=0
-!    do iwx=1,k3f%nwLocal*k3f%nxfft
-!            iwxlocal=iwxlocal+1
-!         tmpzkarray(ilocal)  = tmpzk(iwlocal,ixlocal) 
-!      enddo
-!    enddo
-!!$OMP END DO 
-     
-!!  !$OMP SINGLE
+   ! gather the global vzk from the pieces in all processors
     call gather_allvdouble(tmpzkarray,k3f%nnLocalfft,vzkarray,nnLocalfft_perproc, & 
                      nnoffset_perproc,k3f%nnGlobalfft)
-!!  !$OMP END SINGLE
 
-    
-!!Global
-!!$OMP DO SCHEDULE(STATIC) REDUCTION(+:iglobal)
+   !Global array, convert from vector to matrix form
     iglobal=0
     do iwglobal=1,k3f%nwGlobal
       do ixglobal=1,k3f%nxfft 
@@ -643,14 +562,11 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
          vzk(iwglobal,ixglobal)=vzkarray(iglobal)  
       enddo
     enddo
-!!$OMP END DO
 
-!$OMP END SINGLE
   else
-!$OMP SINGLE 
-     vzk = tmpzk
-!$OMP END SINGLE
+    vzk = tmpzk
   endif
+!$OMP END SINGLE
 
   !-- compute shear stress 
 

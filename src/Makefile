@@ -11,7 +11,7 @@ EXEC_PATH = .
 # GNU, serial
 #Only MPI no openMP
 F90 = mpif90
-OPT = -O3 -Wall
+#OPT = -O3 -Wall
 # For parallel runs with MPI+OpenMP:
 #F90 = mpif90
 #OPT = -O3 -Wall -fopenmp 
@@ -23,7 +23,7 @@ OPT = -O3 -Wall
 #OPT = -O3 -ip -ipo -parallel -openmp -par-threshold:50
 #-no-inline-factor
 #OPT = -O3
-# OPT = -O0 -warn all -C
+OPT = -O0 -warn all -C
 #OPT = -O0 -warn all -parallel -par-report3  -C
 #OPT = -O0 -g
 #OPT = -O3 -ip -ipo -arch SSE2 -tpp7 -xN # pablo.ethz.ch
