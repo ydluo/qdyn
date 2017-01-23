@@ -1,24 +1,24 @@
 ! initialize all include parameters, kernel and fields
 
 module initialize
-  
+
   implicit none
   private
 
-  public :: init_all 
+  public :: init_all
 
 contains
 
 !=============================================================
 subroutine init_all(pb)
-  
+
   use problem_class
   use mesh, only : init_mesh
   use constants, only : PI
   use my_mpi, only: is_MPI_parallel, is_MPI_master, my_mpi_NPROCS, gather_alli, gather_allvdouble
-  use fault_stress, only : init_kernel,nnLocalfft_perproc,nnoffset_perproc,& 
+  use fault_stress, only : init_kernel,nnLocalfft_perproc,nnoffset_perproc,&
                            nnLocal_perproc,nnoffset_glob_perproc,&
-                           nwLocal_perproc,nwoffset_glob_perproc 
+                           nwLocal_perproc,nwoffset_glob_perproc
   use output, only : ot_init, ox_init
   use friction, only : set_theta_star, friction_mu
 
@@ -29,20 +29,20 @@ subroutine init_all(pb)
   integer :: TID, NTHREADS, iproc, nwLocal, nLocal, nx, &
              nxfft, nwGlobal, nnGlobal, NPROCS
 
-! If MPI parallel, the mesh for each processor has been already read 
-! from qdynxxx.in and initialized in input.f90 
+! If MPI parallel, the mesh for each processor has been already read
+! from qdynxxx.in and initialized in input.f90
 ! Here we gather the whole fault to compute the kernel
   if (is_MPI_parallel()) then
     NPROCS = my_mpi_NPROCS()
     nwLocal = pb%mesh%nw !nw along dip taken by processor i.
-    nx = pb%mesh%nx 
+    nx = pb%mesh%nx
     nxfft = 2*pb%mesh%nx !For the kernel
     nLocal=nx*nwLocal !For fault nodes
    ! Assemble the array of nwLocal_perproc taken from each processor.
     allocate(nwLocal_perproc(0:NPROCS-1))
     allocate(nnLocalfft_perproc(0:NPROCS-1))
     allocate(nnLocal_perproc(0:NPROCS-1))
-   ! noffset_perproc: Allocation of the vectors sent by each processor. 
+   ! noffset_perproc: Allocation of the vectors sent by each processor.
    ! This is needed to make each vector in different memory place to avoid superposition.
     allocate(nnoffset_perproc(0:NPROCS-1))
     allocate(nnoffset_glob_perproc(0:NPROCS-1))
@@ -53,13 +53,13 @@ subroutine init_all(pb)
     nnoffset_perproc=0
     nnoffset_glob_perproc=0
     nwoffset_glob_perproc=0
-    if (is_mpi_master()) then 
-      write(6,*) 'nwLocal_perproc:',nwLocal_perproc  
-      write(6,*) 'nnLocal_perproc:',nnLocal_perproc  
-      write(6,*) 'nnLocalfft_perproc:',nnLocalfft_perproc  
-      write(6,*) 'nnoffset_perproc:',nnoffset_perproc 
-      write(6,*) 'nnoffset_glob_perproc:',nnoffset_glob_perproc 
-      write(6,*) 'nwoffset_glob_perproc:',nwoffset_glob_perproc 
+    if (is_mpi_master()) then
+      write(6,*) 'nwLocal_perproc:',nwLocal_perproc
+      write(6,*) 'nnLocal_perproc:',nnLocal_perproc
+      write(6,*) 'nnLocalfft_perproc:',nnLocalfft_perproc
+      write(6,*) 'nnoffset_perproc:',nnoffset_perproc
+      write(6,*) 'nnoffset_glob_perproc:',nnoffset_glob_perproc
+      write(6,*) 'nwoffset_glob_perproc:',nwoffset_glob_perproc
     endif
    ! Assembled array of number of points per processor and send to all processors.
     call gather_alli(nwLocal,nwLocal_perproc)
@@ -73,20 +73,20 @@ subroutine init_all(pb)
 
    ! k%nnLocal=nnoffset_glob_perproc(MY_RANK)
     nwGlobal=sum(nwLocal_perproc)
-    nnGlobal=nwGlobal*nx     
+    nnGlobal=nwGlobal*nx
     pb%mesh%nnglob = nnGlobal !Needed later in the code
     allocate(pb%mesh%xglob(nnGlobal),pb%mesh%yglob(nnGlobal),&
              pb%mesh%zglob(nnGlobal),pb%mesh%dwglob(nwGlobal),pb%mesh%dipglob(nnGlobal))
    ! Adding global mesh for computing the kernel(ilocal,global,nxfft)
-    call gather_allvdouble(pb%mesh%x, nLocal,pb%mesh%xglob,nnLocal_perproc, & 
+    call gather_allvdouble(pb%mesh%x, nLocal,pb%mesh%xglob,nnLocal_perproc, &
                            nnoffset_glob_perproc,nnGlobal)
-    call gather_allvdouble(pb%mesh%y, nLocal,pb%mesh%yglob,nnLocal_perproc, & 
+    call gather_allvdouble(pb%mesh%y, nLocal,pb%mesh%yglob,nnLocal_perproc, &
                            nnoffset_glob_perproc,nnGlobal)
-    call gather_allvdouble(pb%mesh%z, nLocal,pb%mesh%zglob,nnLocal_perproc, & 
+    call gather_allvdouble(pb%mesh%z, nLocal,pb%mesh%zglob,nnLocal_perproc, &
                            nnoffset_glob_perproc,nnGlobal)
-    call gather_allvdouble(pb%mesh%dip, nLocal,pb%mesh%dipglob,nnLocal_perproc, & 
+    call gather_allvdouble(pb%mesh%dip, nLocal,pb%mesh%dipglob,nnLocal_perproc, &
                            nnoffset_glob_perproc,nnGlobal)
-    call gather_allvdouble(pb%mesh%dw, nwLocal,pb%mesh%dwglob,nwLocal_perproc, & 
+    call gather_allvdouble(pb%mesh%dw, nwLocal,pb%mesh%dwglob,nwLocal_perproc, &
                            nwoffset_glob_perproc,nwGlobal)
 
   else
@@ -95,9 +95,9 @@ subroutine init_all(pb)
     pb%mesh%xglob => pb%mesh%x
     pb%mesh%yglob => pb%mesh%y
     pb%mesh%zglob => pb%mesh%z
-    pb%mesh%dip => pb%mesh%dip
-    pb%mesh%dw => pb%mesh%dw
-  endif  
+    pb%mesh%dipglob => pb%mesh%dip
+    pb%mesh%dwglob => pb%mesh%dw
+  endif
 
   pb%v_pre = 0.d0
   pb%v_pre2 = 0.d0
@@ -110,7 +110,7 @@ subroutine init_all(pb)
   !---------------------- dt_max & perturbation------------------
 !YD we may want to modify later this section to
 !impose more complicated loading/pertubation
-!functions involved: problem_class/problem_type; input/read_main 
+!functions involved: problem_class/problem_type; input/read_main
 !                    initialize/init_all;  derivs_all/derivs
   if (pb%Aper /= 0.d0 .and. pb%Tper > 0.d0) then
     if (pb%dt_max > 0.d0) then
@@ -127,27 +127,27 @@ subroutine init_all(pb)
   !---------------------- dt_max & perturbation------------------
 
   !---------------------- impedance ------------------
-  if (pb%beta > 0d0) then 
+  if (pb%beta > 0d0) then
     pb%zimpedance = 0.5d0*pb%smu/pb%beta
   else
     pb%zimpedance = 0.d0
   endif
   if (is_mpi_master()) write(6,*) 'Impedance = ', pb%zimpedance
   !---------------------- impedance ------------------
-     
-  !---------------------- ref_value ------------------        
+
+  !---------------------- ref_value ------------------
   call set_theta_star(pb)
   pb%tau_init = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
 
   pb%tau = pb%tau_init
-  pb%slip = 0d0 
-  !---------------------- ref_value ----------------- 
+  pb%slip = 0d0
+  !---------------------- ref_value -----------------
 
-  !---------------------- init_value for solver ----------------- 
+  !---------------------- init_value for solver -----------------
   pb%time = 0.d0
   pb%itstop = -1
   pb%it = 0
-  !---------------------- init_value for solver ----------------- 
+  !---------------------- init_value for solver -----------------
 
   call init_kernel(pb%lam,pb%smu,pb%mesh,pb%kernel)
 
@@ -156,7 +156,7 @@ subroutine init_all(pb)
 
   if (is_mpi_master()) write(6,*) 'Initialization completed'
 
-  ! Info about threads 
+  ! Info about threads
 !!$OMP PARALLEL PRIVATE(NTHREADS, TID)
 !!$  TID = OMP_GET_THREAD_NUM()
 !!$  write(6,*) 'Thread index = ', TID
