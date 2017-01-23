@@ -30,20 +30,10 @@ module friction
 !   - Chen & Spiers (2016), JGR: Solid Earth, doi:10.1002/2016JB013470
 !
 ! In the view of rate-and-state friction, we take the porosity as the
-! (microstructural) state, so that the constitutive relations can be implemented
-! in the current QDYN framework by defining the partial- and time-derivatives of
-! the friction coefficient and the porosity (state). The (spatially non-uniform)
+! (microstructural) state, and the constitutive relations are solved for the
+! shear stress (rather than velocity; see derivs_all.f90). The (spatially non-uniform)
 ! values of the material/gouge properties and initial porosity are read from the
-! input script, and stored in pb%chen_params. Parameters defined specifically
-! in this file are:
-!   - tan_psi: dilatation angle
-!   - mu_tilde: friction coefficient of the grain-boundary (rate-strengthening)
-!   - e_ps_dot: (compaction) strain rate due to pressure solution creep
-!
-! WARNING: with the current implementation, Chen's model fails to simulate
-! slide-hold-slide tests (i.e. the load-point velocity is set to zero). This
-! should be worked out to ensure a proper implementation of the kinematic
-! and dynamic equations
+! input script, and stored in pb%chen_params.
 !
 ! </SEISMIC>
 
@@ -104,6 +94,8 @@ function friction_mu(v,theta,pb) result(mu)
     mu = pb%mu_star - pb%a*log(pb%v1/v+1d0) + pb%b*log(theta/pb%theta_star+1d0)
 
   case (3) ! SEISMIC: Chen's model
+
+    write (6,*) "friction.f90::friciton_mu is deprecated for Chen's model"
 
     ! SEISMIC: this function should no longer be called to determine the
     ! state of shear stress, but is kept here for reference. The state of stress
@@ -332,6 +324,7 @@ function calc_e_ps(sigma,theta,truncate,pb) result(e_ps_dot)
   ! to zero. A cut-off porosity of about 3% is chosen here, which corresponds
   ! to the percolation limit of aggregates
   if (truncate .eqv. .true.) e_ps_dot = 0.5*(1 + erf(100*(theta-0.03)))*e_ps_dot
+  !!if (truncate .eqv. .true.) e_ps_dot = erf(2*theta/0.05)*e_ps_dot
 
 end function calc_e_ps
 
