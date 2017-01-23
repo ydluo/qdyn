@@ -50,7 +50,7 @@ end subroutine screen_init
 !=====================================================================
 !output one step to screen
 subroutine screen_write(pb)
-  
+
   use constants, only : YEAR
   use problem_class
   use my_mpi, only : is_MPI_parallel, is_mpi_master, max_allproc

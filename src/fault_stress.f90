@@ -18,7 +18,7 @@ module fault_stress
     integer :: nw, nx, nwLocal, nwGlobal, nnLocal, nnGlobal
   end type kernel_3D
 
-!  type fault_coord  
+!  type fault_coord
 !    double precision, dimension(:), allocatable :: xlocarray,ylocarray,zlocarray
 !    double precision, dimension(:), allocatable :: xglobarray,yglobarray,zglobarray
 !  end type fault_coord

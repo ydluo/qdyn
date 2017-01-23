@@ -84,6 +84,7 @@ subroutine init_mesh_0D(m)
   type(mesh_type), intent(inout) :: m
 
   write(6,*) 'Spring-block System'
+  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn))
   m%dx = m%Lfault
   m%x = 0d0
   m%y = 0d0

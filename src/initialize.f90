@@ -95,8 +95,8 @@ subroutine init_all(pb)
     pb%mesh%xglob => pb%mesh%x
     pb%mesh%yglob => pb%mesh%y
     pb%mesh%zglob => pb%mesh%z
-    pb%mesh%dip => pb%mesh%dip
-    pb%mesh%dw => pb%mesh%dw
+    pb%mesh%dipglob => pb%mesh%dip
+    pb%mesh%dwglob => pb%mesh%dw
   endif
 
   pb%v_pre = 0.d0
