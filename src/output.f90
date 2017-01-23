@@ -116,7 +116,7 @@ subroutine ot_init(pb)
       write(pb%ot%unit,'(a)')'# 2=V, 3=theta, 4=V*theta/dc, 5=tau, 6=slip'
       close(pb%ot%unit)
     endif
-! In progress
+!JPA WARNING Implementation in progress
 !    pb%ot%unit = 22
 !    write(pb%ot%unit,'(a)')'# Seismicity record:' 
 !    write(pb%ot%unit,'(a)')'# 1=loc, 2=t, 3=v'

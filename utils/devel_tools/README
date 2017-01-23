@@ -13,10 +13,14 @@ to be familiar with svn. Github also supports git and online edit.
 CODE DEVELOPMENT:
 -----------------
 
-  + Do "svn update" regularly, very often. This keeps your working version
-    synchronized with the last updates by the rest of the team
-  + Do "svn update" before any "svn commit". This facilitates merging your work.
-  + Work in the
+  + Do "svn update" regularly, very often, and resolve any conflict to
+    merge your working version with the recent modifications by the rest of 
+    the development team.
+  + Do "svn update" before any "svn commit".
+  + If you are not comfortable creating and managing code "branches" in svn, 
+    you can work directly on the trunk (master) version. If you do that, before
+    any "svn commit" make sure the code compiles and completes successfully
+    at least one example of the examples/ directory.
   + Run "devel_tools/mymakedepend.perl" if you have added a new Fortran module 
     or a new "use" command in a Fortran source file. This perl script updates 
     the list of module dependencies in the file Makefile.depend, needed to

@@ -150,7 +150,6 @@
 %     The default path is the directory containing qdyn.m
 %   NPROCS number of processors for parallel MPI runs
 %     The default value is 1 (serial run)
-%     If NPROCS > 1, set MPI_parallel=.true. in constants.f90 and re-compile
 %
 % OUTPUTS 	pars	structure containing the parameters listed above, and:
 %			X,Y,Z = fault coordinates
@@ -395,12 +394,11 @@ switch mode
   if NPROCS>1 % MPI parallel 
    % Defining nwLocal 
    nwLocal(1:NPROCS)=floor(NW/NPROCS);
-   % In case NW/NPRCOS is not integer. Leaving the rest the last processor
+   % In case NW/NPROCS is not integer. Leaving the rest to the last processor
    nwLocal(NPROCS) = mod(NW,NPROCS) + nwLocal(NPROCS);
    nnLocal = 0;
    for iproc=0:NPROCS-1  
-    iprocstr = num2str(sprintf('%06i',iproc));
-    filename = ['qdyn' iprocstr '.in'];
+    filename = ['qdyn' sprintf('%06i',iproc) '.in'];
     fid=fopen(filename,'w');
     fprintf(fid,'%u     meshdim\n' , MESHDIM); 
     if SIGMA_CPL == 1
