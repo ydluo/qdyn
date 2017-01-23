@@ -141,7 +141,7 @@ end subroutine do_bsstep
 subroutine update_field(pb)
 
   use output, only : crack_size
-  use friction, only : friction_mu
+  use friction, only : friction_mu, compute_velocity
   use my_mpi, only: max_allproc, is_MPI_parallel
 
   type(problem_type), intent(inout) :: pb

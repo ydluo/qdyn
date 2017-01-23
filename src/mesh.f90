@@ -84,11 +84,6 @@ subroutine init_mesh_0D(m)
   type(mesh_type), intent(inout) :: m
 
   write(6,*) 'Spring-block System'
-  ! SEISMIC
-  ! Problem here with previously allocated memory, needs de-allocation first?
-  if (.not. allocated(m%x)) then
-    allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn))
-  endif
   m%dx = m%Lfault
   m%x = 0d0
   m%y = 0d0
@@ -106,13 +101,6 @@ subroutine init_mesh_1D(m)
 
   write(6,*) '1D fault, uniform grid'
   m%dx = m%Lfault/m%nn
-  ! SEISMIC
-  ! Problem here with previously allocated memory, needs de-allocation first?
-  if ( allocated(m%x) ) then
-    deallocate(m%x)
-    deallocate(m%y)
-    deallocate(m%z)
-  endif
   allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn))
   do i=1,m%nn
     m%x(i) = (i-m%nn*0.5d0-0.5d0)*m%dx
