@@ -10,8 +10,8 @@ contains
 
       SUBROUTINE bsstep(y,dydx,nv,x,htry,eps,yscal,hdid,hnext,pb,ik)
 
-      use problem_class, only : problem_type
-      use my_mpi, only: NPROCS, max_allproc
+      use problem_class, only : problem_type 
+      use my_mpi, only: is_MPI_parallel, max_allproc
 
       integer, intent(in) :: nv
       double precision, intent(inout) :: y(nv), dydx(nv), x
@@ -81,7 +81,7 @@ contains
         call pzextr(k,xest,yseq,y,yerr,nv)
         if (k == 1) cycle
         errmax=maxval(dabs(yerr/yscal))
-        if (NPROCS>1) then
+        if (is_MPI_parallel()) then
           call max_allproc(errmax,errmaxglob)
           errmax=errmaxglob
         endif

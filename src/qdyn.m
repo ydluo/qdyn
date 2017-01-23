@@ -146,9 +146,12 @@
 %		DYN_SKIP number of dynamic events to skip (warm up cycles)
 %
 %		Other parameters:
-%		EXEC_PATH path to the Fortran qdyn executable
-%       NPROCS = 1  % Default for serial runs
-%              > 1  % MPI runs, change MPI_parallel=.true. in constants.f90
+%		EXEC_PATH path to the Fortran qdyn executable.
+%     The default path is the directory containing qdyn.m
+%   NPROCS number of processors for parallel MPI runs
+%     The default value is 1 (serial run)
+%     If NPROCS > 1, set MPI_parallel=.true. in constants.f90 and re-compile
+%
 % OUTPUTS 	pars	structure containing the parameters listed above, and:
 %			X,Y,Z = fault coordinates
 %		ot	structure containing time series outputs
@@ -192,8 +195,6 @@
 
 function [pars,ot,ox] = qdyn(mode,varargin)
 
-NPROCS = 1; % Default serial, no-MPI.
-
 % NOTE ON VARIABLE NAMING CONVENTIONS
 %	lower_case 	= local variables
 %	UPPER_CASE 	= variables that will be wrapped into output structure 'pars'
@@ -204,6 +205,8 @@ month = 30*day;
 year = 365*day;
 
 %--------- DEFAULT PARAMETERS ------------------------------------
+
+NPROCS = 1; % Default serial, no-MPI.
 
 MESHDIM=1;
 NEQS=2;
@@ -382,17 +385,17 @@ switch mode
         ot = 0;
         ox = 0;
      return;
-   end;
+   end
   %% Station
-  if (MESHDIM==2);
+  if MESHDIM==2
    fids=fopen('stations.dat','w');
    nsta=1; % For now one station but later will be extended to more stations
    fprintf(fids,'%d\n',nsta);
    fprintf(fids,'%.15g %.15g %.15g\n',X(IC),Y(IC),Z(IC));
    fclose(fids);
-  end;
+  end
     % export qdyn.in
-  %if (NPROCS>1); % MPI parallel
+  if NPROCS>1 % MPI parallel 
    % Defining nwLocal
    nwLocal(1:NPROCS)=floor(NW/NPROCS);
    % In case NW/NPRCOS is not integer. Leaving the rest the last processor
@@ -408,9 +411,9 @@ switch mode
     if SIGMA_CPL == 1
       NEQS = 3;
     end
-    if MESHDIM == 2;
+    if MESHDIM == 2
       DWnnlocal=[];DIP_Wnnlocal=[];
-      fprintf(1, 'MESHDIM = %d\n', MESHDIM); %JPA should "1" be "fid" instead?
+      fprintf(1, 'MESHDIM = %d\n', MESHDIM);
       fprintf(fid,'%u %u     NX, NW\n' , NX, nwLocal(iproc+1));
       fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
       DWnnlocal = DW(nnLocal/NX+1:nwLocal(iproc+1)+nnLocal/NX);
@@ -421,8 +424,8 @@ switch mode
       fprintf(fid,'%.15g %.15g      L, W\n', L, W);
     end
 
-    if MESHDIM == 1;
-        fprintf(fid,'%u   finite\n', FINITE);
+    if MESHDIM == 1
+      fprintf(fid,'%u   finite\n', FINITE);
     end
 
     fprintf(fid,'%u   itheta_law\n', THETA_LAW);
@@ -442,34 +445,33 @@ switch mode
       iloc = xloc + (wloc-1)*NX + nnLocal;
       fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
         SIGMA(iloc),V_0(iloc),TH_0(iloc),A(iloc),B(iloc),DC(iloc),V1(iloc),V2(iloc),MU_SS(iloc),V_SS(iloc),IOT(iloc),IASP(iloc),CO(iloc));
-     end;
-    end;
+     end
+    end
 
     for wloc=1:nwLocal(iproc+1)
      for xloc=1:NX
       iloc = xloc + (wloc-1)*NX + nnLocal;
       fprintf(fid,'%.15g %.15g %.15g %.15g\n',...
           X(iloc),Y(iloc),Z(iloc),DIP(iloc));
-     end;
-    end;
+     end
+    end
 
     % next processor
     nnLocal=NX*nwLocal(iproc+1) + nnLocal;
     % hold on
     %scatter(X(1+nnLocal:iloc),Z(1+nnLocal:iloc),[],Z(1+nnLocal:iloc))
     fclose(fid);
-   end;
-  %end;
+   end
+  end
 
-
-
+%JPA In MPI runs, if qdyn.in is not used we should not create it (put it in an "else" block)
   fid=fopen('qdyn.in','w');
    fprintf(fid,'%u     meshdim\n' , MESHDIM);
    if SIGMA_CPL == 1
        NEQS = 3;
    end
-   if MESHDIM == 2;
-       fprintf(1, 'MESHDIM = %d\n', MESHDIM); %JPA should "1" be "fid" instead?
+   if MESHDIM == 2
+       fprintf(1, 'MESHDIM = %d\n', MESHDIM);
        fprintf(fid,'%u %u     NX, NW\n' , NX, NW);
        fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
        fprintf(fid,'%.15g %.15g \n', [DW(:), DIP_W(:)]');
@@ -478,8 +480,8 @@ switch mode
        fprintf(fid,'%.15g %.15g      L, W\n', L, W);
    end
 
-   if MESHDIM == 1;
-         fprintf(fid,'%u   finite\n', FINITE);
+   if MESHDIM == 1
+     fprintf(fid,'%u   finite\n', FINITE);
    end
 
    fprintf(fid,'%u   itheta_law\n', THETA_LAW);
@@ -498,7 +500,7 @@ switch mode
    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
       [SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:),IOT(:),IASP(:),CO(:)]');
 
-  fclose(fid);
+   fclose(fid);
 
     if strcmp(mode, 'write')
         ot = 0;
@@ -507,8 +509,7 @@ switch mode
     end
 
 %    Solve
-    %status = system(['mpirun -np ' num2str(NPROCS) ' ' EXEC_PATH filesep 'qdyn']);
-    if (NPROCS==1)
+    if NPROCS==1
        status = system([EXEC_PATH filesep 'qdyn']);
     else
        status = system(['mpirun -np ' num2str(NPROCS) ' ' EXEC_PATH filesep 'qdyn']);
@@ -521,7 +522,7 @@ switch mode
       copyfile(fullfile(pathstr,'qdyn.h') ,[NAME '.h']);
     end
     % output
-    if (NPROCS>1); % MPI parallel
+    if NPROCS>1 % MPI parallel
       [ot,ox]= read_qdyn_out_mpi(NAME);
     else
       [ot,ox]= read_qdyn_out(NAME);

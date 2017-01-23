@@ -50,17 +50,17 @@ end subroutine screen_init
 !=====================================================================
 !output one step to screen
 subroutine screen_write(pb)
-
-  use constants, only : YEAR, MPI_parallel
-  use my_mpi, only : MY_RANK, max_allproc
+  
+  use constants, only : YEAR
   use problem_class
+  use my_mpi, only : is_MPI_parallel, is_mpi_master, max_allproc
 
   type (problem_type), intent(inout) :: pb
   double precision :: vtempglob
   integer :: i
 
 
-if (MPI_parallel) then
+  if (is_MPI_parallel()) then
     !Finding the global max
     vtempglob=0d0
     do i=1,pb%mesh%nn
@@ -71,12 +71,12 @@ if (MPI_parallel) then
     end do
     call max_allproc(pb%v(pb%ot%ivmax),pb%vmaxglob)
     call max_allproc(pb%sigma(pb%ot%ivmax),pb%sigma_vmaxglob)
-    if (MY_RANK==0) write(6,'(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,&
+    if (is_mpi_master()) write(6,'(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,&
                               pb%vmaxglob, pb%sigma_vmaxglob/1.0D6
-else
+  else
     write(6,'(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,    &
                             pb%v(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)/1.0D6
-endif
+  endif
 
 end subroutine screen_write
 
@@ -98,27 +98,25 @@ end subroutine time_write
 subroutine ot_init(pb)
 
   use problem_class
-  use constants, only: MPI_parallel, OUT_MASTER
-  use my_mpi, only: MY_RANK
+  use constants, only: OUT_MASTER
+  use my_mpi, only : is_MPI_parallel, is_mpi_master
 
   type (problem_type), intent(inout) :: pb
   integer :: i
+
   pb%ot%lcnew = dble(pb%mesh%nn)
   pb%ot%llocnew = dble(pb%mesh%nn)
 
+  if (is_MPI_parallel()) then
 
-if (MPI_parallel) then
-
-  if (OUT_MASTER) then
-     if (MY_RANK==0) then
+    if (OUT_MASTER .and. is_mpi_master() ) then
       pb%ot%unit = 18
       write(pb%ot%unit,'(a)')'# macroscopic values:'
       write(pb%ot%unit,'(a)')'# 1=t'
       write(pb%ot%unit,'(a)')'# values at selected point:'
       write(pb%ot%unit,'(a)')'# 2=V, 3=theta, 4=V*theta/dc, 5=tau, 6=slip'
       close(pb%ot%unit)
-     endif
-  endif
+    endif
 ! In progress
 !    pb%ot%unit = 22
 !    write(pb%ot%unit,'(a)')'# Seismicity record:'
@@ -166,11 +164,13 @@ end subroutine ot_init
 subroutine ox_init(pb)
 
   use problem_class
-  use constants, only : MPI_parallel,OUT_MASTER
-  use my_mpi, only: MY_RANK
+  use constants, only : OUT_MASTER
+  use my_mpi, only : is_MPI_parallel, is_mpi_master
 
   type (problem_type), intent(inout) :: pb
+
   integer :: i
+
   if (pb%ox%i_ox_seq == 0) then
     pb%ox%unit = 19
   else
@@ -185,19 +185,15 @@ subroutine ox_init(pb)
     pb%ox%count = pb%ox%count+1
   enddo
 
-  if (MPI_parallel) then
-   if (OUT_MASTER) then
-    if (MY_RANK==0) then
+  if (is_MPI_parallel()) then
+    if (OUT_MASTER .and. is_mpi_master() ) then
       pb%ox%countglob=0
       do i=1,pb%mesh%nnglob, pb%ox%nxout
         pb%ox%countglob = pb%ox%countglob+1
       enddo
      if (pb%ox%unit==19) write(pb%ox%unit,'(a,i10)')'# nx= ',pb%ox%countglob
     endif
-!   else
-!    write(pb%ox%unit,'(a,i10)')'# nx= ',pb%ox%count
-!    close(pb%ox%unit)
-   endif
+
   else
     write(pb%ox%unit,'(a,i10)')'# nx= ',pb%ox%count
   endif
@@ -209,17 +205,16 @@ end subroutine ox_init
 subroutine ot_write(pb)
 
   use problem_class
-  use constants, only : OCTAVE_OUTPUT, MPI_parallel, OUT_MASTER
+  use constants, only : OCTAVE_OUTPUT
+  use my_mpi, only : is_MPI_parallel
 
   type (problem_type), intent(inout) :: pb
   integer :: i,ios
   character(30) :: ot_fmt
 
+  if (is_MPI_parallel()) then
 
-if (MPI_parallel) then
-
-! Working on parallel outputs for timeseries
-  if (OUT_MASTER) then
+ ! Working on parallel outputs for timeseries
     ! if one station is found in this processor
     if (pb%station_found) then
       pb%ot%unit = 18
@@ -234,9 +229,8 @@ if (MPI_parallel) then
        stop 'Error opening a fort.18 file'
       endif
     endif
-  endif
 
-else
+  else
 
   pb%ot%unit = 18
   if (OCTAVE_OUTPUT) then
@@ -284,8 +278,8 @@ end subroutine ot_write
 subroutine ox_write(pb)
 
   use problem_class
-  use constants, only: MPI_parallel,OUT_MASTER
-  use my_mpi, only: MY_RANK, synchronize_all
+  use constants, only: OUT_MASTER
+  use my_mpi, only: is_MPI_parallel, is_mpi_master, my_mpi_tag, synchronize_all
 
   type (problem_type), intent(inout) :: pb
 
@@ -293,7 +287,7 @@ subroutine ox_write(pb)
   double precision :: vtempglob
   character(len=256) :: fileproc
 
-if (MPI_parallel) then
+if (is_MPI_parallel()) then
 ! In progress
 ! if (mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
  if (mod(pb%it,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
@@ -301,7 +295,7 @@ if (MPI_parallel) then
   ! Collecting global nodes
     call synchronize_all()
     call pb_global(pb)
-    if (MY_RANK==0) then
+    if (is_mpi_master()) then
       vtempglob=0d0
       do i=1,pb%mesh%nnglob
         if ( pb%v_glob(i) > vtempglob) then
@@ -337,7 +331,7 @@ if (MPI_parallel) then
   !local
       !Each processor writes an output file.
       pb%ox%unit = pb%ox%unit + 1
-      write(fileproc,'(a,i6.6,a,i6.6)') 'fort.',pb%ox%unit,'_proc',MY_RANK
+      write(fileproc,'(a,i6.6,a,a)') 'fort.',pb%ox%unit,'_proc',my_mpi_tag()
       open(pb%ox%unit,file=fileproc(1:len_trim(fileproc)),status='replace',form='formatted',action='write')
       write(pb%ox%unit,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
       write(pb%ox%unit,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip '
@@ -356,7 +350,7 @@ if (MPI_parallel) then
    if (OUT_MASTER) then
      call synchronize_all()
      call pb_global(pb)
-     if (MY_RANK==0) then
+     if (is_mpi_master()) then
       if (pb%ox%dyn_stat2 == 0 .and. pb%vmaxglob >= pb%DYN_th_on ) then
         pb%ox%dyn_stat2 = 1
         do ixout=1,pb%mesh%nnglob,pb%ox%nxout_dyn
@@ -622,17 +616,17 @@ function crack_size(s,n)
 end function crack_size
 
 !=====================================================================
-! Collect global fault nodes to MY_RANK=0 for outputs
+! Collect global fault nodes to master processor for outputs
   subroutine pb_global(pb)
 
   use fault_stress, only: nnLocal_perproc,nnoffset_glob_perproc
   use problem_class
-  use my_mpi, only: MY_RANK, gather_allvdouble_root
+  use my_mpi, only: my_mpi_rank, gather_allvdouble_root
 
   type(problem_type), intent(inout) :: pb
   integer :: nLocal,nnGlobal
 
-  nLocal=nnLocal_perproc(MY_RANK)
+  nLocal=nnLocal_perproc(my_mpi_rank())
   nnGlobal=sum(nnLocal_perproc)
 
   if (.not.allocated(pb%v_glob)) then

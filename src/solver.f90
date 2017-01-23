@@ -3,7 +3,6 @@
 module solver
 
   use problem_class, only : problem_type
-  use constants, only: MPI_parallel
 
   implicit none
   private
@@ -20,11 +19,11 @@ contains
 subroutine solve(pb)
 
   use output, only : screen_init, screen_write, ox_write, ot_write
-  use my_mpi, only: MY_RANK, finalize_mpi
+  use my_mpi, only: is_MPI_parallel, is_mpi_master, finalize_mpi
 
   type(problem_type), intent(inout)  :: pb
 
-  if (MY_RANK==0) call screen_init(pb)
+  if (is_mpi_master()) call screen_init(pb)
   call screen_write(pb)
   call ox_write(pb)
 
@@ -33,7 +32,7 @@ subroutine solve(pb)
   do while (pb%it /= pb%itstop)
 !  do while (pb%it+1 /= pb%itstop)
     pb%it = pb%it + 1
-!   if (MY_RANK==0) write(6,*) 'it:',pb%it
+!   if (is_mpi_master()) write(6,*) 'it:',pb%it
     call do_bsstep(pb)
 ! if stress exceeds yield call Coulomb_solver ! JPA Coulomb quick and dirty
 !                         or (cleaner version) do linear adjustment of
@@ -49,15 +48,14 @@ subroutine solve(pb)
 !--------Output onestep to screen and ox file(snap_shot)
 ! if(mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
     if(mod(pb%it,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
-!      if (MY_RANK==0) write(6,*) 'it:',pb%it,'iktotal=',iktotal,'pb%time=',pb%time
-      !call ot_write(pb)
+!      if (is_mpi_master()) write(6,*) 'it:',pb%it,'iktotal=',iktotal,'pb%time=',pb%time
       call screen_write(pb)
     endif
-! if (MY_RANK==0) call ox_write(pb)
+! if (is_mpi_master()) call ox_write(pb)
     call ox_write(pb)
   enddo
 
-  if (MPI_parallel) call finalize_mpi()
+  if (is_MPI_parallel()) call finalize_mpi()
 
 end subroutine solve
 
@@ -73,7 +71,6 @@ subroutine do_bsstep(pb)
 
   use derivs_all
   use ode_bs
-  use my_mpi, only: MY_RANK
 
   type(problem_type), intent(inout) :: pb
 
@@ -144,8 +141,8 @@ end subroutine do_bsstep
 subroutine update_field(pb)
 
   use output, only : crack_size
-  use friction, only : friction_mu, compute_velocity
-  use my_mpi, only: max_allproc
+  use friction, only : friction_mu
+  use my_mpi, only: max_allproc, is_MPI_parallel
 
   type(problem_type), intent(inout) :: pb
 
@@ -193,7 +190,7 @@ subroutine update_field(pb)
        pb%ot%ivmax = i
      end if
   end do
- if (MPI_parallel) then
+ if (is_MPI_parallel()) then
 ! Finding global vmax
    call max_allproc(pb%v(pb%ot%ivmax),pb%vmaxglob)
 !   if.not.(vtemp==vtempglob) pb%ot%ivmax=-1 !This processor does not host the maximum vel.
@@ -207,13 +204,13 @@ end subroutine update_field
 subroutine check_stop(pb)
 
   use output, only : time_write
+  use my_mpi, only: is_MPI_parallel
 
   type(problem_type), intent(inout) :: pb
 
-  double precision :: vmax_old = 0d0, vmax_older = 0d0
-  save vmax_old, vmax_older
+  double precision, save :: vmax_old = 0d0, vmax_older = 0d0
 
-if (MPI_parallel) then
+if (is_MPI_parallel()) then
 ! In progress
   if (pb%itstop == -1) then
       !         STOP soon after end of slip localization
