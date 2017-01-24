@@ -7,8 +7,11 @@ To join the QDYN developers team contact the QDYN software managers,
 Yingdi Luo and Pablo Ampuero.
 You will be granted permission to edit the code in github
 and the manual in Google docs.
-Our preferred version control system for QDYN is svn. We recommend you 
-to be familiar with svn. Github also supports git and online edit.
+Github supports the version control systems git and (a flavor of) svn,
+as well as online code editing. If you are new to version control systems 
+we recommend you to learn how to use svn (http://svnbook.red-bean.com/,
+https://help.github.com/articles/support-for-subversion-clients/).
+
 
 CODE DEVELOPMENT:
 -----------------

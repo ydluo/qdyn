@@ -20,8 +20,13 @@ Physics:
 
 Code engineering and optimization:
 + create a python wrapper to enable runs on clusters without matlab license
-+ In the current MPI code the outputs are inefficient: they are centralized by
-  the master processor. Use instead parallel MPI I/O or one file per processor?
++ use parallel MPI I/O
+    http://wgropp.cs.illinois.edu/courses/cs598-s16/lectures/lecture32.pdf
+    https://www.olcf.ornl.gov/wp-content/uploads/2011/10/Fall_IO.pdf
+  or a prallel I/O library like HDF5, NETCDF4 or ADIOS:
+    https://wiki.scinet.utoronto.ca/wiki/images/a/af/Netcdfhdf5.pdf
+    http://www.unidata.ucar.edu/software/netcdf/index.html
+    https://www.olcf.ornl.gov/center-projects/adios/ 
 + hierarchical matrix techniques (interface to Andrew Bradley's code)
 + inputs as fortran namelists
 + use object oriented matlab

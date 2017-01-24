@@ -24,7 +24,7 @@ module fault_stress
 !  end type fault_coord
 
   type kernel_3D_fft
-    integer :: nxfft, nw, nx, nwLocal, nwGlobal, nnLocalfft, nnGlobalfft, nnLocal, nnGlobal
+    integer :: nxfft, nw, nx, nwLocal, nwGlobal, nnLocalfft, nnGlobalfft
     double precision, dimension(:,:,:), allocatable :: kernel, kernel_n
     type (OouraFFT_type) :: m_fft
 !    type (fault_coord) :: fault
@@ -48,12 +48,9 @@ module fault_stress
 
 
 ! For MPI parallel
-  integer, allocatable, save :: nnLocalfft_perproc(:),nnoffset_perproc(:),& 
-                                nnLocal_perproc(:),nnoffset_glob_perproc(:),nwLocal_perproc(:),&
-                                nwoffset_glob_perproc(:)
+  integer, allocatable, save :: nnLocalfft_perproc(:),nnoffset_perproc(:)
   
-  public :: init_kernel, compute_stress, kernel_type, nnLocalfft_perproc,nnoffset_perproc,& 
-            nnLocal_perproc,nnoffset_glob_perproc,nwLocal_perproc,nwoffset_glob_perproc   
+  public :: init_kernel, compute_stress, kernel_type
 
 contains
 ! K is stiffness, different in sign with convention in Dieterich (1992)
@@ -191,7 +188,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   use fftsg, only : my_rdft
   use utils, only : save_vector3
   use constants, only : FAULT_TYPE
-  use my_mpi, only : is_mpi_parallel, is_mpi_master, my_mpi_rank
+  use my_mpi, only : is_mpi_parallel, is_mpi_master, gather_alli, my_mpi_NPROCS
 
   type(kernel_3d_fft), intent(inout) :: k
   double precision, intent(in) :: lambda,mu
@@ -200,7 +197,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
 
   double precision :: tau,sigma_n, y_src, z_src, dip_src, dw_src, y_obs, z_obs,dip_obs
   double precision, allocatable :: tmp(:), tmp_n(:)   ! for FFT
-  integer :: i, j, ii, jj, n, nn, IRET
+  integer :: i, j, ii, jj, n, nn, IRET, iproc, NPROCS  
 
   if (is_mpi_master()) then
     write(6,*) 'Generating 3D kernel...'
@@ -209,24 +206,8 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
 
   k%nx = m%nx
   k%nxfft = 2*m%nx ! fft convolution requires twice longer array
-
-  if (is_MPI_parallel()) then
-    write(6,*) 'MY_RANK:', my_mpi_rank()
-    k%nwLocal = m%nw
-    k%nnLocal=nnoffset_glob_perproc(my_mpi_rank())
-    k%nwGlobal=sum(nwLocal_perproc)
-    k%nnGlobal=k%nwGlobal*k%nx     
-
-  else
-    k%nwGlobal = m%nw
-    k%nnGlobal=k%nwGlobal*k%nx
-    k%nwLocal = k%nwGlobal
-    k%nnLocal=0
-  endif
-
-  write(6,*) 'nwGlobal:',k%nwGlobal
-  write(6,*) 'nwLocal:',k%nwLocal
-  write(6,*) 'nnLocal:',k%nnLocal
+  k%nwLocal = m%nw
+  k%nwGlobal= m%nwglob
   k%nnLocalfft  = k%nwLocal*k%nxfft
   k%nnGlobalfft = k%nwGlobal*k%nxfft
 
@@ -267,6 +248,16 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
       endif
     enddo
   enddo
+
+  if (is_mpi_parallel()) then
+    NPROCS = my_mpi_NPROCS()
+    allocate(nnLocalfft_perproc(0:NPROCS-1))
+    call gather_alli(k%nwLocal*k%nxfft,nnLocalfft_perproc)
+    allocate(nnoffset_perproc(0:NPROCS-1))
+    do iproc=0,NPROCS-1
+      nnoffset_perproc(iproc)=sum(nnLocalfft_perproc(0:iproc))-nnLocalfft_perproc(iproc)
+    enddo
+  endif
 
 end subroutine init_kernel_3D_fft
 
