@@ -16,10 +16,11 @@
 
 ## News 
 
-*August 2016*: In the following paper we used *QDYN* to simulate earthquake cycles and obtained events spanning a broad range of magnitudes to study earthquake scaling relations:  
-  Y. Luo, J. P. Ampuero and K. Irikura  
-  *Free surface effects on earthquake moment-area scaling relations*  
-  Submitted to PAGEOPH, Topical Volume on *"Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"*
+*December 2017*: In the following paper we used *QDYN* to simulate earthquake cycles and obtained events spanning a broad range of magnitudes to study earthquake scaling relations:  
+  Y. Luo, J. P. Ampuero, K. Miyakoshi and K. Irikura (2017)
+  *Surface effects on earthquake moment-area scaling relations*  
+  PAGEOPH, Topical Volume on *"Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"*
+  doi:10.1007/s00024-017-1467-4  [PDF] (https://dl.dropboxusercontent.com/u/82498341/LuoAmp16a%20scaling.pdf)
 
 *QDYN* was previously hosted on [GoogleCode] (https://code.google.com/p/qdyn/) and is now on [Github] (http://ydluo.github.io/qdyn). Both [SVN] (https://subversion.apache.org) and [GIT] (https://git-scm.com) version control systems are supported. 
 
