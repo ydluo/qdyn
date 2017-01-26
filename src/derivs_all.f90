@@ -82,7 +82,7 @@ subroutine derivs(time,yt,dydt,pb)
 
   ! state evolution law, dtheta/dt = f(v,theta)
   ! SEISMIC: in Chen's formulation, theta is the gouge porosity
-  dydt(1::pb%neqs) = dtheta_dt(v,yt(1::pb%neqs),pb)
+  dydt(1::pb%neqs) = dtheta_dt(v,yt(2::pb%neqs),sigma,yt(1::pb%neqs),pb)
 
   if (pb%i_rns_law == 3) then
     ! SEISMIC: the total dtau_dt results from the slip deficit and

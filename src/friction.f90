@@ -43,7 +43,7 @@ module friction
   private
 
   public  :: set_theta_star, friction_mu, dmu_dv_dtheta, dtheta_dt
-  public  :: compute_velocity
+  public  :: compute_velocity, dalpha_dt
   private  :: calc_tan_psi, calc_mu_tilde, calc_e_ps
 
 contains
@@ -149,10 +149,10 @@ function friction_mu(v,theta,pb) result(mu)
 end function friction_mu
 
 !--------------------------------------------------------------------------------------
-function dtheta_dt(v,theta,pb) result(dth_dt)
+function dtheta_dt(v,tau,sigma,theta,pb) result(dth_dt)
 
   type(problem_type), intent(in) :: pb
-  double precision, dimension(pb%mesh%nn), intent(in) :: v, theta
+  double precision, dimension(pb%mesh%nn), intent(in) :: v, tau, sigma, theta
   double precision, dimension(pb%mesh%nn) :: dth_dt, omega
   double precision, dimension(pb%mesh%nn) :: tan_psi, e_ps_dot
   double precision, dimension(pb%mesh%nn) :: y_ps, y_gr
@@ -171,8 +171,8 @@ function dtheta_dt(v,theta,pb) result(dth_dt)
 
   case (3, 4) ! SEISMIC: Chen's model
     tan_psi = calc_tan_psi(theta, pb)   ! Dilatation angle
-    e_ps_dot = calc_e_ps(pb%sigma, theta, .true., pb)   ! Compaction rate
-    y_ps = calc_e_ps(pb%tau, theta, .false., pb)   ! Press. soln. shear rate
+    e_ps_dot = calc_e_ps(sigma, theta, .true., pb)   ! Compaction rate
+    y_ps = calc_e_ps(tau, theta, .false., pb)   ! Press. soln. shear rate
     y_gr = v/pb%chen_params%w - y_ps
     ! SEISMIC: the nett rate of change of porosity is given by the relation
     ! phi_dot = -(1 - phi)*strain_rate, where the strain rate equals
@@ -192,6 +192,31 @@ function dtheta_dt(v,theta,pb) result(dth_dt)
   end select
 
 end function dtheta_dt
+
+
+function dalpha_dt(tau,sigma,theta,alpha,v,pb) result(da_dt)
+
+  type(problem_type), intent(in) :: pb
+  double precision, dimension(pb%mesh%nn), intent(in) :: tau, sigma, theta, alpha, v
+  double precision, dimension(pb%mesh%nn) :: da_dt, psi, tan_psi, sin_psi, cos_psi
+  double precision, dimension(pb%mesh%nn) :: sigma_i, q
+  double precision, dimension(pb%mesh%nn) :: y_ps, y_gr
+
+  q = 2*(pb%chen_params%phi0 - theta)
+  tan_psi = pb%chen_params%H*q
+  psi = atan(tan_psi)
+  cos_psi = cos(psi)
+  sin_psi = tan_psi * cos_psi
+
+  y_ps = calc_e_ps(tau, theta, .false., pb)   ! Press. soln. shear rate
+  y_gr = v/pb%chen_params%w - y_ps
+
+  ! 1.9 is approximately 6/pi, where 6 is the average grain coordination number
+  sigma_i = 1.9*(sigma*cos_psi + tau*sin_psi)/(alpha*q)
+  da_dt = (pb%coh_params%NG_const/q)*(pb%coh_params%E_surf - 0.5*pb%coh_params%compl*sigma_i**2) &
+          - y_gr*(alpha - pb%coh_params%alpha0)
+
+end function dalpha_dt
 
 !--------------------------------------------------------------------------------------
 subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
@@ -223,7 +248,7 @@ end subroutine dmu_dv_dtheta
 ! SEISMIC: calculate the dilatation angle, which is a geometric consequence
 ! of the instantaneous porosity (theta)
 !--------------------------------------------------------------------------------------
-function compute_velocity(tau,sigma,theta,pb) result(v)
+function compute_velocity(tau,sigma,theta,alpha,pb) result(v)
 
   type(problem_type), intent(in) :: pb
   double precision, dimension(pb%mesh%nn), intent(in) :: tau, sigma, theta
@@ -232,6 +257,7 @@ function compute_velocity(tau,sigma,theta,pb) result(v)
   ! SEISMIC: define some extra parameters for Chen's friction law
   double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, denom, y_ps
   double precision, dimension(pb%mesh%nn) :: mu_star, y_gr, tau_gr
+  double precision, dimension(pb%mesh%nn) :: cos_psi, cohesion
 
   tan_psi = calc_tan_psi(theta, pb)         ! Dilatation angle
 
@@ -247,10 +273,16 @@ function compute_velocity(tau,sigma,theta,pb) result(v)
   y_ps = calc_e_ps(tau, theta, .false., pb)
   mu_tilde = calc_mu_tilde(y_gr, pb)           ! Grain-boundary friction
 
+  cohesion = 0
+  if (pb%cohesion_model == 1) then
+    cos_psi = cos(atan(tan_psi))
+    cohesion = (PI/pb%chen_params%H)*(tan_psi*alpha*pb%coh_params%C_star)/(cos_psi*(1-mu_tilde*tan_psi))
+  endif
+
   ! Calculate the shear strength of the grain contacts, if the gouge were
   ! to deform by granular flow. To allow for granular flow (y_gr != 0),
   ! tau_gr should be near tau (frictional 'yield')
-  tau_gr = (mu_tilde + tan_psi)/(1 - mu_tilde*tan_psi)*sigma
+  tau_gr = (mu_tilde + tan_psi)/(1 - mu_tilde*tan_psi)*sigma + cohesion
   ! Use the error function to approximate the frictional yielding of the
   ! contacts. If tau_gr < 0.9*tau, this function quickly approaches zero
   ! NOTE: the use of an error function is more expensive than an if-statement

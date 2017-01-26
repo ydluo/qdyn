@@ -24,7 +24,7 @@ module constants
   integer, parameter :: FFT_TYPE = 1
 
 ! For parallel MPI runs: to write global outputs only by the master processor
-   logical, parameter :: OUT_MASTER = .true. 
+   logical, parameter :: OUT_MASTER = .true.
 
 ! Adding real precision and type for MPI runs.
 !   CUSTOM_REAL = 4  (single precision)
