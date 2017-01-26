@@ -31,6 +31,20 @@ module problem_class
   end type chen_type
   ! End of Chen's model structure
 
+  ! SEISMIC: definition of structure that holds the cohesion model parameters
+  ! See input.f90 for a description of the parameters
+  type cohesion_type
+    double precision, dimension(:), allocatable :: &
+      alpha0, alpha_c, compl, C_star, E_surf, NG_const
+  end type cohesion_type
+  ! End of cohesion model structure
+
+  ! SEISMIC: requested features structure (normal stress coupling, cohesion)
+  type features_type
+    integer :: stress_coupling, cohesion
+  end type features_type
+  ! End of features structure
+
   type problem_type
     double precision, dimension(:), allocatable :: &
       tau, dtau_dt, tau_init, &
@@ -38,7 +52,8 @@ module problem_class
       tau_max, t_rup, v_max, t_vmax,  &
       slip, v, dv_dt, theta, dtheta_dt,  &
       a, b, dc, v1, v2, mu_star, v_star, &
-      theta_star, iot, iasp, coh
+      theta_star, iot, iasp, coh, &
+      alpha, dalpha_dt
 !For MPI
     double precision, dimension(:), allocatable :: &
       tau_glob, dtau_dt_glob,&
@@ -70,6 +85,8 @@ module problem_class
     type (kernel_type) :: kernel
     ! SEISMIC: add structure that holds Chen model parameters
     type (chen_type) :: chen_params
+    type (cohesion_type) :: coh_params
+    type (features_type) :: features
   end type problem_type
 
 end module problem_class

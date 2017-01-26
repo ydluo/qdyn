@@ -194,12 +194,12 @@ function dtheta_dt(v,tau,sigma,theta,pb) result(dth_dt)
 end function dtheta_dt
 
 
-function dalpha_dt(tau,sigma,theta,alpha,v,pb) result(da_dt)
+function dalpha_dt(v,tau,sigma,theta,alpha,pb) result(da_dt)
 
   type(problem_type), intent(in) :: pb
   double precision, dimension(pb%mesh%nn), intent(in) :: tau, sigma, theta, alpha, v
   double precision, dimension(pb%mesh%nn) :: da_dt, psi, tan_psi, sin_psi, cos_psi
-  double precision, dimension(pb%mesh%nn) :: sigma_i, q
+  double precision, dimension(pb%mesh%nn) :: sigma_i, q, power_term
   double precision, dimension(pb%mesh%nn) :: y_ps, y_gr
 
   q = 2*(pb%chen_params%phi0 - theta)
@@ -213,7 +213,8 @@ function dalpha_dt(tau,sigma,theta,alpha,v,pb) result(da_dt)
 
   ! 1.9 is approximately 6/pi, where 6 is the average grain coordination number
   sigma_i = 1.9*(sigma*cos_psi + tau*sin_psi)/(alpha*q)
-  da_dt = (pb%coh_params%NG_const/q)*(pb%coh_params%E_surf - 0.5*pb%coh_params%compl*sigma_i**2) &
+  power_term = ((pb%coh_params%alpha_c - alpha)/(pb%coh_params%alpha_c - pb%coh_params%alpha0))**1.3
+  da_dt = (pb%coh_params%NG_const*power_term/q)*(pb%coh_params%E_surf - 0.5*pb%coh_params%compl*sigma_i**2) &
           - y_gr*(alpha - pb%coh_params%alpha0)
 
 end function dalpha_dt
@@ -250,8 +251,10 @@ end subroutine dmu_dv_dtheta
 !--------------------------------------------------------------------------------------
 function compute_velocity(tau,sigma,theta,alpha,pb) result(v)
 
+  use constants, only : PI
+
   type(problem_type), intent(in) :: pb
-  double precision, dimension(pb%mesh%nn), intent(in) :: tau, sigma, theta
+  double precision, dimension(pb%mesh%nn), intent(in) :: tau, sigma, theta, alpha
   double precision, dimension(pb%mesh%nn) :: v
 
   ! SEISMIC: define some extra parameters for Chen's friction law
@@ -274,7 +277,7 @@ function compute_velocity(tau,sigma,theta,alpha,pb) result(v)
   mu_tilde = calc_mu_tilde(y_gr, pb)           ! Grain-boundary friction
 
   cohesion = 0
-  if (pb%cohesion_model == 1) then
+  if (pb%features%cohesion == 1) then
     cos_psi = cos(atan(tan_psi))
     cohesion = (PI/pb%chen_params%H)*(tan_psi*alpha*pb%coh_params%C_star)/(cos_psi*(1-mu_tilde*tan_psi))
   endif

@@ -75,10 +75,15 @@ subroutine do_bsstep(pb)
   type(problem_type), intent(inout) :: pb
 
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
-  integer :: ik
+  integer :: ik, ind_stress_coupling, ind_cohesion
 
   ! Pack v, theta into yt
   ! yt(2::pb%neqs) = pb%v(pb%rs_nodes) ! JPA Coulomb
+
+  ! SEISMIC: define the indices of yt and dydt based on which
+  ! features are requested (defined in input file)
+  ind_stress_coupling = 2 + pb%features%stress_coupling
+  ind_cohesion = ind_stress_coupling + pb%features%cohesion
 
   ! SEISMIC: in the case of Chen's model, solve for tau and not v
   if (pb%i_rns_law == 3) then   ! SEISMIC: Chen's model
@@ -92,9 +97,13 @@ subroutine do_bsstep(pb)
   dydt(1::pb%neqs) = pb%dtheta_dt
   ! SEISMIC NOTE/WARNING: I don't know how permanent this temporary solution is,
   ! but in case it gets fixed more permanently, derivs_all.f90 needs adjustment
-  if ( pb%neqs == 3) then           ! Temp solution for normal stress coupling
-    yt(3::pb%neqs) = pb%sigma
-    dydt(3::pb%neqs) = pb%dsigma_dt
+  if (pb%features%stress_coupling == 1) then           ! Temp solution for normal stress coupling
+    yt(ind_stress_coupling::pb%neqs) = pb%sigma
+    dydt(ind_stress_coupling::pb%neqs) = pb%dsigma_dt
+  endif
+  if (pb%features%cohesion == 1) then
+    yt(ind_cohesion::pb%neqs) = pb%alpha
+    dydt(ind_cohesion::pb%neqs) = pb%dalpha_dt
   endif
 
   ! this update of derivatives is only needed to set up the scaling (yt_scale)
@@ -127,9 +136,14 @@ subroutine do_bsstep(pb)
   pb%dtheta_dt = dydt(1::pb%neqs)
   ! SEISMIC NOTE/WARNING: I don't know how permanent this temporary solution is,
   ! but in case it gets fixed more permanently, derivs_all.f90 needs adjustment
-  if ( pb%neqs == 3) then           ! Temp solution for normal stress coupling
-    pb%sigma = yt(3::pb%neqs)
-    pb%dsigma_dt = dydt(3::pb%neqs)
+  if (pb%features%stress_coupling == 1) then           ! Temp solution for normal stress coupling
+    pb%sigma = yt(ind_stress_coupling::pb%neqs)
+    pb%dsigma_dt = dydt(ind_stress_coupling::pb%neqs)
+  endif
+
+  if (pb%features%cohesion == 1) then
+    pb%alpha = yt(ind_cohesion::pb%neqs)
+    pb%dalpha_dt = dydt(ind_cohesion::pb%neqs)
   endif
 
 end subroutine do_bsstep
@@ -153,7 +167,7 @@ subroutine update_field(pb)
   ! the final value of tau, sigma, and porosity. Otherwise, use the standard
   ! rate-and-state expression to calculate tau as a function of velocity
   if (pb%i_rns_law == 3) then
-    pb%v = compute_velocity(pb%tau, pb%sigma, pb%theta, pb)
+    pb%v = compute_velocity(pb%tau, pb%sigma, pb%theta, pb%alpha, pb)
   else
     pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
   endif
