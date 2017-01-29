@@ -23,7 +23,7 @@ CODE DEVELOPMENT:
   + If you are not comfortable creating and managing code "branches" in svn, 
     you can work directly on the trunk (master) version. If you do that, before
     any "svn commit" make sure the code compiles and completes successfully
-    at least one example of the examples/ directory.
+    the test suite by running utils/devel_tools/run_tests.csh
   + Run "devel_tools/mymakedepend.perl" if you have added a new Fortran module 
     or a new "use" command in a Fortran source file. This perl script updates 
     the list of module dependencies in the file Makefile.depend, needed to
@@ -32,10 +32,12 @@ CODE DEVELOPMENT:
     in the manual in Google docs.
   + If you modified the manual, export if as pdf and replace by it the file
     doc/QDYN_man_GIT.pdf in github
+  + If you added a new feature and you want to minimize the chances of others 
+    breaking it, consider adding a test that uses your feature in utils/devel_tools/
+    following the template of the existing tests
   + Do not modify the tags/ directory. It contains code releases: versions
     that have been tested and are archived for public release. 
     Discuss release plans with the software managers.
-
   + Use the ToDo file. Write there missing features, pending tasks and 
     known bugs. Remove items from the list once they have been addressed.
   + Look often for comment lines in the code that contain the keyword "JPA". 
