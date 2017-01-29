@@ -33,7 +33,12 @@ module constants
 
 !--- END of User Settings ---
 
-  character(*), parameter :: SRC_PATH = "_FPP_SRC_PATH_"
+ ! Path to directory containing the source files and kernel file.
+ ! Needed to read the kernel file when FINITE=1.
+ ! The variable _FPP_SRC_PATH_ must be defined at compile time
+ ! using the preprocessor directive -D_FPP_SRC_PATH_="'...your_src_path...'"
+ ! The Makefile sets this automatically as  -D_FPP_SRC_PATH_="'$(CURDIR)'"
+  character(*), parameter :: SRC_PATH = _FPP_SRC_PATH_
 
   double precision, parameter :: PI = 3.141592653589793d0
   double precision, parameter :: DAY = 3600.d0*24.d0, &

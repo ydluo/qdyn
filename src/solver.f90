@@ -123,7 +123,6 @@ subroutine update_field(pb)
   type(problem_type), intent(inout) :: pb
 
   integer :: i,ix,iw  
-  double precision :: vtemp 
 
   ! Update slip, stress. 
   pb%slip = pb%slip + pb%v*pb%dt_did
@@ -150,13 +149,7 @@ subroutine update_field(pb)
   pb%ot%llocold = pb%ot%llocnew
   pb%ot%llocnew = crack_size(pb%dtau_dt,pb%mesh%nn)
   ! Output time series at max(v) location
-  vtemp=0d0
-  do i=1,pb%mesh%nn
-     if ( pb%v(i) > vtemp) then
-       vtemp = pb%v(i)
-       pb%ot%ivmax = i
-     end if
-  end do
+  pb%ot%ivmax = maxloc(pb%v,1)
  if (is_MPI_parallel()) then
 ! Finding global vmax
    call max_allproc(pb%v(pb%ot%ivmax),pb%vmaxglob)

@@ -158,6 +158,7 @@ subroutine init_kernel_2D(k,mu,m)
     
  !- Read coefficient I(n) from pre-calculated file.
   elseif (k%finite == 1) then
+    write(6,*) 'Reading kernel ',SRC_PATH,'/kernel_I.tab'
     open(57,file=SRC_PATH//'/kernel_I.tab')
     do i=1,k%nnfft/2-1
       read(57,*,end=100) k%kernel(2*i+1)

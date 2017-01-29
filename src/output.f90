@@ -21,7 +21,6 @@ subroutine screen_init(pb)
   use constants, only : PI
   type (problem_type), intent(inout) :: pb
   
-  write(6,*) '**Field Initialized.**'
   write(6,*) 'Values at selected point of the fault:'
     if (pb%mesh%dim == 0 .or.pb%mesh%dim == 1) then   
       if (pb%kernel%k2f%finite == 1 .or. pb%mesh%nn == 1) then
@@ -37,10 +36,8 @@ subroutine screen_init(pb)
       endif
     end if
 
-! YD:  should we out put 2D mesh K?
-
     write(6,*)
-    write(6,*) '    it,  dt (secs), time (yrs), vmax (m/s), sigma(MPa)'
+    write(6,*) '    it,  dt (secs), time (yrs), v_max (m/s), sigma_max (MPa)'
 
 end subroutine screen_init
 
@@ -55,26 +52,19 @@ subroutine screen_write(pb)
   use my_mpi, only : is_MPI_parallel, is_mpi_master, max_allproc
 
   type (problem_type), intent(inout) :: pb
-  double precision :: vtempglob
-  integer :: i
+  double precision :: sigma_max, sigma_max_glob
 
+  pb%ot%ivmax = maxloc(pb%v,1)
+  sigma_max = maxval(pb%sigma)
 
   if (is_MPI_parallel()) then 
-    !Finding the global max
-    vtempglob=0d0
-    do i=1,pb%mesh%nn
-     if ( pb%v(i) > vtempglob) then
-       vtempglob = pb%v(i)
-       pb%ot%ivmax = i
-     end if
-    end do
     call max_allproc(pb%v(pb%ot%ivmax),pb%vmaxglob) 
-    call max_allproc(pb%sigma(pb%ot%ivmax),pb%sigma_vmaxglob)
+    call max_allproc(sigma_max,sigma_max_glob)
     if (is_mpi_master()) write(6,'(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,&
-                              pb%vmaxglob, pb%sigma_vmaxglob/1.0D6
+                              pb%vmaxglob, sigma_max_glob/1.0D6
   else
     write(6,'(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,    &
-                            pb%v(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)/1.0D6
+                            pb%v(pb%ot%ivmax), sigma_max/1.0D6
   endif
 
 end subroutine screen_write

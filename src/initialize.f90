@@ -1,5 +1,3 @@
-! initialize all include parameters, kernel and fields
-
 module initialize
 
   implicit none
