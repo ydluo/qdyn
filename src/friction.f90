@@ -193,14 +193,15 @@ function dtheta_dt(v,tau,sigma,theta,pb) result(dth_dt)
 
 end function dtheta_dt
 
-
+!--------------------------------------------------------------------------------------
 function dalpha_dt(v,tau,sigma,theta,alpha,pb) result(da_dt)
 
   type(problem_type), intent(in) :: pb
   double precision, dimension(pb%mesh%nn), intent(in) :: tau, sigma, theta, alpha, v
   double precision, dimension(pb%mesh%nn) :: da_dt, psi, tan_psi, sin_psi, cos_psi
-  double precision, dimension(pb%mesh%nn) :: sigma_i, q, power_term
-  double precision, dimension(pb%mesh%nn) :: y_ps, y_gr
+  double precision, dimension(pb%mesh%nn) :: sigma_i, q, power_term, delta_alpha
+  double precision, dimension(pb%mesh%nn) :: y_ps, y_gr, x, y
+  double precision, parameter :: small = 1e-15
 
   q = 2*(pb%chen_params%phi0 - theta)
   tan_psi = pb%chen_params%H*q
@@ -211,11 +212,22 @@ function dalpha_dt(v,tau,sigma,theta,alpha,pb) result(da_dt)
   y_ps = calc_e_ps(tau, theta, .false., pb)   ! Press. soln. shear rate
   y_gr = v/pb%chen_params%w - y_ps
 
-  ! 1.9 is approximately 6/pi, where 6 is the average grain coordination number
+  delta_alpha = alpha - pb%coh_params%alpha0
+
+  ! 1.9 is approximately 6/pi, where 6 is the average grain coordination number (doesn't have to be precise)
   sigma_i = 1.9*(sigma*cos_psi + tau*sin_psi)/(alpha*q)
   power_term = ((pb%coh_params%alpha_c - alpha)/(pb%coh_params%alpha_c - pb%coh_params%alpha0))**1.3
-  da_dt = (pb%coh_params%NG_const*power_term/q)*(pb%coh_params%E_surf - 0.5*pb%coh_params%compl*sigma_i**2) &
-          - y_gr*(alpha - pb%coh_params%alpha0)
+  da_dt = 0*(pb%coh_params%NG_const*power_term/q)*(pb%coh_params%E_surf - 0.5*pb%coh_params%compl*sigma_i**2) &
+          - y_gr
+
+  ! Define logical expressions, which should yield either 0 or 1 depending on
+  ! the sign of da_dt and delta_alpha. The addition of small should prevent
+  ! zero division
+  x = 0.5*(1.0 + (da_dt + small)/(abs(da_dt) + small))
+  y = 0.5*(1.0 + (delta_alpha + small)/(abs(delta_alpha) + small))
+
+  ! If da_dt < 0 and delta_alpha < 0, set da_dt to zero. Leave as is otherwise
+  da_dt = (x + (1-x)*y)*da_dt
 
 end function dalpha_dt
 

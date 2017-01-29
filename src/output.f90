@@ -139,6 +139,7 @@ else
   write(pb%ot%unit,'(a)')'# 6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip'
   write(pb%ot%unit,'(a)')'# values at max(V) location:'
   write(pb%ot%unit,'(a)')'# 11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip, 17=sigma'
+  if (pb%features%cohesion == 1) write(pb%ot%unit,'(a)')'# 18=alpha'
 
   pb%ot%unit = 22
   write(pb%ot%unit,'(a)')'# Seismicity record:'
@@ -239,15 +240,29 @@ subroutine ot_write(pb)
   else
     ot_fmt = '(e24.16,16e14.6)'
   endif
-  write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
-    pb%ot%lcnew*pb%mesh%dx, pb%pot, pb%pot_rate,    &
-    pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
-    pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
-    pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
-!   for ivmax
-    pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
-    pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
-    pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
+  ! SEISMIC: temporary fix, restore after testing
+  if (pb%features%cohesion == 1) then
+    ot_fmt = '(e24.16,17e14.6)'
+    write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
+      pb%ot%lcnew*pb%mesh%dx, pb%pot, pb%pot_rate,    &
+      pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
+      pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
+      pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
+  !   for ivmax
+      pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
+      pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
+      pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax), pb%alpha(pb%ot%ic)
+  else
+    write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
+      pb%ot%lcnew*pb%mesh%dx, pb%pot, pb%pot_rate,    &
+      pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
+      pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
+      pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
+  !   for ivmax
+      pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
+      pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
+      pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
+    endif
 
   pb%ot%unit = 22
   do i=1,pb%mesh%nn
