@@ -1,6 +1,6 @@
 derivs_all.o: fault_stress.o friction.o problem_class.o
 fault_stress.o: constants.o fftsg.o mesh.o okada.o parallel.o utils.o
-friction.o: problem_class.o
+friction.o: constants.o problem_class.o
 initialize.o: constants.o fault_stress.o friction.o mesh.o output.o \
 	parallel.o problem_class.o
 input.o: constants.o mesh.o parallel.o problem_class.o
