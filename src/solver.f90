@@ -65,7 +65,7 @@ end subroutine solve
 ! pack, do bs_step and unpack
 !
 ! IMPORTANT NOTE : between pack/unpack pb%v & pb%theta are not up-to-date
-! SEISMIC IMPORTANT NOTE: when Chen's model is used, pb%tau is not up-to-date
+! SEISMIC IMPORTANT NOTE: when the CNS model is used, pb%tau is not up-to-date
 !
 subroutine do_bsstep(pb)
 
@@ -85,11 +85,11 @@ subroutine do_bsstep(pb)
   ind_stress_coupling = 2 + pb%features%stress_coupling
   ind_cohesion = ind_stress_coupling + pb%features%cohesion
 
-  ! SEISMIC: in the case of Chen's model, solve for tau and not v
-  if (pb%i_rns_law == 3) then   ! SEISMIC: Chen's model
+  ! SEISMIC: in the case of the CNS model, solve for tau and not v
+  if (pb%i_rns_law == 3) then   ! SEISMIC: CNS model
     yt(2::pb%neqs) = pb%tau
     dydt(2::pb%neqs) = pb%dtau_dt
-  else  ! SEISMIC: not Chen's model (i.e. rate-and-state)
+  else  ! SEISMIC: not CNS model (i.e. rate-and-state)
     yt(2::pb%neqs) = pb%v
     dydt(2::pb%neqs) = pb%dv_dt
   endif
@@ -122,7 +122,7 @@ subroutine do_bsstep(pb)
   ! Unpack yt into v, theta
   !  pb%v(pb%rs_nodes) = yt(2::pb%neqs) ! JPA Coulomb
 
-  ! SEISMIC: retrieve the solution for tau in the case of Chen's model, else
+  ! SEISMIC: retrieve the solution for tau in the case of the CNS model, else
   ! retreive the solution for slip velocity
   if (pb%i_rns_law == 3) then
     pb%tau = yt(2::pb%neqs)
@@ -163,7 +163,7 @@ subroutine update_field(pb)
   integer :: i,ix,iw
   double precision :: vtemp, k
 
-  ! SEISMIC: in case of Chen's model, re-compute the slip velocity with
+  ! SEISMIC: in case of the CNS model, re-compute the slip velocity with
   ! the final value of tau, sigma, and porosity. Otherwise, use the standard
   ! rate-and-state expression to calculate tau as a function of velocity
   if (pb%i_rns_law == 3) then

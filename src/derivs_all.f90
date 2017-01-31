@@ -68,7 +68,7 @@ subroutine derivs(time,yt,dydt,pb)
   endif
 
   if (pb%i_rns_law == 3) then
-    ! SEISMIC: Chen's law is solved for stress, not for velocity, so we
+    ! SEISMIC: the CNS model is solved for stress, not for velocity, so we
     ! compute the velocity and use that to compute dtau_dt, which is stored
     ! in dydt(2::pb%neqs). tau is stored as yt(2::pb%neqs). The system of
     ! ordinary differential equations is then solved in the same way as with
@@ -77,7 +77,7 @@ subroutine derivs(time,yt,dydt,pb)
     ! is a temporary solution. I put a comment in solver.f90 to refer to here
     ! in the case that this temporary fix receive a more permanent upgrade
 
-    ! SEISMIC: if Chen's model is selected, compute the slip velocity as
+    ! SEISMIC: if the CNS model is selected, compute the slip velocity as
     ! a function of the (current) state of stress and porosity
     tau = yt(2::pb%neqs)
     dtau_dt = dydt(2::pb%neqs)
@@ -109,7 +109,7 @@ subroutine derivs(time,yt,dydt,pb)
   ! to be set here
 
   ! state evolution law, dtheta/dt = f(v,theta)
-  ! SEISMIC: in Chen's formulation, theta is the gouge porosity
+  ! SEISMIC: in the CNS formulation, theta is the gouge porosity
   dydt(1::pb%neqs) = dtheta_dt(v,tau,sigma,theta,pb)
 
   if (pb%features%stress_coupling == 1) then

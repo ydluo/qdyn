@@ -109,7 +109,7 @@ subroutine read_main(pb)
              pb%iot(n),pb%iasp(n),pb%coh(n))
 
   !JPA if MPI, read only the nodes of this processor
-  ! SEISMIC: Chen's model allows for an initial state of stress that is
+  ! SEISMIC: the CNS model allows for an initial state of stress that is
   ! read from the input file
   if (pb%i_rns_law == 3) then
     do i=1,n
@@ -128,7 +128,7 @@ subroutine read_main(pb)
   endif
 
   ! <SEISMIC>
-  ! Read input parameters for Chen's model. These parameters are (in order):
+  ! Read input parameters for the CNS model. These parameters are (in order):
   !   a:                coefficient of logarithmic rate dependence
   !   mu_tilde_star:    reference friction coefficient at y_gr_star
   !   y_gr_star:        reference granular fow strain rate
@@ -144,43 +144,43 @@ subroutine read_main(pb)
   !
   ! Note that these parameters are material (gouge) properties, and are
   ! generally not spatically uniform, and hence are allocatable
-  ! See friction.f90 for a description of and references to Chen's model
+  ! See friction.f90 for a description of and references to the CNS model
   ! See user manual for detailed definitions of the above parameters (TODO)
 
   if (pb%i_rns_law == 3) then
     if (pb%itheta_law == 3) then
-      allocate( pb%chen_params%a(n), pb%chen_params%mu_tilde_star(n), &
-                pb%chen_params%y_gr_star(n), pb%chen_params%H(n), &
-                pb%chen_params%phi0(n), pb%chen_params%IPS_const_diff(n), &
-                pb%chen_params%w(n) )
+      allocate( pb%cns_params%a(n), pb%cns_params%mu_tilde_star(n), &
+                pb%cns_params%y_gr_star(n), pb%cns_params%H(n), &
+                pb%cns_params%phi0(n), pb%cns_params%IPS_const_diff(n), &
+                pb%cns_params%w(n) )
 
       do i=1,n
-        read(15,*)pb%chen_params%a(i), pb%chen_params%mu_tilde_star(i), &
-                  pb%chen_params%y_gr_star(i), pb%chen_params%H(i), &
-                  pb%chen_params%phi0(i), pb%chen_params%IPS_const_diff(i), &
-                  pb%chen_params%w(i)
+        read(15,*)pb%cns_params%a(i), pb%cns_params%mu_tilde_star(i), &
+                  pb%cns_params%y_gr_star(i), pb%cns_params%H(i), &
+                  pb%cns_params%phi0(i), pb%cns_params%IPS_const_diff(i), &
+                  pb%cns_params%w(i)
       end do
     elseif (pb%itheta_law == 4) then
-      allocate( pb%chen_params%a(n), pb%chen_params%mu_tilde_star(n), &
-                pb%chen_params%y_gr_star(n), pb%chen_params%H(n), &
-                pb%chen_params%phi0(n), pb%chen_params%IPS_const_diss1(n), &
-                pb%chen_params%IPS_const_diss2(n), pb%chen_params%w(n) )
+      allocate( pb%cns_params%a(n), pb%cns_params%mu_tilde_star(n), &
+                pb%cns_params%y_gr_star(n), pb%cns_params%H(n), &
+                pb%cns_params%phi0(n), pb%cns_params%IPS_const_diss1(n), &
+                pb%cns_params%IPS_const_diss2(n), pb%cns_params%w(n) )
 
       do i=1,n
-        read(15,*)pb%chen_params%a(i), pb%chen_params%mu_tilde_star(i), &
-                  pb%chen_params%y_gr_star(i), pb%chen_params%H(i), &
-                  pb%chen_params%phi0(i), pb%chen_params%IPS_const_diss1(i), &
-                  pb%chen_params%IPS_const_diss2(i), pb%chen_params%w(i)
+        read(15,*)pb%cns_params%a(i), pb%cns_params%mu_tilde_star(i), &
+                  pb%cns_params%y_gr_star(i), pb%cns_params%H(i), &
+                  pb%cns_params%phi0(i), pb%cns_params%IPS_const_diss1(i), &
+                  pb%cns_params%IPS_const_diss2(i), pb%cns_params%w(i)
       end do
     else
       write(6,*) "input.f90: incompatible theta law with chosen rate-and-state law"
-      write(6,*) "If Chen's friction law is chosen, theta law must be either 3 or 4"
+      write(6,*) "If the CNS friction law is chosen, theta law must be either 3 or 4"
       write(6,*) "Pressure solution rate-limiting mechanism: 3 = diffusion, 4 = dissolution"
       stop
     endif
   endif
 
-  ! End reading Chen's model parameters
+  ! End reading CNS model parameters
   ! </SEISMIC>
 
   if (pb%features%cohesion == 1) then

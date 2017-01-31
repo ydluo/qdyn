@@ -23,13 +23,13 @@ module problem_class
                 i_ox_seq, i_ox_dyn, dyn_stat, dyn_stat2, dyn_count
   end type ox_type
 
-  ! SEISMIC: definition of structure that holds Chen's model parameters
+  ! SEISMIC: definition of structure that holds the CNS model parameters
   ! See input.f90 for a description of the parameters
-  type chen_type
+  type cns_type
     double precision, dimension(:), allocatable :: &
       a, mu_tilde_star, IPS_const_diff, IPS_const_diss1, IPS_const_diss2, H, w, y_gr_star, phi0
-  end type chen_type
-  ! End of Chen's model structure
+  end type cns_type
+  ! End of the CNS model structure
 
   ! SEISMIC: definition of structure that holds the cohesion model parameters
   ! See input.f90 for a description of the parameters
@@ -83,8 +83,8 @@ module problem_class
     type (ot_type) :: ot
     type (ox_type) :: ox
     type (kernel_type) :: kernel
-    ! SEISMIC: add structure that holds Chen model parameters
-    type (chen_type) :: chen_params
+    ! SEISMIC: add structure that holds the CNS model parameters
+    type (cns_type) :: cns_params
     type (cohesion_type) :: coh_params
     type (features_type) :: features
   end type problem_type

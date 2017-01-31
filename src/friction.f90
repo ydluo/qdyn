@@ -11,9 +11,10 @@ module friction
 !   All friction properties can be spatially non-uniform
 
 ! <SEISMIC>
-! Rate-and-state friction law i_rns_law = 3 refers to Chen's microphysical model,
-! with itheta_law = 3 to diffusion controlled pressure solution, and itheta_law = 4
-! to dissolution controlled pressure solution creep.
+!
+! Rate-and-state friction law i_rns_law = 3 refers to the CNS (Chen-Niemeijer-Spiers)
+! microphysical model, with itheta_law = 3 to diffusion controlled pressure solution,
+! and itheta_law = 4 to dissolution controlled pressure solution creep.
 ! In this interpretation, rate-and-state friction results from the interplay
 ! between compaction by pressure solution creep and dilation by granular flow
 ! At low sliding velocities, pressure solution creep is relatively fast compared
@@ -33,7 +34,7 @@ module friction
 ! (microstructural) state, and the constitutive relations are solved for the
 ! shear stress (rather than velocity; see derivs_all.f90). The (spatially non-uniform)
 ! values of the material/gouge properties and initial porosity are read from the
-! input script, and stored in pb%chen_params.
+! input script, and stored in pb%cns_params.
 !
 ! </SEISMIC>
 
@@ -61,7 +62,7 @@ subroutine set_theta_star(pb)
   case (1)
     pb%theta_star = pb%dc/pb%v2
 
-  case (3) ! SEISMIC: Chen's friction law does not use theta_star
+  case (3) ! SEISMIC: the CNS friction law does not use theta_star
     pb%theta_star = 1
 
 ! new friction law:
@@ -81,7 +82,7 @@ function friction_mu(v,theta,pb) result(mu)
   type(problem_type), intent(in) :: pb
   double precision, dimension(pb%mesh%nn), intent(in) :: v, theta
   double precision, dimension(pb%mesh%nn) :: mu
-  ! SEISMIC: additional parameters for Chen model
+  ! SEISMIC: additional parameters for the CNS model
   double precision, dimension(pb%mesh%nn) :: mu_tilde, tan_psi, mu_gr, mu_ps
 
 
@@ -93,9 +94,9 @@ function friction_mu(v,theta,pb) result(mu)
   case (1)
     mu = pb%mu_star - pb%a*log(pb%v1/v+1d0) + pb%b*log(theta/pb%theta_star+1d0)
 
-  case (3) ! SEISMIC: Chen's model
+  case (3) ! SEISMIC: CNS model
 
-    write (6,*) "friction.f90::friciton_mu is deprecated for Chen's model"
+    write (6,*) "friction.f90::friciton_mu is deprecated for the CNS model"
 
     ! SEISMIC: this function should no longer be called to determine the
     ! state of shear stress, but is kept here for reference. The state of stress
@@ -108,7 +109,7 @@ function friction_mu(v,theta,pb) result(mu)
     tan_psi = calc_tan_psi(theta, pb)   ! Dilatation angle
     ! SEISMIC: calculate the grain-boundary friction, assuming all deformation
     ! is accommodated by granular flow (i.e. v_total = v_gr)
-    mu_tilde = calc_mu_tilde(v/pb%chen_params%w, pb)
+    mu_tilde = calc_mu_tilde(v/pb%cns_params%w, pb)
 
     ! SEISMIC: Calculate the frictional strength controlled by granular flow
     mu_gr = (mu_tilde + tan_psi)/(1 - mu_tilde*tan_psi)
@@ -117,13 +118,13 @@ function friction_mu(v,theta,pb) result(mu)
     ! when the strength is controlled by viscous flow (no granular flow)
     select case (pb%itheta_law)
 
-    case (3) ! SEISMIC: Chen's model, diffusion controlled
-      mu_ps = v*((2*pb%chen_params%phi0 - 2*theta)**2)/(pb%chen_params%w*pb%chen_params%IPS_const_diff*pb%sigma)
-    case (4) ! SEISMIC: Chen's model, dissolution controlled
-      mu_ps = (pb%chen_params%phi0 - theta)/(pb%sigma*pb%chen_params%phi0*pb%chen_params%IPS_const_diss2)* &
-              log(abs(v)/(pb%chen_params%w*pb%chen_params%IPS_const_diss1) + 1)
+    case (3) ! SEISMIC: CNS model, diffusion controlled
+      mu_ps = v*((2*pb%cns_params%phi0 - 2*theta)**2)/(pb%cns_params%w*pb%cns_params%IPS_const_diff*pb%sigma)
+    case (4) ! SEISMIC: CNS model, dissolution controlled
+      mu_ps = (pb%cns_params%phi0 - theta)/(pb%sigma*pb%cns_params%phi0*pb%cns_params%IPS_const_diss2)* &
+              log(abs(v)/(pb%cns_params%w*pb%cns_params%IPS_const_diss1) + 1)
     case default
-      write(6,*) "friction_mu: Chen's friction model is selected (i_rns_law == 3),"
+      write(6,*) "friction_mu: the CNS friction model is selected (i_rns_law == 3),"
       write(6,*) "but itheta_law is unsupported (must be either 3 or 4)"
       write(6,*) "3 = diffusion-, 4 = dissolution controlled pressure solution creep"
       stop
@@ -169,11 +170,11 @@ function dtheta_dt(v,tau,sigma,theta,pb) result(dth_dt)
   case(2) ! "slip" law
     dth_dt = -omega*log(omega)
 
-  case (3, 4) ! SEISMIC: Chen's model
+  case (3, 4) ! SEISMIC: CNS model
     tan_psi = calc_tan_psi(theta, pb)   ! Dilatation angle
     e_ps_dot = calc_e_ps(sigma, theta, .true., pb)   ! Compaction rate
     y_ps = calc_e_ps(tau, theta, .false., pb)   ! Press. soln. shear rate
-    y_gr = v/pb%chen_params%w - y_ps
+    y_gr = v/pb%cns_params%w - y_ps
     ! SEISMIC: the nett rate of change of porosity is given by the relation
     ! phi_dot = -(1 - phi)*strain_rate, where the strain rate equals
     ! the compaction rate by pressure solution (e_ps_dot) minus the dilatation
@@ -203,14 +204,14 @@ function dalpha_dt(v,tau,sigma,theta,alpha,pb) result(da_dt)
   double precision, dimension(pb%mesh%nn) :: y_ps, y_gr, x, y
   double precision, parameter :: small = 1e-15
 
-  q = 2*(pb%chen_params%phi0 - theta)
-  tan_psi = pb%chen_params%H*q
+  q = 2*(pb%cns_params%phi0 - theta)
+  tan_psi = pb%cns_params%H*q
   psi = atan(tan_psi)
   cos_psi = cos(psi)
   sin_psi = tan_psi * cos_psi
 
   y_ps = calc_e_ps(tau, theta, .false., pb)   ! Press. soln. shear rate
-  y_gr = v/pb%chen_params%w - y_ps
+  y_gr = v/pb%cns_params%w - y_ps
 
   delta_alpha = alpha - pb%coh_params%alpha0
 
@@ -251,7 +252,7 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
   case default
     write (6,*) "dmu_dv_dtheta: unkown friction law type"
     write (6,*) "This function should only be called for i_rns_law = 0 and 1"
-    write (6,*) "Chen's model (i_rns_law = 3) does not compute these partial derivatives"
+    write (6,*) "CNS model (i_rns_law = 3) does not compute these partial derivatives"
     stop
   end select
 
@@ -269,7 +270,7 @@ function compute_velocity(tau,sigma,theta,alpha,pb) result(v)
   double precision, dimension(pb%mesh%nn), intent(in) :: tau, sigma, theta, alpha
   double precision, dimension(pb%mesh%nn) :: v
 
-  ! SEISMIC: define some extra parameters for Chen's friction law
+  ! SEISMIC: define some extra parameters for the CNS friction law
   double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, denom, y_ps
   double precision, dimension(pb%mesh%nn) :: mu_star, y_gr, tau_gr
   double precision, dimension(pb%mesh%nn) :: cos_psi, cohesion
@@ -277,12 +278,12 @@ function compute_velocity(tau,sigma,theta,alpha,pb) result(v)
   tan_psi = calc_tan_psi(theta, pb)         ! Dilatation angle
 
   ! Pre-compute the denominator for efficiency
-  denom = 1.0/(pb%chen_params%a*(sigma+tau*tan_psi))
-  mu_star = pb%chen_params%mu_tilde_star
+  denom = 1.0/(pb%cns_params%a*(sigma+tau*tan_psi))
+  mu_star = pb%cns_params%mu_tilde_star
 
   ! The granular flow strain rate for the case when the shear stress approaches
   ! the shear strength of the grain contacts
-  y_gr = pb%chen_params%y_gr_star*exp((tau*(1 - mu_star*tan_psi) - sigma*(mu_star + tan_psi))*denom)
+  y_gr = pb%cns_params%y_gr_star*exp((tau*(1 - mu_star*tan_psi) - sigma*(mu_star + tan_psi))*denom)
 
   ! Shear strain rate [1/s] due to viscous flow (pressure solution)
   y_ps = calc_e_ps(tau, theta, .false., pb)
@@ -291,7 +292,7 @@ function compute_velocity(tau,sigma,theta,alpha,pb) result(v)
   cohesion = 0
   if (pb%features%cohesion == 1) then
     cos_psi = cos(atan(tan_psi))
-    cohesion = (PI/pb%chen_params%H)*(tan_psi*alpha*pb%coh_params%C_star)/(cos_psi*(1-mu_tilde*tan_psi))
+    cohesion = (PI/pb%cns_params%H)*(tan_psi*alpha*pb%coh_params%C_star)/(cos_psi*(1-mu_tilde*tan_psi))
   endif
 
   ! Calculate the shear strength of the grain contacts, if the gouge were
@@ -306,7 +307,7 @@ function compute_velocity(tau,sigma,theta,alpha,pb) result(v)
 
   ! The total slip velocity is the combined contribution of granular flow
   ! and pressure solution (parallel processes)
-  v = pb%chen_params%w*(y_gr + y_ps)
+  v = pb%cns_params%w*(y_gr + y_ps)
 
 
 end function compute_velocity
@@ -321,7 +322,7 @@ function calc_tan_psi(theta,pb) result(tan_psi)
   double precision, dimension(pb%mesh%nn), intent(in) :: theta
   double precision, dimension(pb%mesh%nn) :: tan_psi
 
-  tan_psi = 2*pb%chen_params%H*(pb%chen_params%phi0 - theta)
+  tan_psi = 2*pb%cns_params%H*(pb%cns_params%phi0 - theta)
 
 end function calc_tan_psi
 
@@ -337,7 +338,7 @@ function calc_mu_tilde(y_gr,pb) result(mu_tilde)
 
   ! SEISMIC NOTE: the granular flow strain rate should be used here,
   ! not the total strain rate
-  mu_tilde = pb%chen_params%mu_tilde_star + pb%chen_params%a * log(abs(y_gr)/pb%chen_params%y_gr_star)
+  mu_tilde = pb%cns_params%mu_tilde_star + pb%cns_params%a * log(abs(y_gr)/pb%cns_params%y_gr_star)
 
 end function calc_mu_tilde
 
@@ -358,11 +359,11 @@ function calc_e_ps(sigma,theta,truncate,pb) result(e_ps_dot)
 
   select case (pb%itheta_law)
 
-  case (3) ! Chen's model, diffusion controlled
-    e_ps_dot = pb%chen_params%IPS_const_diff*sigma/(2*pb%chen_params%phi0 - 2*theta)**2
-  case (4) ! Chen's model, dissolution controlled
-    e_ps_dot =  pb%chen_params%IPS_const_diss1*(exp(pb%chen_params%IPS_const_diss2*sigma* &
-                pb%chen_params%phi0/(pb%chen_params%phi0 - theta)) - 1)
+  case (3) ! CNS model, diffusion controlled
+    e_ps_dot = pb%cns_params%IPS_const_diff*sigma/(2*pb%cns_params%phi0 - 2*theta)**2
+  case (4) ! CNS model, dissolution controlled
+    e_ps_dot =  pb%cns_params%IPS_const_diss1*(exp(pb%cns_params%IPS_const_diss2*sigma* &
+                pb%cns_params%phi0/(pb%cns_params%phi0 - theta)) - 1)
   case default
     stop 'calc_e_ps: unsupported pressure solution law (3 = diffusion, 4 = dissolution controlled)'
   end select

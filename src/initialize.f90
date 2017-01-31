@@ -138,7 +138,7 @@ subroutine init_all(pb)
   !---------------------- ref_value ------------------
   call set_theta_star(pb)
 
-  ! SEISMIC: Chen's model has the initial shear stress defined in the
+  ! SEISMIC: the CNS model has the initial shear stress defined in the
   ! input file, so we can skip the initial computation of friction
   if (pb%i_rns_law /= 3) then
     pb%tau_init = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
