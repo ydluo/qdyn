@@ -56,7 +56,7 @@
 %			    loaded by steady displacement at distance W from the fault
 %			1 = fault is infinitely long but only a segment of length L has
 %			    rate-and-state friction, the rest has steady slip. If you get the
-%			    error message ???finite kernel is too small???, create a larger kernel file 
+%			    error message "finite kernel is too small", create a larger kernel file 
 %			    using the function TabKernelFiniteFlt.m, update the file name in
 %			    subroutine init_kernel_2D of src/fault_stress.f90, and recompile
 %		W  	distance between displacement loading and fault if MESHDIM=1 and FINITE=0
@@ -340,15 +340,7 @@ switch mode
 
  case {'run', 'write'},
 
-%     % recompile if qdyn.h must change
-%     [n,finite] = read_qdyn_h(fullfile(pathstr,'qdyn'));
-%     if (N~=n | FINITE~=finite )
-%       write_qdyn_h(N,FINITE,pathstr);
-%       cmd = ['cd ' pathstr '; make qdyn'];
-%       system(cmd);
-%     end
-    
-    % make vectors if constants
+  % make vectors if constants
    DW(1:NW) =DW;  
    DIP_W(1:NW) =DIP_W;
    A(1:N)   =A;
@@ -553,33 +545,6 @@ end
 for k=2:2:length(varargin),
   assignin('caller', upper(varargin{k-1}), varargin{k} );
 end
-
-
-%-----------
-% function [N,FINITE] = read_qdyn_h(name)
-% if ~exist('name','var') || ~length(name), name = 'qdyn'; end
-% name = [name '.h'];
-% fid=fopen(name);
-% 
-% rline=fgetl(fid);
-% inn=strfind(rline,'nn=');
-% N=sscanf(rline(inn:end),'nn=%u');
-% 
-% rline=fgetl(fid);
-% inn=strfind(rline,'finite=');
-% FINITE=sscanf(rline(inn:end),'finite=%u');
-% 
-% fclose(fid);
-
-%-----------
-% function write_qdyn_h(N,FINITE,pathstr)
-% fid=fopen(fullfile(pathstr,'qdyn.h'),'w');
-% fprintf(fid,'      parameter(nn=%u)\n',N);
-% fprintf(fid,'      parameter(finite=%u)\n',FINITE);
-% nnfft=(FINITE+1)*N;
-% fprintf(fid,'      parameter(nnfft=%u)\n',nnfft);
-% fprintf(fid,'      parameter(nwfft=%u)\n',2+ceil(sqrt(nnfft/2)) );
-% fclose(fid);
 
 %-----------
 function pars = read_qdyn_in(name)

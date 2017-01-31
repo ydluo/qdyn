@@ -20,24 +20,21 @@ subroutine screen_init(pb)
   use problem_class
   use constants, only : PI
   type (problem_type), intent(inout) :: pb
+
+  double precision :: K
   
   write(6,*) 'Values at selected point of the fault:'
-    if (pb%mesh%dim == 0 .or.pb%mesh%dim == 1) then   
-      if (pb%kernel%k2f%finite == 1 .or. pb%mesh%nn == 1) then
-        write(6,*) 'K/Kc = ',(PI*pb%smu/pb%mesh%Lfault)/   &
-          (pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
-        write(6,*) 'K/Kb = ',(PI*pb%smu/pb%mesh%Lfault)/   &
-          (pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
-      else
-        write(6,*) 'K/Kc = ',(PI*pb%smu/pb%mesh%W)/   &
-          (pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
-        write(6,*) 'K/Kb = ',(PI*pb%smu/pb%mesh%W)/   &
-          (pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
-      endif
-    end if
-
-    write(6,*)
-    write(6,*) '    it,  dt (secs), time (yrs), v_max (m/s), sigma_max (MPa)'
+  K = pb%mesh%Lfault
+  if (pb%mesh%dim == 1) then   
+    if (pb%kernel%k2f%finite == 0) K = pb%mesh%W
+  endif
+  K = PI*pb%smu/K
+  if (pb%mesh%dim < 2) then   
+    write(6,*) 'K/Kc = ',K/(pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
+    write(6,*) 'K/Kb = ',K/(pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
+  end if
+  write(6,*)
+  write(6,*) '    it,  dt (secs), time (yrs), v_max (m/s), sigma_max (MPa)'
 
 end subroutine screen_init
 

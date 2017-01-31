@@ -135,16 +135,15 @@ subroutine init_kernel_2D(k,mu,m)
    
    ! Define wavenumber
     allocate( kk(k%nnfft) )
-   !kk(1:2:m%nn-1) = 2d0*PI/m%Lfault*(/ i, i=0:m%nn/2-1 /)
     do i=0,m%nn/2-1
-      kk(2*i+1) = 2d0*PI/m%Lfault*i
+      kk(2*i+1) = 2d0*PI/m%Lfault*dble(i)
     enddo
     kk(2:2:m%nn) = kk(1:2:m%nn-1)
-    kk(2) = PI*m%nn/m%Lfault ! Nyquist
+    kk(2) = PI*dble(m%nn)/m%Lfault ! Nyquist
     
    ! To mimic the width W of the fault in the dimension normal to the 2D plane, 
    ! we introduce a "2.5D" approximation: we replace k by sqrt(k^2 + (2*pi/W)^2) 
-    kk = sqrt( kk*kk + (2*PI/m%W)**2 ) 
+    kk = sqrt( kk*kk + (2d0*PI/m%W)**2 ) 
    
    ! Compute kernel for homogeneous medium
     k%kernel = 0.5d0*mu*kk
@@ -153,9 +152,6 @@ subroutine init_kernel_2D(k,mu,m)
    ! TO DO : define D and H as inputs, then uncomment the lines below
    ! if (D>0 .and. H>0) k%kernel = k%kernel * (1-D) * cotanh( H*kk + arctanh(1-D) )
    
-   ! factor 2/N from the inverse FFT convention
-    k%kernel = k%kernel *2.d0/m%nn
-    
  !- Read coefficient I(n) from pre-calculated file.
   elseif (k%finite == 1) then
     write(6,*) 'Reading kernel ',SRC_PATH,'/kernel_I.tab'
@@ -165,16 +161,18 @@ subroutine init_kernel_2D(k,mu,m)
     enddo
     read(57,*,end=100) k%kernel(2) ! Nyquist
     close(57)
-    ! The factor 2/N comes from the inverse FFT convention
-    tau_co = PI*mu / (2d0*m%Lfault) *2.d0/k%nnfft
     k%kernel(1) = 0d0
-    k%kernel(2) = tau_co*dble(k%nnfft/2)*k%kernel(2)
+    k%kernel(2) = dble(k%nnfft/2)*k%kernel(2)
     do i = 1,k%nnfft/2-1
-      k%kernel(2*i+1) = tau_co*dble(i)*k%kernel(2*i+1)
+      k%kernel(2*i+1) = dble(i)*k%kernel(2*i+1)
       k%kernel(2*i+2) = k%kernel(2*i+1)
     enddo
+    k%kernel = k%kernel * PI*mu / (2d0*m%Lfault)
   end if
 
+ ! factor 2/N from the inverse FFT convention
+  k%kernel = k%kernel *2.d0/dble(k%nnfft)
+    
   return
 
 100 stop 'Kernel file src/kernel_I.tab is too short. Use src/TabKernelFiniteFlt.m to create a longer one.'
