@@ -134,6 +134,7 @@ subroutine init_kernel_2D(k,mu,m)
 
    ! Define wavenumber
     allocate( kk(k%nnfft) )
+    kk = 0d0
     do i=0,m%nn/2-1
       kk(2*i+1) = 2d0*PI/m%Lfault*dble(i)
     enddo
