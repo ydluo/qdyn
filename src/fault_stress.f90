@@ -134,11 +134,11 @@ subroutine init_kernel_2D(k,mu,m)
    
    ! Define wavenumber
     allocate( kk(k%nnfft) )
-    do i=0,m%nn/2-1
+    do i=0,k%nnfft/2-1
       kk(2*i+1) = 2d0*PI/m%Lfault*dble(i)
     enddo
-    kk(2:2:m%nn) = kk(1:2:m%nn-1)
-    kk(2) = PI*dble(m%nn)/m%Lfault ! Nyquist
+    kk(2::2) = kk(1::2)
+    kk(2) = PI*dble(k%nnfft)/m%Lfault ! Nyquist
     
    ! To mimic the width W of the fault in the dimension normal to the 2D plane, 
    ! we introduce a "2.5D" approximation: we replace k by sqrt(k^2 + (2*pi/W)^2) 
