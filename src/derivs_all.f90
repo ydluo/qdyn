@@ -32,35 +32,24 @@ subroutine derivs(time,yt,dydt,pb)
   double precision :: dtau_per
 
   ! storage conventions:
-  ! v = yt(2::pb%neqs)
   ! theta = yt(1::pb%neqs)
+  ! v = yt(2::pb%neqs)
   ! sigma = yt(3::pb%neqs) if pb%neqs == 3
   ! dv/dt = dydt(2::pb%neqs)
   ! dtheta/dt = dydt(1::pb%neqs)
   ! dsigma/dt = dydt(3::pb%neqs) if pb%neqs == 3
 
-  ! If pb%neqs == 3, then unpack sigma and dsigma_dt from yt and dydt
-  ! else, obtain these values from pb%sigma and pb%dsigma_dt
-  if ( pb%neqs == 3) then           ! Temp solution for normal stress coupling
+  ! If normal stress coupling, then unpack sigma from yt
+  ! else, obtain these values from pb%sigma
+  if (pb%kernel%has_sigma_coupling) then
     sigma = yt(3::pb%neqs)
-    dsigma_dt = dydt(3::pb%neqs)
   else
     sigma = pb%sigma
-    dsigma_dt = pb%dsigma_dt
   endif
 
   ! compute shear stress rate from elastic interactions, for 0D, 1D & 2D
   call compute_stress(pb%dtau_dt,dsigma_dt,pb%kernel,yt(2::pb%neqs)-pb%v_star)
 
-  ! JPA Coulomb
-  ! v = 0d0
-  ! v(pb%rs_nodes) = yt(2::pb%neqs)
-  !call compute_stress(pb%dtau_dt,pb%kernel,v-pb%v_star)
-
-!YD we may want to modify this part later to be able to
-!impose more complicated loading/pertubation
-!functions involved: problem_class/problem_type; input/read_main
-!                    initialize/init_field;  derivs_all/derivs
   ! periodic loading
   dtau_per = pb%Omper * pb%Aper * cos(pb%Omper*time)
 
@@ -76,11 +65,7 @@ subroutine derivs(time,yt,dydt,pb)
                    / ( sigma*dmu_dv + pb%zimpedance )
 
   ! Re-pack dsigma_dt in dydt or pb%dsigma_dt
-  if ( pb%neqs == 3) then           ! Temp solution for normal stress coupling
-   dydt(3::pb%neqs) = dsigma_dt
-  else
-   pb%dsigma_dt = dsigma_dt
-  endif
+  if (pb%kernel%has_sigma_coupling) dydt(3::pb%neqs) = dsigma_dt
 
 end subroutine derivs
 

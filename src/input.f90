@@ -20,7 +20,7 @@ subroutine read_main(pb)
  
   type(problem_type), intent(inout)  :: pb
 
-  integer :: i,n,nsta,ista,ik
+  integer :: i,n,nsta,ista,ik,i_sigma_cpl
   double precision :: xsta, ysta, zsta, dmin, d
   
   write(6,*) 'Start reading input: ...'
@@ -54,7 +54,8 @@ subroutine read_main(pb)
    
   read(15,*) pb%itheta_law
   read(15,*) pb%i_rns_law
-  read(15,*) pb%kernel%i_sigma_cpl
+  read(15,*) i_sigma_cpl
+  pb%kernel%has_sigma_coupling = (i_sigma_cpl==1)
   read(15,*) pb%neqs 
 
 !JPA neqs should not be setup explicitly by the user

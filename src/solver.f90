@@ -77,19 +77,14 @@ subroutine do_bsstep(pb)
 ! yt(2::pb%neqs) = pb%v(pb%rs_nodes) ! JPA Coulomb
   yt(2::pb%neqs) = pb%v
   yt(1::pb%neqs) = pb%theta
-  dydt(2::pb%neqs) = pb%dv_dt
-  dydt(1::pb%neqs) = pb%dtheta_dt
-  if ( pb%neqs == 3) then           ! Temp solution for normal stress coupling
-    yt(3::pb%neqs) = pb%sigma
-    dydt(3::pb%neqs) = pb%dsigma_dt
-  endif
+  if (pb%kernel%has_sigma_coupling) yt(3::pb%neqs) = pb%sigma
 
   ! this update of derivatives is only needed to set up the scaling (yt_scale)
   call derivs(pb%time,yt,dydt,pb)
   yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
   ! One step 
+  ! NOTE: bsstep does not update dydt
   call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb,ik)
-!PG: Here is necessary a global min, or dt_next and dt_max is the same in all processors?.
   if (pb%dt_max >  0.d0) then
     pb%dt_try = min(pb%dt_next,pb%dt_max)
   else
@@ -101,9 +96,9 @@ subroutine do_bsstep(pb)
 !  pb%v(pb%rs_nodes) = yt(2::pb%neqs) ! JPA Coulomb
   pb%v = yt(2::pb%neqs)
   pb%theta = yt(1::pb%neqs)
-  pb%dv_dt = dydt(2::pb%neqs)
+  pb%dv_dt = dydt(2::pb%neqs)  !NOTE: dydt is not updated by bsstep
   pb%dtheta_dt = dydt(1::pb%neqs) 
-  if ( pb%neqs == 3) then           ! Temp solution for normal stress coupling
+  if (pb%kernel%has_sigma_coupling) then
     pb%sigma = yt(3::pb%neqs)  
     pb%dsigma_dt = dydt(3::pb%neqs)  
   endif

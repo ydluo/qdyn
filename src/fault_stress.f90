@@ -38,12 +38,12 @@ module fault_stress
 
   type kernel_type
     integer :: kind = 0
-    integer :: i_sigma_cpl = 0
-    double precision :: k1
-    type (kernel_2D_fft), pointer :: k2f
-    type (kernel_3D), pointer :: k3
-    type (kernel_3D_fft), pointer :: k3f
-    type (kernel_3D_fft2d), pointer :: k3f2
+    logical :: has_sigma_coupling = .false.
+    double precision :: k1 = 0d0
+    type (kernel_2D_fft), pointer :: k2f => null()
+    type (kernel_3D), pointer :: k3 => null()
+    type (kernel_3D_fft), pointer :: k3f => null()
+    type (kernel_3D_fft2d), pointer :: k3f2 => null()
   end type kernel_type
 
 
@@ -76,8 +76,8 @@ subroutine init_kernel(lambda,mu,m,k)
   select case (k%kind)
     case(1); call init_kernel_1D(k%k1,mu,m%Lfault)
     case(2); call init_kernel_2D(k%k2f,mu,m)
-    case(3); call init_kernel_3D(k%k3,lambda,mu,m,k%i_sigma_cpl==1) ! 3D no fft
-    case(4); call init_kernel_3D_fft(k%k3f,lambda,mu,m,k%i_sigma_cpl==1) ! 3D with FFT along-strike
+    case(3); call init_kernel_3D(k%k3,lambda,mu,m,k%has_sigma_coupling) ! 3D no fft
+    case(4); call init_kernel_3D_fft(k%k3f,lambda,mu,m,k%has_sigma_coupling) ! 3D with FFT along-strike
     case(5); call init_kernel_3D_fft2d(k%k3f2,lambda,mu,m) ! 3D with 2DFFT 
   end select
 
@@ -108,7 +108,6 @@ subroutine init_kernel_2D(k,mu,m)
   double precision, intent(in) :: mu
 
   double precision, allocatable :: kk(:)
-  double precision :: tau_co
   integer :: i
 
   k%nnfft = (k%finite+1)*m%nn 
@@ -383,8 +382,7 @@ subroutine compute_stress(tau,sigma_n,K,v)
   select case (K%kind)
     case(1); call compute_stress_1d(tau,K%k1,v)
     case(2); call compute_stress_2d(tau,K%k2f,v)
-    case(3)
-      call compute_stress_3d(tau,sigma_n,K%k3,v)
+    case(3); call compute_stress_3d(tau,sigma_n,K%k3,v)
     case(4); call compute_stress_3d_fft(tau,sigma_n,K%k3f,v)
     case(5); call compute_stress_3d_fft2d(tau,K%k3f2,v)
   end select
@@ -507,7 +505,7 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
   use my_mpi, only : is_MPI_parallel, gather_allvdouble
 
   type(kernel_3D_fft), intent(inout)  :: k3f
-  double precision , intent(inout) :: tau(:), sigma_n(:) !PG: Collect tau and sigma_n in all processor. 
+  double precision , intent(out) :: tau(:), sigma_n(:)
   double precision , intent(in) :: v(:) 
   double precision :: vzk(k3f%nwGlobal,k3f%nxfft), tmpzk(k3f%nwLocal,k3f%nxfft)
   double precision :: tmpx(k3f%nxfft)
