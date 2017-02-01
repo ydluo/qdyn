@@ -59,7 +59,7 @@ subroutine read_main(pb)
 
   read(15,*) pb%itheta_law
   read(15,*) pb%i_rns_law
-  read(15,*) pb%kernel%i_sigma_cpl ! SEISMIC: this value is overridden later on?
+  read(15,*) i_sigma_cpl
   !read(15,*) pb%neqs ! Replace this with feature flags
   read(15,*) pb%features%stress_coupling, pb%features%cohesion ! SEISMIC
   pb%neqs = 2 + pb%features%stress_coupling + pb%features%cohesion

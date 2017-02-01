@@ -14,7 +14,7 @@ F90 = mpif90
 #OPT = -O3 -Wall
 # For parallel runs with MPI+OpenMP:
 #F90 = mpif90
-#OPT = -O3 -Wall -fopenmp 
+#OPT = -O3 -Wall -fopenmp
 #OPT = -O2 -w
 #-- Intel Fortran --
 #F90 = ifort
@@ -41,16 +41,16 @@ OPT = -O3
 
 # 3. Set the compiler option that enables preprocessing in your compiler
 # ifort
-PREPROC = -fpp
+#PREPROC = -fpp
 # gfortran
-#PREPROC = -cpp
+PREPROC = -cpp
 
 #== END USER SETTINGS =============================================
 
 EXEC = $(EXEC_PATH)/qdyn
 
-OBJS := $(patsubst %.f90,%.o,$(wildcard *.f90)) 
-#OBJS := $($(wildcard *.f90):.f90=.o) 
+OBJS := $(patsubst %.f90,%.o,$(wildcard *.f90))
+#OBJS := $($(wildcard *.f90):.f90=.o)
 
 all: $(EXEC)
 
@@ -58,15 +58,15 @@ $(EXEC): $(OBJS)
 	$(F90) $(OPT) -o $@ $(OBJS) $(LIBS)
 
 clean:
-	rm -f $(EXEC) $(OBJS) *.M *.mod 
+	rm -f $(EXEC) $(OBJS) *.M *.mod
 
-.SUFFIXES: 
+.SUFFIXES:
 .SUFFIXES: .f90 .o
 
 %.o: %.f90
 	$(F90) $(OPT) -c $<
 
-# A special compilation rule for constants.f90: 
+# A special compilation rule for constants.f90:
 # Use a preprocessor directive (fpp) to define the path to the source files
 # This is needed only to find the kernel files
 constants.o: constants.f90
