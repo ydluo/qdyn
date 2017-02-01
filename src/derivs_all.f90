@@ -30,6 +30,7 @@ subroutine derivs(time,yt,dydt,pb)
   double precision, dimension(pb%mesh%nn) :: theta, sigma, alpha, tau, v
   double precision, dimension(pb%mesh%nn) :: dsigma_dt, dtau_dt
   double precision, dimension(pb%mesh%nn) :: dmu_dv, dmu_dtheta
+  double precision, dimension(pb%mesh%nn) :: sigma, dsigma_dt
   double precision :: dtau_per
 
   integer :: ind_stress_coupling, ind_cohesion

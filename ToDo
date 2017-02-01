@@ -1,18 +1,32 @@
 (Priorities are not indicated)
 
 Physics:
-+ kernel for low-velocity fault zones
++ kernel for low-velocity fault zones (Benjamin Idini)
 + compute surface deformation to compare to GPS data
 + complete testing of slip to normal stress coupling 
 + slip-dependent friction law (Olivier Lengline is working on it)
 + in 2D: finite slab geometry (Pablo)
-+ kernel for fault in infinite medium
++ 3D kernel for fault in infinite medium
++ double spring-block model
 + variable strike
-+ triangular elements: Meade's code (buggy?) or Gausian quadrature of Okada point sources
++ triangular elements: 
+  Meade http://www.sciencedirect.com/science/article/pii/S0098300407000593 
+  Nikkhoo and Walter (2015) http://gji.oxfordjournals.org/content/201/2/1117.short 
+  Pan et al http://www.seismosoc.org/publications/BSSA_html/bssa_104-6/2014161-esupp/ 
+  Gausian quadrature of Okada point sources
+  Gimbutas et al (2012 http://www.bssaonline.org/content/102/6/2776.short)
 + layered media: EDKS (Luis Rivera) or Relax (Sylvain Barbot)?
 + heterogeneous media: import kernel from Relax, Pylith, SPECFEM3D ?
 
 Code engineering and optimization:
++ create a python wrapper to enable runs on clusters without matlab license
++ use parallel MPI I/O
+    http://wgropp.cs.illinois.edu/courses/cs598-s16/lectures/lecture32.pdf
+    https://www.olcf.ornl.gov/wp-content/uploads/2011/10/Fall_IO.pdf
+  or a prallel I/O library like HDF5, NETCDF4 or ADIOS:
+    https://wiki.scinet.utoronto.ca/wiki/images/a/af/Netcdfhdf5.pdf
+    http://www.unidata.ucar.edu/software/netcdf/index.html
+    https://www.olcf.ornl.gov/center-projects/adios/ 
 + hierarchical matrix techniques (interface to Andrew Bradley's code)
 + inputs as fortran namelists
 + use object oriented matlab
@@ -29,6 +43,6 @@ Packaging:
 + add instructions for Windows and Mac
 + replace Num.Rec. code by something else: Lapusta's method (Noda and Lapusta 2010) or Gear's method in ODEPACK (http://computation.llnl.gov/casc/odepack/, used by Jessica Hawthorne)
 + document equations and friction laws in manual
-+ set the path in constants.f90 and qdyn.m via the Makefile, instead of manually
 + use grive to update the google drive repository
-+ get a DOI through https://zenodo.org/
++ get a DOI through https://zenodo.org/ 
+  https://guides.github.com/activities/citable-code/

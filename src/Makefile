@@ -39,6 +39,12 @@ OPT = -O3
 #F90 = f95
 #OPT = -fast
 
+# 3. Set the compiler option that enables preprocessing in your compiler
+# ifort
+PREPROC = -fpp
+# gfortran
+#PREPROC = -cpp
+
 #== END USER SETTINGS =============================================
 
 EXEC = $(EXEC_PATH)/qdyn
@@ -60,8 +66,11 @@ clean:
 %.o: %.f90
 	$(F90) $(OPT) -c $<
 
+# A special compilation rule for constants.f90: 
+# Use a preprocessor directive (fpp) to define the path to the source files
+# This is needed only to find the kernel files
 constants.o: constants.f90
-	$(F90) $(OPT) -D_FPP_PWD_=$(CURDIR) -c $<
+	$(F90) $(OPT) $(PREPROC) -D_FPP_SRC_PATH_="'$(CURDIR)'" -c $<
 
 include Makefile.depend
 # DO NOT DELETE

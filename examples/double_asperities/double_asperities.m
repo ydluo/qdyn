@@ -82,10 +82,10 @@ figure(1)
 semilogy(ot1.t/year,ot1.v)
 xlabel('Time (years)')
 legend('V_{max}','Location','Best')
-title('Warming cycles')
+title('Warm-up cycles')
 end
 
-h1=figure;
+figure(2)
 subplot(4,4,[4:4:12])
 semilogx(ot.v/p.V_SS,ot.t/year,ot.pdot/p.V_SS/p.L,ot.t/year)
 axis([0.1 1e7 0 ot.t(end)/year])

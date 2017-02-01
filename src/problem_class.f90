@@ -60,16 +60,11 @@ module problem_class
       sigma_glob,&
       slip_glob, v_glob, dv_dt_glob, theta_glob, dtheta_dt_glob,&
       tau_max_glob, t_rup_glob, v_max_glob, t_vmax_glob
-    double precision :: vmaxglob,sigma_vmaxglob
+    double precision :: vmaxglob
 
     double precision :: pot, pot_rate, pot_pre
     double precision :: beta=0d0, smu=0d0, lam=0d0, zimpedance=0d0, v_th
-    logical :: station_found=.false. !Found station
-
-!YD This part we may want to modify it later to be able to
-!impose more complicated loading/pertubation
-!functions involved: problem_class/problem_type; input/read_main
-!                    initialize/init_field;  derivs_all/derivs
+    logical :: station_found=.false.
 
     double precision :: Tper=0d0, Aper=0d0, Omper=0d0
     double precision :: time=0d0

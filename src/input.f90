@@ -20,7 +20,7 @@ subroutine read_main(pb)
 
   type(problem_type), intent(inout)  :: pb
 
-  integer :: i,n,nsta,ista,ik
+  integer :: i,n,nsta,ista,ik,i_sigma_cpl
   double precision :: xsta, ysta, zsta, dmin, d
 
   write(6,*) 'Start reading input: ...'
@@ -63,6 +63,7 @@ subroutine read_main(pb)
   !read(15,*) pb%neqs ! Replace this with feature flags
   read(15,*) pb%features%stress_coupling, pb%features%cohesion ! SEISMIC
   pb%neqs = 2 + pb%features%stress_coupling + pb%features%cohesion
+  pb%kernel%has_sigma_coupling = (i_sigma_cpl == 1)
 
 !JPA neqs should not be setup explicitly by the user
 !    It should be inferred from the type of problem:
@@ -207,24 +208,21 @@ subroutine read_main(pb)
     enddo
 
   !Finding stations in this processor
-    dmin = huge(dmin)
+    dmin = 10d0 !JPA quick and dirty threshold ???
     if (.not.(pb%ot%ic==1)) then !Reading stations, pb%ot%ic==1 is default
      open(unit=200,file='stations.dat',action='read',status='unknown')
      read(200,*) nsta
      do ista=1,nsta
        read(200,*) xsta, ysta, zsta
-       sta_loop: do
         do ik=1,pb%mesh%nn
          d=sqrt((pb%mesh%x(ik)-xsta)**2+(pb%mesh%y(ik)-ysta)**2+(pb%mesh%z(ik)-zsta)**2)
          if (d<=dmin) then
            pb%ot%ic=ik
            write(6,*) 'processor: ',my_mpi_tag(),' Station found, index:',ik
            pb%station_found=.true.
-           exit sta_loop
+           exit
          endif
-         if (ik==pb%mesh%nn) exit sta_loop
         enddo
-       enddo sta_loop
       close(200)
      enddo
     endif

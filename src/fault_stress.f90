@@ -24,7 +24,7 @@ module fault_stress
 !  end type fault_coord
 
   type kernel_3D_fft
-    integer :: nxfft, nw, nx, nwLocal, nwGlobal, nnLocalfft, nnGlobalfft, nnLocal, nnGlobal
+    integer :: nxfft, nw, nx, nwLocal, nwGlobal, nnLocalfft, nnGlobalfft
     double precision, dimension(:,:,:), allocatable :: kernel, kernel_n
     type (OouraFFT_type) :: m_fft
 !    type (fault_coord) :: fault
@@ -38,22 +38,19 @@ module fault_stress
 
   type kernel_type
     integer :: kind = 0
-    integer :: i_sigma_cpl = 0
-    double precision :: k1
-    type (kernel_2D_fft), pointer :: k2f
-    type (kernel_3D), pointer :: k3
-    type (kernel_3D_fft), pointer :: k3f
-    type (kernel_3D_fft2d), pointer :: k3f2
+    logical :: has_sigma_coupling = .false.
+    double precision :: k1 = 0d0
+    type (kernel_2D_fft), pointer :: k2f => null()
+    type (kernel_3D), pointer :: k3 => null()
+    type (kernel_3D_fft), pointer :: k3f => null()
+    type (kernel_3D_fft2d), pointer :: k3f2 => null()
   end type kernel_type
 
 
 ! For MPI parallel
-  integer, allocatable, save :: nnLocalfft_perproc(:),nnoffset_perproc(:),&
-                                nnLocal_perproc(:),nnoffset_glob_perproc(:),nwLocal_perproc(:),&
-                                nwoffset_glob_perproc(:)
+  integer, allocatable, save :: nnLocalfft_perproc(:),nnoffset_perproc(:)
 
-  public :: init_kernel, compute_stress, kernel_type, nnLocalfft_perproc,nnoffset_perproc,&
-            nnLocal_perproc,nnoffset_glob_perproc,nwLocal_perproc,nwoffset_glob_perproc
+  public :: init_kernel, compute_stress, kernel_type
 
 contains
 ! K is stiffness, different in sign with convention in Dieterich (1992)
@@ -79,8 +76,8 @@ subroutine init_kernel(lambda,mu,m,k)
   select case (k%kind)
     case(1); call init_kernel_1D(k%k1,mu,m%Lfault)
     case(2); call init_kernel_2D(k%k2f,mu,m)
-    case(3); call init_kernel_3D(k%k3,lambda,mu,m,k%i_sigma_cpl==1) ! 3D no fft
-    case(4); call init_kernel_3D_fft(k%k3f,lambda,mu,m,k%i_sigma_cpl==1) ! 3D with FFT along-strike
+    case(3); call init_kernel_3D(k%k3,lambda,mu,m,k%has_sigma_coupling) ! 3D no fft
+    case(4); call init_kernel_3D_fft(k%k3f,lambda,mu,m,k%has_sigma_coupling) ! 3D with FFT along-strike
     case(5); call init_kernel_3D_fft2d(k%k3f2,lambda,mu,m) ! 3D with 2DFFT
   end select
 
@@ -111,7 +108,6 @@ subroutine init_kernel_2D(k,mu,m)
   double precision, intent(in) :: mu
 
   double precision, allocatable :: kk(:)
-  double precision :: tau_co
   integer :: i
 
   k%nnfft = (k%finite+1)*m%nn
@@ -138,16 +134,15 @@ subroutine init_kernel_2D(k,mu,m)
 
    ! Define wavenumber
     allocate( kk(k%nnfft) )
-   !kk(1:2:m%nn-1) = 2d0*PI/m%Lfault*(/ i, i=0:m%nn/2-1 /)
     do i=0,m%nn/2-1
-      kk(2*i+1) = 2d0*PI/m%Lfault*i
+      kk(2*i+1) = 2d0*PI/m%Lfault*dble(i)
     enddo
     kk(2:2:m%nn) = kk(1:2:m%nn-1)
-    kk(2) = PI*m%nn/m%Lfault ! Nyquist
+    kk(2) = PI*dble(m%nn)/m%Lfault ! Nyquist
 
    ! To mimic the width W of the fault in the dimension normal to the 2D plane,
    ! we introduce a "2.5D" approximation: we replace k by sqrt(k^2 + (2*pi/W)^2)
-    kk = sqrt( kk*kk + (2*PI/m%W)**2 )
+    kk = sqrt( kk*kk + (2d0*PI/m%W)**2 )
 
    ! Compute kernel for homogeneous medium
     k%kernel = 0.5d0*mu*kk
@@ -156,26 +151,26 @@ subroutine init_kernel_2D(k,mu,m)
    ! TO DO : define D and H as inputs, then uncomment the lines below
    ! if (D>0 .and. H>0) k%kernel = k%kernel * (1-D) * cotanh( H*kk + arctanh(1-D) )
 
-   ! factor 2/N from the inverse FFT convention
-    k%kernel = k%kernel *2.d0/m%nn
-
  !- Read coefficient I(n) from pre-calculated file.
   elseif (k%finite == 1) then
+    write(6,*) 'Reading kernel ',SRC_PATH,'/kernel_I.tab'
     open(57,file=SRC_PATH//'/kernel_I.tab')
     do i=1,k%nnfft/2-1
       read(57,*,end=100) k%kernel(2*i+1)
     enddo
     read(57,*,end=100) k%kernel(2) ! Nyquist
     close(57)
-    ! The factor 2/N comes from the inverse FFT convention
-    tau_co = PI*mu / (2d0*m%Lfault) *2.d0/k%nnfft
     k%kernel(1) = 0d0
-    k%kernel(2) = tau_co*dble(k%nnfft/2)*k%kernel(2)
+    k%kernel(2) = dble(k%nnfft/2)*k%kernel(2)
     do i = 1,k%nnfft/2-1
-      k%kernel(2*i+1) = tau_co*dble(i)*k%kernel(2*i+1)
+      k%kernel(2*i+1) = dble(i)*k%kernel(2*i+1)
       k%kernel(2*i+2) = k%kernel(2*i+1)
     enddo
+    k%kernel = k%kernel * PI*mu / (2d0*m%Lfault)
   end if
+
+ ! factor 2/N from the inverse FFT convention
+  k%kernel = k%kernel *2.d0/dble(k%nnfft)
 
   return
 
@@ -191,7 +186,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   use fftsg, only : my_rdft
   use utils, only : save_vector3
   use constants, only : FAULT_TYPE
-  use my_mpi, only : is_mpi_parallel, is_mpi_master, my_mpi_rank
+  use my_mpi, only : is_mpi_parallel, is_mpi_master, gather_alli, my_mpi_NPROCS
 
   type(kernel_3d_fft), intent(inout) :: k
   double precision, intent(in) :: lambda,mu
@@ -200,7 +195,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
 
   double precision :: tau,sigma_n, y_src, z_src, dip_src, dw_src, y_obs, z_obs,dip_obs
   double precision, allocatable :: tmp(:), tmp_n(:)   ! for FFT
-  integer :: i, j, ii, jj, n, nn, IRET
+  integer :: i, j, ii, jj, n, nn, IRET, iproc, NPROCS
 
   if (is_mpi_master()) then
     write(6,*) 'Generating 3D kernel...'
@@ -209,24 +204,8 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
 
   k%nx = m%nx
   k%nxfft = 2*m%nx ! fft convolution requires twice longer array
-
-  if (is_MPI_parallel()) then
-    write(6,*) 'MY_RANK:', my_mpi_rank()
-    k%nwLocal = m%nw
-    k%nnLocal=nnoffset_glob_perproc(my_mpi_rank())
-    k%nwGlobal=sum(nwLocal_perproc)
-    k%nnGlobal=k%nwGlobal*k%nx
-
-  else
-    k%nwGlobal = m%nw
-    k%nnGlobal=k%nwGlobal*k%nx
-    k%nwLocal = k%nwGlobal
-    k%nnLocal=0
-  endif
-
-  write(6,*) 'nwGlobal:',k%nwGlobal
-  write(6,*) 'nwLocal:',k%nwLocal
-  write(6,*) 'nnLocal:',k%nnLocal
+  k%nwLocal = m%nw
+  k%nwGlobal= m%nwglob
   k%nnLocalfft  = k%nwLocal*k%nxfft
   k%nnGlobalfft = k%nwGlobal*k%nxfft
 
@@ -267,6 +246,16 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
       endif
     enddo
   enddo
+
+  if (is_mpi_parallel()) then
+    NPROCS = my_mpi_NPROCS()
+    allocate(nnLocalfft_perproc(0:NPROCS-1))
+    call gather_alli(k%nwLocal*k%nxfft,nnLocalfft_perproc)
+    allocate(nnoffset_perproc(0:NPROCS-1))
+    do iproc=0,NPROCS-1
+      nnoffset_perproc(iproc)=sum(nnLocalfft_perproc(0:iproc))-nnLocalfft_perproc(iproc)
+    enddo
+  endif
 
 end subroutine init_kernel_3D_fft
 
@@ -393,8 +382,7 @@ subroutine compute_stress(tau,sigma_n,K,v)
   select case (K%kind)
     case(1); call compute_stress_1d(tau,K%k1,v)
     case(2); call compute_stress_2d(tau,K%k2f,v)
-    case(3)
-      call compute_stress_3d(tau,sigma_n,K%k3,v)
+    case(3); call compute_stress_3d(tau,sigma_n,K%k3,v)
     case(4); call compute_stress_3d_fft(tau,sigma_n,K%k3f,v)
     case(5); call compute_stress_3d_fft2d(tau,K%k3f2,v)
   end select
@@ -517,7 +505,7 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
   use my_mpi, only : is_MPI_parallel, gather_allvdouble
 
   type(kernel_3D_fft), intent(inout)  :: k3f
-  double precision , intent(inout) :: tau(:), sigma_n(:) !PG: Collect tau and sigma_n in all processor.
+  double precision , intent(out) :: tau(:), sigma_n(:)
   double precision , intent(in) :: v(:)
   double precision :: vzk(k3f%nwGlobal,k3f%nxfft), tmpzk(k3f%nwLocal,k3f%nxfft)
   double precision :: tmpx(k3f%nxfft)

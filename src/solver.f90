@@ -111,7 +111,6 @@ subroutine do_bsstep(pb)
   yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
   ! One step
   call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb,ik)
-  !PG: Here is necessary a global min, or dt_next and dt_max is the same in all processors?.
   if (pb%dt_max >  0.d0) then
     pb%dt_try = min(pb%dt_next,pb%dt_max)
   else
@@ -161,7 +160,6 @@ subroutine update_field(pb)
   type(problem_type), intent(inout) :: pb
 
   integer :: i,ix,iw
-  double precision :: vtemp, k
 
   ! SEISMIC: in case of the CNS model, re-compute the slip velocity with
   ! the final value of tau, sigma, and porosity. Otherwise, use the standard
@@ -197,13 +195,7 @@ subroutine update_field(pb)
   pb%ot%llocold = pb%ot%llocnew
   pb%ot%llocnew = crack_size(pb%dtau_dt,pb%mesh%nn)
   ! Output time series at max(v) location
-  vtemp=0d0
-  do i=1,pb%mesh%nn
-     if ( pb%v(i) > vtemp) then
-       vtemp = pb%v(i)
-       pb%ot%ivmax = i
-     end if
-  end do
+  pb%ot%ivmax = maxloc(pb%v,1)
  if (is_MPI_parallel()) then
 ! Finding global vmax
    call max_allproc(pb%v(pb%ot%ivmax),pb%vmaxglob)

@@ -21,27 +21,20 @@ subroutine screen_init(pb)
   use constants, only : PI
   type (problem_type), intent(inout) :: pb
 
-  write(6,*) '**Field Initialized.**'
+  double precision :: K
+
   write(6,*) 'Values at selected point of the fault:'
-    if (pb%mesh%dim == 0 .or.pb%mesh%dim == 1) then
-      ! SEISMIC: in spring-block case, pb%kernel%k2f is not allocated
-      if (pb%kernel%k2f%finite == 1 .or. pb%mesh%nn == 1) then
-        write(6,*) 'K/Kc = ',(PI*pb%smu/pb%mesh%Lfault)/   &
-          (pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
-        write(6,*) 'K/Kb = ',(PI*pb%smu/pb%mesh%Lfault)/   &
-          (pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
-      else
-        write(6,*) 'K/Kc = ',(PI*pb%smu/pb%mesh%W)/   &
-          (pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
-        write(6,*) 'K/Kb = ',(PI*pb%smu/pb%mesh%W)/   &
-          (pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
-      endif
-    end if
-
-! YD:  should we out put 2D mesh K?
-
-    write(6,*)
-    write(6,*) '    it,  dt (secs), time (yrs), vmax (m/s), sigma(MPa)'
+  K = pb%mesh%Lfault
+  if (pb%mesh%dim == 1) then
+    if (pb%kernel%k2f%finite == 0) K = pb%mesh%W
+  endif
+  K = PI*pb%smu/K
+  if (pb%mesh%dim < 2) then
+    write(6,*) 'K/Kc = ',K/(pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
+    write(6,*) 'K/Kb = ',K/(pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
+  end if
+  write(6,*)
+  write(6,*) '    it,  dt (secs), time (yrs), v_max (m/s), sigma_max (MPa)'
 
 end subroutine screen_init
 
@@ -56,26 +49,19 @@ subroutine screen_write(pb)
   use my_mpi, only : is_MPI_parallel, is_mpi_master, max_allproc
 
   type (problem_type), intent(inout) :: pb
-  double precision :: vtempglob
-  integer :: i
+  double precision :: sigma_max, sigma_max_glob
 
+  pb%ot%ivmax = maxloc(pb%v,1)
+  sigma_max = maxval(pb%sigma)
 
   if (is_MPI_parallel()) then
-    !Finding the global max
-    vtempglob=0d0
-    do i=1,pb%mesh%nn
-     if ( pb%v(i) > vtempglob) then
-       vtempglob = pb%v(i)
-       pb%ot%ivmax = i
-     end if
-    end do
     call max_allproc(pb%v(pb%ot%ivmax),pb%vmaxglob)
-    call max_allproc(pb%sigma(pb%ot%ivmax),pb%sigma_vmaxglob)
+    call max_allproc(sigma_max,sigma_max_glob)
     if (is_mpi_master()) write(6,'(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,&
-                              pb%vmaxglob, pb%sigma_vmaxglob/1.0D6
+                              pb%vmaxglob, sigma_max_glob/1.0D6
   else
     write(6,'(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,    &
-                            pb%v(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)/1.0D6
+                            pb%v(pb%ot%ivmax), sigma_max/1.0D6
   endif
 
 end subroutine screen_write
@@ -117,7 +103,7 @@ subroutine ot_init(pb)
       write(pb%ot%unit,'(a)')'# 2=V, 3=theta, 4=V*theta/dc, 5=tau, 6=slip'
       close(pb%ot%unit)
     endif
-! In progress
+!JPA WARNING Implementation in progress
 !    pb%ot%unit = 22
 !    write(pb%ot%unit,'(a)')'# Seismicity record:'
 !    write(pb%ot%unit,'(a)')'# 1=loc, 2=t, 3=v'
@@ -155,6 +141,9 @@ else
   enddo
 
 endif
+
+  pb%v_pre = 0.d0
+  pb%v_pre2 = 0.d0
 
 end subroutine ot_init
 
@@ -198,6 +187,11 @@ subroutine ox_init(pb)
   else
     write(pb%ox%unit,'(a,i10)')'# nx= ',pb%ox%count
   endif
+
+  pb%ox%dyn_stat = 0
+  pb%ox%dyn_stat2 = 0
+
+  pb%pot_pre = 0.d0
 
 end subroutine ox_init
 
@@ -264,11 +258,12 @@ subroutine ot_write(pb)
       pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
     endif
 
+ ! output peak slip velocity at selected nodes
   pb%ot%unit = 22
   do i=1,pb%mesh%nn
-    if ((pb%iasp(i) == 1) .and. (pb%v(i) >= pb%v_th) .and.      &
+    if ((pb%iasp(i) == 1) .and. (pb%v_pre(i) >= pb%v_th) .and.      &
         (pb%v(i) < pb%v_pre(i)) .and. (pb%v_pre(i) >= pb%v_pre2(i))) then
-      write(pb%ot%unit,'(i10,2e24.16)') i, pb%time, pb%v(i)
+      write(pb%ot%unit,'(i10,2e24.16)') i, pb%time, pb%v_pre(i)
     endif
   enddo
   pb%v_pre2=pb%v_pre
@@ -634,15 +629,15 @@ end function crack_size
 ! Collect global fault nodes to master processor for outputs
   subroutine pb_global(pb)
 
-  use fault_stress, only: nnLocal_perproc,nnoffset_glob_perproc
+  use mesh, only: nnLocal_perproc,nnoffset_glob_perproc
   use problem_class
   use my_mpi, only: my_mpi_rank, gather_allvdouble_root
 
   type(problem_type), intent(inout) :: pb
-  integer :: nLocal,nnGlobal
+  integer :: nnLocal,nnGlobal
 
-  nLocal=nnLocal_perproc(my_mpi_rank())
-  nnGlobal=sum(nnLocal_perproc)
+  nnLocal= pb%mesh%nn
+  nnGlobal= pb%mesh%nnglob
 
   if (.not.allocated(pb%v_glob)) then
 
@@ -669,21 +664,21 @@ end function crack_size
   pb%v_max_glob=0
   pb%t_vmax=0
 
-  call gather_allvdouble_root(pb%v,nLocal,pb%v_glob,nnLocal_perproc, &
+  call gather_allvdouble_root(pb%v,nnLocal,pb%v_glob,nnLocal_perproc, &
                            nnoffset_glob_perproc,nnGlobal)
-  call gather_allvdouble_root(pb%dv_dt,nLocal,pb%dv_dt_glob,nnLocal_perproc, &
+  call gather_allvdouble_root(pb%dv_dt,nnLocal,pb%dv_dt_glob,nnLocal_perproc, &
                            nnoffset_glob_perproc,nnGlobal)
-  call gather_allvdouble_root(pb%theta,nLocal,pb%theta_glob,nnLocal_perproc, &
+  call gather_allvdouble_root(pb%theta,nnLocal,pb%theta_glob,nnLocal_perproc, &
                            nnoffset_glob_perproc,nnGlobal)
-  call gather_allvdouble_root(pb%dtheta_dt,nLocal,pb%dtheta_dt_glob,nnLocal_perproc, &
+  call gather_allvdouble_root(pb%dtheta_dt,nnLocal,pb%dtheta_dt_glob,nnLocal_perproc, &
                            nnoffset_glob_perproc,nnGlobal)
-  call gather_allvdouble_root(pb%tau,nLocal,pb%tau_glob,nnLocal_perproc, &
+  call gather_allvdouble_root(pb%tau,nnLocal,pb%tau_glob,nnLocal_perproc, &
                            nnoffset_glob_perproc,nnGlobal)
-  call gather_allvdouble_root(pb%dtau_dt,nLocal,pb%dtau_dt_glob,nnLocal_perproc, &
+  call gather_allvdouble_root(pb%dtau_dt,nnLocal,pb%dtau_dt_glob,nnLocal_perproc, &
                            nnoffset_glob_perproc,nnGlobal)
-  call gather_allvdouble_root(pb%slip,nLocal,pb%slip_glob,nnLocal_perproc, &
+  call gather_allvdouble_root(pb%slip,nnLocal,pb%slip_glob,nnLocal_perproc, &
                            nnoffset_glob_perproc,nnGlobal)
-  call gather_allvdouble_root(pb%sigma,nLocal,pb%sigma_glob,nnLocal_perproc, &
+  call gather_allvdouble_root(pb%sigma,nnLocal,pb%sigma_glob,nnLocal_perproc, &
                            nnoffset_glob_perproc,nnGlobal)
 
   end subroutine pb_global
