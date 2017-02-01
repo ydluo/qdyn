@@ -64,7 +64,7 @@ subroutine derivs(time,yt,dydt,pb)
   dydt(2::pb%neqs) = ( dtau_per + pb%dtau_dt - sigma*dmu_dtheta*dydt(1::pb%neqs) ) &
                    / ( sigma*dmu_dv + pb%zimpedance )
 
-  ! Re-pack dsigma_dt in dydt or pb%dsigma_dt
+  ! Re-pack dsigma_dt in dydt
   if (pb%kernel%has_sigma_coupling) dydt(3::pb%neqs) = dsigma_dt
 
 end subroutine derivs

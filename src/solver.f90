@@ -96,11 +96,8 @@ subroutine do_bsstep(pb)
 !  pb%v(pb%rs_nodes) = yt(2::pb%neqs) ! JPA Coulomb
   pb%v = yt(2::pb%neqs)
   pb%theta = yt(1::pb%neqs)
-  pb%dv_dt = dydt(2::pb%neqs)  !NOTE: dydt is not updated by bsstep
-  pb%dtheta_dt = dydt(1::pb%neqs) 
   if (pb%kernel%has_sigma_coupling) then
     pb%sigma = yt(3::pb%neqs)  
-    pb%dsigma_dt = dydt(3::pb%neqs)  
   endif
   
 end subroutine do_bsstep

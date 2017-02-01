@@ -214,13 +214,12 @@ subroutine ot_write(pb)
       pb%ot%unit = 18
       open(pb%ot%unit,access='APPEND',status='old',iostat=ios)
       if (ios==0) then
-      !Writing in File output.
-      ot_fmt = '(e24.16,5e14.6)'
-      write(pb%ot%unit,ot_fmt) pb%time, pb%v(pb%ot%ic), pb%theta(pb%ot%ic), &
-      pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
-      pb%tau(pb%ot%ic), pb%slip(pb%ot%ic)
+        ot_fmt = '(e24.16,5e14.6)'
+        write(pb%ot%unit,ot_fmt) pb%time, pb%v(pb%ot%ic), pb%theta(pb%ot%ic), &
+          pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
+          pb%tau(pb%ot%ic), pb%slip(pb%ot%ic)
       else 
-       stop 'Error opening a fort.18 file'
+        stop 'Error opening a fort.18 file'
       endif
     endif  
 
@@ -260,7 +259,7 @@ subroutine ot_write(pb)
     if (pb%iot(i) == 1) then
       pb%ot%unit = pb%ot%unit+1
       write(pb%ot%unit,'(e24.16,5e14.6)') pb%time, pb%v(i),      &
-      pb%theta(i), pb%tau(i), pb%slip(i), pb%sigma(i)
+        pb%theta(i), pb%tau(i), pb%slip(i), pb%sigma(i)
     endif
   enddo
 
@@ -288,7 +287,6 @@ if (is_MPI_parallel()) then
  if (mod(pb%it,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
   if (OUT_MASTER) then
   ! Collecting global nodes
-    call synchronize_all()
     call pb_global(pb)
     if (is_mpi_master()) then
       vtempglob=0d0
@@ -300,23 +298,22 @@ if (is_MPI_parallel()) then
       end do
       ! Writing fault points in single file fort.19
       if (pb%ox%i_ox_seq == 0) then
-        write(pb%ox%unit,'(2a,2i8,e14.6)') '# x y z t v theta',' V_dot/V dtau tau_dot slip sigma ',&
+        write(pb%ox%unit,'(a,2i8,e14.6)') '# x y z t v theta dtau tau_dot slip sigma ',&
                                           pb%it,pb%ot%ivmaxglob,pb%time
         do ixout=1,pb%mesh%nnglob,pb%ox%nxout
-          write(pb%ox%unit,'(3e15.7,e24.16,7e15.7)') pb%mesh%xglob(ixout),pb%mesh%yglob(ixout),&
+          write(pb%ox%unit,'(3e15.7,e24.16,6e15.7)') pb%mesh%xglob(ixout),pb%mesh%yglob(ixout),&
           pb%mesh%zglob(ixout),pb%time,pb%v_glob(ixout),pb%theta_glob(ixout),&
-          pb%dv_dt_glob(ixout)/pb%v_glob(ixout),&
           pb%tau_glob(ixout),pb%dtau_dt_glob(ixout),pb%slip_glob(ixout), pb%sigma_glob(ixout)
         enddo
       else
       !Writing in File output in snapshots. fort.XXXXXX
       pb%ox%unit = pb%ox%unit + 1
       write(pb%ox%unit,'(3i10,e24.14)') pb%it,pb%ot%ivmaxglob,pb%ox%countglob,pb%time
-      write(pb%ox%unit,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip '
+      write(pb%ox%unit,'(a)') '#  x  y  z  t  v  theta  dtau  tau_dot  slip '
       do ixout=1,pb%mesh%nnglob,pb%ox%nxout
-        write(pb%ox%unit,'(3e15.7,e24.14,7e15.7)')       &
+        write(pb%ox%unit,'(3e15.7,e24.14,6e15.7)')       &
           pb%mesh%xglob(ixout),pb%mesh%yglob(ixout),pb%mesh%zglob(ixout),pb%time,     &
-          pb%v_glob(ixout),pb%theta_glob(ixout),pb%dv_dt_glob(ixout)/pb%v_glob(ixout),pb%tau_glob(ixout),   &
+          pb%v_glob(ixout),pb%theta_glob(ixout),pb%tau_glob(ixout),   &
           pb%dtau_dt_glob(ixout),pb%slip_glob(ixout), pb%sigma_glob(ixout)
       enddo
       close(pb%ox%unit) !Closing snapshot      
@@ -329,11 +326,11 @@ if (is_MPI_parallel()) then
       write(fileproc,'(a,i6.6,a,a)') 'fort.',pb%ox%unit,'_proc',my_mpi_tag()
       open(pb%ox%unit,file=fileproc(1:len_trim(fileproc)),status='replace',form='formatted',action='write')
       write(pb%ox%unit,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
-      write(pb%ox%unit,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip '
+      write(pb%ox%unit,'(a)') '#  x  y  z  t  v  theta  dtau  tau_dot  slip '
       do ixout=1,pb%mesh%nn,pb%ox%nxout
-        write(pb%ox%unit,'(3e15.7,e24.14,7e15.7)')       &
+        write(pb%ox%unit,'(3e15.7,e24.14,6e15.7)')       &
           pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
-          pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
+          pb%v(ixout),pb%theta(ixout),pb%tau(ixout),   &
           pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
       enddo
       close(pb%ox%unit) !Closing snapshot
@@ -343,7 +340,6 @@ if (is_MPI_parallel()) then
 
  if (pb%ox%i_ox_dyn == 1) then 
    if (OUT_MASTER) then
-     call synchronize_all()
      call pb_global(pb)
      if (is_mpi_master()) then 
       if (pb%ox%dyn_stat2 == 0 .and. pb%vmaxglob >= pb%DYN_th_on ) then
@@ -356,12 +352,11 @@ if (is_MPI_parallel()) then
         enddo
         write(20001+3*pb%ox%dyn_count2,'(3i10,e24.14)')   &
               pb%it,pb%ot%ivmaxglob,pb%ox%countglob,pb%time
-        write(20001+3*pb%ox%dyn_count2,'(2a)') '#  x  y  z  t  v  theta',  &
-              '  V./V  dtau  tau_dot  slip sigma'
+        write(20001+3*pb%ox%dyn_count2,'(a)') '#  x  y  z  t  v  theta  dtau  tau_dot  slip sigma'
         do ixout=1,pb%mesh%nnglob,pb%ox%nxout_dyn
-           write(20001+3*pb%ox%dyn_count2,'(3e15.7,e24.14,7e15.7)')       &
+           write(20001+3*pb%ox%dyn_count2,'(3e15.7,e24.14,6e15.7)')       &
            pb%mesh%xglob(ixout),pb%mesh%yglob(ixout),pb%mesh%zglob(ixout),pb%time,     &
-           pb%v_glob(ixout),pb%theta_glob(ixout),pb%dv_dt_glob(ixout)/pb%v_glob(ixout),pb%tau_glob(ixout),   &
+           pb%v_glob(ixout),pb%theta_glob(ixout),pb%tau_glob(ixout),   &
            pb%dtau_dt_glob(ixout),pb%slip_glob(ixout), pb%sigma_glob(ixout)
         enddo
         close(20001+3*pb%ox%dyn_count2)
@@ -384,17 +379,16 @@ if (is_MPI_parallel()) then
         pb%ox%dyn_stat2 = 0
         write(20002+3*pb%ox%dyn_count2,'(3i10,e24.14)')   &
               pb%it,pb%ot%ivmaxglob,pb%ox%countglob,pb%time
-        write(20002+3*pb%ox%dyn_count2,'(2a)') '#  x  y  z  t  v  theta',  &
-              '  V./V  dtau  tau_dot  slip sigma'
+        write(20002+3*pb%ox%dyn_count2,'(a)') '#  x  y  z  t  v  theta  dtau  tau_dot  slip sigma'
         do ixout=1,pb%mesh%nnglob,pb%ox%nxout_dyn
-           write(20002+3*pb%ox%dyn_count2,'(3e15.7,e24.14,7e15.7)')       &
+           write(20002+3*pb%ox%dyn_count2,'(3e15.7,e24.14,6e15.7)')       &
            pb%mesh%xglob(ixout),pb%mesh%yglob(ixout),pb%mesh%zglob(ixout),pb%time,     &
-           pb%v_glob(ixout),pb%theta_glob(ixout),pb%dv_dt_glob(ixout)/pb%v_glob(ixout),pb%tau_glob(ixout),   &
+           pb%v_glob(ixout),pb%theta_glob(ixout),pb%tau_glob(ixout),   &
            pb%dtau_dt_glob(ixout),pb%slip_glob(ixout),pb%sigma_glob(ixout)
         enddo
         close(20002+3*pb%ox%dyn_count2)
 
-        write(20003+3*pb%ox%dyn_count2,'(2a)') '#  x  y  z  t_rup tau_max t_vmax vmax'
+        write(20003+3*pb%ox%dyn_count2,'(a)') '#  x  y  z  t_rup tau_max t_vmax vmax'
         do ixout=1,pb%mesh%nnglob,pb%ox%nxout_dyn
            write(20003+3*pb%ox%dyn_count2,'(3e15.7,4e28.20)')       &
            pb%mesh%xglob(ixout),pb%mesh%yglob(ixout),pb%mesh%zglob(ixout),       &
@@ -412,21 +406,20 @@ if (is_MPI_parallel()) then
 else
  if (mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
   if (pb%ox%i_ox_seq == 0) then
-    write(pb%ox%unit,'(2a,2i8,e14.6)')'# x v theta',' V./V dtau tau_dot slip ',pb%it,pb%ot%ivmax,pb%time
+    write(pb%ox%unit,'(a,2i8,e14.6)')'# x t v theta dtau tau_dot slip sigma',pb%it,pb%ot%ivmax,pb%time
   ! JPA: this output should also contain y and z
     do ixout=1,pb%mesh%nn,pb%ox%nxout
-      write(pb%ox%unit,'(e15.7,e24.16,7e15.7)') pb%mesh%x(ixout),pb%time,pb%v(ixout),   &
-        pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
-        pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
+      write(pb%ox%unit,'(e15.7,e24.16,6e15.7)') pb%mesh%x(ixout),pb%time,pb%v(ixout),   &
+        pb%theta(ixout),pb%tau(ixout), pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
     enddo
   else
     pb%ox%unit = pb%ox%unit + 1
     write(pb%ox%unit,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
-    write(pb%ox%unit,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip '
+    write(pb%ox%unit,'(a)') '#  x  y  z  t  v  theta  dtau  tau_dot  slip  sigma'
     do ixout=1,pb%mesh%nn,pb%ox%nxout
-      write(pb%ox%unit,'(3e15.7,e24.14,7e15.7)')       &
+      write(pb%ox%unit,'(3e15.7,e24.14,6e15.7)')       &
         pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
-        pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
+        pb%v(ixout),pb%theta(ixout),pb%tau(ixout),   &
         pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
     enddo
     close(pb%ox%unit)
@@ -445,12 +438,11 @@ else
       enddo
       write(20001+3*pb%ox%dyn_count2,'(3i10,e24.14)')   &
             pb%it,pb%ot%ivmax,pb%ox%count,pb%time
-      write(20001+3*pb%ox%dyn_count2,'(2a)') '#  x  y  z  t  v  theta',  &
-            '  V./V  dtau  tau_dot  slip sigma'
+      write(20001+3*pb%ox%dyn_count2,'(a)') '#  x  y  z  t  v  theta  dtau  tau_dot  slip sigma'
       do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
-        write(20001+3*pb%ox%dyn_count2,'(3e15.7,e24.14,7e15.7)')       &
+        write(20001+3*pb%ox%dyn_count2,'(3e15.7,e24.14,6e15.7)')       &
           pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
-          pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
+          pb%v(ixout),pb%theta(ixout),pb%tau(ixout),   &
           pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
       enddo
       close(20001+3*pb%ox%dyn_count2)
@@ -473,17 +465,16 @@ else
       pb%ox%dyn_stat2 = 0
       write(20002+3*pb%ox%dyn_count2,'(3i10,e24.14)')   &
             pb%it,pb%ot%ivmax,pb%ox%count,pb%time
-      write(20002+3*pb%ox%dyn_count2,'(2a)') '#  x  y  z  t  v  theta',  &
-            '  V./V  dtau  tau_dot  slip sigma'
+      write(20002+3*pb%ox%dyn_count2,'(a)') '#  x  y  z  t  v  theta  dtau  tau_dot  slip sigma'
       do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
-        write(20002+3*pb%ox%dyn_count2,'(3e15.7,e24.14,7e15.7)')       &
+        write(20002+3*pb%ox%dyn_count2,'(3e15.7,e24.14,6e15.7)')       &
           pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
-          pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
+          pb%v(ixout),pb%theta(ixout),pb%tau(ixout),   &
           pb%dtau_dt(ixout),pb%slip(ixout),pb%sigma(ixout)
       enddo
       close(20002+3*pb%ox%dyn_count2)
 
-      write(20003+3*pb%ox%dyn_count2,'(2a)') '#  x  y  z  t_rup tau_max t_vmax vmax'
+      write(20003+3*pb%ox%dyn_count2,'(a)') '#  x  y  z  t_rup tau_max t_vmax vmax'
       do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
         write(20003+3*pb%ox%dyn_count2,'(3e15.7,4e28.20)')       &
           pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),       &
@@ -502,11 +493,11 @@ else
       pb%ox%dyn_stat = 1
       OPEN (UNIT = 100, FILE='DYN_PRE.txt', STATUS='REPLACE')
       write(100,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
-      write(100,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip sigma '
+      write(100,'(a)') '#  x  y  z  t  v  theta  dtau  tau_dot  slip sigma '
       do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
         write(pb%ox%unit,'(3e15.7,e24.14,6e15.7)')       &
           pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
-          pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
+          pb%v(ixout),pb%theta(ixout),pb%tau(ixout),   &
           pb%dtau_dt(ixout),pb%slip(ixout),pb%sigma(ixout)
       enddo
       pb%pot_pre = pb%pot
@@ -517,11 +508,11 @@ else
       pb%ox%dyn_stat = 0
       OPEN (UNIT = 101, FILE='DYN_POST.txt', STATUS='REPLACE')
       write(101,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
-      write(101,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip sigma'
+      write(101,'(a)') '#  x  y  z  t  v  theta  dtau  tau_dot  slip sigma'
       do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
         write(pb%ox%unit,'(3e15.7,e24.14,6e15.7)')       &
           pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
-          pb%v(ixout),pb%theta(ixout),pb%dv_dt(ixout)/pb%v(ixout),pb%tau(ixout),   &
+          pb%v(ixout),pb%theta(ixout),pb%tau(ixout),   &
           pb%dtau_dt(ixout),pb%slip(ixout),pb%sigma(ixout)
       enddo
       CLOSE(101)
@@ -626,8 +617,7 @@ end function crack_size
   if (.not.allocated(pb%v_glob)) then
 
     allocate(pb%v_glob(nnGlobal),pb%theta_glob(nnGlobal),pb%tau_glob(nnGlobal),&
-           pb%slip_glob(nnGlobal),pb%sigma_glob(nnGlobal),pb%dv_dt_glob(nnGlobal),&
-           pb%dtheta_dt_glob(nnGlobal),pb%dtau_dt_glob(nnGlobal))
+           pb%slip_glob(nnGlobal),pb%sigma_glob(nnGlobal),pb%dtau_dt_glob(nnGlobal))
 
     allocate(pb%tau_max_glob(nnGlobal),pb%t_rup_glob(nnGlobal),&
              pb%v_max_glob(nnGlobal),pb%t_vmax_glob(nnGlobal))
@@ -639,8 +629,6 @@ end function crack_size
   pb%tau_glob=0
   pb%slip_glob=0
   pb%sigma_glob=0
-  pb%dv_dt_glob=0
-  pb%dtheta_dt_glob=0
   pb%dtau_dt_glob=0
 
   pb%tau_max_glob=0
@@ -650,12 +638,8 @@ end function crack_size
 
   call gather_allvdouble_root(pb%v,nnLocal,pb%v_glob,nnLocal_perproc, & 
                            nnoffset_glob_perproc,nnGlobal)  
-  call gather_allvdouble_root(pb%dv_dt,nnLocal,pb%dv_dt_glob,nnLocal_perproc, & 
-                           nnoffset_glob_perproc,nnGlobal)
   call gather_allvdouble_root(pb%theta,nnLocal,pb%theta_glob,nnLocal_perproc, & 
                            nnoffset_glob_perproc,nnGlobal)
-  call gather_allvdouble_root(pb%dtheta_dt,nnLocal,pb%dtheta_dt_glob,nnLocal_perproc, & 
-                           nnoffset_glob_perproc,nnGlobal)   
   call gather_allvdouble_root(pb%tau,nnLocal,pb%tau_glob,nnLocal_perproc, & 
                            nnoffset_glob_perproc,nnGlobal)
   call gather_allvdouble_root(pb%dtau_dt,nnLocal,pb%dtau_dt_glob,nnLocal_perproc, & 

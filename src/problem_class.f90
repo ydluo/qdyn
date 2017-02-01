@@ -26,17 +26,18 @@ module problem_class
   type problem_type
     double precision, dimension(:), allocatable :: &
       tau, dtau_dt, tau_init, &
-      sigma, dsigma_dt, v_pre, v_pre2, &
+      sigma, v_pre, v_pre2, &
       tau_max, t_rup, v_max, t_vmax,  &
-      slip, v, dv_dt, theta, dtheta_dt,  &
+      slip, v, theta,  &
       a, b, dc, v1, v2, mu_star, v_star, &
-      theta_star, iot, iasp, coh
+      theta_star, coh
+    integer, dimension(:), allocatable :: iot, iasp
 
    !For MPI
     double precision, dimension(:), allocatable :: &
       tau_glob, dtau_dt_glob,&
       sigma_glob,&
-      slip_glob, v_glob, dv_dt_glob, theta_glob, dtheta_dt_glob,&
+      slip_glob, v_glob, theta_glob, &
       tau_max_glob, t_rup_glob, v_max_glob, t_vmax_glob
     double precision :: vmaxglob
 

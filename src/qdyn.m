@@ -335,7 +335,6 @@ switch mode
  case 'read',
    pars = read_qdyn_in(NAME);
    pars.NAME = NAME;
-   [pars.N,pars.FINITE] = read_qdyn_h(NAME);
    [ot,ox]= read_qdyn_out(NAME);
 
  case {'run', 'write'},
@@ -428,7 +427,7 @@ switch mode
     for wloc=1:nwLocal(iproc+1)
      for xloc=1:NX
       iloc = xloc + (wloc-1)*NX + nnLocal;
-      fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
+      fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %u %u %.15g\n',...
         SIGMA(iloc),V_0(iloc),TH_0(iloc),A(iloc),B(iloc),DC(iloc),V1(iloc),V2(iloc),MU_SS(iloc),V_SS(iloc),IOT(iloc),IASP(iloc),CO(iloc));
      end
     end
@@ -482,7 +481,7 @@ switch mode
    fprintf(fid,'%.15g %.15g %.15g    M0, DYN_th_on, DYN_th_off\n', DYN_M,DYN_TH_ON,DYN_TH_OFF);
 
           
-   fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
+   fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %u %u %.15g\n',...
       [SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:),IOT(:),IASP(:),CO(:)]');
  
    fclose(fid);
@@ -616,11 +615,10 @@ end
   ox.t = cosa(1,:,4)';
   ox.v = cosa(:,:,5);
   ox.th= cosa(:,:,6);
-  ox.vd= cosa(:,:,7);
-  ox.dtau = cosa(:,:,8);
-  ox.dtaud = cosa(:,:,9);
-  ox.d = cosa(:,:,10);
-  ox.sigma = cosa(:,:,11);
+  ox.dtau = cosa(:,:,7);
+  ox.dtaud = cosa(:,:,8);
+  ox.d = cosa(:,:,9);
+  ox.sigma = cosa(:,:,10);
 
 %-----------
 % read outputs from qdyn.f
@@ -653,11 +651,10 @@ if uimatlab
   ox.t = cosa(1,:,2)';
   ox.v = cosa(:,:,3);
   ox.th= cosa(:,:,4);
-  ox.vd= cosa(:,:,5);
-  ox.dtau = cosa(:,:,6);
-  ox.dtaud = cosa(:,:,7);
-  ox.d = cosa(:,:,8);
-  ox.sigma = cosa(:,:,9);
+  ox.dtau = cosa(:,:,5);
+  ox.dtaud = cosa(:,:,6);
+  ox.d = cosa(:,:,7);
+  ox.sigma = cosa(:,:,8);
 
 else 
   [ot,ox] = read_qdyn_out_Octave(namet,namex)
