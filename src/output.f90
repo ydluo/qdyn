@@ -48,20 +48,18 @@ subroutine screen_write(pb)
   use problem_class
   use my_mpi, only : is_MPI_parallel, is_mpi_master, max_allproc
 
-  type (problem_type), intent(inout) :: pb
+  type (problem_type), intent(in) :: pb
   double precision :: sigma_max, sigma_max_glob
 
-  pb%ot%ivmax = maxloc(pb%v,1)
   sigma_max = maxval(pb%sigma)
 
   if (is_MPI_parallel()) then 
-    call max_allproc(pb%v(pb%ot%ivmax),pb%vmaxglob) 
     call max_allproc(sigma_max,sigma_max_glob)
     if (is_mpi_master()) write(6,'(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,&
                               pb%vmaxglob, sigma_max_glob/1.0D6
   else
     write(6,'(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,    &
-                            pb%v(pb%ot%ivmax), sigma_max/1.0D6
+                            pb%vmaxglob, sigma_max/1.0D6
   endif
 
 end subroutine screen_write
@@ -277,7 +275,7 @@ subroutine ox_write(pb)
 
   type (problem_type), intent(inout) :: pb
 
-  integer :: ixout,i
+  integer :: ixout
   double precision :: vtempglob
   character(len=256) :: fileproc
 
@@ -289,13 +287,8 @@ if (is_MPI_parallel()) then
   ! Collecting global nodes
     call pb_global(pb)
     if (is_mpi_master()) then
-      vtempglob=0d0
-      do i=1,pb%mesh%nnglob
-        if ( pb%v_glob(i) > vtempglob) then
-          vtempglob = pb%v_glob(i)
-          pb%ot%ivmaxglob = i
-        end if
-      end do
+      pb%ot%ivmaxglob = maxloc(pb%v_glob,1)
+      vtempglob = pb%v_glob(pb%ot%ivmaxglob)
       ! Writing fault points in single file fort.19
       if (pb%ox%i_ox_seq == 0) then
         write(pb%ox%unit,'(a,2i8,e14.6)') '# x y z t v theta dtau tau_dot slip sigma ',&

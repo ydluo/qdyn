@@ -546,8 +546,8 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
     iglobal=0
     do iwglobal=1,k3f%nwGlobal
       do ixglobal=1,k3f%nxfft 
-            iglobal=iglobal+1
-         vzk(iwglobal,ixglobal)=vzkarray(iglobal)  
+        iglobal=iglobal+1
+        vzk(iwglobal,ixglobal)=vzkarray(iglobal)  
       enddo
     enddo
 

@@ -24,6 +24,7 @@ subroutine solve(pb)
   type(problem_type), intent(inout)  :: pb
 
   if (is_mpi_master()) call screen_init(pb)
+  call update_field(pb)
   call screen_write(pb)
   call ox_write(pb)
 
@@ -120,12 +121,12 @@ subroutine update_field(pb)
   pb%slip = pb%slip + pb%v*pb%dt_did
   pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
   ! update potency and potency rate
-  pb%pot=0d0;
-  pb%pot_rate=0d0;
   if (pb%mesh%dim == 0 .or. pb%mesh%dim == 1) then
     pb%pot = sum(pb%slip) * pb%mesh%dx
     pb%pot_rate = sum(pb%v) * pb%mesh%dx
   else
+    pb%pot=0d0;
+    pb%pot_rate=0d0;
     do iw=1,pb%mesh%nw
       do ix=1,pb%mesh%nx
         i=(iw-1)*pb%mesh%nx+ix
@@ -142,11 +143,11 @@ subroutine update_field(pb)
   pb%ot%llocnew = crack_size(pb%dtau_dt,pb%mesh%nn)
   ! Output time series at max(v) location
   pb%ot%ivmax = maxloc(pb%v,1)
- if (is_MPI_parallel()) then
-! Finding global vmax
-   call max_allproc(pb%v(pb%ot%ivmax),pb%vmaxglob)
-!   if.not.(vtemp==vtempglob) pb%ot%ivmax=-1 !This processor does not host the maximum vel.
- endif
+  if (is_MPI_parallel()) then
+    call max_allproc(pb%v(pb%ot%ivmax),pb%vmaxglob)
+  else
+    pb%vmaxglob = pb%v(pb%ot%ivmax)
+  endif
 
 end subroutine update_field
 
@@ -156,65 +157,46 @@ end subroutine update_field
 subroutine check_stop(pb)
 
   use output, only : time_write
-  use my_mpi, only: is_MPI_parallel
+  use my_mpi, only: is_MPI_parallel, is_mpi_master, finalize_mpi
 
   type(problem_type), intent(inout) :: pb
 
   double precision, save :: vmax_old = 0d0, vmax_older = 0d0
 
-if (is_MPI_parallel()) then 
-! In progress
-  if (pb%itstop == -1) then
-      !         STOP soon after end of slip localization 
-    if (pb%NSTOP == 1) then
-    !  if (pb%ot%llocnew > pb%ot%llocold) pb%itstop=pb%it+2*pb%ot%ntout
+  if (pb%itstop>0) return
 
-      ! STOP soon after maximum slip rate
-    elseif (pb%NSTOP == 2) then
+  select case (pb%NSTOP)
 
-    !  if (pb%it > 2 .and. vmax_old > vmax_older .and. pb%v(pb%ot%ivmax) < vmax_old)  &
-    !      pb%itstop = pb%it+10*pb%ot%ntout
-    !  vmax_older = vmax_old
-    !  vmax_old = pb%v(pb%ot%ivmax)
+   ! STOP if time > tmax
+    case (0)
+      if (is_mpi_master()) call time_write(pb)
+      if (pb%time > pb%tmax) pb%itstop = pb%it
 
-        !         STOP at a slip rate threshold
-    elseif (pb%NSTOP == 3) then 
-      if (pb%vmaxglob > pb%tmax) pb%itstop = pb%it    !here tmax is threshhold velocity
-        !         STOP if time > tmax
-    else
-!      if (MY_RANK==0) call time_write(pb)
-      if (pb%tmax > 0.d0 .and. pb%time > pb%tmax) pb%itstop = pb%it
-    endif
-  endif
-
-else
-
-  if (pb%itstop == -1) then
-      !         STOP soon after end of slip localization 
-    if (pb%NSTOP == 1) then
+   ! STOP soon after end of slip localization 
+    case (1) 
+      if (is_MPI_parallel()) then !JPA WARNING in progress
+        print *, 'Stop criterion 1 not implemented yet for MPI'
+        call finalize_mpi()
+      endif
       if (pb%ot%llocnew > pb%ot%llocold) pb%itstop=pb%it+2*pb%ot%ntout
 
-      ! STOP soon after maximum slip rate
-    elseif (pb%NSTOP == 2) then
-
-      if (pb%it > 2 .and. vmax_old > vmax_older .and. pb%v(pb%ot%ivmax) < vmax_old)  &
-          pb%itstop = pb%it+10*pb%ot%ntout
+   ! STOP soon after maximum slip rate
+    case (2)
+      if (pb%it > 2 .and. vmax_old > vmax_older .and. pb%vmaxglob < vmax_old)  &
+        pb%itstop = pb%it+10*pb%ot%ntout
       vmax_older = vmax_old
-      vmax_old = pb%v(pb%ot%ivmax)
+      vmax_old = pb%vmaxglob
 
-        !         STOP at a slip rate threshold
-    elseif (pb%NSTOP == 3) then    
-      if (pb%v(pb%ot%ivmax) > pb%tmax) pb%itstop = pb%it    !here tmax is threshhold velocity
+   ! STOP at a slip rate threshold
+    case (3)
+      if (pb%vmaxglob > pb%tmax) pb%itstop = pb%it    !here tmax is threshhold velocity
 
-        !         STOP if time > tmax
-    else
-      call time_write(pb)
-      if (pb%tmax > 0.d0 .and. pb%time > pb%tmax) pb%itstop = pb%it
-    endif
-  endif
+    case default
+      print *, 'Stop criterion ',pb%NSTOP,' not implemented'
+      pb%itstop = pb%it
 
-endif
-    
+  end select
+
 end subroutine check_stop
 
 

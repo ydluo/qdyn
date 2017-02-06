@@ -49,7 +49,7 @@ module problem_class
     double precision :: time=0d0
     integer :: itheta_law,i_rns_law, neqs
 
-    double precision :: dt_try, dt_did, dt_next, dt_max=0d0, tmax, acc
+    double precision :: dt_try=0d0, dt_did=0d0, dt_next=0d0, dt_max=0d0, tmax, acc
     double precision :: DYN_M,DYN_th_on,DYN_th_off
     integer :: NSTOP,itstop,it,DYN_FLAG,DYN_SKIP
 
