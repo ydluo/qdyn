@@ -63,11 +63,11 @@ contains
 !   dtau_dt = - K*( v - Vpl )
 
 !=============================================================
-subroutine init_kernel(lambda,mu,m,k)
+subroutine init_kernel(lambda,mu,m,k,D,H) !NOTE: Low-velocity fault zones (D, H) only available for 2D problems
   
   use mesh, only : mesh_type
 
-  double precision, intent(in) :: lambda,mu
+  double precision, intent(in) :: lambda,mu,D,H
   type(mesh_type), intent(in) :: m
   type(kernel_type), intent(inout) :: k
 
@@ -75,7 +75,7 @@ subroutine init_kernel(lambda,mu,m,k)
 
   select case (k%kind)
     case(1); call init_kernel_1D(k%k1,mu,m%Lfault)
-    case(2); call init_kernel_2D(k%k2f,mu,m)
+    case(2); call init_kernel_2D(k%k2f,mu,m,D,H)
     case(3); call init_kernel_3D(k%k3,lambda,mu,m,k%has_sigma_coupling) ! 3D no fft
     case(4); call init_kernel_3D_fft(k%k3f,lambda,mu,m,k%has_sigma_coupling) ! 3D with FFT along-strike
     case(5); call init_kernel_3D_fft2d(k%k3f2,lambda,mu,m) ! 3D with 2DFFT 
@@ -98,14 +98,14 @@ end subroutine init_kernel_1D
 
 
 !----------------------------------------------------------------------
-subroutine init_kernel_2D(k,mu,m)
+subroutine init_kernel_2D(k,mu,m,D,H)
 
   use mesh, only : mesh_type
   use constants, only : PI, SRC_PATH
 
   type(kernel_2d_fft), intent(inout) :: k
   type(mesh_type), intent(in) :: m
-  double precision, intent(in) :: mu
+  double precision, intent(in) :: mu,D,H
 
   double precision, allocatable :: kk(:)
   integer :: i
@@ -134,15 +134,15 @@ subroutine init_kernel_2D(k,mu,m)
    
    ! Define wavenumber
     allocate( kk(k%nnfft) )
-    do i=0,k%nnfft/2-1
-      kk(2*i+1) = 2d0*PI/m%Lfault*dble(i)
+    do i=0,m%nn/2-1
+        kk(2*i+1) = 2d0*PI/m%Lfault*i
     enddo
-    kk(2::2) = kk(1::2)
-    kk(2) = PI*dble(k%nnfft)/m%Lfault ! Nyquist
-    
-   ! To mimic the width W of the fault in the dimension normal to the 2D plane, 
+    kk(2:2:m%nn) = kk(1:2:m%nn-1)
+    kk(2) = PI*m%nn/m%Lfault ! Nyquist
+
+   ! To mimic the width W of the fault in the dimension normal to the 2D plane,
    ! we introduce a "2.5D" approximation: we replace k by sqrt(k^2 + (2*pi/W)^2) 
-    kk = sqrt( kk*kk + (2d0*PI/m%W)**2 ) 
+    kk = sqrt( kk*kk + (2*PI/m%W)**2 )
    
    ! Compute kernel for homogeneous medium
     k%kernel = 0.5d0*mu*kk
@@ -150,28 +150,38 @@ subroutine init_kernel_2D(k,mu,m)
    ! Compute kernel for damaged medium
    ! TO DO : define D and H as inputs, then uncomment the lines below
    ! if (D>0 .and. H>0) k%kernel = k%kernel * (1-D) * cotanh( H*kk + arctanh(1-D) )
-   
- !- Read coefficient I(n) from pre-calculated file.
-  elseif (k%finite == 1) then
-    write(6,*) 'Reading kernel ',SRC_PATH,'/kernel_I.tab'
-    open(57,file=SRC_PATH//'/kernel_I.tab')
-    do i=1,k%nnfft/2-1
-      read(57,*,end=100) k%kernel(2*i+1)
-    enddo
-    read(57,*,end=100) k%kernel(2) ! Nyquist
-    close(57)
-    k%kernel(1) = 0d0
-    k%kernel(2) = dble(k%nnfft/2)*k%kernel(2)
-    do i = 1,k%nnfft/2-1
-      k%kernel(2*i+1) = dble(i)*k%kernel(2*i+1)
-      k%kernel(2*i+2) = k%kernel(2*i+1)
-    enddo
-    k%kernel = k%kernel * PI*mu / (2d0*m%Lfault)
-  end if
+    if (D>0 .and. H>0) k%kernel = k%kernel * (1-D) / tanh( H*kk + atanh(1-D) )
 
- ! factor 2/N from the inverse FFT convention
-  k%kernel = k%kernel *2.d0/dble(k%nnfft)
-    
+    ! factor 2/N from the inverse FFT convention
+    k%kernel = k%kernel *2.d0/m%nn
+
+ !- Read coefficient I(n) from pre-calculated file.
+    elseif (k%finite == 1) then
+        open(57,file=SRC_PATH//'/kernel_I.tab')
+        do i=1,k%nnfft/2-1
+            read(57,*,end=100) k%kernel(2*i+1)
+        enddo
+        read(57,*,end=100) k%kernel(2) ! Nyquist
+        close(57)
+
+    ! Compute kernel
+    allocate( kk(k%nnfft) )
+
+    do i=0,k%nnfft/2-1
+        kk(2*i+1) = PI/m%Lfault*i
+    enddo
+    kk(2:2:k%nnfft) = kk(1:2:k%nnfft-1)
+    kk(2) = PI*k%nnfft/(2*m%Lfault) ! Nyquist
+
+    k%kernel = 0.5d0*mu*kk*k%kernel
+
+    if (D>0 .and. H>0) k%kernel = k%kernel * (1-D) / tanh( H*kk + atanh(1-D) )
+
+    k%kernel = k%kernel *2.d0/k%nnfft
+
+    end if
+
+
   return
 
 100 stop 'Kernel file src/kernel_I.tab is too short. Use src/TabKernelFiniteFlt.m to create a longer one.'

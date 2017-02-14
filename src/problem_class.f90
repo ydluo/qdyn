@@ -42,7 +42,7 @@ module problem_class
     double precision :: vmaxglob
 
     double precision :: pot, pot_rate, pot_pre
-    double precision :: beta=0d0, smu=0d0, lam=0d0, zimpedance=0d0, v_th
+    double precision :: beta=0d0, smu=0d0, lam=0d0, D=0d0, H=0d0, zimpedance=0d0, v_th
     logical :: station_found=.false.
 
     double precision :: Tper=0d0, Aper=0d0, Omper=0d0

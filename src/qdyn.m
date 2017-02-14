@@ -49,6 +49,8 @@
 %		MU 	shear modulus (Pa)
 %		LAM 	elastic modulus LAMBDA for 3D simulations (Pa)
 %		VS 	shear wave velocity (m/s). If VS=0 radiation damping is turned off
+%       H  	half-thickness of the fault damage zone
+%      	D   damage level = 1 - (damaged shear modulus) / (intact shear modulus)
 %		L 	fault length if MESHDIM=1
 %		    	stiffness is MU/L if MESHDIM=0
 %		FINITE	boundary conditions if MESHDIM=1
@@ -221,6 +223,8 @@ W= 50e3;   	% out-of-plane dimension (ignored in spring-block)
 MU = 30e9;	% shear modulus
 LAM = 30e9;
 VS = 3000; 	% shear wave velocity (if VS=0: turn off radiation damping)
+D = 0;      % damage level = 1 - (damaged shear modulus) / (intact shear modulus)
+H = 0;      % half-thickness of the fault damage zone
 V_TH= 1e-5; % threshold velocity for seismic events;
 
 %-- numerical settings
@@ -417,7 +421,7 @@ switch mode
     fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);    
     fprintf(fid,'%u   n_equations\n', NEQS);
     fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);     
-    fprintf(fid,'%.15g %.15g %.15g %.15g    beta, smu, lambda, v_th\n', VS, MU, LAM, V_TH);
+    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g    beta, smu, lambda, d, h, v_th\n', VS, MU, LAM, D, H, V_TH);
     fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
     fprintf(fid,'%.15g %.15g %.15g %.15g    dt_try, dtmax, tmax, accuracy\n',DTTRY,DTMAX,TMAX,ACC);
     fprintf(fid,'%u   nstop\n',NSTOP);
@@ -473,7 +477,7 @@ switch mode
    fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);    
    fprintf(fid,'%u   n_equations\n', NEQS);
    fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);     
-   fprintf(fid,'%.15g %.15g %.15g %.15g    beta, smu, lambda, v_th\n', VS, MU, LAM, V_TH);
+   fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g    beta, smu, lambda, d, h, v_th\n', VS, MU, LAM, D, H, V_TH);
    fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
    fprintf(fid,'%.15g %.15g %.15g %.15g    dt_try, dtmax, tmax, accuracy\n',DTTRY,DTMAX,TMAX,ACC);
    fprintf(fid,'%u   nstop\n',NSTOP);

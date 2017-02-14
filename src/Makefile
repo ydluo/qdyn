@@ -11,7 +11,7 @@ EXEC_PATH = .
 # GNU, serial
 #Only MPI no openMP
 F90 = mpif90
-#OPT = -O3 -Wall
+OPT = -O3 -Wall
 # For parallel runs with MPI+OpenMP:
 #F90 = mpif90
 #OPT = -O3 -Wall -fopenmp 
@@ -41,9 +41,9 @@ OPT = -O3
 
 # 3. Set the compiler option that enables preprocessing in your compiler
 # ifort
-PREPROC = -fpp
+#PREPROC = -fpp
 # gfortran
-#PREPROC = -cpp
+PREPROC = -cpp
 
 #== END USER SETTINGS =============================================
 

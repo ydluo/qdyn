@@ -8,11 +8,14 @@ p.N = 16;
 p.TMAX = 6e9; 
 p.V_0=1.01*p.V_SS;
 
+p.D = 0.9;
+p.H = 30;
+
 % run:
 [p,ot,ox] = qdyn('run',p);
 % The estimated simulation time is shorter than 10 s on a single thread machine. 
 
-% Let’s plot some outputs. 
+% Let???s plot some outputs. 
 % Slip velocity as a function of time:
 figure(1)
 semilogy(ot.t,ot.v)
