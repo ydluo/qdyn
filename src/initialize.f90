@@ -58,7 +58,7 @@ subroutine init_all(pb)
   pb%itstop = -1
   pb%it = 0
 
-  call init_kernel(pb%lam,pb%smu,pb%mesh,pb%kernel,pb%D,pb%H)
+  call init_kernel(pb%lam,pb%smu,pb%mesh,pb%kernel)
   call ot_init(pb)
   call ox_init(pb)
 
