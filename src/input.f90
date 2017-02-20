@@ -71,7 +71,7 @@ subroutine read_main(pb)
 
   read(15,*)pb%ot%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nxout_dyn,    &
             pb%ox%i_ox_seq, pb%ox%i_ox_dyn
-  read(15,*)pb%beta, pb%smu, pb%lam, pb%v_th
+  read(15,*)pb%beta, pb%smu, pb%lam, pb%D, pb%H, pb%v_th
 
 !YD This part we may want to modify it later to be able to
 !impose more complicated loading/pertubation
