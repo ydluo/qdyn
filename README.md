@@ -20,7 +20,7 @@
   Y. Luo, J. P. Ampuero, K. Miyakoshi and K. Irikura (2017)
   *Surface effects on earthquake moment-area scaling relations*  
   PAGEOPH, Topical Volume on *"Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"*
-  doi:10.1007/s00024-017-1467-4  [PDF] (https://dl.dropboxusercontent.com/u/82498341/LuoAmp16a%20scaling.pdf)
+  doi:10.1007/s00024-017-1467-4  [PDF] (http://rdcu.be/oOL9)
 
 *QDYN* was previously hosted on [GoogleCode] (https://code.google.com/p/qdyn/) and is now on [Github] (http://ydluo.github.io/qdyn). Both [SVN] (https://subversion.apache.org) and [GIT] (https://git-scm.com) version control systems are supported. 
 
@@ -96,4 +96,7 @@ Y. Luo, J. P. Ampuero (2011), Numerical Simulation of Tremor Migration Triggered
 
 Y. Luo, J. P. Ampuero (2012), Simulation of Complex Tremor Migration Patterns, AGU Fall Meeting 2012 Abstract S44B-02
 
-
+Y. Luo, J. P. Ampuero, K. Miyakoshi and K. Irikura (2017)
+  *Surface effects on earthquake moment-area scaling relations*  
+  PAGEOPH, Topical Volume on *"Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"*
+  doi:10.1007/s00024-017-1467-4 
