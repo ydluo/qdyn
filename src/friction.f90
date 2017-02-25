@@ -302,8 +302,8 @@ function compute_velocity(tau,sigma,theta,alpha,pb) result(v)
   ! Use the error function to approximate the frictional yielding of the
   ! contacts. If tau_gr < 0.9*tau, this function quickly approaches zero
   ! NOTE: the use of an error function is more expensive than an if-statement
-  ! but is continuously differentiable, which is required for the solver
-  y_gr = 0.5*(1 + erf(100*(tau-0.9*tau_gr)/tau_gr))*y_gr
+  ! but is continuous, which is required for the solver to converge
+  y_gr = 0.5*(1 + erf(100*(tau-0.95*tau_gr)/tau_gr))*y_gr
 
   ! The total slip velocity is the combined contribution of granular flow
   ! and pressure solution (parallel processes)

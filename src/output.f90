@@ -428,7 +428,7 @@ else
  if (mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
   if (pb%ox%i_ox_seq == 0) then
     ! SEISMIC: added time to header
-    write(pb%ox%unit,'(2a,2i8,e14.6)')'# x t v theta',' V./V dtau tau_dot slip ',pb%it,pb%ot%ivmax,pb%time
+    write(pb%ox%unit,'(2a,2i8,e14.6)')'# x t v theta',' V./V dtau tau_dot slip sigma ',pb%it,pb%ot%ivmax,pb%time
   ! JPA: this output should also contain y and z
     do ixout=1,pb%mesh%nn,pb%ox%nxout
       write(pb%ox%unit,'(e15.7,e24.16,7e15.7)') pb%mesh%x(ixout),pb%time,pb%v(ixout),   &
@@ -438,7 +438,7 @@ else
   else
     pb%ox%unit = pb%ox%unit + 1
     write(pb%ox%unit,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
-    write(pb%ox%unit,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip '
+    write(pb%ox%unit,'(2a)') '#  x  y  z  t  v  theta','  V./V  dtau  tau_dot  slip sigma '
     do ixout=1,pb%mesh%nn,pb%ox%nxout
       write(pb%ox%unit,'(3e15.7,e24.14,7e15.7)')       &
         pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),pb%time,     &
