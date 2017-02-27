@@ -1,30 +1,20 @@
-# qdyn
-## Welcome to QDYN
+# QDYN
 ## A Quasi-DYNamic earthquake simulator
-
---------------------------------
-## [Access to QDYN Wiki](https://github.com/ydluo/qdyn/wiki)
---------------------------------
-
-## Downloads
-
-[User's manual] (https://docs.google.com/document/d/11FkfCGAwbjfrn9U07EkIZRNuXmvY6PJt67DFNQU_mW8/pub) online (most up-to-date version) or [PDF] (https://drive.google.com/file/d/0B13IeWPRjYq8WFFTUk1FemRSdzA/view?usp=sharing).
-
-[QDYN software and examples] (https://drive.google.com/folderview?id=0B13IeWPRjYq8c2h5SGFsWDVyZ1k&usp=sharing).
 
 --------------------------------
 
 ## News 
 
-*Feb 2017* | The stable and tested verison of QDYN(v1.1) has been published online via [zenodo] (https://zenodo.org/record/322459#.WLNq3BiZNE4) 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.322459.svg)](https://doi.org/10.5281/zenodo.322459)
-Yingdi Luo, Jean Paul Ampuero, Percy Galvez, Martijn van den Ende, & Benjamin Idini. (2017). 
-*QDYN: a Quasi-DYNamic earthquake simulator (v1.1)*. Zenodo. 
+*Feb 2017* | **QDYN v1.1 has been released** and published online via [zenodo] (https://zenodo.org/record/322459#.WLNq3BiZNE4) 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.322459.svg)](https://doi.org/10.5281/zenodo.322459). You can cite it as:  
+  Y. Luo, J. P. Ampuero, P. Galvez, M. van den Ende and B. Idini (2017)  
+  *QDYN: a Quasi-DYNamic earthquake simulator (v1.1)*  
+  Zenodo. doi:10.5281/zenodo.322459
 
 *Jan 2017* | In the following paper we used *QDYN* to simulate earthquake cycles and obtained events spanning a broad range of magnitudes to study earthquake scaling relations:  
-  Y. Luo, J. P. Ampuero, K. Miyakoshi and K. Irikura (2017)
-  *Surface effects on earthquake moment-area scaling relations*  
-  PAGEOPH, Topical Volume on *"Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"*
+  Y. Luo, J. P. Ampuero, K. Miyakoshi and K. Irikura (2017)  
+  *Surface effects on earthquake moment-area scaling relations*   
+  PAGEOPH, Topical Volume on *"Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"*  
   doi:10.1007/s00024-017-1467-4  [PDF] (https://rdcu.be/oOL9)
 
 *Nov 2014* | A *QDYN* tutorial session was offered at the [School on "Earthquakes: nucleation, triggering and relationship with aseismic processes"] (http://earthquakes.sciencesconf.org/) at Cargese, Corsica, 3 - 10 November 2014 
@@ -32,17 +22,15 @@ Yingdi Luo, Jean Paul Ampuero, Percy Galvez, Martijn van den Ende, & Benjamin Id
 *QDYN* was previously hosted on [GoogleCode] (https://code.google.com/p/qdyn/) and is now on [Github] (http://ydluo.github.io/qdyn). Both [SVN] (https://subversion.apache.org) and [GIT] (https://git-scm.com) version control systems are supported. 
 
 
-
 --------------------------------
 
-
 ## Summary
+
 *QDYN* is a boundary element software package to simulate earthquake cycles (tectonic fault slip) under the quasi-dynamic approximation (quasi-static elasticity with radiation damping).  
 
 The code implements adaptive time stepping and shared-memory parallelization to simulate earthquake cycles including seismic and aseismic slip. QDYN includes various forms of rate-and-state friction and state evolution laws. It handles non-planar fault geometries in 3D and 2D elastic media, as well as spring-block simulations. It has a user-friendly matlab interface and graphical output.
 
 --------------------------------
-
 
 ## Features
 
@@ -60,6 +48,17 @@ The code implements adaptive time stepping and shared-memory parallelization to 
   * fully coupled with SPECFEM3D via QSB (QDYN-SPECFEM Bridge)
 
 
+--------------------------------
+
+## Downloads, documentation and support
+
+The primary documentation for QDYN is the [User's manual](https://github.com/ydluo/qdyn/blob/master/doc/QDYN_man_GIT.pdf). 
+
+To download and install QDYN please follow the instructions in _Section 2_ of the manual.
+
+[QDYN Wiki](https://github.com/ydluo/qdyn/wiki)
+
+Submit questions, feedback or suggestions via our [issue tracking system] (https://github.com/ydluo/qdyn/issues).
 
 
 -------------------------
@@ -85,22 +84,17 @@ The code implements adaptive time stepping and shared-memory parallelization to 
 ------------------------
 ## Developers
 
-QuakeID Group, Caltech Seismo Lab:
+[Yingdi Luo](http://www.seismolab.caltech.edu/luo_y.html) (Caltech Seismolab, USA)
 
-[Yingdi Luo] (http://www.seismolab.caltech.edu/luo_y.html)
-
-[Jean-Paul Ampuero] (http://www.seismolab.caltech.edu/ampuero_jp.html)
-
-[Bryan Riel] (http://www.seismolab.caltech.edu/riel_b.html)
+[Jean-Paul Ampuero](http://www.seismolab.caltech.edu/ampuero_jp.html) (Caltech Seismolab, USA)
 
 Percy Galvez (AECOM, Switzerland)
 
-Martijn van den Ende (Utrecht University)
+Martijn van den Ende (Utrecht University, The Netherlands)
 
 Benjamin Idini (University of Chile)
 
 
-For questions, feedback or suggestions, please contact the developers via the [issue tracking system] (https://github.com/ydluo/qdyn/issues).
 
 -------------------------
 
@@ -117,5 +111,5 @@ Y. Luo, J. P. Ampuero, K. Miyakoshi and K. Irikura (2017)
   [PDF] (https://rdcu.be/oOL9)
   
 Y. Luo, J. P. Ampuero, P. Galvez, M. Ende and B. Idini. (2017). 
-*QDYN: a Quasi-DYNamic earthquake simulator (v1.1) [Data set]*. Zenodo. 
+*QDYN: a Quasi-DYNamic earthquake simulator (v1.1) [Data set]*. Zenodo. doi:10.5281/zenodo.322459  
  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.322459.svg)](https://doi.org/10.5281/zenodo.322459)
