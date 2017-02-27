@@ -5,8 +5,8 @@
 
 ## News 
 
-*Feb 2017* | **QDYN v1.1 has been released** and published online via [zenodo] (https://zenodo.org/record/322459#.WLNq3BiZNE4) 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.322459.svg)](https://doi.org/10.5281/zenodo.322459). You can cite it as:  
+*Feb 2017* | [**QDYN v1.1 has been released**](https://github.com/ydluo/qdyn/releases/tag/qdyn_1.1) and published online via [zenodo] (https://zenodo.org/record/322459#.WLNq3BiZNE4) 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.322459.svg)](https://doi.org/10.5281/zenodo.322459). This new version introduces MPI parallelization for 3D simulations in HPC clusters and faults surrounded by damaged zones in 2D. You can cite it as:  
   Y. Luo, J. P. Ampuero, P. Galvez, M. van den Ende and B. Idini (2017)  
   *QDYN: a Quasi-DYNamic earthquake simulator (v1.1)*  
   Zenodo. doi:10.5281/zenodo.322459
@@ -54,7 +54,7 @@
 
 The primary documentation for QDYN is the [User's manual](https://github.com/ydluo/qdyn/blob/master/doc/QDYN_man_GIT.pdf). 
 
-To download and install QDYN please follow the instructions in _Section 2_ of the manual.
+To download and install QDYN please follow the instructions in _Section 2_ of the manual. Stable versions of the code can be downloaded from [here](https://github.com/ydluo/qdyn/releases).
 
 [QDYN Wiki](https://github.com/ydluo/qdyn/wiki)
 
