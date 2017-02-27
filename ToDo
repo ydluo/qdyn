@@ -1,11 +1,11 @@
 (Priorities are not indicated)
 
 Physics:
-+ kernel for low-velocity fault zones (Benjamin Idini)
++ 2D kernel for damage zones with finite fault size (FINITE=1)
 + compute surface deformation to compare to GPS data
-+ complete testing of slip to normal stress coupling 
++ complete testing of normal stress coupling 
 + slip-dependent friction law (Olivier Lengline)
-+ in 2D: finite slab geometry
++ 2D kernel for finite slab geometry
 + 3D kernel for fault in infinite medium
 + double spring-block model
 + variable strike
@@ -29,7 +29,6 @@ Code engineering and optimization:
     http://www.unidata.ucar.edu/software/netcdf/index.html
     https://www.olcf.ornl.gov/center-projects/adios/ 
 + hierarchical matrix techniques (interface to Andrew Bradley's code)
-+ use object oriented matlab
 + try enormous FFT (parallel) http://research.colfaxinternational.com/post/2014/09/18/EFFT.aspx
 
 Outputs:
@@ -41,12 +40,8 @@ Outputs:
 Packaging:
 + do "matlab publish" for the examples
 + automatically update "modification date" in google doc user's manual with Google Apps Script
-+ add copyright notices (see http://www.gnu.org/copyleft/gpl.html)
-+ add instructions for Windows and Mac
++ add copyright notices at the beginning of each source file (see http://www.gnu.org/licenses/gpl-howto.html)
 + replace Num.Rec. code by something else: 
   Lapusta's method (Noda and Lapusta 2010) 
   or Gear's method in ODEPACK (http://computation.llnl.gov/casc/odepack/, used by Jessica Hawthorne)
 + document equations and friction laws in manual
-+ use grive to update the google drive repository
-+ get a DOI through https://zenodo.org/ 
-  https://guides.github.com/activities/citable-code/
