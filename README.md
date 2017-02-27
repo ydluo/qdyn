@@ -16,15 +16,22 @@
 
 ## News 
 
-*December 2017*: In the following paper we used *QDYN* to simulate earthquake cycles and obtained events spanning a broad range of magnitudes to study earthquake scaling relations:  
+*Feb 2017* | The stable and tested verison of QDYN(v1.1) has been published online via [zenodo] (https://zenodo.org/record/322459#.WLNq3BiZNE4) 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.322459.svg)](https://doi.org/10.5281/zenodo.322459)
+Yingdi Luo, Jean Paul Ampuero, Percy Galvez, Martijn van den Ende, & Benjamin Idini. (2017). 
+*QDYN: a Quasi-DYNamic earthquake simulator (v1.1)*. Zenodo. 
+
+*Jan 2017* | In the following paper we used *QDYN* to simulate earthquake cycles and obtained events spanning a broad range of magnitudes to study earthquake scaling relations:  
   Y. Luo, J. P. Ampuero, K. Miyakoshi and K. Irikura (2017)
   *Surface effects on earthquake moment-area scaling relations*  
   PAGEOPH, Topical Volume on *"Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"*
-  doi:10.1007/s00024-017-1467-4  [PDF] (http://rdcu.be/oOL9)
+  doi:10.1007/s00024-017-1467-4  [PDF] (https://rdcu.be/oOL9)
+
+*Nov 2014* | A *QDYN* tutorial session was offered at the [School on "Earthquakes: nucleation, triggering and relationship with aseismic processes"] (http://earthquakes.sciencesconf.org/) at Cargese, Corsica, 3 - 10 November 2014 
 
 *QDYN* was previously hosted on [GoogleCode] (https://code.google.com/p/qdyn/) and is now on [Github] (http://ydluo.github.io/qdyn). Both [SVN] (https://subversion.apache.org) and [GIT] (https://git-scm.com) version control systems are supported. 
 
-A *QDYN* tutorial session was offered at the [School on "Earthquakes: nucleation, triggering and relationship with aseismic processes"] (http://earthquakes.sciencesconf.org/) at Cargese, Corsica, 3 - 10 November 2014 
+
 
 --------------------------------
 
@@ -47,7 +54,9 @@ The code implements adaptive time stepping and shared-memory parallelization to 
   * tectonic and transient loads
   * matlab wrapper and graphic output display utilities
   * parallelized for shared memory systems (OpenMP)
+  * MPI parallelization
   * normal stress coupling
+  * Faults surrounded by damaged zones
   * fully coupled with SPECFEM3D via QSB (QDYN-SPECFEM Bridge)
 
 
@@ -86,6 +95,11 @@ QuakeID Group, Caltech Seismo Lab:
 
 Percy Galvez (AECOM, Switzerland)
 
+Martijn van den Ende (Utrecht University)
+
+Benjamin Idini (University of Chile)
+
+
 For questions, feedback or suggestions, please contact the developers via the [issue tracking system] (https://github.com/ydluo/qdyn/issues).
 
 -------------------------
@@ -99,4 +113,9 @@ Y. Luo, J. P. Ampuero (2012), Simulation of Complex Tremor Migration Patterns, A
 Y. Luo, J. P. Ampuero, K. Miyakoshi and K. Irikura (2017)
   *Surface effects on earthquake moment-area scaling relations*  
   PAGEOPH, Topical Volume on *"Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"*
-  doi:10.1007/s00024-017-1467-4 
+  [doi:10.1007/s00024-017-1467-4] (https://link.springer.com/article/10.1007/s00024-017-1467-4)  
+  [PDF] (https://rdcu.be/oOL9)
+  
+Y. Luo, J. P. Ampuero, P. Galvez, M. Ende and B. Idini. (2017). 
+*QDYN: a Quasi-DYNamic earthquake simulator (v1.1) [Data set]*. Zenodo. 
+ [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.322459.svg)](https://doi.org/10.5281/zenodo.322459)
