@@ -26,9 +26,9 @@
 
 ## Summary
 
-*QDYN* is a boundary element software package to simulate earthquake cycles (tectonic fault slip) under the quasi-dynamic approximation (quasi-static elasticity with radiation damping).  
+*QDYN* is a boundary element software to simulate earthquake cycles (tectonic fault slip) under the quasi-dynamic approximation (quasi-static elasticity with radiation damping).  
 
-The code implements adaptive time stepping and shared-memory parallelization to simulate earthquake cycles including seismic and aseismic slip. QDYN includes various forms of rate-and-state friction and state evolution laws. It handles non-planar fault geometries in 3D and 2D elastic media, as well as spring-block simulations. It has a user-friendly matlab interface and graphical output.
+*QDYN* has adaptive time stepping to simulate earthquake cycles including seismic and aseismic slip, on non-planar faults in 3D and 2D elastic media and on spring-block systems. It includes various forms of rate-and-state friction and state evolution laws, parallelization for shared and distributed memory systems, and a user-friendly matlab interface for setting inputs and visualizing outputs.
 
 --------------------------------
 
@@ -40,11 +40,11 @@ The code implements adaptive time stepping and shared-memory parallelization to 
   * non-planar faults (currently limited to variable dip, rectangular elements)
   * 3D, 2D and 1D (spring-block)
   * tectonic and transient loads
+  * normal stress coupling
+  * faults surrounded by damaged zones
   * matlab wrapper and graphic output display utilities
   * parallelized for shared memory systems (OpenMP)
-  * MPI parallelization
-  * normal stress coupling
-  * Faults surrounded by damaged zones
+  * parallelized for distributed memory systems (MPI)
   * fully coupled with SPECFEM3D via QSB (QDYN-SPECFEM Bridge)
 
 
@@ -98,7 +98,7 @@ Benjamin Idini (University of Chile)
 
 -------------------------
 
-## Suggested References:
+## Suggested References
 
 Y. Luo, J. P. Ampuero (2011), Numerical Simulation of Tremor Migration Triggered by Slow Slip and Rapid Tremor Reversals, AGU Fall Meeting 2011 Abstract S33C-02
 
