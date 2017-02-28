@@ -5,11 +5,11 @@
 
 ## News 
 
-*Feb 2017* | [**QDYN v1.1 has been released**](https://github.com/ydluo/qdyn/releases/tag/qdyn_1.1) and published online via [zenodo] (https://zenodo.org/record/322459#.WLNq3BiZNE4) 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.322459.svg)](https://doi.org/10.5281/zenodo.322459). This new version introduces MPI parallelization for 3D simulations in HPC clusters and faults surrounded by damaged zones in 2D. You can cite it as:  
+*Feb 2017* | [**QDYN v1.1 has been released**](https://github.com/ydluo/qdyn/releases/tag/qdyn_1.1) and published online via [zenodo] (https://zenodo.org/record/322459#.WLNq3BiZNE4). This new version introduces MPI parallelization for 3D simulations in HPC clusters and faults surrounded by damaged zones in 2D. You can cite it as:  
   Y. Luo, J. P. Ampuero, P. Galvez, M. van den Ende and B. Idini (2017)  
   *QDYN: a Quasi-DYNamic earthquake simulator (v1.1)*  
-  Zenodo. doi:10.5281/zenodo.322459
+  Zenodo. doi:10.5281/zenodo.322459  
+  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.322459.svg)](https://doi.org/10.5281/zenodo.322459)
 
 *Jan 2017* | In the following paper we used *QDYN* to simulate earthquake cycles and obtained events spanning a broad range of magnitudes to study earthquake scaling relations:  
   Y. Luo, J. P. Ampuero, K. Miyakoshi and K. Irikura (2017)  
@@ -54,11 +54,11 @@
 
 The primary documentation for QDYN is the [User's manual](https://github.com/ydluo/qdyn/blob/master/doc/QDYN_man_GIT.pdf). 
 
-To download and install QDYN please follow the instructions in _Section 2_ of the manual. Stable versions of the code can be downloaded from [here](https://github.com/ydluo/qdyn/releases).
+Stable versions of QDYN can be downloaded from the [release page](https://github.com/ydluo/qdyn/releases). To download development versions please follow the instructions in _Section 2.2_ of the manual.
 
-[QDYN Wiki](https://github.com/ydluo/qdyn/wiki)
+To install QDYN please follow the instructions in _Section 2.3_ of the manual. 
 
-Submit questions, feedback or suggestions via our [issue tracking system] (https://github.com/ydluo/qdyn/issues).
+Questions, feedback or suggestions can be submitted via our [issue tracking system](https://github.com/ydluo/qdyn/issues).
 
 
 -------------------------
@@ -67,7 +67,7 @@ Submit questions, feedback or suggestions via our [issue tracking system] (https
 
 ![](https://lh4.googleusercontent.com/-OjKBE5_Ipf8/T9wk2GtVRXI/AAAAAAAAABg/a1diUWu7tFU/s763/Poster_QDYN.jpg)
 
-[Download Poster] (http://code.google.com/p/qdyn/downloads/detail?name=Poster_QDYN.pdf) 
+[Download Poster](http://code.google.com/p/qdyn/downloads/detail?name=Poster_QDYN.pdf) 
 
 -------------------------
 
