@@ -419,7 +419,8 @@ switch mode
     fprintf(fid,'%u   itheta_law\n', THETA_LAW);
     fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
     fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);
-    fprintf(fid,'%u   n_equations\n', NEQS);
+    %fprintf(fid,'%u   n_equations\n', NEQS);
+    fprintf(fid,'%u %u   stress_coupling cohesion\n', 0, 0);
     fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);
     fprintf(fid,'%.15g %.15g %.15g %.15g    beta, smu, lambda, v_th\n', VS, MU, LAM, V_TH);
     fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
@@ -475,7 +476,8 @@ switch mode
    fprintf(fid,'%u   itheta_law\n', THETA_LAW);
    fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
    fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);
-   fprintf(fid,'%u   n_equations\n', NEQS);
+   %fprintf(fid,'%u   n_equations\n', NEQS);
+   fprintf(fid,'%u %u   stress_coupling cohesion\n', 0, 0);
    fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);
    fprintf(fid,'%.15g %.15g %.15g %.15g    beta, smu, lambda, v_th\n', VS, MU, LAM, V_TH);
    fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
