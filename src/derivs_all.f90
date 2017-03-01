@@ -120,10 +120,22 @@ subroutine derivs(time,yt,dydt,pb)
     dydt(ind_cohesion::pb%neqs) = dalpha_dt(v,tau,sigma,theta,alpha,pb)
   endif
 
+  ! SEISMIC: calculate partial derivatives. For rate-and-state, dmu_dv and
+  ! dmu_dtheta contain the partial derivatives of friction to V and theta,
+  ! respectively. For the CNS model, these variables contain the partials of
+  ! velocity to shear stress (dV/dtau) and velocity to porosity (dV/dtheta),
+  ! respectively. For compatibility, the names of these variables are not
+  ! changed.
+  call dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,pb)
+
   if (pb%i_rns_law == 3) then
     ! SEISMIC: the total dtau_dt results from the slip deficit and
     ! periodic loading, which is stored in dydt(2::pb%neqs)
-    dydt(2::pb%neqs) = dtau_dt + dtau_per
+    ! Damping is included from rewriting the following expression:
+    ! dtau/dt = k(Vlp - Vs) - eta*(dV/dtau * dtau/dt + dV/dtheta * dtheta/dt)
+    ! This gives:
+    ! dtau/dt = ( k[Vlp - Vs] - eta*dV/dtheta * dtheta/dt)/(1 + eta*dV/dtau)
+    dydt(2::pb%neqs) = (dtau_dt + dtau_per - pb%zimpedance*dmu_dtheta*dydt(1::pb%neqs))/(1 + pb%zimpedance*dmu_dv)
   else
     ! SEISMIC: the rate-and-state formulation computes the the time-derivative
     ! of velocity, rather than stress
@@ -133,7 +145,7 @@ subroutine derivs(time,yt,dydt,pb)
     ! Rearranged in the following form:
     !  dv/dt = ( dtau_load/dt + dtau_elastostatic/dt - sigma*dmu/dtheta*dtheta/dt )/( sigma*dmu/dv + impedance )
     ! SEISMIC NOTE: use of pb%sigma, even when pb%neqs == 3? Replaced with sigma (defined above)
-    call dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
+
     dydt(2::pb%neqs) = ( dtau_per + dtau_dt - sigma*dmu_dtheta*dydt(1::pb%neqs) ) &
                      / ( sigma*dmu_dv + pb%zimpedance )
    endif

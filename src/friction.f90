@@ -233,11 +233,16 @@ function dalpha_dt(v,tau,sigma,theta,alpha,pb) result(da_dt)
 end function dalpha_dt
 
 !--------------------------------------------------------------------------------------
-subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
+subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,pb)
 
   type(problem_type), intent(in) :: pb
-  double precision, dimension(pb%mesh%nn), intent(in) :: v, theta
+  double precision, dimension(pb%mesh%nn), intent(in) :: v, tau, sigma, theta
   double precision, dimension(pb%mesh%nn), intent(out) :: dmu_dv, dmu_dtheta
+
+  ! SEISMIC: define some extra parameters for Chen's friction law
+  double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, dth_dt, denom, y_ps, delta
+  double precision, dimension(pb%mesh%nn) :: mu_star, dummy_var, f_phi_sqrt, V_gr, y_gr
+  double precision, dimension(pb%mesh%nn) :: dv_dtau_ps, dv_dtheta_ps, dv_dtau, dv_dtheta
 
   select case (pb%i_rns_law)
 
@@ -248,6 +253,66 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
   case(1)
     dmu_dtheta = pb%b * pb%v2 / ( pb%v2*theta + pb%dc )
     dmu_dv = pb%a * pb%v1 / v / ( pb%v1 + v )
+
+  case(3) ! SEISMIC: Chen's model
+
+    ! Shear strain rate [1/s] due to viscous flow (pressure solution)
+    y_ps = calc_e_ps(tau, theta, .false., pb)
+    y_gr = v/pb%cns_params%w - y_ps
+
+    tan_psi = calc_tan_psi(theta, pb)         ! Dilatation angle
+    mu_tilde = calc_mu_tilde(y_gr, pb)           ! Grain-boundary friction
+    mu_star = pb%cns_params%mu_tilde_star
+
+    ! Pre-compute the denominator for efficiency
+    denom = 1.0/(pb%cns_params%a*(sigma+tau*tan_psi))
+    ! Pre-compute a dummy variable that we will re-use a few times
+    dummy_var = (tau*(1 - mu_star*tan_psi) - sigma*(mu_star + tan_psi))*denom
+
+    ! Pre-compute the square root of the porosity function. This will serve as
+    ! a basis for calculating the full porosity functions for either itheta_law
+    f_phi_sqrt = 1.0/(2*(pb%cns_params%phi0 - theta))
+
+    ! Granular flow _velocity_ [unit m/s]
+    ! NOTE: it is physically more correct to use a reference strain rate
+    ! and use velocity = strain_rate * thickness instead
+    V_gr = pb%cns_params%w*pb%cns_params%y_gr_star*exp(dummy_var)
+
+    ! Next, calculate the partial derivatives dv_dtau and dv_dtheta for the
+    ! pressure solution creep. The functional form depends on the rate-limiting
+    ! mechanism (diffusion, dissolution, or precipitation)
+    ! Note that the pressure solution strain rate is multiplied by the
+    ! the gouge layer thickness (pb%cns_params%w) to obtain a velocity
+    select case (pb%itheta_law)
+
+    case (3) ! Diffusion controlled pressure solution
+      dv_dtau_ps = pb%cns_params%w*pb%cns_params%IPS_const_diff*f_phi_sqrt**2
+      dv_dtheta_ps = 4*pb%cns_params%w*pb%cns_params%IPS_const_diff*tau*f_phi_sqrt**3
+    case (4) ! Dissolution controlled pressure solution
+      dv_dtau_ps =  pb%cns_params%w*(y_ps + pb%cns_params%IPS_const_diss1)* &
+                    pb%cns_params%IPS_const_diss2*2*pb%cns_params%phi0*f_phi_sqrt
+      dv_dtheta_ps =  4*pb%cns_params%w*(y_ps + pb%cns_params%IPS_const_diss1)* &
+                      pb%cns_params%IPS_const_diss2*tau*pb%cns_params%phi0*f_phi_sqrt**2
+    case default
+      write(6,*) "dmu_dv_dtheta: Chen's friction model is selected (i_rns_law == 3),"
+      write(6,*) "but itheta_law is unsupported (must be either 3 or 4)"
+      write(6,*) "3 = diffusion-, 4 = dissolution controlled pressure solution creep"
+      stop
+
+    end select
+
+    ! The partial derivatives dv_dtau and dv_dtheta of the overall slip velocity
+    ! are the sum of the partial derivatives of the pressure solution and
+    ! granular flow velocities.
+    dv_dtau = dv_dtau_ps + V_gr*((1-mu_star*tan_psi)*denom - tan_psi*dummy_var*pb%cns_params%a*denom)
+    dv_dtheta = dv_dtheta_ps + V_gr*(2*pb%cns_params%H*(sigma + mu_star*tau)*denom + &
+                2*pb%cns_params%H*tau*dummy_var*pb%cns_params%a*denom)
+
+    ! For the CNS model, this function should return dV/dtau and dV/dtheta instead
+    ! of dmu/dV and dmu/dtheta. For compatibility with classical rate-and-state,
+    ! the same variable names (dmu_dv and dmu_dtheta) are used to store these quantities
+    dmu_dv = dv_dtau
+    dmu_dtheta = dv_dtheta
 
   case default
     write (6,*) "dmu_dv_dtheta: unkown friction law type"
