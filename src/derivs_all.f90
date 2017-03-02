@@ -133,7 +133,7 @@ subroutine derivs(time,yt,dydt,pb)
     ! periodic loading, which is stored in dydt(2::pb%neqs)
     ! Damping is included from rewriting the following expression:
     ! dtau/dt = k(Vlp - Vs) - eta*(dV/dtau * dtau/dt + dV/dtheta * dtheta/dt)
-    ! This gives:
+    ! Rearrangement gives:
     ! dtau/dt = ( k[Vlp - Vs] - eta*dV/dtheta * dtheta/dt)/(1 + eta*dV/dtau)
     dydt(2::pb%neqs) = (dtau_dt + dtau_per - pb%zimpedance*dmu_dtheta*dydt(1::pb%neqs))/(1 + pb%zimpedance*dmu_dv)
   else
@@ -144,7 +144,6 @@ subroutine derivs(time,yt,dydt,pb)
     !  dtau_load/dt + dtau_elastostatic/dt -impedance*dv/dt = sigma*( dmu/dv*dv/dt + dmu/dtheta*dtheta/dt )
     ! Rearranged in the following form:
     !  dv/dt = ( dtau_load/dt + dtau_elastostatic/dt - sigma*dmu/dtheta*dtheta/dt )/( sigma*dmu/dv + impedance )
-    ! SEISMIC NOTE: use of pb%sigma, even when pb%neqs == 3? Replaced with sigma (defined above)
 
     dydt(2::pb%neqs) = ( dtau_per + dtau_dt - sigma*dmu_dtheta*dydt(1::pb%neqs) ) &
                      / ( sigma*dmu_dv + pb%zimpedance )

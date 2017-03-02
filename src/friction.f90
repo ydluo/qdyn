@@ -287,12 +287,11 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,pb)
 
     case (3) ! Diffusion controlled pressure solution
       dv_dtau_ps = pb%cns_params%w*pb%cns_params%IPS_const_diff*f_phi_sqrt**2
-      dv_dtheta_ps = 4*pb%cns_params%w*pb%cns_params%IPS_const_diff*tau*f_phi_sqrt**3
+      dv_dtheta_ps = 4*dv_dtau_ps*f_phi_sqrt*tau
     case (4) ! Dissolution controlled pressure solution
       dv_dtau_ps =  pb%cns_params%w*(y_ps + pb%cns_params%IPS_const_diss1)* &
                     pb%cns_params%IPS_const_diss2*2*pb%cns_params%phi0*f_phi_sqrt
-      dv_dtheta_ps =  4*pb%cns_params%w*(y_ps + pb%cns_params%IPS_const_diss1)* &
-                      pb%cns_params%IPS_const_diss2*tau*pb%cns_params%phi0*f_phi_sqrt**2
+      dv_dtheta_ps = 2*dv_dtau_ps*f_phi_sqrt*tau
     case default
       write(6,*) "dmu_dv_dtheta: Chen's friction model is selected (i_rns_law == 3),"
       write(6,*) "but itheta_law is unsupported (must be either 3 or 4)"
@@ -304,6 +303,7 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,pb)
     ! The partial derivatives dv_dtau and dv_dtheta of the overall slip velocity
     ! are the sum of the partial derivatives of the pressure solution and
     ! granular flow velocities.
+
     dv_dtau = dv_dtau_ps + V_gr*((1-mu_star*tan_psi)*denom - tan_psi*dummy_var*pb%cns_params%a*denom)
     dv_dtheta = dv_dtheta_ps + V_gr*(2*pb%cns_params%H*(sigma + mu_star*tau)*denom + &
                 2*pb%cns_params%H*tau*dummy_var*pb%cns_params%a*denom)
