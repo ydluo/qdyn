@@ -19,6 +19,8 @@ Physics:
 + heterogeneous media: import kernel from Relax, Pylith, SPECFEM3D ?
 
 Code engineering and optimization:
++ remove redundancy in QSB/*.m
++ update function read_qdyn_in in src/qdyn.m
 + python wrapper to enable runs on clusters without matlab license (Martijn)
 + inputs as fortran namelists
 + use parallel MPI I/O

@@ -90,7 +90,7 @@ subroutine read_main(pb)
 
   n = mesh_get_size(pb%mesh) ! number of nodes in this processor
   allocate ( pb%tau(n), pb%dtau_dt(n), &
-             pb%tau_init(n), pb%sigma(n), &
+             pb%sigma(n), &
              pb%slip(n), pb%v(n), pb%theta(n),  &
              pb%a(n), pb%b(n), pb%dc(n),   &
              pb%v_pre(n), pb%v_pre2(n), &

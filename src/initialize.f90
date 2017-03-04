@@ -50,13 +50,7 @@ subroutine init_all(pb)
 
   pb%slip = 0d0
   call set_theta_star(pb) ! ref theta value
-  pb%tau_init = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
-  pb%tau = pb%tau_init
-
- ! init value for solver
-  pb%time = 0.d0
-  pb%itstop = -1
-  pb%it = 0
+  pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
 
   call init_kernel(pb%lam,pb%smu,pb%mesh,pb%kernel,pb%D,pb%H)
   call ot_init(pb)
