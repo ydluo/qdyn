@@ -153,30 +153,24 @@ subroutine read_main(pb)
       allocate( pb%cns_params%a(n), pb%cns_params%mu_tilde_star(n), &
                 pb%cns_params%y_gr_star(n), pb%cns_params%H(n), &
                 pb%cns_params%phi0(n), pb%cns_params%IPS_const_diff(n), &
+                pb%cns_params%IPS_const_diss1(n), pb%cns_params%IPS_const_diss2(n), &
                 pb%cns_params%w(n) )
 
       do i=1,n
         read(15,*)pb%cns_params%a(i), pb%cns_params%mu_tilde_star(i), &
                   pb%cns_params%y_gr_star(i), pb%cns_params%H(i), &
                   pb%cns_params%phi0(i), pb%cns_params%IPS_const_diff(i), &
+                  pb%cns_params%IPS_const_diss1(i), pb%cns_params%IPS_const_diss2(i), &
                   pb%cns_params%w(i)
-      end do
-    elseif (pb%itheta_law == 4) then
-      allocate( pb%cns_params%a(n), pb%cns_params%mu_tilde_star(n), &
-                pb%cns_params%y_gr_star(n), pb%cns_params%H(n), &
-                pb%cns_params%phi0(n), pb%cns_params%IPS_const_diss1(n), &
-                pb%cns_params%IPS_const_diss2(n), pb%cns_params%w(n) )
-
-      do i=1,n
-        read(15,*)pb%cns_params%a(i), pb%cns_params%mu_tilde_star(i), &
-                  pb%cns_params%y_gr_star(i), pb%cns_params%H(i), &
-                  pb%cns_params%phi0(i), pb%cns_params%IPS_const_diss1(i), &
-                  pb%cns_params%IPS_const_diss2(i), pb%cns_params%w(i)
+        if (pb%cns_params%IPS_const_diff(i)*pb%cns_params%IPS_const_diss1(i) /= 0) then
+          write(6,*) "input.f90: ambiguous rate-controlling mechanism for itheta_law = 3"
+          write(6,*) "For each fault element, either IPS_const_diff or IPS_const_diss1 must be zero"
+          stop
+        endif
       end do
     else
       write(6,*) "input.f90: incompatible theta law with chosen rate-and-state law"
-      write(6,*) "If the CNS friction law is chosen, theta law must be either 3 or 4"
-      write(6,*) "Pressure solution rate-limiting mechanism: 3 = diffusion, 4 = dissolution"
+      write(6,*) "If the CNS friction law is chosen, theta law must be 3"
       stop
     endif
   endif

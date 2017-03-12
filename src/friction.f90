@@ -242,7 +242,8 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,pb)
   ! SEISMIC: define some extra parameters for Chen's friction law
   double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, dth_dt, denom, y_ps, delta
   double precision, dimension(pb%mesh%nn) :: mu_star, dummy_var, f_phi_sqrt, V_gr, y_gr
-  double precision, dimension(pb%mesh%nn) :: dv_dtau_ps, dv_dtheta_ps, dv_dtau, dv_dtheta
+  double precision, dimension(pb%mesh%nn) :: dv_dtau_ps_d, dv_dtheta_ps_d, dv_dtau_ps_s, dv_dtheta_ps_s
+  double precision, dimension(pb%mesh%nn) :: dv_dtau, dv_dtheta
 
   select case (pb%i_rns_law)
 
@@ -283,29 +284,22 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,pb)
     ! mechanism (diffusion, dissolution, or precipitation)
     ! Note that the pressure solution strain rate is multiplied by the
     ! the gouge layer thickness (pb%cns_params%w) to obtain a velocity
-    select case (pb%itheta_law)
 
-    case (3) ! Diffusion controlled pressure solution
-      dv_dtau_ps = pb%cns_params%w*pb%cns_params%IPS_const_diff*f_phi_sqrt**2
-      dv_dtheta_ps = 4*dv_dtau_ps*f_phi_sqrt*tau
-    case (4) ! Dissolution controlled pressure solution
-      dv_dtau_ps =  pb%cns_params%w*(y_ps + pb%cns_params%IPS_const_diss1)* &
+    dv_dtau_ps_d = pb%cns_params%w*pb%cns_params%IPS_const_diff*f_phi_sqrt**2
+    dv_dtheta_ps_d = 4*dv_dtau_ps_d*f_phi_sqrt*tau
+
+    dv_dtau_ps_s =  pb%cns_params%w*(y_ps + pb%cns_params%IPS_const_diss1)* &
                     pb%cns_params%IPS_const_diss2*2*pb%cns_params%phi0*f_phi_sqrt
-      dv_dtheta_ps = 2*dv_dtau_ps*f_phi_sqrt*tau
-    case default
-      write(6,*) "dmu_dv_dtheta: Chen's friction model is selected (i_rns_law == 3),"
-      write(6,*) "but itheta_law is unsupported (must be either 3 or 4)"
-      write(6,*) "3 = diffusion-, 4 = dissolution controlled pressure solution creep"
-      stop
-
-    end select
+    dv_dtheta_ps_s = 2*dv_dtau_ps_s*f_phi_sqrt*tau
 
     ! The partial derivatives dv_dtau and dv_dtheta of the overall slip velocity
     ! are the sum of the partial derivatives of the pressure solution and
     ! granular flow velocities.
 
-    dv_dtau = dv_dtau_ps + V_gr*((1-mu_star*tan_psi)*denom - tan_psi*dummy_var*pb%cns_params%a*denom)
-    dv_dtheta = dv_dtheta_ps + V_gr*(2*pb%cns_params%H*(sigma + mu_star*tau)*denom + &
+    dv_dtau = dv_dtau_ps_d + dv_dtau_ps_s + &
+              V_gr*((1-mu_star*tan_psi)*denom - tan_psi*dummy_var*pb%cns_params%a*denom)
+    dv_dtheta = dv_dtau_ps_d + dv_dtau_ps_s + &
+                V_gr*(2*pb%cns_params%H*(sigma + mu_star*tau)*denom + &
                 2*pb%cns_params%H*tau*dummy_var*pb%cns_params%a*denom)
 
     ! For the CNS model, this function should return dV/dtau and dV/dtheta instead
@@ -316,8 +310,6 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,pb)
 
   case default
     write (6,*) "dmu_dv_dtheta: unkown friction law type"
-    write (6,*) "This function should only be called for i_rns_law = 0 and 1"
-    write (6,*) "CNS model (i_rns_law = 3) does not compute these partial derivatives"
     stop
   end select
 
@@ -419,19 +411,14 @@ function calc_e_ps(sigma,theta,truncate,pb) result(e_ps_dot)
 
   type(problem_type), intent(in) :: pb
   double precision, dimension(pb%mesh%nn), intent(in) :: sigma, theta
-  double precision, dimension(pb%mesh%nn) :: e_ps_dot
+  double precision, dimension(pb%mesh%nn) :: e_ps_dot_d, e_ps_dot_s, e_ps_dot
   logical, intent(in) :: truncate
 
-  select case (pb%itheta_law)
-
-  case (3) ! CNS model, diffusion controlled
-    e_ps_dot = pb%cns_params%IPS_const_diff*sigma/(2*pb%cns_params%phi0 - 2*theta)**2
-  case (4) ! CNS model, dissolution controlled
-    e_ps_dot =  pb%cns_params%IPS_const_diss1*(exp(pb%cns_params%IPS_const_diss2*sigma* &
+  e_ps_dot_d = pb%cns_params%IPS_const_diff*sigma/(2*pb%cns_params%phi0 - 2*theta)**2
+  e_ps_dot_s =  pb%cns_params%IPS_const_diss1*(exp(pb%cns_params%IPS_const_diss2*sigma* &
                 pb%cns_params%phi0/(pb%cns_params%phi0 - theta)) - 1)
-  case default
-    stop 'calc_e_ps: unsupported pressure solution law (3 = diffusion, 4 = dissolution controlled)'
-  end select
+
+  e_ps_dot = e_ps_dot_d + e_ps_dot_s
 
   ! If truncation is required, use an error function to set the strain rate
   ! to zero. A cut-off porosity of about 3% is chosen here, which corresponds
