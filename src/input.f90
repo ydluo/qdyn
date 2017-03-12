@@ -9,13 +9,13 @@ module input
 
 contains
 !=====================================================================
-! read in all parameters
+! Read input file qdyn.in
+! If MPI, there is one qdyn*.in file per processor
 ! 
 subroutine read_main(pb)
   
   use problem_class
   use mesh, only : read_mesh, mesh_get_size
-  use constants, only : FFT_TYPE
   use my_mpi, only: my_mpi_tag, is_MPI_parallel
  
   type(problem_type), intent(inout)  :: pb
@@ -23,39 +23,16 @@ subroutine read_main(pb)
   integer :: i,n,nsta,ista,ik,i_sigma_cpl
   double precision :: xsta, ysta, zsta, dmin2, d2
   
-  write(6,*) 'Start reading input: ...'
+  write(6,*) 'Start reading input ...'
 
-  !PG, if MPI then read one input file per processor
   open(unit=15, file='qdyn'//trim(my_mpi_tag())//'.in', action='read')
   call read_mesh(15,pb%mesh)
   write(6,*) '   Mesh input complete'
 
-  if (pb%mesh%dim==2) then 
-    pb%kernel%kind =3+FFT_TYPE
-    if (pb%mesh%nx < 4) then
-      write(6,*) 'nx < 4, FFT disabled'
-      pb%kernel%kind = 3
-    endif
-  else
-      pb%kernel%kind = pb%mesh%dim+1       
-  endif
-     
-  select case (pb%kernel%kind)
-    case(2)
-      allocate(pb%kernel%k2f)
-      read(15,*) pb%kernel%k2f%finite
-    case(3)
-      allocate(pb%kernel%k3)
-    case(4)
-      allocate(pb%kernel%k3f)
-    case(5)
-      allocate(pb%kernel%k3f2)
-  end select
-   
+  if (pb%mesh%dim==1) read(15,*) pb%finite
   read(15,*) pb%itheta_law
   read(15,*) pb%i_rns_law
-  read(15,*) i_sigma_cpl
-  pb%kernel%has_sigma_coupling = (i_sigma_cpl==1)
+  read(15,*) pb%i_sigma_cpl
   read(15,*) pb%neqs 
 
 !JPA neqs should not be setup explicitly by the user

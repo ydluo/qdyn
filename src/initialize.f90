@@ -52,7 +52,8 @@ subroutine init_all(pb)
   call set_theta_star(pb) ! ref theta value
   pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
 
-  call init_kernel(pb%lam,pb%smu,pb%mesh,pb%kernel,pb%D,pb%H)
+  call init_kernel(pb%lam,pb%smu,pb%mesh,pb%kernel, &
+                   pb%D,pb%H,pb%i_sigma_cpl,pb%finite)
   call ot_init(pb)
   call ox_init(pb)
 

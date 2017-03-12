@@ -396,9 +396,6 @@ switch mode
     filename = ['qdyn' sprintf('%06i',iproc) '.in'];
     fid=fopen(filename,'w');
     fprintf(fid,'%u     meshdim\n' , MESHDIM); 
-    if SIGMA_CPL == 1
-      NEQS = 3;
-    end
     if MESHDIM == 2
       DWnnlocal=[];DIP_Wnnlocal=[];
       fprintf(1, 'MESHDIM = %d\n', MESHDIM);
@@ -411,14 +408,11 @@ switch mode
       fprintf(fid,'%u     NN\n' , N);      
       fprintf(fid,'%.15g %.15g      L, W\n', L, W);
     end
-    
-    if MESHDIM == 1
-      fprintf(fid,'%u   finite\n', FINITE);
-    end   
-    
+    if MESHDIM == 1, fprintf(fid,'%u   finite\n', FINITE); end   
     fprintf(fid,'%u   itheta_law\n', THETA_LAW);
     fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
     fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);    
+    if SIGMA_CPL == 1, NEQS = 3; end
     fprintf(fid,'%u   n_equations\n', NEQS);
     fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);     
     fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g   beta, smu, lambda, D, H, v_th\n', VS, MU, LAM, D, H, V_TH);
@@ -455,9 +449,6 @@ switch mode
 %JPA In MPI runs, if qdyn.in is not used we should not create it (put it in an "else" block)
   fid=fopen('qdyn.in','w');
    fprintf(fid,'%u     meshdim\n' , MESHDIM); 
-   if SIGMA_CPL == 1
-       NEQS = 3;
-   end
    if MESHDIM == 2
        fprintf(1, 'MESHDIM = %d\n', MESHDIM);
        fprintf(fid,'%u %u     NX, NW\n' , NX, NW);      
@@ -467,14 +458,11 @@ switch mode
        fprintf(fid,'%u     NN\n' , N);      
        fprintf(fid,'%.15g %.15g      L, W\n', L, W);
    end
-    
-   if MESHDIM == 1
-     fprintf(fid,'%u   finite\n', FINITE);
-   end   
-    
+   if MESHDIM == 1, fprintf(fid,'%u   finite\n', FINITE); end   
    fprintf(fid,'%u   itheta_law\n', THETA_LAW);
    fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
    fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);    
+   if SIGMA_CPL == 1, NEQS = 3; end
    fprintf(fid,'%u   n_equations\n', NEQS);
    fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);     
    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g   beta, smu, lambda, D, H, v_th\n', VS, MU, LAM, D, H, V_TH);
