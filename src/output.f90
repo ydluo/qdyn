@@ -23,6 +23,8 @@ subroutine screen_init(pb)
 
   double precision :: K
   
+  if (pb%ot%ic<1) return
+
   write(6,*) 'Values at selected point of the fault:'
   K = pb%mesh%Lfault
   if (pb%mesh%dim == 1) then   
@@ -204,41 +206,46 @@ subroutine ot_write(pb)
   integer :: i,ios
   character(30) :: ot_fmt
 
+  pb%ot%unit = 18
   if (is_MPI_parallel()) then 
-
- ! Working on parallel outputs for timeseries
-    ! if one station is found in this processor 
-    if (pb%station_found) then
-      pb%ot%unit = 18
+   ! if "ic" station is in this processor 
+    if (pb%ot%ic>0) then
       open(pb%ot%unit,access='APPEND',status='old',iostat=ios)
-      if (ios==0) then
+      if (ios>0) stop 'Fatal error: ot_write: Error opening a fort.18 file'
+     !JPA add test for the first time we try to open this file but it does not exist yet
+     !JPA add test to prevent appenaingd data to a file from a previous simulation
+      if (OCTAVE_OUTPUT) then
+        ot_fmt = '(g0.16,5(",",g0.6))'
+      else
         ot_fmt = '(e24.16,5e14.6)'
-        write(pb%ot%unit,ot_fmt) pb%time, pb%v(pb%ot%ic), pb%theta(pb%ot%ic), &
+      endif
+      write(pb%ot%unit,ot_fmt) pb%time, pb%v(pb%ot%ic), pb%theta(pb%ot%ic), &
           pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
           pb%tau(pb%ot%ic), pb%slip(pb%ot%ic)
-      else 
-        stop 'Error opening a fort.18 file'
-      endif
+      close(pb%ot%unit)
     endif  
+   !JPA warning: ivmax outputs not implemented in parallel yet
 
   else
+    if (OCTAVE_OUTPUT) then
+     ! for Octave: comma as field delimiter and no spaces
+      ot_fmt = '(g0.16,16(",",g0.6))'
+    else
+      ot_fmt = '(e24.16,16e14.6)'
+    endif
+    write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
+      pb%ot%lcnew*pb%mesh%dx, pb%pot, pb%pot_rate,    &
+      pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
+      pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
+      pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
+     ! for ivmax
+      pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
+      pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
+      pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
+  endif  
 
-  pb%ot%unit = 18
-  if (OCTAVE_OUTPUT) then
-   ! for Octave: comma as field delimiter and no spaces
-    ot_fmt = '(g0.16,16(",",g0.6))'
-  else
-    ot_fmt = '(e24.16,16e14.6)'
-  endif
-  write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
-    pb%ot%lcnew*pb%mesh%dx, pb%pot, pb%pot_rate,    &
-    pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
-    pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
-    pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
-!   for ivmax
-    pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
-    pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
-    pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
+  if (is_MPI_parallel()) return
+ !JPA warning: the ot outputs below are not yet implemented in parallel
 
  ! output peak slip velocity at selected nodes
   pb%ot%unit = 22
@@ -260,8 +267,6 @@ subroutine ot_write(pb)
         pb%theta(i), pb%tau(i), pb%slip(i), pb%sigma(i)
     endif
   enddo
-
-endif
 
 end subroutine ot_write
 

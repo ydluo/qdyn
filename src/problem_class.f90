@@ -12,8 +12,8 @@ module problem_class
  ! timeseries outputs: at every time step, but only macroscopic quantities
   type ot_type
     double precision :: lcold,lcnew,llocnew,llocold
-    integer :: unit,ic,ntout,ivmax
-    integer :: ivmaxglob ! For MPI
+    integer :: unit=0,ic=0,ntout=0,ivmax=0
+    integer :: ivmaxglob=0 ! For MPI
   end type ot_type
 
  ! snapshot outputs: at every fault point, but only at few selected times
@@ -41,7 +41,6 @@ module problem_class
     double precision, dimension(:), allocatable :: v_pre, v_pre2, tau_max, t_rup, v_max, t_vmax
     integer, dimension(:), allocatable :: iot, iasp
     double precision :: vmaxglob, v_th, pot, pot_rate, pot_pre
-    logical :: station_found=.false.
     type (ot_type) :: ot
     type (ox_type) :: ox
    ! For MPI outputs

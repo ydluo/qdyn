@@ -21,12 +21,12 @@ subroutine read_main(pb)
   type(problem_type), intent(inout)  :: pb
 
   integer :: i,n,nsta,ista,ik,i_sigma_cpl
-  double precision :: xsta, ysta, zsta, dmin, d
+  double precision :: xsta, ysta, zsta, dmin2, d2
   
   write(6,*) 'Start reading input: ...'
 
   !PG, if MPI then read one input file per processor
-  open(unit=15, FILE='qdyn'//trim(my_mpi_tag())//'.in')
+  open(unit=15, file='qdyn'//trim(my_mpi_tag())//'.in', action='read')
   call read_mesh(15,pb%mesh)
   write(6,*) '   Mesh input complete'
 
@@ -108,6 +108,8 @@ subroutine read_main(pb)
   end do
 
   if (is_MPI_parallel()) then 
+   !JPA Move this to a separate input file, one per processor
+   !JPA and read it in subroutine read_mesh
     allocate(pb%mesh%x(pb%mesh%nn), pb%mesh%y(pb%mesh%nn),& 
              pb%mesh%z(pb%mesh%nn), pb%mesh%dip(pb%mesh%nn))     
     pb%mesh%dx = pb%mesh%Lfault/pb%mesh%nx !Check if dx is needed 
@@ -115,24 +117,26 @@ subroutine read_main(pb)
       read(15,*) pb%mesh%x(i),pb%mesh%y(i),pb%mesh%z(i),pb%mesh%dip(i)
     enddo
 
-  !Finding stations in this processor
-    dmin = 10d0 !JPA quick and dirty threshold ???
-    if (.not.(pb%ot%ic==1)) then !Reading stations, pb%ot%ic==1 is default
-     open(unit=200,file='stations.dat',action='read',status='unknown')
-     read(200,*) nsta
-     do ista=1,nsta 
-       read(200,*) xsta, ysta, zsta
+   ! Find station in this processor
+   ! Keep only the last station found in this processor (ot%ic is not an array)
+    if (pb%ot%ic == 0) then 
+      dmin2 = 0.01d0*pb%mesh%dx ! distance tolerance = 1% grid size
+      dmin2 = dmin2*dmin2
+      open(unit=200,file='stations.dat',action='read')
+      read(200,*) nsta
+      do ista=1,nsta 
+        read(200,*) xsta, ysta, zsta
         do ik=1,pb%mesh%nn
-         d=sqrt((pb%mesh%x(ik)-xsta)**2+(pb%mesh%y(ik)-ysta)**2+(pb%mesh%z(ik)-zsta)**2)
-         if (d<=dmin) then
-           pb%ot%ic=ik
-           write(6,*) 'processor: ',my_mpi_tag(),' Station found, index:',ik
-           pb%station_found=.true.
-           exit
-         endif
+          d2=(pb%mesh%x(ik)-xsta)**2+(pb%mesh%y(ik)-ysta)**2+(pb%mesh%z(ik)-zsta)**2
+          if (d2 < dmin2) then
+            pb%ot%ic=ik
+            write(6,*) 'Processor: ',my_mpi_tag(),', station ',ista, &
+                       ' found, distance mismatch = ',d2
+            exit
+          endif
         enddo
+      enddo
       close(200)
-     enddo
     endif
 
   endif

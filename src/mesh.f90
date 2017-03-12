@@ -15,7 +15,7 @@ module mesh
 
   integer, allocatable, save :: nnLocal_perproc(:),nnoffset_glob_perproc(:)
 
-  public :: mesh_type, read_mesh, init_mesh, mesh_get_size
+  public :: mesh_type, read_mesh, init_mesh, mesh_get_size 
   public :: nnLocal_perproc, nnoffset_glob_perproc
 
 contains
@@ -57,9 +57,8 @@ subroutine read_mesh(iin,m)
 end subroutine read_mesh
 
 !=============================================================
-function mesh_get_size(m) result(n)
-  type(mesh_type), intent(inout) :: m
-  integer :: n
+integer function mesh_get_size(m) result(n)
+  type(mesh_type), intent(in) :: m
   n = m%nn
 end function mesh_get_size
 
@@ -163,7 +162,7 @@ if (.not.is_MPI_parallel()) then
     m%x(j0+1:j0+m%nx) = m%x(1:m%nx)
     m%y(j0+1:j0+m%nx) = m%y(j0) + 0.5d0*m%dw(i-1)*cd0 + 0.5d0*m%dw(i)*cd
     m%z(j0+1:j0+m%nx) = m%z(j0) + 0.5d0*m%dw(i-1)*sd0 + 0.5d0*m%dw(i)*sd
-!    write(66,*) m%z(j0+1:j0+m%nx) !JPA Who is using this? Shall we remove it?
+!    write(66,*) m%z(j0+1:j0+m%nx) !JPA Who is using this output? Shall we remove it?
     m%dip(j0+1:j0+m%nx) = m%DIP_W(i)
   end do
 
