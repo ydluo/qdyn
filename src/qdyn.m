@@ -471,7 +471,6 @@ function export_main_input()
     fid=fopen(filename,'w');
     fprintf(fid,'%u     meshdim\n' , MESHDIM); 
     if MESHDIM == 2
-      fprintf(1, 'MESHDIM = %d\n', MESHDIM);
       fprintf(fid,'%u %u     NX, NW\n' , NX, nw);      
       fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
       fprintf(fid,'%.15g %.15g \n', [DW(iwloc),DIP_W(iwloc)]');
@@ -537,6 +536,7 @@ for k=2:2:length(varargin),
 end
 
 %-----------
+% WARNING: this function needs update to comply with the current format of qdyn.in
 function pars = read_qdyn_in(name)
 
 if ~exist('name','var') || ~length(name), name = 'qdyn'; end

@@ -12,6 +12,7 @@ module problem_class
  ! timeseries outputs: at every time step, but only macroscopic quantities
   type ot_type
     double precision :: lcold,lcnew,llocnew,llocold
+     double precision, dimension(:), allocatable :: xsta, ysta, zsta
     integer :: unit=0,ic=0,ntout=0,ivmax=0
     integer :: ivmaxglob=0 ! For MPI
   end type ot_type

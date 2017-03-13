@@ -15,13 +15,13 @@ module mesh
 
   integer, allocatable, save :: nnLocal_perproc(:),nnoffset_glob_perproc(:)
 
-  public :: mesh_type, read_mesh, init_mesh, mesh_get_size 
+  public :: mesh_type, read_mesh_parameters, read_mesh_nodes, init_mesh, mesh_get_size 
   public :: nnLocal_perproc, nnoffset_glob_perproc
 
 contains
 
 !=============================================================
-subroutine read_mesh(iin,m)
+subroutine read_mesh_parameters(iin,m)
 
   type(mesh_type), intent(inout) :: m
   integer, intent(in) :: iin
@@ -54,7 +54,22 @@ subroutine read_mesh(iin,m)
 
   if (m%dim==0) m%nn = 1
 
-end subroutine read_mesh
+end subroutine read_mesh_parameters
+
+!=============================================================
+subroutine read_mesh_nodes(iin,m)
+
+  type(mesh_type), intent(inout) :: m
+  integer, intent(in) :: iin
+
+  integer :: i
+
+  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%dip(m%nn))     
+  do i=1,m%nn
+    read(iin,*) m%x(i),m%y(i),m%z(i),m%dip(i)
+  enddo
+
+end subroutine read_mesh_nodes
 
 !=============================================================
 integer function mesh_get_size(m) result(n)
@@ -176,6 +191,7 @@ else
 ! If MPI parallel, the mesh for each processor has been already read
 ! from qdynxxx.in and initialized in input.f90
 ! Here we gather the whole fault to compute the kernel
+  m%dx = m%Lfault/m%nx
     NPROCS = my_mpi_NPROCS()
 
     nwLocal = m%nw

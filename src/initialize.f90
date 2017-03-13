@@ -11,7 +11,7 @@ contains
 subroutine init_all(pb)
 
   use problem_class
-  use mesh, only : init_mesh
+  use mesh, only : init_mesh, mesh_get_size
   use constants, only : PI
   use my_mpi, only: is_MPI_master
   use fault_stress, only : init_kernel
@@ -21,6 +21,7 @@ subroutine init_all(pb)
 
   type(problem_type), intent(inout) :: pb
 
+  integer :: n
 !  integer :: TID, NTHREADS
 
   call init_mesh(pb%mesh)
@@ -54,6 +55,8 @@ subroutine init_all(pb)
   endif
   if (is_mpi_master()) write(6,*) 'Impedance = ', pb%zimpedance
 
+  n = mesh_get_size(pb%mesh)
+  allocate ( pb%tau(n), pb%dtau_dt(n), pb%slip(n), pb%theta_star(n) )
   pb%slip = 0d0
   call set_theta_star(pb) ! ref theta value
   pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh

@@ -1,13 +1,10 @@
 module output
 
 ! OUTPUT: This module manages outputs
-!
-
-!  use some_module_1
 
   implicit none
   private  
-  public :: screen_init, ot_init, ox_init, &
+  public :: screen_init, ot_read_stations, ot_init, ox_init, &
             screen_write, ot_write, ox_write,  &
             time_write, crack_size
 
@@ -19,6 +16,7 @@ subroutine screen_init(pb)
 
   use problem_class
   use constants, only : PI
+
   type (problem_type), intent(inout) :: pb
 
   double precision :: K
@@ -80,20 +78,60 @@ end subroutine time_write
 
 
 !=====================================================================
+subroutine ot_read_stations(ot)
+
+  use problem_class, only : ot_type
+
+  type (ot_type), intent(inout) :: ot
+
+  integer :: nsta,ista
+
+  open(unit=200,file='stations.dat',action='read')
+  read(200,*) nsta
+  allocate(ot%xsta(nsta),ot%ysta(nsta),ot%zsta(nsta))
+  do ista=1,nsta 
+    read(200,*) ot%xsta(ista), ot%ysta(ista), ot%zsta(ista)
+  enddo
+  close(200)
+
+end subroutine ot_read_stations
+
+!=====================================================================
 ! write ot file header
 subroutine ot_init(pb)
 
   use problem_class
   use constants, only: OUT_MASTER
-  use my_mpi, only : is_MPI_parallel, is_mpi_master
+  use my_mpi, only : is_MPI_parallel, is_mpi_master, my_mpi_tag
+  use mesh, only : mesh_get_size
 
   type (problem_type), intent(inout) :: pb
-  integer :: i
+  integer :: i,n,nsta,ista,ik
+  double precision :: dmin2, d2
 
-  pb%ot%lcnew = dble(pb%mesh%nn)
-  pb%ot%llocnew = dble(pb%mesh%nn)
+  n = mesh_get_size(pb%mesh)
+  pb%ot%lcnew = dble(n)
+  pb%ot%llocnew = dble(n)
 
   if (is_MPI_parallel()) then
+
+   ! find stations
+    dmin2 = 0.01d0*pb%mesh%dx ! distance tolerance = 1% grid size
+    dmin2 = dmin2*dmin2
+    nsta = 1 !NOTE: currently only one station implemented
+    do ista=1,nsta 
+      do ik=1,n
+        d2 = (pb%mesh%x(ik)-pb%ot%xsta(ista))**2 &
+           + (pb%mesh%y(ik)-pb%ot%ysta(ista))**2 &
+           + (pb%mesh%z(ik)-pb%ot%zsta(ista))**2
+        if (d2 < dmin2) then
+          pb%ot%ic=ik
+          write(6,*) 'Processor: ',my_mpi_tag(),', station ',ista, &
+                     ' found, distance mismatch = ',d2
+          exit
+        endif
+      enddo
+    enddo
 
     if (OUT_MASTER .and. is_mpi_master() ) then
       pb%ot%unit = 18
@@ -108,7 +146,7 @@ subroutine ot_init(pb)
 !    write(pb%ot%unit,'(a)')'# Seismicity record:' 
 !    write(pb%ot%unit,'(a)')'# 1=loc, 2=t, 3=v'
 !  pb%ot%unit = 10000
-!  do i=1,pb%mesh%nn
+!  do i=1,n
 !    if (pb%iot(i) == 1) then
 !      pb%ot%unit = pb%ot%unit+1
 !      write(pb%ot%unit,'(a,i10)')'# nx= ', i
@@ -131,7 +169,7 @@ else
   write(pb%ot%unit,'(a)')'# 1=loc, 2=t, 3=v'
 
   pb%ot%unit = 10000
-  do i=1,pb%mesh%nn
+  do i=1,n
     if (pb%iot(i) == 1) then
       pb%ot%unit = pb%ot%unit+1
       write(pb%ot%unit,'(a,i10)')'# nx= ', i
@@ -141,6 +179,7 @@ else
 
 endif
 
+  allocate ( pb%v_pre(n), pb%v_pre2(n) )
   pb%v_pre = 0.d0
   pb%v_pre2 = 0.d0
 
@@ -155,10 +194,15 @@ subroutine ox_init(pb)
   use problem_class
   use constants, only : OUT_MASTER
   use my_mpi, only : is_MPI_parallel, is_mpi_master
+  use mesh, only : mesh_get_size
 
   type (problem_type), intent(inout) :: pb
 
-  integer :: i
+  integer :: i,n
+
+  n = mesh_get_size(pb%mesh)
+  allocate ( pb%t_rup(n), pb%tau_max(n), &
+             pb%v_max(n), pb%t_vmax(n) )
 
   if (pb%ox%i_ox_seq == 0) then
     pb%ox%unit = 19
@@ -281,7 +325,6 @@ subroutine ox_write(pb)
   type (problem_type), intent(inout) :: pb
 
   integer :: ixout
-  double precision :: vtempglob
   character(len=256) :: fileproc
 
 if (is_MPI_parallel()) then
@@ -293,7 +336,6 @@ if (is_MPI_parallel()) then
     call pb_global(pb)
     if (is_mpi_master()) then
       pb%ot%ivmaxglob = maxloc(pb%v_glob,1)
-      vtempglob = pb%v_glob(pb%ot%ivmaxglob)
       ! Writing fault points in single file fort.19
       if (pb%ox%i_ox_seq == 0) then
         write(pb%ox%unit,'(a,2i8,e14.6)') '# x y z t v theta dtau tau_dot slip sigma ',&
