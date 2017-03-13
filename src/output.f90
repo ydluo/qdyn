@@ -147,7 +147,7 @@ subroutine ot_init(pb)
 !    write(pb%ot%unit,'(a)')'# 1=loc, 2=t, 3=v'
 !  pb%ot%unit = 10000
 !  do i=1,n
-!    if (pb%iot(i) == 1) then
+!    if (pb%ot%iot(i) == 1) then
 !      pb%ot%unit = pb%ot%unit+1
 !      write(pb%ot%unit,'(a,i10)')'# nx= ', i
 !      write(pb%ot%unit,'(a)')'# 1=t, 2=V, 3=theta, 4=tau, 5=slip, 6=sigma'
@@ -170,7 +170,7 @@ else
 
   pb%ot%unit = 10000
   do i=1,n
-    if (pb%iot(i) == 1) then
+    if (pb%ot%iot(i) == 1) then
       pb%ot%unit = pb%ot%unit+1
       write(pb%ot%unit,'(a,i10)')'# nx= ', i
       write(pb%ot%unit,'(a)')'# 1=t, 2=V, 3=theta, 4=tau, 5=slip, 6=sigma'
@@ -179,9 +179,9 @@ else
 
 endif
 
-  allocate ( pb%v_pre(n), pb%v_pre2(n) )
-  pb%v_pre = 0.d0
-  pb%v_pre2 = 0.d0
+  allocate ( pb%ot%v_pre(n), pb%ot%v_pre2(n) )
+  pb%ot%v_pre = 0.d0
+  pb%ot%v_pre2 = 0.d0
 
 end subroutine ot_init
 
@@ -201,8 +201,7 @@ subroutine ox_init(pb)
   integer :: i,n
 
   n = mesh_get_size(pb%mesh)
-  allocate ( pb%t_rup(n), pb%tau_max(n), &
-             pb%v_max(n), pb%t_vmax(n) )
+  allocate ( pb%ox%t_rup(n), pb%ox%tau_max(n), pb%ox%v_max(n), pb%ox%t_vmax(n) )
 
   if (pb%ox%i_ox_seq == 0) then
     pb%ox%unit = 19
@@ -234,7 +233,7 @@ subroutine ox_init(pb)
   pb%ox%dyn_stat = 0
   pb%ox%dyn_stat2 = 0
 
-  pb%pot_pre = 0.d0
+  pb%ox%pot_pre = 0.d0
 
 end subroutine ox_init
 
@@ -278,7 +277,7 @@ subroutine ot_write(pb)
       ot_fmt = '(e24.16,16e14.6)'
     endif
     write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
-      pb%ot%lcnew*pb%mesh%dx, pb%pot, pb%pot_rate,    &
+      pb%ot%lcnew*pb%mesh%dx, pb%ot%pot, pb%ot%pot_rate,    &
       pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
       pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
       pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
@@ -291,23 +290,24 @@ subroutine ot_write(pb)
   if (is_MPI_parallel()) return
  !JPA warning: the ot outputs below are not yet implemented in parallel
 
- ! output peak slip velocity at selected nodes
+ ! output slip velocity maxima at selected nodes
   pb%ot%unit = 22
   do i=1,pb%mesh%nn
-    if ((pb%iasp(i) == 1) .and. (pb%v_pre(i) >= pb%v_th) .and.      &
-        (pb%v(i) < pb%v_pre(i)) .and. (pb%v_pre(i) >= pb%v_pre2(i))) then
-      write(pb%ot%unit,'(i10,2e24.16)') i, pb%time, pb%v_pre(i)
+    if ((pb%ot%iasp(i) == 1) .and. (pb%ot%v_pre(i) >= pb%ot%v_th) .and.      &
+        (pb%v(i) < pb%ot%v_pre(i)) .and. (pb%ot%v_pre(i) >= pb%ot%v_pre2(i))) then
+      write(pb%ot%unit,'(i10,2e24.16)') i, pb%time, pb%ot%v_pre(i)
     endif
   enddo
-  pb%v_pre2=pb%v_pre
-  pb%v_pre=pb%v
+  pb%ot%v_pre2=pb%ot%v_pre
+  pb%ot%v_pre=pb%v
 
   pb%ot%unit = 10000
 
+ ! output time series at selected nodes
   do i=1,pb%mesh%nn
-    if (pb%iot(i) == 1) then
+    if (pb%ot%iot(i) == 1) then
       pb%ot%unit = pb%ot%unit+1
-      write(pb%ot%unit,'(e24.16,5e14.6)') pb%time, pb%v(i),      &
+      write(pb%ot%unit,'(e24.16,5e14.6)') pb%time, pb%v(i), &
         pb%theta(i), pb%tau(i), pb%slip(i), pb%sigma(i)
     endif
   enddo
@@ -471,10 +471,10 @@ else
     if (pb%ox%dyn_stat2 == 0 .and. pb%v(pb%ot%ivmax) >= pb%DYN_th_on ) then
       pb%ox%dyn_stat2 = 1
       do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
-        pb%tau_max(ixout) = pb%tau(ixout)
-        pb%t_rup(ixout) = pb%time
-        pb%v_max(ixout) = pb%v(ixout)
-        pb%t_vmax(ixout) = pb%time
+        pb%ox%tau_max(ixout) = pb%tau(ixout)
+        pb%ox%t_rup(ixout) = pb%time
+        pb%ox%v_max(ixout) = pb%v(ixout)
+        pb%ox%t_vmax(ixout) = pb%time
       enddo
       write(20001+3*pb%ox%dyn_count2,'(3i10,e24.14)')   &
             pb%it,pb%ot%ivmax,pb%ox%count,pb%time
@@ -490,13 +490,13 @@ else
 
     if (pb%ox%dyn_stat2 == 1) then
       do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
-        if (pb%tau(ixout) > pb%tau_max(ixout)) then
-          pb%tau_max(ixout) = pb%tau(ixout)
-          pb%t_rup(ixout) = pb%time
+        if (pb%tau(ixout) > pb%ox%tau_max(ixout)) then
+          pb%ox%tau_max(ixout) = pb%tau(ixout)
+          pb%ox%t_rup(ixout) = pb%time
         endif
-        if (pb%v(ixout) > pb%v_max(ixout)) then
-          pb%v_max(ixout) = pb%v(ixout)
-          pb%t_vmax(ixout) = pb%time
+        if (pb%v(ixout) > pb%ox%v_max(ixout)) then
+          pb%ox%v_max(ixout) = pb%v(ixout)
+          pb%ox%t_vmax(ixout) = pb%time
         endif
       enddo
     endif
@@ -518,7 +518,7 @@ else
       do ixout=1,pb%mesh%nn,pb%ox%nxout_dyn
         write(20003+3*pb%ox%dyn_count2,'(3e15.7,4e28.20)')       &
           pb%mesh%x(ixout),pb%mesh%y(ixout),pb%mesh%z(ixout),       &
-          pb%t_rup(ixout),pb%tau_max(ixout),pb%t_vmax(ixout),pb%v_max(ixout)
+          pb%ox%t_rup(ixout),pb%ox%tau_max(ixout),pb%ox%t_vmax(ixout),pb%ox%v_max(ixout)
       enddo
       close(20003+3*pb%ox%dyn_count2)
 
@@ -540,7 +540,7 @@ else
           pb%v(ixout),pb%theta(ixout),pb%tau(ixout),   &
           pb%dtau_dt(ixout),pb%slip(ixout),pb%sigma(ixout)
       enddo
-      pb%pot_pre = pb%pot
+      pb%ox%pot_pre = pb%ot%pot
       CLOSE(100)
     endif
 
@@ -556,7 +556,7 @@ else
           pb%dtau_dt(ixout),pb%slip(ixout),pb%sigma(ixout)
       enddo
       CLOSE(101)
-      if ((pb%pot-pb%pot_pre)*pb%smu >= pb%DYN_M) then
+      if ((pb%ot%pot-pb%ox%pot_pre)*pb%smu >= pb%DYN_M) then
         pb%ox%dyn_count = pb%ox%dyn_count + 1
         if (pb%ox%dyn_count > pb%DYN_SKIP) then
           pb%itstop = pb%it
@@ -642,7 +642,7 @@ end function crack_size
 
 !=====================================================================
 ! Collect global fault nodes to master processor for outputs
-  subroutine pb_global(pb)
+subroutine pb_global(pb)
 
   use mesh, only: nnLocal_perproc,nnoffset_glob_perproc 
   use problem_class 
@@ -667,14 +667,9 @@ end function crack_size
   pb%v_glob=0
   pb%theta_glob=0
   pb%tau_glob=0
+  pb%dtau_dt_glob=0
   pb%slip_glob=0
   pb%sigma_glob=0
-  pb%dtau_dt_glob=0
-
-  pb%tau_max_glob=0
-  pb%t_rup_glob=0
-  pb%v_max_glob=0
-  pb%t_vmax=0
 
   call gather_allvdouble_root(pb%v,nnLocal,pb%v_glob,nnLocal_perproc, & 
                            nnoffset_glob_perproc,nnGlobal)  
@@ -689,7 +684,12 @@ end function crack_size
   call gather_allvdouble_root(pb%sigma,nnLocal,pb%sigma_glob,nnLocal_perproc, & 
                            nnoffset_glob_perproc,nnGlobal)         
 
-  end subroutine pb_global
+  pb%tau_max_glob=0d0
+  pb%t_rup_glob=0d0
+  pb%v_max_glob=0d0
+  pb%t_vmax_glob=0d0
+
+end subroutine pb_global
 !=====================================================================
 
 

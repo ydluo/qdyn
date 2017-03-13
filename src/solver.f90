@@ -122,16 +122,16 @@ subroutine update_field(pb)
   pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
   ! update potency and potency rate
   if (pb%mesh%dim == 0 .or. pb%mesh%dim == 1) then
-    pb%pot = sum(pb%slip) * pb%mesh%dx
-    pb%pot_rate = sum(pb%v) * pb%mesh%dx
+    pb%ot%pot = sum(pb%slip) * pb%mesh%dx
+    pb%ot%pot_rate = sum(pb%v) * pb%mesh%dx
   else
-    pb%pot=0d0;
-    pb%pot_rate=0d0;
+    pb%ot%pot=0d0;
+    pb%ot%pot_rate=0d0;
     do iw=1,pb%mesh%nw
       do ix=1,pb%mesh%nx
         i=(iw-1)*pb%mesh%nx+ix
-        pb%pot = pb%pot + pb%slip(i) * pb%mesh%dx * pb%mesh%dw(iw)
-        pb%pot_rate = pb%pot_rate + pb%v(i) * pb%mesh%dx * pb%mesh%dw(iw)
+        pb%ot%pot = pb%ot%pot + pb%slip(i) * pb%mesh%dx * pb%mesh%dw(iw)
+        pb%ot%pot_rate = pb%ot%pot_rate + pb%v(i) * pb%mesh%dx * pb%mesh%dw(iw)
       end do
     end do
   endif
