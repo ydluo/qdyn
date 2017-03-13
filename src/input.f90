@@ -37,12 +37,6 @@ subroutine read_main(pb)
   read(15,*) pb%ot%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nxout_dyn,    &
              pb%ox%i_ox_seq, pb%ox%i_ox_dyn
   read(15,*) pb%beta, pb%smu, pb%lam, pb%D, pb%H, pb%ot%v_th
-
-!YD This part we may want to modify it later to be able to
-!impose more complicated loading/pertubation
-!functions involved: problem_class/problem_type; input/read_main 
-!                    initialize/init_field;  derivs_all/derivs 
-
   read(15,*) pb%Tper, pb%Aper
   read(15,*) pb%dt_try, pb%dt_max,pb%tmax, pb%acc
   read(15,*) pb%NSTOP

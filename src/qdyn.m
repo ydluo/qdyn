@@ -289,6 +289,11 @@ Parse_Inputs(varargin{:});
 % generate the mesh
 [X,Y,Z,DIP] = generate_mesh();
 
+if MESHDIM<2 & NPROCS>1 
+  disp('MPI parallelization is only implemented for MESHDIM=2. Resetting NPROCS=1.')
+  NPROCS = 1;
+end
+
 % set steady state theta
 TH_SS = DC./V_SS;
 
