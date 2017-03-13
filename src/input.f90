@@ -61,8 +61,8 @@ subroutine read_main(pb)
   read(15,*) pb%i_rns_law
   read(15,*) i_sigma_cpl
   !read(15,*) pb%neqs ! Replace this with feature flags
-  read(15,*) pb%features%stress_coupling, pb%features%cohesion ! SEISMIC
-  pb%neqs = 2 + pb%features%stress_coupling + pb%features%cohesion
+  read(15,*) pb%features%stress_coupling, pb%features%cohesion, pb%features%localisation ! SEISMIC
+  pb%neqs = 2 + pb%features%stress_coupling + pb%features%cohesion + pb%features%localisation
   pb%kernel%has_sigma_coupling = (i_sigma_cpl == 1)
 
 !JPA neqs should not be setup explicitly by the user
@@ -141,7 +141,9 @@ subroutine read_main(pb)
   !                     for dissolution controlled pressure solution creep
   !   IPS_const_diss2:  pressure solution (temperature-dependent) constant
   !                     for dissolution controlled pressure solution creep
-  !   w:                thickness of the (localised) fault zone
+  !   w:                total thickness of the fault zone
+  !   lambda:           relative thickness of localised zone
+  !                     (0 = non-existent shear band, 1 = entire fault zone)
   !
   ! Note that these parameters are material (gouge) properties, and are
   ! generally not spatically uniform, and hence are allocatable
@@ -189,6 +191,18 @@ subroutine read_main(pb)
                 pb%coh_params%alpha_c(i), pb%coh_params%compl(i), &
                 pb%coh_params%C_star(i), pb%coh_params%E_surf(i), &
                 pb%coh_params%NG_const(i)
+    end do
+  endif
+
+  if (pb%features%localisation == 1) then
+    allocate (  pb%cns_params%lambda(n), pb%theta2(n), &
+                pb%cns_params%IPS_const_diff_bulk(n), pb%cns_params%IPS_const_diss1_bulk(n), &
+                pb%cns_params%IPS_const_diss2_bulk(n) )
+
+    do i=1,n
+      read(15,*)pb%cns_params%lambda(i), pb%theta2(i), &
+                pb%cns_params%IPS_const_diff_bulk(i), pb%cns_params%IPS_const_diss1_bulk(i), &
+                pb%cns_params%IPS_const_diss2_bulk(i)
     end do
   endif
 

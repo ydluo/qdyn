@@ -75,7 +75,7 @@ subroutine do_bsstep(pb)
   type(problem_type), intent(inout) :: pb
 
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
-  integer :: ik, ind_stress_coupling, ind_cohesion
+  integer :: ik, ind_stress_coupling, ind_cohesion, ind_localisation
 
   ! Pack v, theta into yt
   ! yt(2::pb%neqs) = pb%v(pb%rs_nodes) ! JPA Coulomb
@@ -84,6 +84,7 @@ subroutine do_bsstep(pb)
   ! features are requested (defined in input file)
   ind_stress_coupling = 2 + pb%features%stress_coupling
   ind_cohesion = ind_stress_coupling + pb%features%cohesion
+  ind_localisation = ind_cohesion + pb%features%localisation
 
   ! SEISMIC: in the case of the CNS model, solve for tau and not v
   if (pb%i_rns_law == 3) then   ! SEISMIC: CNS model
@@ -104,6 +105,9 @@ subroutine do_bsstep(pb)
   if (pb%features%cohesion == 1) then
     yt(ind_cohesion::pb%neqs) = pb%alpha
     dydt(ind_cohesion::pb%neqs) = pb%dalpha_dt
+  endif
+  if (pb%features%localisation == 1) then
+    yt(ind_localisation::pb%neqs) = pb%theta2
   endif
 
   ! this update of derivatives is only needed to set up the scaling (yt_scale)
@@ -145,6 +149,10 @@ subroutine do_bsstep(pb)
     pb%dalpha_dt = dydt(ind_cohesion::pb%neqs)
   endif
 
+  if (pb%features%localisation == 1) then
+    pb%theta2 = yt(ind_localisation::pb%neqs)
+  endif
+
 end subroutine do_bsstep
 
 
@@ -165,7 +173,7 @@ subroutine update_field(pb)
   ! the final value of tau, sigma, and porosity. Otherwise, use the standard
   ! rate-and-state expression to calculate tau as a function of velocity
   if (pb%i_rns_law == 3) then
-    pb%v = compute_velocity(pb%tau, pb%sigma, pb%theta, pb%alpha, pb)
+    pb%v = compute_velocity(pb%tau, pb%sigma, pb%theta, pb%theta2, pb%alpha, pb)
   else
     pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
   endif

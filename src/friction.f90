@@ -150,13 +150,14 @@ function friction_mu(v,theta,pb) result(mu)
 end function friction_mu
 
 !--------------------------------------------------------------------------------------
-function dtheta_dt(v,tau,sigma,theta,pb) result(dth_dt)
+subroutine dtheta_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
 
   type(problem_type), intent(in) :: pb
-  double precision, dimension(pb%mesh%nn), intent(in) :: v, tau, sigma, theta
-  double precision, dimension(pb%mesh%nn) :: dth_dt, omega
-  double precision, dimension(pb%mesh%nn) :: tan_psi, e_ps_dot
-  double precision, dimension(pb%mesh%nn) :: y_ps, y_gr
+  double precision, dimension(pb%mesh%nn), intent(in) :: v, tau, sigma
+  double precision, dimension(pb%mesh%nn), intent(in) :: theta, theta2
+  double precision, dimension(pb%mesh%nn) :: dth_dt, dth2_dt, omega
+  double precision, dimension(pb%mesh%nn) :: tan_psi, e_ps_dot, e_ps_dot_bulk
+  double precision, dimension(pb%mesh%nn) :: y_ps, y_gr, y_ps_bulk
 
   omega = v * theta / pb%dc
   select case (pb%itheta_law)
@@ -172,15 +173,25 @@ function dtheta_dt(v,tau,sigma,theta,pb) result(dth_dt)
 
   case (3, 4) ! SEISMIC: CNS model
     tan_psi = calc_tan_psi(theta, pb)   ! Dilatation angle
-    e_ps_dot = calc_e_ps(sigma, theta, .true., pb)   ! Compaction rate
-    y_ps = calc_e_ps(tau, theta, .false., pb)   ! Press. soln. shear rate
-    y_gr = v/pb%cns_params%w - y_ps
+    e_ps_dot = calc_e_ps(sigma, theta, .true., .false., pb)   ! Compaction rate
+    y_ps = calc_e_ps(tau, theta, .false., .false., pb)   ! Press. soln. shear rate
+
+    e_ps_dot_bulk = 0
+    y_ps_bulk = 0
+
+    if (pb%features%localisation == 1) then
+      e_ps_dot_bulk = calc_e_ps(sigma, theta2, .true., .true., pb)
+      y_ps_bulk = calc_e_ps(tau, theta2, .false., .true., pb)
+    endif
+
+    y_gr = (1.0/pb%cns_params%lambda)*(v/pb%cns_params%w - (1-pb%cns_params%lambda)*y_ps_bulk) - y_ps
     ! SEISMIC: the nett rate of change of porosity is given by the relation
     ! phi_dot = -(1 - phi)*strain_rate, where the strain rate equals
     ! the compaction rate by pressure solution (e_ps_dot) minus the dilatation
     ! rate by granular flow (tan_psi*v/w). Note that compaction is measured
     ! positive, dilatation negative
     dth_dt = (1 - theta)*(tan_psi*y_gr - e_ps_dot)
+    dth2_dt = -(1 - theta2)*e_ps_dot_bulk
 
 
 ! new friction law:
@@ -192,7 +203,7 @@ function dtheta_dt(v,tau,sigma,theta,pb) result(dth_dt)
     stop 'dtheta_dt: unknown state evolution law type'
   end select
 
-end function dtheta_dt
+end subroutine dtheta_dt
 
 !--------------------------------------------------------------------------------------
 function dalpha_dt(v,tau,sigma,theta,alpha,pb) result(da_dt)
@@ -210,7 +221,7 @@ function dalpha_dt(v,tau,sigma,theta,alpha,pb) result(da_dt)
   cos_psi = cos(psi)
   sin_psi = tan_psi * cos_psi
 
-  y_ps = calc_e_ps(tau, theta, .false., pb)   ! Press. soln. shear rate
+  y_ps = calc_e_ps(tau, theta, .false., .false., pb)   ! Press. soln. shear rate
   y_gr = v/pb%cns_params%w - y_ps
 
   delta_alpha = alpha - pb%coh_params%alpha0
@@ -233,17 +244,17 @@ function dalpha_dt(v,tau,sigma,theta,alpha,pb) result(da_dt)
 end function dalpha_dt
 
 !--------------------------------------------------------------------------------------
-subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,pb)
+subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
 
   type(problem_type), intent(in) :: pb
-  double precision, dimension(pb%mesh%nn), intent(in) :: v, tau, sigma, theta
+  double precision, dimension(pb%mesh%nn), intent(in) :: v, tau, sigma, theta, theta2
   double precision, dimension(pb%mesh%nn), intent(out) :: dmu_dv, dmu_dtheta
 
   ! SEISMIC: define some extra parameters for Chen's friction law
   double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, dth_dt, denom, y_ps, delta
   double precision, dimension(pb%mesh%nn) :: mu_star, dummy_var, f_phi_sqrt, V_gr, y_gr
   double precision, dimension(pb%mesh%nn) :: dv_dtau_ps_d, dv_dtheta_ps_d, dv_dtau_ps_s, dv_dtheta_ps_s
-  double precision, dimension(pb%mesh%nn) :: dv_dtau, dv_dtheta
+  double precision, dimension(pb%mesh%nn) :: dv_dtau, dv_dtheta, L_sb, y_ps_bulk
 
   select case (pb%i_rns_law)
 
@@ -257,9 +268,15 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,pb)
 
   case(3) ! SEISMIC: Chen's model
 
+    L_sb = pb%cns_params%lambda*pb%cns_params%w
+
     ! Shear strain rate [1/s] due to viscous flow (pressure solution)
-    y_ps = calc_e_ps(tau, theta, .false., pb)
-    y_gr = v/pb%cns_params%w - y_ps
+    y_ps = calc_e_ps(tau, theta, .false., .false., pb)
+    y_ps_bulk = 0
+    if (pb%features%localisation == 1) then
+      y_ps_bulk = calc_e_ps(tau, theta2, .false., .true., pb)
+    endif
+    y_gr = (1.0/pb%cns_params%lambda)*(v/pb%cns_params%w - (1-pb%cns_params%lambda)*y_ps_bulk) - y_ps
 
     tan_psi = calc_tan_psi(theta, pb)         ! Dilatation angle
     mu_tilde = calc_mu_tilde(y_gr, pb)           ! Grain-boundary friction
@@ -277,7 +294,7 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,pb)
     ! Granular flow _velocity_ [unit m/s]
     ! NOTE: it is physically more correct to use a reference strain rate
     ! and use velocity = strain_rate * thickness instead
-    V_gr = pb%cns_params%w*pb%cns_params%y_gr_star*exp(dummy_var)
+    V_gr = L_sb*pb%cns_params%y_gr_star*exp(dummy_var)
 
     ! Next, calculate the partial derivatives dv_dtau and dv_dtheta for the
     ! pressure solution creep. The functional form depends on the rate-limiting
@@ -285,10 +302,10 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,pb)
     ! Note that the pressure solution strain rate is multiplied by the
     ! the gouge layer thickness (pb%cns_params%w) to obtain a velocity
 
-    dv_dtau_ps_d = pb%cns_params%w*pb%cns_params%IPS_const_diff*f_phi_sqrt**2
+    dv_dtau_ps_d = L_sb*pb%cns_params%IPS_const_diff*f_phi_sqrt**2
     dv_dtheta_ps_d = 4*dv_dtau_ps_d*f_phi_sqrt*tau
 
-    dv_dtau_ps_s =  pb%cns_params%w*(y_ps + pb%cns_params%IPS_const_diss1)* &
+    dv_dtau_ps_s =  L_sb*(y_ps + pb%cns_params%IPS_const_diss1)* &
                     pb%cns_params%IPS_const_diss2*2*pb%cns_params%phi0*f_phi_sqrt
     dv_dtheta_ps_s = 2*dv_dtau_ps_s*f_phi_sqrt*tau
 
@@ -319,18 +336,20 @@ end subroutine dmu_dv_dtheta
 ! SEISMIC: calculate the dilatation angle, which is a geometric consequence
 ! of the instantaneous porosity (theta)
 !--------------------------------------------------------------------------------------
-function compute_velocity(tau,sigma,theta,alpha,pb) result(v)
+function compute_velocity(tau,sigma,theta,theta2,alpha,pb) result(v)
 
   use constants, only : PI
 
   type(problem_type), intent(in) :: pb
-  double precision, dimension(pb%mesh%nn), intent(in) :: tau, sigma, theta, alpha
+  double precision, dimension(pb%mesh%nn), intent(in) :: tau, sigma, theta
+  double precision, dimension(pb%mesh%nn), intent(in) :: theta2, alpha
   double precision, dimension(pb%mesh%nn) :: v
 
   ! SEISMIC: define some extra parameters for the CNS friction law
   double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, denom, y_ps
   double precision, dimension(pb%mesh%nn) :: mu_star, y_gr, tau_gr
   double precision, dimension(pb%mesh%nn) :: cos_psi, cohesion
+  double precision, dimension(pb%mesh%nn) :: y_ps_bulk
 
   tan_psi = calc_tan_psi(theta, pb)         ! Dilatation angle
 
@@ -343,7 +362,11 @@ function compute_velocity(tau,sigma,theta,alpha,pb) result(v)
   y_gr = pb%cns_params%y_gr_star*exp((tau*(1 - mu_star*tan_psi) - sigma*(mu_star + tan_psi))*denom)
 
   ! Shear strain rate [1/s] due to viscous flow (pressure solution)
-  y_ps = calc_e_ps(tau, theta, .false., pb)
+  y_ps = calc_e_ps(tau, theta, .false., .false., pb)
+  y_ps_bulk = 0
+  if (pb%features%localisation == 1) then
+    y_ps_bulk = calc_e_ps(tau, theta2, .false., .true., pb)
+  endif
   mu_tilde = calc_mu_tilde(y_gr, pb)           ! Grain-boundary friction
 
   cohesion = 0
@@ -364,7 +387,7 @@ function compute_velocity(tau,sigma,theta,alpha,pb) result(v)
 
   ! The total slip velocity is the combined contribution of granular flow
   ! and pressure solution (parallel processes)
-  v = pb%cns_params%w*(y_gr + y_ps)
+  v = pb%cns_params%w*(pb%cns_params%lambda*(y_gr + y_ps) + (1-pb%cns_params%lambda)*y_ps_bulk)
 
 
 end function compute_velocity
@@ -407,16 +430,26 @@ end function calc_mu_tilde
 ! normal direction, and not to shear deformation (viscous flow), hence truncate
 ! should be false when calculating shear strain rate
 !--------------------------------------------------------------------------------------
-function calc_e_ps(sigma,theta,truncate,pb) result(e_ps_dot)
+function calc_e_ps(sigma,theta,truncate,bulk,pb) result(e_ps_dot)
 
   type(problem_type), intent(in) :: pb
   double precision, dimension(pb%mesh%nn), intent(in) :: sigma, theta
   double precision, dimension(pb%mesh%nn) :: e_ps_dot_d, e_ps_dot_s, e_ps_dot
-  logical, intent(in) :: truncate
+  double precision, dimension(pb%mesh%nn) :: Z_diff, Z_diss1, Z_diss2
+  logical, intent(in) :: truncate, bulk
 
-  e_ps_dot_d = pb%cns_params%IPS_const_diff*sigma/(2*pb%cns_params%phi0 - 2*theta)**2
-  e_ps_dot_s =  pb%cns_params%IPS_const_diss1*(exp(pb%cns_params%IPS_const_diss2*sigma* &
-                pb%cns_params%phi0/(pb%cns_params%phi0 - theta)) - 1)
+  if (bulk .eqv. .true.) then
+    Z_diff = pb%cns_params%IPS_const_diff_bulk
+    Z_diss1 = pb%cns_params%IPS_const_diss1_bulk
+    Z_diss2 = pb%cns_params%IPS_const_diss2_bulk
+  else
+    Z_diff = pb%cns_params%IPS_const_diff
+    Z_diss1 = pb%cns_params%IPS_const_diss1
+    Z_diss2 = pb%cns_params%IPS_const_diss2
+  endif
+
+  e_ps_dot_d = Z_diff*sigma/(2*pb%cns_params%phi0 - 2*theta)**2
+  e_ps_dot_s =  Z_diss1*(exp(Z_diss2*sigma*pb%cns_params%phi0/(pb%cns_params%phi0 - theta)) - 1)
 
   e_ps_dot = e_ps_dot_d + e_ps_dot_s
 

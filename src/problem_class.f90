@@ -27,7 +27,8 @@ module problem_class
   ! See input.f90 for a description of the parameters
   type cns_type
     double precision, dimension(:), allocatable :: &
-      a, mu_tilde_star, IPS_const_diff, IPS_const_diss1, IPS_const_diss2, H, w, y_gr_star, phi0
+      a, mu_tilde_star, IPS_const_diff, IPS_const_diss1, IPS_const_diss2, H, w, y_gr_star, phi0, lambda, &
+      IPS_const_diff_bulk, IPS_const_diss1_bulk, IPS_const_diss2_bulk
   end type cns_type
   ! End of the CNS model structure
 
@@ -41,7 +42,7 @@ module problem_class
 
   ! SEISMIC: requested features structure (normal stress coupling, cohesion)
   type features_type
-    integer :: stress_coupling, cohesion
+    integer :: stress_coupling, cohesion, localisation
   end type features_type
   ! End of features structure
 
@@ -50,7 +51,7 @@ module problem_class
       tau, dtau_dt, tau_init, &
       sigma, dsigma_dt, v_pre, v_pre2, &
       tau_max, t_rup, v_max, t_vmax,  &
-      slip, v, dv_dt, theta, dtheta_dt,  &
+      slip, v, dv_dt, theta, theta2, dtheta_dt,  &
       a, b, dc, v1, v2, mu_star, v_star, &
       theta_star, iot, iasp, coh, &
       alpha, dalpha_dt

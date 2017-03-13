@@ -27,12 +27,12 @@ subroutine derivs(time,yt,dydt,pb)
   double precision, intent(in) :: time, yt(pb%neqs*pb%mesh%nn)
   double precision, intent(out) :: dydt(pb%neqs*pb%mesh%nn)
 
-  double precision, dimension(pb%mesh%nn) :: theta, sigma, alpha, tau, v
-  double precision, dimension(pb%mesh%nn) :: dsigma_dt, dtau_dt
+  double precision, dimension(pb%mesh%nn) :: theta, theta2, sigma, alpha, tau, v
+  double precision, dimension(pb%mesh%nn) :: dsigma_dt, dtau_dt, dth_dt, dth2_dt
   double precision, dimension(pb%mesh%nn) :: dmu_dv, dmu_dtheta
   double precision :: dtau_per
 
-  integer :: ind_stress_coupling, ind_cohesion
+  integer :: ind_stress_coupling, ind_cohesion, ind_localisation
 
   ! storage conventions:
   !
@@ -50,11 +50,13 @@ subroutine derivs(time,yt,dydt,pb)
   ! features are requested (defined in input file)
   ind_stress_coupling = 2 + pb%features%stress_coupling
   ind_cohesion = ind_stress_coupling + pb%features%cohesion
+  ind_localisation = ind_cohesion + pb%features%localisation
 
   ! SEISMIC: start unpacking values of yt and dydt
   ! Note that the values of tau, sigma, etc. are only set if they're being
   ! used. They just serve as dummy variables otherwise
   theta = yt(1::pb%neqs)
+  theta2 = 0
 
   if (pb%features%stress_coupling == 1) then
     sigma = yt(ind_stress_coupling::pb%neqs)
@@ -65,6 +67,10 @@ subroutine derivs(time,yt,dydt,pb)
 
   if (pb%features%cohesion == 1) then
     alpha = yt(ind_cohesion::pb%neqs)
+  endif
+
+  if (pb%features%localisation == 1) then
+    theta2 = yt(ind_localisation::pb%neqs)
   endif
 
   if (pb%i_rns_law == 3) then
@@ -81,7 +87,7 @@ subroutine derivs(time,yt,dydt,pb)
     ! a function of the (current) state of stress and porosity
     tau = yt(2::pb%neqs)
     dtau_dt = dydt(2::pb%neqs)
-    v = compute_velocity(tau, sigma, theta, alpha, pb)
+    v = compute_velocity(tau, sigma, theta, theta2, alpha, pb)
   else
     ! SEISMIC: for the classical rate-and-state model formulation, the slip
     ! velocity is stored in yt(2::pb%neqs), and tau is not used (set to zero)
@@ -110,7 +116,8 @@ subroutine derivs(time,yt,dydt,pb)
 
   ! state evolution law, dtheta/dt = f(v,theta)
   ! SEISMIC: in the CNS formulation, theta is the gouge porosity
-  dydt(1::pb%neqs) = dtheta_dt(v,tau,sigma,theta,pb)
+  call dtheta_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
+  dydt(1::pb%neqs) = dth_dt
 
   if (pb%features%stress_coupling == 1) then
     dydt(ind_stress_coupling::pb%neqs) = dsigma_dt
@@ -120,13 +127,17 @@ subroutine derivs(time,yt,dydt,pb)
     dydt(ind_cohesion::pb%neqs) = dalpha_dt(v,tau,sigma,theta,alpha,pb)
   endif
 
+  if (pb%features%localisation == 1) then
+    dydt(ind_localisation::pb%neqs) = dth2_dt
+  endif
+
   ! SEISMIC: calculate partial derivatives. For rate-and-state, dmu_dv and
   ! dmu_dtheta contain the partial derivatives of friction to V and theta,
   ! respectively. For the CNS model, these variables contain the partials of
   ! velocity to shear stress (dV/dtau) and velocity to porosity (dV/dtheta),
   ! respectively. For compatibility, the names of these variables are not
   ! changed.
-  call dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,pb)
+  call dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
 
   if (pb%i_rns_law == 3) then
     ! SEISMIC: the total dtau_dt results from the slip deficit and

@@ -246,6 +246,17 @@ subroutine ot_write(pb)
       pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
       pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
       pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax), pb%alpha(pb%ot%ic)
+  else if (pb%features%localisation == 1) then
+      ot_fmt = '(e24.16,18e14.6)'
+      write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
+        pb%ot%lcnew*pb%mesh%dx, pb%pot, pb%pot_rate,    &
+        pb%v(pb%ot%ic), pb%theta(pb%ot%ic), pb%theta2(pb%ot%ic),  &
+        pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
+        pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
+    !   for ivmax
+        pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax), pb%theta2(pb%ot%ivmax),   &
+        pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
+        pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
   else
     write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
       pb%ot%lcnew*pb%mesh%dx, pb%pot, pb%pot_rate,    &
@@ -256,7 +267,7 @@ subroutine ot_write(pb)
       pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
       pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
       pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
-    endif
+  endif
 
  ! output peak slip velocity at selected nodes
   pb%ot%unit = 22
