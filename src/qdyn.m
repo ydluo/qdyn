@@ -154,7 +154,8 @@
 %			The default value is 1 (serial run)
 %
 % OUTPUTS 	pars	structure containing the parameters listed above, and:
-%			X,Y,Z = fault coordinates
+%			X,Y,Z = coordinates of center of fault elements
+%			DIP = dip angle of fault elements
 %		ot	structure containing time series outputs 
 %			ot.t	output times
 %			ot.locl	localization length (distance between stressing rate maxima)
@@ -232,7 +233,7 @@ DW=1e3;
 DIP_W=30.0;
 
 Z_CORNER=-50e3;
-IC=1;         %output ot coordinate
+IC=1;         % index of nodes for output ot 
 TMAX = 6*month;  % total simulation time
 NSTOP = 0;	% stop at (0) tmax, (1) end of localization or (2) max slip rate
 DTTRY = 1e2;   % first trial timestep
@@ -282,46 +283,16 @@ DYN_TH_OFF = 1e-4;
 
 %--------- INITIALIZE -------------------------------------
 
-pathstr = fileparts(mfilename('fullpath'));
-
-% Override with inputs
+% override UPPER CASE VARIABLES with inputs
 Parse_Inputs(varargin{:});
 
-X = [];
-% fault mesh
-switch MESHDIM
-  case 0
-    X = [];
-  case 1
-    X = (-N/2+0.5:N/2-0.5) *L/N; 
-  case 2
-    % set x, y, z, dip of first row
-    cd = cos(DIP_W(1)/180.*pi);
-    sd = sin(DIP_W(1)/180.*pi);
-    X = 0. + (0.5+(0:NX-1))*L/NX;
-    Y(1:NX) = 0.+0.5*DW(1)*cd;   
-    Z(1:NX) = Z_CORNER+0.5*DW(1)*sd;
-    DIP(1:NX) = DIP_W(1);
+% generate the mesh
+[X,Y,Z,DIP] = generate_mesh();
 
-    % set x, y, z, dip of row 2 to nw
-    for i = 2:NW
-      cd0 = cd;
-      sd0 = sd;
-      cd = cos(DIP_W(i)/180.*pi);
-      sd = sin(DIP_W(i)/180.*pi);
-      j0 = (i-1)*NX;
-      X(j0+1:j0+NX) = X(1:NX);
-      Y(j0+1:j0+NX) = Y(j0) + 0.5*DW(i-1)*cd0 + 0.5*DW(i)*cd;
-      Z(j0+1:j0+NX) = Z(j0) + 0.5*DW(i-1)*sd0 + 0.5*DW(i)*sd;
-      DIP(j0+1:j0+NX) = DIP_W(i);
-    end 
-  otherwise
-    error('MESHDIM must be 0, 1 or 2');
-end  
-
+% set steady state theta
 TH_SS = DC./V_SS;
 
-% wrap UPPER CASE variables in parameter structure fields with the same name 
+% wrap UPPER CASE VARIABLES in parameter structure fields with the same name 
 fpars = who;
 for k= find( strcmp(fpars,upper(fpars)) )' ,
   pars.(fpars{k}) = eval(fpars{k}) ;
@@ -329,17 +300,17 @@ end
 
 switch mode
 
- case 'set', 
-   ot=[];
-   ox=[];
-   return % pars = qdyn('set',...)  --> do not compute, exit here
+case 'set', 
+  ot=[];
+  ox=[];
+  return % pars = qdyn('set',...)  --> do not compute, exit here
   
- case 'read',
-   pars = read_qdyn_in(NAME);
-   pars.NAME = NAME;
-   [ot,ox]= read_qdyn_out(NAME);
+case 'read',
+  pars = read_qdyn_in(NAME);
+  pars.NAME = NAME;
+  [ot,ox]= read_qdyn_out(NAME);
 
- case {'run', 'write'},
+case {'run', 'write'},
 
   % make vectors if constants
    DW(1:NW) =DW;  
@@ -359,34 +330,127 @@ switch mode
    CO(1:N)=CO;
     
   % For branching faults.
-  %JPA This is an undocumented feature implemented by Percy
-   if strcmp(BRANCH,'.true.')
-     r=sqrt(X.^2+Y.^2);
-     X=r.*cosd(STRIKE)+XC;
-     Y=r.*sind(STRIKE)+YC;
-     fid=fopen('qdyn_branch.in','w');    
-     fprintf(fid,'%d\n',N);
-     fprintf(fid,'%15.6f\n',DIP_W(1));
-     fprintf(fid,'%20.6f %20.6f\n',LAM,MU);
-     fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
-      [X(:),Y(:),Z(:),SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:),CO(:)]');
-     fclose(fid);
-     ot = 0;
-     ox = 0;
+  % NOTE: this is an undocumented feature implemented by Percy
+   if strcmp(BRANCH,'.true.') 
+     export_branch_input();
+     ot = [];
+     ox = [];
      return;
    end
 
- % Station
-  if MESHDIM==2
-   fids=fopen('stations.dat','w');
-   nsta=1; %NOTE: For now one station but later will be extended to more stations
-   fprintf(fids,'%d\n',nsta);
-   fprintf(fids,'%.15g %.15g %.15g\n',X(IC),Y(IC),Z(IC));
-   fclose(fids);
+ % export list of recording points ("stations") on the fault
+  if MESHDIM==2, export_stations(); end
+
+ % export input file qdyn.in
+  export_main_input()
+
+  if strcmp(mode, 'write')
+    ot = [];
+    ox = [];
+    return;
+  end
+    
+ % solve
+  if NPROCS==1
+    status = system([EXEC_PATH filesep 'qdyn']);
+  else
+    status = system(['mpirun -np ' num2str(NPROCS) ' ' EXEC_PATH filesep 'qdyn']);
   end
 
- % export qdyn.in
+ % rename input and output files
+  if length(NAME)
+    movefile('fort.18',[NAME '.ot']); 
+    movefile('fort.19',[NAME '.ox']); 
+    copyfile('qdyn.in',[NAME '.in']); 
+  end
+
+ % output
+  if NPROCS>1 % MPI parallel
+    [ot,ox]= read_qdyn_out_mpi(NAME);
+  else
+    [ot,ox]= read_qdyn_out(NAME);
+  end
+
+otherwise,
+  error('mode must be: set, read or run')
+
+end
+
+%--
+% This is a nested function: it has access to variables in the parent function
+function [X,Y,Z,DIP]=generate_mesh()
+
+  X = [];
+  Y = [];
+  Z = [];
+  DIP = [];
+
+  switch MESHDIM
+  case 0
+    X = [];
+  case 1
+    X = (-N/2+0.5:N/2-0.5) *L/N; 
+  case 2
+   % set x, y, z, dip of first row
+    cd = cos(DIP_W(1)/180.*pi);
+    sd = sin(DIP_W(1)/180.*pi);
+    X = 0. + (0.5+(0:NX-1))*L/NX;
+    Y(1:NX) = 0.+0.5*DW(1)*cd;   
+    Z(1:NX) = Z_CORNER+0.5*DW(1)*sd;
+    DIP(1:NX) = DIP_W(1);
+   % set x, y, z, dip of row 2 to nw
+    for i = 2:NW
+      cd0 = cd;
+      sd0 = sd;
+      cd = cos(DIP_W(i)/180.*pi);
+      sd = sin(DIP_W(i)/180.*pi);
+      j0 = (i-1)*NX;
+      X(j0+1:j0+NX) = X(1:NX);
+      Y(j0+1:j0+NX) = Y(j0) + 0.5*DW(i-1)*cd0 + 0.5*DW(i)*cd;
+      Z(j0+1:j0+NX) = Z(j0) + 0.5*DW(i-1)*sd0 + 0.5*DW(i)*sd;
+      DIP(j0+1:j0+NX) = DIP_W(i);
+    end 
+  otherwise
+    error('MESHDIM must be 0, 1 or 2');
+  end  
+
+end
+
+%-- 
+% This is a nested function: it has access to variables in the parent function
+function export_branch_input()
+
+  r=sqrt(X.^2+Y.^2);
+  X=r.*cosd(STRIKE)+XC;
+  Y=r.*sind(STRIKE)+YC;
+  fid=fopen('qdyn_branch.in','w');    
+  fprintf(fid,'%d\n',N);
+  fprintf(fid,'%15.6f\n',DIP_W(1));
+  fprintf(fid,'%20.6f %20.6f\n',LAM,MU);
+  fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
+    [X(:),Y(:),Z(:),SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:),CO(:)]');
+  fclose(fid);
+
+end
+
+%--
+% This is a nested function: it has access to variables in the parent function
+function export_stations()
+
+   fid=fopen('stations.dat','w');
+   nsta=1; %NOTE: For now one station but later will be extended to more stations
+   fprintf(fid,'%d\n',nsta);
+   fprintf(fid,'%.15g %.15g %.15g\n',X(IC),Y(IC),Z(IC));
+   fclose(fid);
+
+end
+
+%--
+% This is a nested function: it has access to variables in the parent function
+function export_main_input()
+
   for iproc=1:NPROCS  
+
     if NPROCS>1
       filename = ['qdyn' sprintf('%06i',iproc-1) '.in'];
      % MPI domain partitioning is done here:
@@ -403,6 +467,7 @@ switch mode
       iloc = [1:N]';
       iwloc = [1:NW]';
     end
+
     fid=fopen(filename,'w');
     fprintf(fid,'%u     meshdim\n' , MESHDIM); 
     if MESHDIM == 2
@@ -418,8 +483,10 @@ switch mode
     fprintf(fid,'%u   itheta_law\n', THETA_LAW);
     fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
     fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);    
-    fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);     
-    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g   beta, smu, lambda, D, H, v_th\n', VS, MU, LAM, D, H, V_TH);
+    fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', ...
+                NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);     
+    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g   beta, smu, lambda, D, H, v_th\n', ...
+                VS, MU, LAM, D, H, V_TH);
     fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
     fprintf(fid,'%.15g %.15g %.15g %.15g    dt_try, dtmax, tmax, accuracy\n',DTTRY,DTMAX,TMAX,ACC);
     fprintf(fid,'%u   nstop\n',NSTOP);
@@ -436,40 +503,12 @@ switch mode
     
     fclose(fid);    
   end
+end % of nested function 
 
-    
-    if strcmp(mode, 'write')
-        ot = 0;
-        ox = 0;
-        return;
-    end
-    
-%    Solve
-    if NPROCS==1
-       status = system([EXEC_PATH filesep 'qdyn']);
-    else
-       status = system(['mpirun -np ' num2str(NPROCS) ' ' EXEC_PATH filesep 'qdyn']);
-    end
-%   rename input and output files
-    if length(NAME)
-      movefile('fort.18',[NAME '.ot']); 
-      movefile('fort.19',[NAME '.ox']); 
-      copyfile('qdyn.in',[NAME '.in']); 
-      copyfile(fullfile(pathstr,'qdyn.h') ,[NAME '.h']); 
-    end
-    % output
-    if NPROCS>1 % MPI parallel
-      [ot,ox]= read_qdyn_out_mpi(NAME);
-    else
-      [ot,ox]= read_qdyn_out(NAME);
-    end
+end % of function qdyn
 
-  otherwise,
-    error('mode must be: set, read or run')
-
-end
-
-%-----------
+%-----------------------------------------------------------------------------
+%
 % PARSE_INPUTS sets variables in the caller function according to inputs.
 %	By convention the variables to set have UPPER CASE names. 
 %
