@@ -33,19 +33,6 @@ subroutine read_main(pb)
   read(15,*) pb%itheta_law
   read(15,*) pb%i_rns_law
   read(15,*) pb%i_sigma_cpl
-  read(15,*) pb%neqs 
-
-!JPA neqs should not be setup explicitly by the user
-!    It should be inferred from the type of problem:
-!    neq=2 if problem in homogeneous medium without free surface
-!    neq=3 if bimaterial problem, or with free surface (for which normal stress changes
-!          are coupled to slip, the 3rd variable is the normal stress)
-!YD we may want to determine the neqs and other value in matlab script, then read-in
-! as far as it will not make conflict with other variables/parameters
-! because matlab is using more human-like language 
-!However, it will be safer to deal with variable/parameters here
-!--?? Leave AS IS till we complete benchmark this 2D version ??--
-
   read(15,*)pb%ot%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nxout_dyn,    &
             pb%ox%i_ox_seq, pb%ox%i_ox_dyn
   read(15,*)pb%beta, pb%smu, pb%lam, pb%D, pb%H, pb%v_th

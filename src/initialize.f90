@@ -25,6 +25,12 @@ subroutine init_all(pb)
 
   call init_mesh(pb%mesh)
 
+ ! number of equations
+  pb%neqs=2
+  if (pb%i_sigma_cpl==1 .and. pb%mesh%dim==2) then
+    pb%neqs=3
+  endif
+
  ! dt_max & perturbation
  ! if periodic loading, set time step smaller than a fraction of loading period
   if (pb%Aper /= 0.d0 .and. pb%Tper > 0.d0) then

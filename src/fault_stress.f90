@@ -86,7 +86,7 @@ subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,finite)
     k%kind = m%dim+1       
   endif
 
-  k%has_sigma_coupling = (i_sigma_cpl==1)
+  k%has_sigma_coupling = (i_sigma_cpl==1) ! only used in 3D
 
   select case (k%kind)
   case(1)

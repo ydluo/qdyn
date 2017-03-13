@@ -208,7 +208,6 @@ year = 365*day;
 NPROCS = 1; % Default serial, no-MPI.
 
 MESHDIM=1;
-NEQS=2;
 NAME ='';	% title for the simulation
 
 scriptName = mfilename('fullpath');
@@ -328,8 +327,6 @@ for k= find( strcmp(fpars,upper(fpars)) )' ,
   pars.(fpars{k}) = eval(fpars{k}) ;
 end
 
-if SIGMA_CPL == 1, NEQS = 3; end
-
 switch mode
 
  case 'set', 
@@ -421,7 +418,6 @@ switch mode
     fprintf(fid,'%u   itheta_law\n', THETA_LAW);
     fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
     fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);    
-    fprintf(fid,'%u   n_equations\n', NEQS);
     fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);     
     fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g   beta, smu, lambda, D, H, v_th\n', VS, MU, LAM, D, H, V_TH);
     fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
