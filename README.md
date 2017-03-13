@@ -110,6 +110,6 @@ Y. Luo, J. P. Ampuero, K. Miyakoshi and K. Irikura (2017)
   [doi:10.1007/s00024-017-1467-4] (https://link.springer.com/article/10.1007/s00024-017-1467-4)  
   [PDF] (https://rdcu.be/oOL9)
   
-Y. Luo, J. P. Ampuero, P. Galvez, M. Ende and B. Idini. (2017). 
+Y. Luo, J. P. Ampuero, P. Galvez, M. van den Ende and B. Idini. (2017). 
 *QDYN: a Quasi-DYNamic earthquake simulator (v1.1) [Data set]*. Zenodo. doi:10.5281/zenodo.322459  
  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.322459.svg)](https://doi.org/10.5281/zenodo.322459)
