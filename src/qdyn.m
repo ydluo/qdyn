@@ -149,9 +149,9 @@
 %
 %		Other parameters:
 %		EXEC_PATH path to the Fortran qdyn executable. 
-%     The default path is the directory containing qdyn.m
-%   NPROCS number of processors for parallel MPI runs
-%     The default value is 1 (serial run)
+%			The default path is the directory containing qdyn.m
+%		NPROCS number of processors for parallel MPI runs
+%			The default value is 1 (serial run)
 %
 % OUTPUTS 	pars	structure containing the parameters listed above, and:
 %			X,Y,Z = fault coordinates
@@ -190,9 +190,7 @@
 %			[p,ot,ox] = qdyn('run','V_0',1.01*p.V_SS);
 %			semilogy(ot.t,ot.v)
 %
-% AUTHOR	Jean-Paul Ampuero	ampuero@gps.caltech.edu
-% MODIFIED by Yingdi LUO        luoyd@gps.caltech.edu
-% Last Mod 11/11/2014
+% AUTHORS	QDYN development team https://github.com/ydluo/qdyn#developers	
 
 function [pars,ot,ox] = qdyn(mode,varargin)
 
@@ -265,9 +263,11 @@ V_0=V_SS ;
 TH_0=TH_SS;
 V1=0.01;
 V2=1e-7;
+%-- branching fault 
+%JPA This is an undocumented feature implemented by Percy
 BRANCH='.false.';
 STRIKE=0;
-XC=0; % For branching fault, Junction location. 
+XC=0; % Junction location. 
 YC=0; % 
 
 %-- periodic loading 
@@ -328,6 +328,7 @@ for k= find( strcmp(fpars,upper(fpars)) )' ,
   pars.(fpars{k}) = eval(fpars{k}) ;
 end
 
+if SIGMA_CPL == 1, NEQS = 3; end
 
 switch mode
 
@@ -360,50 +361,58 @@ switch mode
    IASP(1:N)=IASP;
    CO(1:N)=CO;
     
-    % For branching faults.
+  % For branching faults.
+  %JPA This is an undocumented feature implemented by Percy
    if strcmp(BRANCH,'.true.')
-     fid=fopen('qdyn_branch.in','w');    
      r=sqrt(X.^2+Y.^2);
      X=r.*cosd(STRIKE)+XC;
      Y=r.*sind(STRIKE)+YC;
-     
+     fid=fopen('qdyn_branch.in','w');    
      fprintf(fid,'%d\n',N);
      fprintf(fid,'%15.6f\n',DIP_W(1));
      fprintf(fid,'%20.6f %20.6f\n',LAM,MU);
      fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
       [X(:),Y(:),Z(:),SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:),CO(:)]');
      fclose(fid);
-        ot = 0;
-        ox = 0;
+     ot = 0;
+     ox = 0;
      return;
    end
-  %% Station
+
+ % Station
   if MESHDIM==2
    fids=fopen('stations.dat','w');
-   nsta=1; % For now one station but later will be extended to more stations
+   nsta=1; %NOTE: For now one station but later will be extended to more stations
    fprintf(fids,'%d\n',nsta);
    fprintf(fids,'%.15g %.15g %.15g\n',X(IC),Y(IC),Z(IC));
    fclose(fids);
   end
-    % export qdyn.in
-  if NPROCS>1 % MPI parallel 
-   % Defining nwLocal 
-   nwLocal(1:NPROCS)=floor(NW/NPROCS);
-   % In case NW/NPROCS is not integer. Leaving the rest to the last processor
-   nwLocal(NPROCS) = mod(NW,NPROCS) + nwLocal(NPROCS);
-   nnLocal = 0;
-   for iproc=0:NPROCS-1  
-    filename = ['qdyn' sprintf('%06i',iproc) '.in'];
+
+ % export qdyn.in
+  for iproc=1:NPROCS  
+    if NPROCS>1
+      filename = ['qdyn' sprintf('%06i',iproc-1) '.in'];
+     % MPI domain partitioning is done here:
+      nw = floor(NW/NPROCS);
+      i0 = iproc*NX*nw;
+      iw0 = iproc*nw;
+      % If NW/NPROCS is not integer, leave the rest to the last processor
+      if iproc==NPROCS, nw = nw + mod(NW,NPROCS); end
+      iloc = i0 + [1:NX*nw]';
+      iwloc = iw0 + [1:nw]';
+    else
+      filename = 'qdyn.in'; 
+      nw = NW;
+      iloc = [1:N]';
+      iwloc = [1:NW]';
+    end
     fid=fopen(filename,'w');
     fprintf(fid,'%u     meshdim\n' , MESHDIM); 
     if MESHDIM == 2
-      DWnnlocal=[];DIP_Wnnlocal=[];
       fprintf(1, 'MESHDIM = %d\n', MESHDIM);
-      fprintf(fid,'%u %u     NX, NW\n' , NX, nwLocal(iproc+1));      
+      fprintf(fid,'%u %u     NX, NW\n' , NX, nw);      
       fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
-      DWnnlocal = DW(nnLocal/NX+1:nwLocal(iproc+1)+nnLocal/NX);
-      DIP_Wnnlocal = DIP_W(nnLocal/NX+1:nwLocal(iproc+1)+nnLocal/NX);
-      fprintf(fid,'%.15g %.15g \n', [DWnnlocal(:),DIP_Wnnlocal(:)]');
+      fprintf(fid,'%.15g %.15g \n', [DW(iwloc),DIP_W(iwloc)]');
     else  
       fprintf(fid,'%u     NN\n' , N);      
       fprintf(fid,'%.15g %.15g      L, W\n', L, W);
@@ -412,7 +421,6 @@ switch mode
     fprintf(fid,'%u   itheta_law\n', THETA_LAW);
     fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
     fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);    
-    if SIGMA_CPL == 1, NEQS = 3; end
     fprintf(fid,'%u   n_equations\n', NEQS);
     fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);     
     fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g   beta, smu, lambda, D, H, v_th\n', VS, MU, LAM, D, H, V_TH);
@@ -422,61 +430,17 @@ switch mode
     fprintf(fid,'%u %u  DYN_FLAG, DYN_SKIP\n',DYN_FLAG,DYN_SKIP);
     fprintf(fid,'%.15g %.15g %.15g    M0, DYN_th_on, DYN_th_off\n', DYN_M,DYN_TH_ON,DYN_TH_OFF);
 
-    for wloc=1:nwLocal(iproc+1)
-     for xloc=1:NX
-      iloc = xloc + (wloc-1)*NX + nnLocal;
-      fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %u %u %.15g\n',...
-        SIGMA(iloc),V_0(iloc),TH_0(iloc),A(iloc),B(iloc),DC(iloc),V1(iloc),V2(iloc),MU_SS(iloc),V_SS(iloc),IOT(iloc),IASP(iloc),CO(iloc));
-     end
-    end
-  
-    for wloc=1:nwLocal(iproc+1)
-     for xloc=1:NX
-      iloc = xloc + (wloc-1)*NX + nnLocal;
-      fprintf(fid,'%.15g %.15g %.15g %.15g\n',...
-          X(iloc),Y(iloc),Z(iloc),DIP(iloc));
-     end
+    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %u %u %.15g\n',...
+      [SIGMA(iloc),V_0(iloc),TH_0(iloc),A(iloc),B(iloc),DC(iloc),V1(iloc),V2(iloc), ...
+       MU_SS(iloc),V_SS(iloc),IOT(iloc),IASP(iloc),CO(iloc)]');
+   
+    if NPROCS>1
+      fprintf(fid,'%.15g %.15g %.15g %.15g\n', [X(iloc),Y(iloc),Z(iloc),DIP(iloc)]');
     end
     
-    % next processor
-    nnLocal=NX*nwLocal(iproc+1) + nnLocal;
-    % hold on
-    %scatter(X(1+nnLocal:iloc),Z(1+nnLocal:iloc),[],Z(1+nnLocal:iloc))
     fclose(fid);    
-   end
   end
 
-%JPA In MPI runs, if qdyn.in is not used we should not create it (put it in an "else" block)
-  fid=fopen('qdyn.in','w');
-   fprintf(fid,'%u     meshdim\n' , MESHDIM); 
-   if MESHDIM == 2
-       fprintf(1, 'MESHDIM = %d\n', MESHDIM);
-       fprintf(fid,'%u %u     NX, NW\n' , NX, NW);      
-       fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
-       fprintf(fid,'%.15g %.15g \n', [DW(:), DIP_W(:)]');
-   else  
-       fprintf(fid,'%u     NN\n' , N);      
-       fprintf(fid,'%.15g %.15g      L, W\n', L, W);
-   end
-   if MESHDIM == 1, fprintf(fid,'%u   finite\n', FINITE); end   
-   fprintf(fid,'%u   itheta_law\n', THETA_LAW);
-   fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
-   fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);    
-   if SIGMA_CPL == 1, NEQS = 3; end
-   fprintf(fid,'%u   n_equations\n', NEQS);
-   fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);     
-   fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g   beta, smu, lambda, D, H, v_th\n', VS, MU, LAM, D, H, V_TH);
-   fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
-   fprintf(fid,'%.15g %.15g %.15g %.15g    dt_try, dtmax, tmax, accuracy\n',DTTRY,DTMAX,TMAX,ACC);
-   fprintf(fid,'%u   nstop\n',NSTOP);
-   fprintf(fid,'%u %u  DYN_FLAG, DYN_SKIP\n',DYN_FLAG,DYN_SKIP);
-   fprintf(fid,'%.15g %.15g %.15g    M0, DYN_th_on, DYN_th_off\n', DYN_M,DYN_TH_ON,DYN_TH_OFF);
-
-          
-   fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %u %u %.15g\n',...
-      [SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:),IOT(:),IASP(:),CO(:)]');
- 
-   fclose(fid);
     
     if strcmp(mode, 'write')
         ot = 0;
