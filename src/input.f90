@@ -204,6 +204,11 @@ subroutine read_main(pb)
                 pb%cns_params%IPS_const_diff_bulk(i), pb%cns_params%IPS_const_diss1_bulk(i), &
                 pb%cns_params%IPS_const_diss2_bulk(i)
     end do
+  else
+    allocate(pb%cns_params%lambda(n))
+    do i=1,n
+      pb%cns_params%lambda = 1
+    end do
   endif
 
   if (is_MPI_parallel()) then
