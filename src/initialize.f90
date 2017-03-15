@@ -27,9 +27,9 @@ subroutine init_all(pb)
   call init_mesh(pb%mesh)
 
  ! number of equations
-  pb%neqs=2
-  if (pb%i_sigma_cpl==1 .and. pb%mesh%dim==2) then
-    pb%neqs=3
+  pb%neqs = 2 + pb%features%cohesion + pb%features%localisation
+  if (pb%features%stress_coupling == 1 .and. pb%mesh%dim == 2) then
+    pb%neqs = pb%neqs + 1
   endif
 
  ! dt_max & perturbation
@@ -65,8 +65,7 @@ subroutine init_all(pb)
   ! SEISMIC: the CNS model has the initial shear stress defined in the
   ! input file, so we can skip the initial computation of friction
   if (pb%i_rns_law /= 3) then
-    pb%tau_init = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
-    pb%tau = pb%tau_init
+    pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
   endif
   !---------------------- ref_value -----------------
 

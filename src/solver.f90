@@ -90,22 +90,17 @@ subroutine do_bsstep(pb)
   ! SEISMIC: in the case of the CNS model, solve for tau and not v
   if (pb%i_rns_law == 3) then   ! SEISMIC: CNS model
     yt(2::pb%neqs) = pb%tau
-    dydt(2::pb%neqs) = pb%dtau_dt
   else  ! SEISMIC: not CNS model (i.e. rate-and-state)
     yt(2::pb%neqs) = pb%v
-    dydt(2::pb%neqs) = pb%dv_dt
   endif
   yt(1::pb%neqs) = pb%theta
-  dydt(1::pb%neqs) = pb%dtheta_dt
   ! SEISMIC NOTE/WARNING: I don't know how permanent this temporary solution is,
   ! but in case it gets fixed more permanently, derivs_all.f90 needs adjustment
   if (pb%features%stress_coupling == 1) then           ! Temp solution for normal stress coupling
     yt(ind_stress_coupling::pb%neqs) = pb%sigma
-    dydt(ind_stress_coupling::pb%neqs) = pb%dsigma_dt
   endif
   if (pb%features%cohesion == 1) then
     yt(ind_cohesion::pb%neqs) = pb%alpha
-    dydt(ind_cohesion::pb%neqs) = pb%dalpha_dt
   endif
   if (pb%features%localisation == 1) then
     yt(ind_localisation::pb%neqs) = pb%theta2
@@ -130,24 +125,19 @@ subroutine do_bsstep(pb)
   ! retreive the solution for slip velocity
   if (pb%i_rns_law == 3) then
     pb%tau = yt(2::pb%neqs)
-    pb%dtau_dt = dydt(2::pb%neqs)
   else
     pb%v = yt(2::pb%neqs)
-    pb%dv_dt = dydt(2::pb%neqs)
   endif
 
   pb%theta = yt(1::pb%neqs)
-  pb%dtheta_dt = dydt(1::pb%neqs)
   ! SEISMIC NOTE/WARNING: I don't know how permanent this temporary solution is,
   ! but in case it gets fixed more permanently, derivs_all.f90 needs adjustment
   if (pb%features%stress_coupling == 1) then           ! Temp solution for normal stress coupling
     pb%sigma = yt(ind_stress_coupling::pb%neqs)
-    pb%dsigma_dt = dydt(ind_stress_coupling::pb%neqs)
   endif
 
   if (pb%features%cohesion == 1) then
     pb%alpha = yt(ind_cohesion::pb%neqs)
-    pb%dalpha_dt = dydt(ind_cohesion::pb%neqs)
   endif
 
   if (pb%features%localisation == 1) then

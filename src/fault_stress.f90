@@ -63,7 +63,7 @@ contains
 !   dtau_dt = - K*( v - Vpl )
 
 !=============================================================
-subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,finite) 
+subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,finite)
 !NOTE: damaged zones (D, H) only available for 2D problems
 
   use mesh, only : mesh_type

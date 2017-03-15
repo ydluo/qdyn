@@ -33,10 +33,8 @@ subroutine read_main(pb)
   if (pb%mesh%dim==1) read(15,*) pb%finite
   read(15,*) pb%itheta_law
   read(15,*) pb%i_rns_law
-  read(15,*) i_sigma_cpl
+  read(15,*) pb%i_sigma_cpl
   read(15,*) pb%features%stress_coupling, pb%features%cohesion, pb%features%localisation ! SEISMIC
-  pb%neqs = 2 + pb%features%stress_coupling + pb%features%cohesion + pb%features%localisation
-  pb%kernel%has_sigma_coupling = (i_sigma_cpl == 1)
   read(15,*)pb%ot%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nxout_dyn,    &
             pb%ox%i_ox_seq, pb%ox%i_ox_dyn
   read(15,*) pb%beta, pb%smu, pb%lam, pb%D, pb%H, pb%ot%v_th
@@ -62,14 +60,14 @@ subroutine read_main(pb)
       read(15,*)pb%sigma(i), pb%tau(i), pb%v(i), pb%theta(i),  &
                 pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
                 pb%v2(i), pb%mu_star(i), pb%v_star(i), &
-                pb%iot(i), pb%iasp(i), pb%coh(i)
+                pb%ot%iot(i), pb%ot%iasp(i), pb%coh(i)
     end do
   else
     do i=1,n
       read(15,*)pb%sigma(i), pb%v(i), pb%theta(i),  &
                 pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
                 pb%v2(i), pb%mu_star(i), pb%v_star(i), &
-                pb%iot(i), pb%iasp(i), pb%coh(i)
+                pb%ot%iot(i), pb%ot%iasp(i), pb%coh(i)
     end do
   endif
 
@@ -129,7 +127,7 @@ subroutine read_main(pb)
     allocate (  pb%alpha(n), pb%coh_params%alpha0(n), &
                 pb%coh_params%alpha_c(n), pb%coh_params%compl(n), &
                 pb%coh_params%C_star(n), pb%coh_params%E_surf(n), &
-                pb%coh_params%NG_const(n), pb%dalpha_dt(n))
+                pb%coh_params%NG_const(n))
 
     do i=1,n
       read(15,*)pb%alpha(i), pb%coh_params%alpha0(i), &
