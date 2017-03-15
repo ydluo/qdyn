@@ -49,6 +49,8 @@
 %		MU 	shear modulus (Pa)
 %		LAM 	elastic modulus LAMBDA for 3D simulations (Pa)
 %		VS 	shear wave velocity (m/s). If VS=0 radiation damping is turned off
+%		H	half-thickness of the fault damage zone
+%		D	damage level = 1 - (damaged shear modulus) / (intact shear modulus)
 %		L 	fault length if MESHDIM=1
 %		    	stiffness is MU/L if MESHDIM=0
 %		FINITE	boundary conditions if MESHDIM=1
@@ -56,7 +58,7 @@
 %			    loaded by steady displacement at distance W from the fault
 %			1 = fault is infinitely long but only a segment of length L has
 %			    rate-and-state friction, the rest has steady slip. If you get the
-%			    error message "finite kernel is too small", create a larger kernel file 
+%			    error message "finite kernel is too small", create a larger kernel file
 %			    using the function TabKernelFiniteFlt.m, update the file name in
 %			    subroutine init_kernel_2D of src/fault_stress.f90, and recompile
 %		W  	distance between displacement loading and fault if MESHDIM=1 and FINITE=0
@@ -146,13 +148,14 @@
 %		DYN_SKIP number of dynamic events to skip (warm up cycles)
 %
 %		Other parameters:
-%		EXEC_PATH path to the Fortran qdyn executable.
-%     The default path is the directory containing qdyn.m
-%   NPROCS number of processors for parallel MPI runs
-%     The default value is 1 (serial run)
+%		EXEC_PATH path to the Fortran qdyn executable. 
+%			The default path is the directory containing qdyn.m
+%		NPROCS number of processors for parallel MPI runs
+%			The default value is 1 (serial run)
 %
 % OUTPUTS 	pars	structure containing the parameters listed above, and:
-%			X,Y,Z = fault coordinates
+%			X,Y,Z = coordinates of center of fault elements
+%			DIP = dip angle of fault elements
 %		ot	structure containing time series outputs
 %			ot.t	output times
 %			ot.locl	localization length (distance between stressing rate maxima)
@@ -188,9 +191,7 @@
 %			[p,ot,ox] = qdyn('run','V_0',1.01*p.V_SS);
 %			semilogy(ot.t,ot.v)
 %
-% AUTHOR	Jean-Paul Ampuero	ampuero@gps.caltech.edu
-% MODIFIED by Yingdi LUO        luoyd@gps.caltech.edu
-% Last Mod 11/11/2014
+% AUTHORS	QDYN development team https://github.com/ydluo/qdyn#developers
 
 function [pars,ot,ox] = qdyn(mode,varargin)
 
@@ -208,7 +209,6 @@ year = 365*day;
 NPROCS = 1; % Default serial, no-MPI.
 
 MESHDIM=1;
-NEQS=2;
 NAME ='';	% title for the simulation
 
 scriptName = mfilename('fullpath');
@@ -221,6 +221,8 @@ W= 50e3;   	% out-of-plane dimension (ignored in spring-block)
 MU = 30e9;	% shear modulus
 LAM = 30e9;
 VS = 3000; 	% shear wave velocity (if VS=0: turn off radiation damping)
+D = 0;		% damage level
+H = 0;		% half-thickness of the fault damage zone
 V_TH= 1e-5; % threshold velocity for seismic events;
 
 %-- numerical settings
@@ -231,7 +233,7 @@ DW=1e3;
 DIP_W=30.0;
 
 Z_CORNER=-50e3;
-IC=1;         %output ot coordinate
+IC=1;         % index of nodes for output ot
 TMAX = 6*month;  % total simulation time
 NSTOP = 0;	% stop at (0) tmax, (1) end of localization or (2) max slip rate
 DTTRY = 1e2;   % first trial timestep
@@ -261,9 +263,11 @@ V_0=V_SS ;
 TH_0=TH_SS;
 V1=0.01;
 V2=1e-7;
+%-- branching fault
+%JPA This is an undocumented feature implemented by Percy
 BRANCH='.false.';
 STRIKE=0;
-XC=0; % For branching fault, Junction location.
+XC=0; % Junction location.
 YC=0; %
 
 %-- periodic loading
@@ -279,69 +283,39 @@ DYN_TH_OFF = 1e-4;
 
 %--------- INITIALIZE -------------------------------------
 
-pathstr = fileparts(mfilename('fullpath'));
-
-% Override with inputs
+% override UPPER CASE VARIABLES with inputs
 Parse_Inputs(varargin{:});
 
-X = [];
-% fault mesh
-switch MESHDIM
-  case 0
-    X = [];
-  case 1
-    X = (-N/2+0.5:N/2-0.5) *L/N;
-    Y = ones(NX)*W;
-    Z = zeros(NX);
-    DIP = zeros(NX);
-  case 2
-    % set x, y, z, dip of first row
-    cd = cos(DIP_W(1)/180.*pi);
-    sd = sin(DIP_W(1)/180.*pi);
-    X = 0. + (0.5+(0:NX-1))*L/NX;
-    Y(1:NX) = 0.+0.5*DW(1)*cd;
-    Z(1:NX) = Z_CORNER+0.5*DW(1)*sd;
-    DIP(1:NX) = DIP_W(1);
+% generate the mesh
+[X,Y,Z,DIP] = generate_mesh();
 
-    % set x, y, z, dip of row 2 to nw
-    for i = 2:NW
-      cd0 = cd;
-      sd0 = sd;
-      cd = cos(DIP_W(i)/180.*pi);
-      sd = sin(DIP_W(i)/180.*pi);
-      j0 = (i-1)*NX;
-      X(j0+1:j0+NX) = X(1:NX);
-      Y(j0+1:j0+NX) = Y(j0) + 0.5*DW(i-1)*cd0 + 0.5*DW(i)*cd;
-      Z(j0+1:j0+NX) = Z(j0) + 0.5*DW(i-1)*sd0 + 0.5*DW(i)*sd;
-      DIP(j0+1:j0+NX) = DIP_W(i);
-    end
-  otherwise
-    error('MESHDIM must be 0, 1 or 2');
+if MESHDIM<2 & NPROCS>1
+  disp('MPI parallelization is only implemented for MESHDIM=2. Resetting NPROCS=1.')
+  NPROCS = 1;
 end
 
+% set steady state theta
 TH_SS = DC./V_SS;
 
-% wrap UPPER CASE variables in parameter structure fields with the same name
+% wrap UPPER CASE VARIABLES in parameter structure fields with the same name
 fpars = who;
 for k= find( strcmp(fpars,upper(fpars)) )' ,
   pars.(fpars{k}) = eval(fpars{k}) ;
 end
 
-
 switch mode
 
- case 'set',
-   ot=[];
-   ox=[];
-   return % pars = qdyn('set',...)  --> do not compute, exit here
+case 'set',
+  ot=[];
+  ox=[];
+  return % pars = qdyn('set',...)  --> do not compute, exit here
 
- case 'read',
-   pars = read_qdyn_in(NAME);
-   pars.NAME = NAME;
-   [pars.N,pars.FINITE] = read_qdyn_h(NAME);
-   [ot,ox]= read_qdyn_out(NAME);
+case 'read',
+  pars = read_qdyn_in(NAME);
+  pars.NAME = NAME;
+  [ot,ox]= read_qdyn_out(NAME);
 
- case {'run', 'write'},
+case {'run', 'write'},
 
   % make vectors if constants
    DW(1:NW) =DW;
@@ -360,170 +334,185 @@ switch mode
    IASP(1:N)=IASP;
    CO(1:N)=CO;
 
-    % For branching faults.
+  % For branching faults.
+  % NOTE: this is an undocumented feature implemented by Percy
    if strcmp(BRANCH,'.true.')
-     fid=fopen('qdyn_branch.in','w');
-     r=sqrt(X.^2+Y.^2);
-     X=r.*cosd(STRIKE)+XC;
-     Y=r.*sind(STRIKE)+YC;
-
-     fprintf(fid,'%d\n',N);
-     fprintf(fid,'%15.6f\n',DIP_W(1));
-     fprintf(fid,'%20.6f %20.6f\n',LAM,MU);
-     fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
-      [X(:),Y(:),Z(:),SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:),CO(:)]');
-     fclose(fid);
-        ot = 0;
-        ox = 0;
+     export_branch_input();
+     ot = [];
+     ox = [];
      return;
    end
-  %% Station
-  if MESHDIM==2
-   fids=fopen('stations.dat','w');
-   nsta=1; % For now one station but later will be extended to more stations
-   fprintf(fids,'%d\n',nsta);
-   fprintf(fids,'%.15g %.15g %.15g\n',X(IC),Y(IC),Z(IC));
-   fclose(fids);
+
+ % export list of recording points ("stations") on the fault
+  if MESHDIM==2, export_stations(); end
+
+ % export input file qdyn.in
+  export_main_input()
+
+  if strcmp(mode, 'write')
+    ot = [];
+    ox = [];
+    return;
   end
-    % export qdyn.in
+
+ % solve
+  if NPROCS==1
+    status = system([EXEC_PATH filesep 'qdyn']);
+  else
+    status = system(['mpirun -np ' num2str(NPROCS) ' ' EXEC_PATH filesep 'qdyn']);
+  end
+
+ % rename input and output files
+  if length(NAME)
+    movefile('fort.18',[NAME '.ot']);
+    movefile('fort.19',[NAME '.ox']);
+    copyfile('qdyn.in',[NAME '.in']);
+  end
+
+ % output
   if NPROCS>1 % MPI parallel
-   % Defining nwLocal
-   nwLocal(1:NPROCS)=floor(NW/NPROCS);
-   % In case NW/NPROCS is not integer. Leaving the rest to the last processor
-   nwLocal(NPROCS) = mod(NW,NPROCS) + nwLocal(NPROCS);
-   nnLocal = 0;
-   for iproc=0:NPROCS-1
-    filename = ['qdyn' sprintf('%06i',iproc) '.in'];
+    [ot,ox]= read_qdyn_out_mpi(NAME);
+  else
+    [ot,ox]= read_qdyn_out(NAME);
+  end
+
+otherwise,
+  error('mode must be: set, read or run')
+
+end
+
+%--
+% This is a nested function: it has access to variables in the parent function
+function [X,Y,Z,DIP]=generate_mesh()
+
+  X = [];
+  Y = [];
+  Z = [];
+  DIP = [];
+
+  switch MESHDIM
+  case 0
+    X = [];
+  case 1
+    X = (-N/2+0.5:N/2-0.5) *L/N;
+  case 2
+   % set x, y, z, dip of first row
+    cd = cos(DIP_W(1)/180.*pi);
+    sd = sin(DIP_W(1)/180.*pi);
+    X = 0. + (0.5+(0:NX-1))*L/NX;
+    Y(1:NX) = 0.+0.5*DW(1)*cd;
+    Z(1:NX) = Z_CORNER+0.5*DW(1)*sd;
+    DIP(1:NX) = DIP_W(1);
+   % set x, y, z, dip of row 2 to nw
+    for i = 2:NW
+      cd0 = cd;
+      sd0 = sd;
+      cd = cos(DIP_W(i)/180.*pi);
+      sd = sin(DIP_W(i)/180.*pi);
+      j0 = (i-1)*NX;
+      X(j0+1:j0+NX) = X(1:NX);
+      Y(j0+1:j0+NX) = Y(j0) + 0.5*DW(i-1)*cd0 + 0.5*DW(i)*cd;
+      Z(j0+1:j0+NX) = Z(j0) + 0.5*DW(i-1)*sd0 + 0.5*DW(i)*sd;
+      DIP(j0+1:j0+NX) = DIP_W(i);
+    end
+  otherwise
+    error('MESHDIM must be 0, 1 or 2');
+  end
+
+end
+
+%--
+% This is a nested function: it has access to variables in the parent function
+function export_branch_input()
+
+  r=sqrt(X.^2+Y.^2);
+  X=r.*cosd(STRIKE)+XC;
+  Y=r.*sind(STRIKE)+YC;
+  fid=fopen('qdyn_branch.in','w');
+  fprintf(fid,'%d\n',N);
+  fprintf(fid,'%15.6f\n',DIP_W(1));
+  fprintf(fid,'%20.6f %20.6f\n',LAM,MU);
+  fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
+    [X(:),Y(:),Z(:),SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:),CO(:)]');
+  fclose(fid);
+
+end
+
+%--
+% This is a nested function: it has access to variables in the parent function
+function export_stations()
+
+   fid=fopen('stations.dat','w');
+   nsta=1; %NOTE: For now one station but later will be extended to more stations
+   fprintf(fid,'%d\n',nsta);
+   fprintf(fid,'%.15g %.15g %.15g\n',X(IC),Y(IC),Z(IC));
+   fclose(fid);
+
+end
+
+%--
+% This is a nested function: it has access to variables in the parent function
+function export_main_input()
+
+  for iproc=1:NPROCS
+
+    if NPROCS>1
+      filename = ['qdyn' sprintf('%06i',iproc-1) '.in'];
+     % MPI domain partitioning is done here:
+      nw = floor(NW/NPROCS);
+      i0 = iproc*NX*nw;
+      iw0 = iproc*nw;
+      % If NW/NPROCS is not integer, leave the rest to the last processor
+      if iproc==NPROCS, nw = nw + mod(NW,NPROCS); end
+      iloc = i0 + [1:NX*nw]';
+      iwloc = iw0 + [1:nw]';
+    else
+      filename = 'qdyn.in';
+      nw = NW;
+      iloc = [1:N]';
+      iwloc = [1:NW]';
+    end
+
     fid=fopen(filename,'w');
     fprintf(fid,'%u     meshdim\n' , MESHDIM);
-    if SIGMA_CPL == 1
-      NEQS = 3;
-    end
     if MESHDIM == 2
-      DWnnlocal=[];DIP_Wnnlocal=[];
-      fprintf(1, 'MESHDIM = %d\n', MESHDIM);
-      fprintf(fid,'%u %u     NX, NW\n' , NX, nwLocal(iproc+1));
+      fprintf(fid,'%u %u     NX, NW\n' , NX, nw);
       fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
-      DWnnlocal = DW(nnLocal/NX+1:nwLocal(iproc+1)+nnLocal/NX);
-      DIP_Wnnlocal = DIP_W(nnLocal/NX+1:nwLocal(iproc+1)+nnLocal/NX);
-      fprintf(fid,'%.15g %.15g \n', [DWnnlocal(:),DIP_Wnnlocal(:)]');
+      fprintf(fid,'%.15g %.15g \n', [DW(iwloc),DIP_W(iwloc)]');
     else
       fprintf(fid,'%u     NN\n' , N);
       fprintf(fid,'%.15g %.15g      L, W\n', L, W);
     end
-
-    if MESHDIM == 1
-      fprintf(fid,'%u   finite\n', FINITE);
-    end
-
+    if MESHDIM == 1, fprintf(fid,'%u   finite\n', FINITE); end
     fprintf(fid,'%u   itheta_law\n', THETA_LAW);
     fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
     fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);
-    %fprintf(fid,'%u   n_equations\n', NEQS);
-    fprintf(fid,'%u %u   stress_coupling cohesion\n', 0, 0);
-    fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);
-    fprintf(fid,'%.15g %.15g %.15g %.15g    beta, smu, lambda, v_th\n', VS, MU, LAM, V_TH);
+    fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', ...
+                NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);
+    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g   beta, smu, lambda, D, H, v_th\n', ...
+                VS, MU, LAM, D, H, V_TH);
     fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
     fprintf(fid,'%.15g %.15g %.15g %.15g    dt_try, dtmax, tmax, accuracy\n',DTTRY,DTMAX,TMAX,ACC);
     fprintf(fid,'%u   nstop\n',NSTOP);
     fprintf(fid,'%u %u  DYN_FLAG, DYN_SKIP\n',DYN_FLAG,DYN_SKIP);
     fprintf(fid,'%.15g %.15g %.15g    M0, DYN_th_on, DYN_th_off\n', DYN_M,DYN_TH_ON,DYN_TH_OFF);
 
-    for wloc=1:nwLocal(iproc+1)
-     for xloc=1:NX
-      iloc = xloc + (wloc-1)*NX + nnLocal;
-      fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
-        SIGMA(iloc),V_0(iloc),TH_0(iloc),A(iloc),B(iloc),DC(iloc),V1(iloc),V2(iloc),MU_SS(iloc),V_SS(iloc),IOT(iloc),IASP(iloc),CO(iloc));
-     end
+    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %u %u %.15g\n',...
+      [SIGMA(iloc),V_0(iloc),TH_0(iloc),A(iloc),B(iloc),DC(iloc),V1(iloc),V2(iloc), ...
+       MU_SS(iloc),V_SS(iloc),IOT(iloc),IASP(iloc),CO(iloc)]');
+
+    if NPROCS>1
+      fprintf(fid,'%.15g %.15g %.15g %.15g\n', [X(iloc),Y(iloc),Z(iloc),DIP(iloc)]');
     end
 
-    for wloc=1:nwLocal(iproc+1)
-     for xloc=1:NX
-      iloc = xloc + (wloc-1)*NX + nnLocal;
-      fprintf(fid,'%.15g %.15g %.15g %.15g\n',...
-          X(iloc),Y(iloc),Z(iloc),DIP(iloc));
-     end
-    end
-
-    % next processor
-    nnLocal=NX*nwLocal(iproc+1) + nnLocal;
-    % hold on
-    %scatter(X(1+nnLocal:iloc),Z(1+nnLocal:iloc),[],Z(1+nnLocal:iloc))
     fclose(fid);
-   end
   end
+end % of nested function
 
-%JPA In MPI runs, if qdyn.in is not used we should not create it (put it in an "else" block)
-  fid=fopen('qdyn.in','w');
-   fprintf(fid,'%u     meshdim\n' , MESHDIM);
-   if SIGMA_CPL == 1
-       NEQS = 3;
-   end
-   if MESHDIM == 2
-       fprintf(1, 'MESHDIM = %d\n', MESHDIM);
-       fprintf(fid,'%u %u     NX, NW\n' , NX, NW);
-       fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
-       fprintf(fid,'%.15g %.15g \n', [DW(:), DIP_W(:)]');
-   else
-       fprintf(fid,'%u     NN\n' , N);
-       fprintf(fid,'%.15g %.15g      L, W\n', L, W);
-   end
+end % of function qdyn
 
-   if MESHDIM == 1
-     fprintf(fid,'%u   finite\n', FINITE);
-   end
-
-   fprintf(fid,'%u   itheta_law\n', THETA_LAW);
-   fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
-   fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);
-   %fprintf(fid,'%u   n_equations\n', NEQS);
-   fprintf(fid,'%u %u   stress_coupling cohesion\n', 0, 0);
-   fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);
-   fprintf(fid,'%.15g %.15g %.15g %.15g    beta, smu, lambda, v_th\n', VS, MU, LAM, V_TH);
-   fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
-   fprintf(fid,'%.15g %.15g %.15g %.15g    dt_try, dtmax, tmax, accuracy\n',DTTRY,DTMAX,TMAX,ACC);
-   fprintf(fid,'%u   nstop\n',NSTOP);
-   fprintf(fid,'%u %u  DYN_FLAG, DYN_SKIP\n',DYN_FLAG,DYN_SKIP);
-   fprintf(fid,'%.15g %.15g %.15g    M0, DYN_th_on, DYN_th_off\n', DYN_M,DYN_TH_ON,DYN_TH_OFF);
-
-
-   fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
-      [SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:),IOT(:),IASP(:),CO(:)]');
-
-   fclose(fid);
-
-    if strcmp(mode, 'write')
-        ot = 0;
-        ox = 0;
-        return;
-    end
-
-%    Solve
-    if NPROCS==1
-       status = system([EXEC_PATH filesep 'qdyn']);
-    else
-       status = system(['mpirun -np ' num2str(NPROCS) ' ' EXEC_PATH filesep 'qdyn']);
-    end
-%   rename input and output files
-    if length(NAME)
-      movefile('fort.18',[NAME '.ot']);
-      movefile('fort.19',[NAME '.ox']);
-      copyfile('qdyn.in',[NAME '.in']);
-      copyfile(fullfile(pathstr,'qdyn.h') ,[NAME '.h']);
-    end
-    % output
-    if NPROCS>1 % MPI parallel
-      [ot,ox]= read_qdyn_out_mpi(NAME);
-    else
-      [ot,ox]= read_qdyn_out(NAME);
-    end
-
-  otherwise,
-    error('mode must be: set, read or run')
-
-end
-
-%-----------
+%-----------------------------------------------------------------------------
+%
 % PARSE_INPUTS sets variables in the caller function according to inputs.
 %	By convention the variables to set have UPPER CASE names.
 %
@@ -552,6 +541,7 @@ for k=2:2:length(varargin),
 end
 
 %-----------
+% WARNING: this function needs update to comply with the current format of qdyn.in
 function pars = read_qdyn_in(name)
 
 if ~exist('name','var') || ~length(name), name = 'qdyn'; end
@@ -621,11 +611,10 @@ end
   ox.t = cosa(1,:,4)';
   ox.v = cosa(:,:,5);
   ox.th= cosa(:,:,6);
-  ox.vd= cosa(:,:,7);
-  ox.dtau = cosa(:,:,8);
-  ox.dtaud = cosa(:,:,9);
-  ox.d = cosa(:,:,10);
-  ox.sigma = cosa(:,:,11);
+  ox.dtau = cosa(:,:,7);
+  ox.dtaud = cosa(:,:,8);
+  ox.d = cosa(:,:,9);
+  ox.sigma = cosa(:,:,10);
 
 %-----------
 % read outputs from qdyn.f
@@ -659,11 +648,10 @@ if uimatlab
   ox.t = cosa(1,:,2)';
   ox.v = cosa(:,:,3);
   ox.th= cosa(:,:,4);
-  ox.vd= cosa(:,:,5);
-  ox.dtau = cosa(:,:,6);
-  ox.dtaud = cosa(:,:,7);
-  ox.d = cosa(:,:,8);
-  ox.sigma = cosa(:,:,9);
+  ox.dtau = cosa(:,:,5);
+  ox.dtaud = cosa(:,:,6);
+  ox.d = cosa(:,:,7);
+  ox.sigma = cosa(:,:,8);
 
 else
   [ot,ox] = read_qdyn_out_Octave(namet,namex)

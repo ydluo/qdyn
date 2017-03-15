@@ -1,11 +1,11 @@
 (Priorities are not indicated)
 
 Physics:
-+ kernel for low-velocity fault zones (Benjamin Idini)
++ 2D kernel for damage zones with finite fault size (FINITE=1)
 + compute surface deformation to compare to GPS data
-+ complete testing of slip to normal stress coupling 
-+ slip-dependent friction law (Olivier Lengline is working on it)
-+ in 2D: finite slab geometry (Pablo)
++ complete testing of normal stress coupling 
++ slip-dependent friction law (Olivier Lengline)
++ 2D kernel for finite slab geometry
 + 3D kernel for fault in infinite medium
 + double spring-block model
 + variable strike
@@ -19,7 +19,10 @@ Physics:
 + heterogeneous media: import kernel from Relax, Pylith, SPECFEM3D ?
 
 Code engineering and optimization:
-+ create a python wrapper to enable runs on clusters without matlab license
++ remove redundancy in QSB/*.m
++ update function read_qdyn_in in src/qdyn.m
++ python wrapper to enable runs on clusters without matlab license (Martijn)
++ inputs as fortran namelists
 + use parallel MPI I/O
     http://wgropp.cs.illinois.edu/courses/cs598-s16/lectures/lecture32.pdf
     https://www.olcf.ornl.gov/wp-content/uploads/2011/10/Fall_IO.pdf
@@ -28,21 +31,19 @@ Code engineering and optimization:
     http://www.unidata.ucar.edu/software/netcdf/index.html
     https://www.olcf.ornl.gov/center-projects/adios/ 
 + hierarchical matrix techniques (interface to Andrew Bradley's code)
-+ inputs as fortran namelists
-+ use object oriented matlab
 + try enormous FFT (parallel) http://research.colfaxinternational.com/post/2014/09/18/EFFT.aspx
 
 Outputs:
 + binary outputs
-+ more options to set output times: at regular times (with switch to short time during events), at regular increment of log(v)
++ more options to set output times: 
+  at regular times (with switch to short time during events), 
+  at regular increment of log(v)
 
 Packaging:
 + do "matlab publish" for the examples
 + automatically update "modification date" in google doc user's manual with Google Apps Script
-+ add copyright notices (see http://www.gnu.org/copyleft/gpl.html)
-+ add instructions for Windows and Mac
-+ replace Num.Rec. code by something else: Lapusta's method (Noda and Lapusta 2010) or Gear's method in ODEPACK (http://computation.llnl.gov/casc/odepack/, used by Jessica Hawthorne)
++ add copyright notices at the beginning of each source file (see http://www.gnu.org/licenses/gpl-howto.html)
++ replace Num.Rec. code by something else: 
+  Lapusta's method (Noda and Lapusta 2010) 
+  or Gear's method in ODEPACK (http://computation.llnl.gov/casc/odepack/, used by Jessica Hawthorne)
 + document equations and friction laws in manual
-+ use grive to update the google drive repository
-+ get a DOI through https://zenodo.org/ 
-  https://guides.github.com/activities/citable-code/

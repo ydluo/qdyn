@@ -63,22 +63,47 @@ contains
 !   dtau_dt = - K*( v - Vpl )
 
 !=============================================================
-subroutine init_kernel(lambda,mu,m,k)
+subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,finite) 
+!NOTE: damaged zones (D, H) only available for 2D problems
 
   use mesh, only : mesh_type
+  use constants, only : FFT_TYPE
 
-  double precision, intent(in) :: lambda,mu
+  double precision, intent(in) :: lambda,mu,D,H
   type(mesh_type), intent(in) :: m
+  integer, intent(in) :: i_sigma_cpl,finite
   type(kernel_type), intent(inout) :: k
 
   write(6,*) 'Intializing kernel: ...'
 
+  if (m%dim==2) then
+    k%kind =3+FFT_TYPE
+    if (m%nx < 4) then
+      write(6,*) 'nx < 4, FFT disabled'
+      k%kind = 3
+    endif
+  else
+    k%kind = m%dim+1
+  endif
+
+  k%has_sigma_coupling = (i_sigma_cpl==1) ! only used in 3D
+
   select case (k%kind)
-    case(1); call init_kernel_1D(k%k1,mu,m%Lfault)
-    case(2); call init_kernel_2D(k%k2f,mu,m)
-    case(3); call init_kernel_3D(k%k3,lambda,mu,m,k%has_sigma_coupling) ! 3D no fft
-    case(4); call init_kernel_3D_fft(k%k3f,lambda,mu,m,k%has_sigma_coupling) ! 3D with FFT along-strike
-    case(5); call init_kernel_3D_fft2d(k%k3f2,lambda,mu,m) ! 3D with 2DFFT
+  case(1)
+    call init_kernel_1D(k%k1,mu,m%Lfault)
+  case(2)
+    allocate(k%k2f)
+    k%k2f%finite = finite
+    call init_kernel_2D(k%k2f,mu,m,D,H)
+  case(3)
+    allocate(k%k3)
+    call init_kernel_3D(k%k3,lambda,mu,m,k%has_sigma_coupling) ! 3D no fft
+  case(4)
+    allocate(k%k3f)
+    call init_kernel_3D_fft(k%k3f,lambda,mu,m,k%has_sigma_coupling) ! 3D with FFT along-strike
+  case(5)
+    allocate(k%k3f2)
+    call init_kernel_3D_fft2d(k%k3f2,lambda,mu,m) ! 3D with 2DFFT
   end select
 
   write(6,*) 'Kernel intialized'
@@ -98,14 +123,14 @@ end subroutine init_kernel_1D
 
 
 !----------------------------------------------------------------------
-subroutine init_kernel_2D(k,mu,m)
+subroutine init_kernel_2D(k,mu,m,D,H)
 
   use mesh, only : mesh_type
   use constants, only : PI, SRC_PATH
 
   type(kernel_2d_fft), intent(inout) :: k
   type(mesh_type), intent(in) :: m
-  double precision, intent(in) :: mu
+  double precision, intent(in) :: mu,D,H
 
   double precision, allocatable :: kk(:)
   integer :: i
@@ -148,11 +173,10 @@ subroutine init_kernel_2D(k,mu,m)
     k%kernel = 0.5d0*mu*kk
 
    ! Compute kernel for damaged medium
-   ! TO DO : define D and H as inputs, then uncomment the lines below
-   ! if (D>0 .and. H>0) k%kernel = k%kernel * (1-D) * cotanh( H*kk + arctanh(1-D) )
+    if (D>0 .and. H>0) k%kernel = k%kernel * (1-D) / tanh( H*kk + atanh(1-D) )
 
  !- Read coefficient I(n) from pre-calculated file.
-  elseif (k%finite == 1) then
+  elseif (k%finite == 1) then !NOTE: damaged zones are not available for FINITE=1
     write(6,*) 'Reading kernel ',SRC_PATH,'/kernel_I.tab'
     open(57,file=SRC_PATH//'/kernel_I.tab')
     do i=1,k%nnfft/2-1
@@ -546,8 +570,8 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
     iglobal=0
     do iwglobal=1,k3f%nwGlobal
       do ixglobal=1,k3f%nxfft
-            iglobal=iglobal+1
-         vzk(iwglobal,ixglobal)=vzkarray(iglobal)
+        iglobal=iglobal+1
+        vzk(iwglobal,ixglobal)=vzkarray(iglobal)
       enddo
     enddo
 

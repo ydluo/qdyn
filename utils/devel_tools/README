@@ -9,17 +9,22 @@ You will be granted permission to edit the code in github
 and the manual in Google docs.
 Github supports the version control systems git and (a flavor of) svn,
 as well as online code editing. If you are new to version control systems 
-we recommend you to learn how to use svn (http://svnbook.red-bean.com/,
-https://help.github.com/articles/support-for-subversion-clients/).
-
+we recommend you to learn how to use svn. The usual work cycle under svn is 
+explained in http://svnbook.red-bean.com/nightly/en/svn.tour.cycle.html.
+More complete information about svn is found in http://svnbook.red-bean.com/.
+The svn commands accessible in github are described in
+https://help.github.com/articles/support-for-subversion-clients/.
 
 CODE DEVELOPMENT:
 -----------------
 
   + Do "svn update" regularly, very often, and resolve any conflict to
-    merge your working version with the recent modifications by the rest of 
-    the development team.
-  + Do "svn update" before any "svn commit".
+    merge your working version with the recent changes made by other developers.
+    How to resolve conflicts is explained in section "Resolve any conflicts" of
+    http://svnbook.red-bean.com/nightly/en/svn.tour.cycle.html.
+    We recommend to use the option "postpone" and to follow the instructions 
+    in section "Manual conflict resolution".
+  + Do "svn update" and resolve conflicts before any "svn commit".
   + If you are not comfortable creating and managing code "branches" in svn, 
     you can work directly on the trunk (master) version. If you do that, before
     any "svn commit" make sure the code compiles and completes successfully

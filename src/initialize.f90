@@ -11,7 +11,7 @@ contains
 subroutine init_all(pb)
 
   use problem_class
-  use mesh, only : init_mesh
+  use mesh, only : init_mesh, mesh_get_size
   use constants, only : PI
   use my_mpi, only: is_MPI_master
   use fault_stress, only : init_kernel
@@ -21,9 +21,16 @@ subroutine init_all(pb)
 
   type(problem_type), intent(inout) :: pb
 
+  integer :: n
 !  integer :: TID, NTHREADS
 
   call init_mesh(pb%mesh)
+
+ ! number of equations
+  pb%neqs=2
+  if (pb%i_sigma_cpl==1 .and. pb%mesh%dim==2) then
+    pb%neqs=3
+  endif
 
  ! dt_max & perturbation
  ! if periodic loading, set time step smaller than a fraction of loading period
@@ -50,6 +57,8 @@ subroutine init_all(pb)
   !---------------------- impedance ------------------
 
   !---------------------- ref_value ------------------
+  n = mesh_get_size(pb%mesh)
+  allocate ( pb%tau(n), pb%dtau_dt(n), pb%slip(n), pb%theta_star(n) )
   pb%slip = 0d0
   call set_theta_star(pb)
 
@@ -67,7 +76,8 @@ subroutine init_all(pb)
   pb%it = 0
   !---------------------- init_value for solver -----------------
 
-  call init_kernel(pb%lam,pb%smu,pb%mesh,pb%kernel)
+  call init_kernel(pb%lam,pb%smu,pb%mesh,pb%kernel, &
+                   pb%D,pb%H,pb%i_sigma_cpl,pb%finite)
   call ot_init(pb)
   call ox_init(pb)
 

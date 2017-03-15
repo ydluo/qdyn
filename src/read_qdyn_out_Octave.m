@@ -32,10 +32,9 @@ function [ot,ox] = read_qdyn_out_Octave(namet,namex)
   ox.t = cosa(2){1,1};
   ox.v = cosa(3){1,1};
   ox.th= cosa(4){1,1};
-  ox.vd= cosa(5){1,1};
-  ox.dtau = cosa(6){1,1};
-  ox.dtaud = cosa(7){1,1};
-  ox.d = cosa(8){1,1};
-  ox.sigma = cosa(9){1,1};
+  ox.dtau = cosa(5){1,1};
+  ox.dtaud = cosa(6){1,1};
+  ox.d = cosa(7){1,1};
+  ox.sigma = cosa(8){1,1};
 
 
