@@ -58,7 +58,8 @@ subroutine init_all(pb)
 
   !---------------------- ref_value ------------------
   n = mesh_get_size(pb%mesh)
-  allocate ( pb%tau(n), pb%dtau_dt(n), pb%slip(n), pb%theta_star(n) )
+  ! SEISMIC: initialise pb%tau in input.f90 to be compatible with CNS model
+  allocate ( pb%dtau_dt(n), pb%slip(n), pb%theta_star(n) )
   pb%slip = 0d0
   call set_theta_star(pb)
 
@@ -67,14 +68,7 @@ subroutine init_all(pb)
   if (pb%i_rns_law /= 3) then
     pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
   endif
-  !---------------------- ref_value -----------------
-
-  !---------------------- init_value for solver -----------------
-  pb%time = 0.d0
-  pb%itstop = -1
-  pb%it = 0
-  !---------------------- init_value for solver -----------------
-
+  
   call init_kernel(pb%lam,pb%smu,pb%mesh,pb%kernel, &
                    pb%D,pb%H,pb%i_sigma_cpl,pb%finite)
   call ot_init(pb)

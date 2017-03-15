@@ -583,7 +583,7 @@ function crack_size(s,n)
   integer :: i,iL,iR,imin
   double precision :: crack_size
 
-  if (n == 0) then
+  if (n < 2) then
     crack_size = 0d0
     return
   endif

@@ -32,6 +32,7 @@ subroutine read_main(pb)
 
   if (pb%mesh%dim==1) read(15,*) pb%finite
   read(15,*) pb%itheta_law
+  write(6,*) pb%itheta_law
   read(15,*) pb%i_rns_law
   read(15,*) pb%i_sigma_cpl
   read(15,*) pb%features%stress_coupling, pb%features%cohesion, pb%features%localisation ! SEISMIC
@@ -46,7 +47,7 @@ subroutine read_main(pb)
   write(6,*) '  Flags input complete'
 
   n = mesh_get_size(pb%mesh) ! number of nodes in this processor
-  allocate ( pb%sigma(n), pb%v(n), pb%theta(n),  &
+  allocate ( pb%tau(n), pb%sigma(n), pb%v(n), pb%theta(n),  &
              pb%a(n), pb%b(n), pb%dc(n), pb%v1(n), &
              pb%v2(n), pb%mu_star(n), pb%v_star(n), &
              pb%ot%iot(n),pb%ot%iasp(n),pb%coh(n))
@@ -55,7 +56,6 @@ subroutine read_main(pb)
   ! SEISMIC: the CNS model allows for an initial state of stress that is
   ! read from the input file
   if (pb%i_rns_law == 3) then
-    allocate ( pb%tau(n) )
     do i=1,n
       read(15,*)pb%sigma(i), pb%tau(i), pb%v(i), pb%theta(i),  &
                 pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
@@ -135,6 +135,11 @@ subroutine read_main(pb)
                 pb%coh_params%C_star(i), pb%coh_params%E_surf(i), &
                 pb%coh_params%NG_const(i)
     end do
+  else
+    allocate(pb%alpha(n))
+    do i=1,n
+      pb%alpha(i) = 0
+    end do
   endif
 
   if (pb%features%localisation == 1) then
@@ -148,9 +153,10 @@ subroutine read_main(pb)
                 pb%cns_params%IPS_const_diss2_bulk(i)
     end do
   else
-    allocate(pb%cns_params%lambda(n))
+    allocate(pb%cns_params%lambda(n), pb%theta2(n))
     do i=1,n
-      pb%cns_params%lambda = 1
+      pb%cns_params%lambda(i) = 1
+      pb%theta2(i) = 0
     end do
   endif
 
@@ -158,9 +164,7 @@ subroutine read_main(pb)
     call read_mesh_nodes(15,pb%mesh)
     call ot_read_stations(pb%ot)
   endif
-
-  if (pb%mesh%dim==1) read(15,*) pb%finite
-  read(15,*) pb%itheta_law
+  
   close(15)
   write(6,*) 'Input complete'
 
