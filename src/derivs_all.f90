@@ -79,31 +79,25 @@ subroutine derivs(time,yt,dydt,pb)
     ! in dydt(2::pb%neqs). tau is stored as yt(2::pb%neqs). The system of
     ! ordinary differential equations is then solved in the same way as with
     ! the rate-and-state formulation.
-    ! NOTE: from what I understand from the comments in solver.f90, this method
-    ! is a temporary solution. I put a comment in solver.f90 to refer to here
-    ! in the case that this temporary fix receive a more permanent upgrade
 
-    ! SEISMIC: if the CNS model is selected, compute the slip velocity as
-    ! a function of the (current) state of stress and porosity
     tau = yt(2::pb%neqs)
-    !dtau_dt = dydt(2::pb%neqs)
-    !v = compute_velocity(tau, sigma, theta, theta2, alpha, pb)
+
+    ! The subroutine below calculates the slip velocity, time-derivatives of
+    ! the porosity (theta), and partial derivatives required for radiation
+    ! damping. These operations are combined into one subroutine for efficiency
     call CNS_derivs(v, dth_dt, dth2_dt, dmu_dv, dmu_dtheta, tau, sigma, theta, theta2, alpha, pb)
   else
     ! SEISMIC: for the classical rate-and-state model formulation, the slip
     ! velocity is stored in yt(2::pb%neqs), and tau is not used (set to zero)
     v = yt(2::pb%neqs)
+
+    ! SEISMIC: calculate time-derivative of theta
     call dtheta_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
   endif
 
   ! compute shear stress rate from elastic interactions, for 0D, 1D & 2D
   ! SEISMIC: note the use of v instead of yt(2::pb%neqs)
   call compute_stress(dtau_dt,dsigma_dt,pb%kernel,v-pb%v_star)
-
-  ! JPA Coulomb
-  ! v = 0d0
-  ! v(pb%rs_nodes) = yt(2::pb%neqs)
-  !call compute_stress(pb%dtau_dt,pb%kernel,v-pb%v_star)
 
   !YD we may want to modify this part later to be able to
   !impose more complicated loading/pertubation
@@ -113,33 +107,32 @@ subroutine derivs(time,yt,dydt,pb)
   dtau_per = pb%Omper * pb%Aper * cos(pb%Omper*time)
 
   ! SEISMIC: start repacking values of dydt
-  ! Question: I don't think the values of pb%dsigma_dt, pb%dtau_dt etc. need
-  ! to be set here
 
   ! state evolution law, dtheta/dt = f(v,theta)
   ! SEISMIC: in the CNS formulation, theta is the gouge porosity
-  !call dtheta_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
   dydt(1::pb%neqs) = dth_dt
 
+  ! SEISMIC: pack normal stress changes if needed
   if (pb%features%stress_coupling == 1) then
     dydt(ind_stress_coupling::pb%neqs) = dsigma_dt
   endif
 
+  ! SEISMIC: pack rate of grain-boundary healing, if needed
   if (pb%features%cohesion == 1) then
     dydt(ind_cohesion::pb%neqs) = dalpha_dt(v,tau,sigma,theta,alpha,pb)
   endif
 
+  ! SEISMIC: if localisation is included, pack porosity change of bulk
   if (pb%features%localisation == 1) then
     dydt(ind_localisation::pb%neqs) = dth2_dt
   endif
 
-  ! SEISMIC: calculate partial derivatives. For rate-and-state, dmu_dv and
+  ! SEISMIC: calculate radiation damping. For rate-and-state, dmu_dv and
   ! dmu_dtheta contain the partial derivatives of friction to V and theta,
   ! respectively. For the CNS model, these variables contain the partials of
   ! velocity to shear stress (dV/dtau) and velocity to porosity (dV/dtheta),
   ! respectively. For compatibility, the names of these variables are not
   ! changed.
-  !call dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
 
   if (pb%i_rns_law == 3) then
     ! SEISMIC: the total dtau_dt results from the slip deficit and
@@ -150,9 +143,9 @@ subroutine derivs(time,yt,dydt,pb)
     ! dtau/dt = ( k[Vlp - Vs] - eta*dV/dtheta * dtheta/dt)/(1 + eta*dV/dtau)
     dydt(2::pb%neqs) = (dtau_dt + dtau_per - pb%zimpedance*dmu_dtheta*dth_dt)/(1 + pb%zimpedance*dmu_dv)
   else
-    call dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
     ! SEISMIC: the rate-and-state formulation computes the the time-derivative
     ! of velocity, rather than stress
+    call dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
 
     ! Time derivative of the elastic equilibrium equation
     !  dtau_load/dt + dtau_elastostatic/dt -impedance*dv/dt = sigma*( dmu/dv*dv/dt + dmu/dtheta*dtheta/dt )

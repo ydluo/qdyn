@@ -82,9 +82,6 @@ function friction_mu(v,theta,pb) result(mu)
   type(problem_type), intent(in) :: pb
   double precision, dimension(pb%mesh%nn), intent(in) :: v, theta
   double precision, dimension(pb%mesh%nn) :: mu
-  ! SEISMIC: additional parameters for the CNS model
-  double precision, dimension(pb%mesh%nn) :: mu_tilde, tan_psi, mu_gr, mu_ps
-
 
   select case (pb%i_rns_law)
 
@@ -95,48 +92,8 @@ function friction_mu(v,theta,pb) result(mu)
     mu = pb%mu_star - pb%a*log(pb%v1/v+1d0) + pb%b*log(theta/pb%theta_star+1d0)
 
   case (3) ! SEISMIC: CNS model
-
     write (6,*) "friction.f90::friciton_mu is deprecated for the CNS model"
-
-    ! SEISMIC: this function should no longer be called to determine the
-    ! state of shear stress, but is kept here for reference. The state of stress
-    ! is solved for from a kinematic balance equation. This function calculates
-    ! the steady-state friction corresponding to the slip velocity and the porosity
-    ! as read from the input file.
-    ! TODO: replace the initiation through this function entirely by the mesh
-    ! input (i.e. set state of stress from input file)
-
-    tan_psi = calc_tan_psi(theta, pb)   ! Dilatation angle
-    ! SEISMIC: calculate the grain-boundary friction, assuming all deformation
-    ! is accommodated by granular flow (i.e. v_total = v_gr)
-    mu_tilde = calc_mu_tilde(v/pb%cns_params%w, pb)
-
-    ! SEISMIC: Calculate the frictional strength controlled by granular flow
-    mu_gr = (mu_tilde + tan_psi)/(1 - mu_tilde*tan_psi)
-
-    ! SEISMIC: Next, calculate the shear strength (divided by normal stress)
-    ! when the strength is controlled by viscous flow (no granular flow)
-    select case (pb%itheta_law)
-
-    case (3) ! SEISMIC: CNS model, diffusion controlled
-      mu_ps = v*((2*pb%cns_params%phi0 - 2*theta)**2)/(pb%cns_params%w*pb%cns_params%IPS_const_diff*pb%sigma)
-    case (4) ! SEISMIC: CNS model, dissolution controlled
-      mu_ps = (pb%cns_params%phi0 - theta)/(pb%sigma*pb%cns_params%phi0*pb%cns_params%IPS_const_diss2)* &
-              log(abs(v)/(pb%cns_params%w*pb%cns_params%IPS_const_diss1) + 1)
-    case default
-      write(6,*) "friction_mu: the CNS friction model is selected (i_rns_law == 3),"
-      write(6,*) "but itheta_law is unsupported (must be either 3 or 4)"
-      write(6,*) "3 = diffusion-, 4 = dissolution controlled pressure solution creep"
-      stop
-
-    end select
-
-    ! SEISMIC: this weird looking function approximates the min(mu_gr, mu_ps) function,
-    ! but is continuously differentiable, so that the solver doesn't complain.
-    ! Higher order powers yield a closer approximation
-    ! By approximation, the mechanism that offers the lowest shear strength controls
-    ! the overall shear strength of the gouge
-    mu = 1/(1/mu_gr**5 + 1/mu_ps**5)**(1.0/5.0)
+    stop
 
 ! new friction law:
 !  case(xxx)
@@ -188,7 +145,7 @@ subroutine dtheta_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
     ! SEISMIC: the nett rate of change of porosity is given by the relation
     ! phi_dot = -(1 - phi)*strain_rate, where the strain rate equals
     ! the compaction rate by pressure solution (e_ps_dot) minus the dilatation
-    ! rate by granular flow (tan_psi*v/w). Note that compaction is measured
+    ! rate by granular flow (tan_psi*y_gr). Note that compaction is measured
     ! positive, dilatation negative
     dth_dt = (1 - theta)*(tan_psi*y_gr - e_ps_dot)
     dth2_dt = -(1 - theta2)*e_ps_dot_bulk
@@ -214,6 +171,9 @@ function dalpha_dt(v,tau,sigma,theta,alpha,pb) result(da_dt)
   double precision, dimension(pb%mesh%nn) :: sigma_i, q, power_term, delta_alpha
   double precision, dimension(pb%mesh%nn) :: y_ps, y_gr, x, y
   double precision, parameter :: small = 1e-15
+
+  write(6,*) "ERROR: The grain-boundary healing feature is work in progress..."
+  stop
 
   q = 2*(pb%cns_params%phi0 - theta)
   tan_psi = pb%cns_params%H*q
@@ -266,8 +226,9 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
     dmu_dtheta = pb%b * pb%v2 / ( pb%v2*theta + pb%dc )
     dmu_dv = pb%a * pb%v1 / v / ( pb%v1 + v )
 
-  case(3) ! SEISMIC: Chen's model
+  case(3) ! SEISMIC: CNS model
 
+    ! Thickness of the localised zone
     L_sb = pb%cns_params%lambda*pb%cns_params%w
 
     ! Shear strain rate [1/s] due to viscous flow (pressure solution)
@@ -276,11 +237,14 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
     if (pb%features%localisation == 1) then
       y_ps_bulk = calc_e_ps(tau, theta2, .false., .true., pb)
     endif
+
+    ! Granular flow strain rate [1/s] is the total strain rate minus the pressure
+    ! solution rate (taking localisation into account)
     y_gr = (1.0/pb%cns_params%lambda)*(v/pb%cns_params%w - (1-pb%cns_params%lambda)*y_ps_bulk) - y_ps
 
     tan_psi = calc_tan_psi(theta, pb)         ! Dilatation angle
-    mu_tilde = calc_mu_tilde(y_gr, pb)           ! Grain-boundary friction
-    mu_star = pb%cns_params%mu_tilde_star
+    mu_tilde = calc_mu_tilde(y_gr, pb)        ! Grain-boundary friction
+    mu_star = pb%cns_params%mu_tilde_star     ! Reference GB friction
 
     ! Pre-compute the denominator for efficiency
     denom = 1.0/(pb%cns_params%a*(sigma+tau*tan_psi))
@@ -291,20 +255,23 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
     ! a basis for calculating the full porosity functions for either itheta_law
     f_phi_sqrt = 1.0/(2*(pb%cns_params%phi0 - theta))
 
-    ! Granular flow _velocity_ [unit m/s]
-    ! NOTE: it is physically more correct to use a reference strain rate
-    ! and use velocity = strain_rate * thickness instead
+    ! Granular flow velocity (not strain rate) [units m/s]
     V_gr = L_sb*pb%cns_params%y_gr_star*exp(dummy_var)
 
     ! Next, calculate the partial derivatives dv_dtau and dv_dtheta for the
     ! pressure solution creep. The functional form depends on the rate-limiting
-    ! mechanism (diffusion, dissolution, or precipitation)
+    ! mechanism (diffusion or dissolution). Both mechanisms are calculated, but
+    ! if diffusion is rate controlling, then dissolution kinetics are set to zero
+    ! and vice-versa, so addition of the two mechanisms results in only one rate-
+    ! controlling mechanism for each fault element.
     ! Note that the pressure solution strain rate is multiplied by the
     ! the gouge layer thickness (pb%cns_params%w) to obtain a velocity
 
+    ! Diffusion controlled pressure solution
     dv_dtau_ps_d = L_sb*pb%cns_params%IPS_const_diff*f_phi_sqrt**2
     dv_dtheta_ps_d = 4*dv_dtau_ps_d*f_phi_sqrt*tau
 
+    ! Dissolution controlled pressure solution
     dv_dtau_ps_s =  L_sb*(y_ps + pb%cns_params%IPS_const_diss1)* &
                     pb%cns_params%IPS_const_diss2*2*pb%cns_params%phi0*f_phi_sqrt
     dv_dtheta_ps_s = 2*dv_dtau_ps_s*f_phi_sqrt*tau
@@ -333,9 +300,10 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
 end subroutine dmu_dv_dtheta
 
 !--------------------------------------------------------------------------------------
-! SEISMIC: the subroutine below was written to optimise/reduce function calls,
-! but the performance gain is rather minimal (~ 4%), so we stick to the more
-! modular program design
+! SEISMIC: the subroutine below was written to optimise/reduce function calls, and to
+! improve code handling (less code duplication, hopefully fewer bugs). This subroutine
+! should replace calls to dtheta_dt, compute_velocity, and dmu_dv_dtheta
+! The subroutine only handles the CNS model
 !--------------------------------------------------------------------------------------
 subroutine CNS_derivs(v, dth_dt, dth2_dt, dv_dtau, dv_dtheta, tau, sigma, theta, theta2, alpha, pb)
 
@@ -356,10 +324,16 @@ subroutine CNS_derivs(v, dth_dt, dth2_dt, dv_dtau, dv_dtheta, tau, sigma, theta,
   double precision, dimension(pb%mesh%nn) :: dv_dtau_ps_d, dv_dtau_ps_s
   double precision, dimension(pb%mesh%nn) :: dv_dtheta_ps_d, dv_dtheta_ps_s
 
-  tan_psi = calc_tan_psi(theta, pb)         ! Dilatation angle
+  if (pb%i_rns_law /= 3) then
+    write(6,*) "The friction.f90::CNS_derivs subroutine only applies to the CNS model"
+    write(6,*) "This routine should only be called when i_rns_law == 3"
+    stop
+  endif
 
-  mu_star = pb%cns_params%mu_tilde_star
-  L_sb = pb%cns_params%lambda*pb%cns_params%w
+  ! Pre-define some internal variables
+  tan_psi = calc_tan_psi(theta, pb)             ! Dilatation angle
+  mu_star = pb%cns_params%mu_tilde_star         ! Reference GB friction
+  L_sb = pb%cns_params%lambda*pb%cns_params%w   ! Thickness of localised zone
 
   ! Pre-compute the denominator for efficiency
   denom = 1.0/(pb%cns_params%a*(sigma+tau*tan_psi))
@@ -370,14 +344,18 @@ subroutine CNS_derivs(v, dth_dt, dth2_dt, dv_dtau, dv_dtheta, tau, sigma, theta,
   ! the shear strength of the grain contacts
   y_gr = pb%cns_params%y_gr_star*exp(dummy_var)
 
+  mu_tilde = calc_mu_tilde(y_gr, pb)           ! Grain-boundary friction
+
   ! Pre-compute the square root of the porosity function. This will serve as
-  ! a basis for calculating the full porosity functions for either itheta_law
+  ! a basis for calculating the porosity functions
   f_phi_sqrt = 1.0/(2*(pb%cns_params%phi0 - theta))
 
   ! Shear strain rate [1/s] due to viscous flow (pressure solution)
   e_ps = calc_e_ps(sigma, theta, .true., .false., pb)   ! Compaction rate
-  y_ps = calc_e_ps(tau, theta, .false., .false., pb)
+  y_ps = calc_e_ps(tau, theta, .false., .false., pb)    ! Shear creep rate
 
+  ! If localisation is requested, calculate pressure solution rates
+  ! in the bulk zone, otherwise set to zero
   e_ps_bulk = 0
   y_ps_bulk = 0
   if (pb%features%localisation == 1) then
@@ -385,29 +363,16 @@ subroutine CNS_derivs(v, dth_dt, dth2_dt, dv_dtau, dv_dtheta, tau, sigma, theta,
     y_ps_bulk = calc_e_ps(tau, theta2, .false., .true., pb)
   endif
 
-  mu_tilde = calc_mu_tilde(y_gr, pb)           ! Grain-boundary friction
-
+  ! Cohesion is still in progress...
   cohesion = 0
   if (pb%features%cohesion == 1) then
     cos_psi = cos(atan(tan_psi))
     cohesion = (PI/pb%cns_params%H)*(tan_psi*alpha*pb%coh_params%C_star)/(cos_psi*(1-mu_tilde*tan_psi))
   endif
 
-  ! Calculate the shear strength of the grain contacts, if the gouge were
-  ! to deform by granular flow. To allow for granular flow (y_gr != 0),
-  ! tau_gr should be near tau (frictional 'yield')
-  ! tau_gr = (mu_tilde + tan_psi)/(1 - mu_tilde*tan_psi)*sigma + cohesion
-  ! Use the error function to approximate the frictional yielding of the
-  ! contacts. If tau_gr < 0.95*tau, this function quickly approaches zero
-  ! NOTE: the use of an error function is more expensive than an if-statement
-  ! but is continuous, which is required for the solver to converge
-  ! y_gr = 0.5*(1 + erf(100*(tau-0.95*tau_gr)/tau_gr))*y_gr
-
   ! The total slip velocity is the combined contribution of granular flow
   ! and pressure solution (parallel processes)
   v = pb%cns_params%w*(pb%cns_params%lambda*(y_gr + y_ps) + (1-pb%cns_params%lambda)*y_ps_bulk)
-
-  !write(6,*) tau, v
 
   ! SEISMIC: the nett rate of change of porosity is given by the relation
   ! phi_dot = -(1 - phi)*strain_rate, where the strain rate equals
@@ -485,20 +450,9 @@ function compute_velocity(tau,sigma,theta,theta2,alpha,pb) result(v)
     cohesion = (PI/pb%cns_params%H)*(tan_psi*alpha*pb%coh_params%C_star)/(cos_psi*(1-mu_tilde*tan_psi))
   endif
 
-  ! Calculate the shear strength of the grain contacts, if the gouge were
-  ! to deform by granular flow. To allow for granular flow (y_gr != 0),
-  ! tau_gr should be near tau (frictional 'yield')
-  ! tau_gr = (mu_tilde + tan_psi)/(1 - mu_tilde*tan_psi)*sigma + cohesion
-  ! Use the error function to approximate the frictional yielding of the
-  ! contacts. If tau_gr < 0.9*tau, this function quickly approaches zero
-  ! NOTE: the use of an error function is more expensive than an if-statement
-  ! but is continuous, which is required for the solver to converge
-  ! y_gr = 0.5*(1 + erf(100*(tau-0.95*tau_gr)/tau_gr))*y_gr
-
   ! The total slip velocity is the combined contribution of granular flow
   ! and pressure solution (parallel processes)
   v = pb%cns_params%w*(pb%cns_params%lambda*(y_gr + y_ps) + (1-pb%cns_params%lambda)*y_ps_bulk)
-
 
 end function compute_velocity
 
@@ -539,6 +493,8 @@ end function calc_mu_tilde
 ! indicates if truncation is needed. This only applies to compaction in the
 ! normal direction, and not to shear deformation (viscous flow), hence truncate
 ! should be false when calculating shear strain rate
+! Important NOTE: if the cut-off by the error function is too sharp, then
+! the solver may not converge or require extremely high accuracy (ODE becomes stiff)
 !--------------------------------------------------------------------------------------
 function calc_e_ps(sigma,theta,truncate,bulk,pb) result(e_ps_dot)
 
@@ -559,7 +515,6 @@ function calc_e_ps(sigma,theta,truncate,bulk,pb) result(e_ps_dot)
   endif
 
   e_ps_dot_d = Z_diff*sigma/(2*pb%cns_params%phi0 - 2*theta)**2
-  !e_ps_dot_s =  Z_diss1*(exp(Z_diss2*sigma*pb%cns_params%phi0/(pb%cns_params%phi0 - theta)) - 1)
   e_ps_dot_s =  Z_diss1*Z_diss2*sigma*pb%cns_params%phi0/(pb%cns_params%phi0 - theta)
 
   e_ps_dot = e_ps_dot_d + e_ps_dot_s
@@ -568,7 +523,6 @@ function calc_e_ps(sigma,theta,truncate,bulk,pb) result(e_ps_dot)
   ! to zero. A cut-off porosity of about 3% is chosen here, which corresponds
   ! to the percolation limit of aggregates
   if (truncate .eqv. .true.) e_ps_dot = 0.5*(1 + erf(50*(theta-0.06)))*e_ps_dot
-  !if (truncate .eqv. .true.) e_ps_dot = erf(2*theta/0.05)*e_ps_dot
 
 end function calc_e_ps
 
