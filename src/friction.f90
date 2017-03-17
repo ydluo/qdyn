@@ -44,7 +44,7 @@ module friction
   private
 
   public  :: set_theta_star, friction_mu, dmu_dv_dtheta, dtheta_dt
-  public  :: compute_velocity, dalpha_dt
+  public  :: compute_velocity, dalpha_dt, CNS_derivs
   private  :: calc_tan_psi, calc_mu_tilde, calc_e_ps
 
 contains
@@ -171,7 +171,7 @@ subroutine dtheta_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
   case(2) ! "slip" law
     dth_dt = -omega*log(omega)
 
-  case (3, 4) ! SEISMIC: CNS model
+  case (3) ! SEISMIC: CNS model
     tan_psi = calc_tan_psi(theta, pb)   ! Dilatation angle
     e_ps_dot = calc_e_ps(sigma, theta, .true., .false., pb)   ! Compaction rate
     y_ps = calc_e_ps(tau, theta, .false., .false., pb)   ! Press. soln. shear rate
@@ -333,6 +333,116 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
 end subroutine dmu_dv_dtheta
 
 !--------------------------------------------------------------------------------------
+! SEISMIC: the subroutine below was written to optimise/reduce function calls,
+! but the performance gain is rather minimal (~ 4%), so we stick to the more
+! modular program design
+!--------------------------------------------------------------------------------------
+subroutine CNS_derivs(v, dth_dt, dth2_dt, dv_dtau, dv_dtheta, tau, sigma, theta, theta2, alpha, pb)
+
+  use constants, only : PI
+
+  ! Input variables
+  type(problem_type), intent(in) :: pb
+  double precision, dimension(pb%mesh%nn), intent(in) :: tau, sigma, theta, theta2, alpha
+
+  ! Output variables
+  double precision, dimension(pb%mesh%nn) :: v, dth_dt, dth2_dt, dv_dtau, dv_dtheta
+
+  ! Internal variables
+  double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, denom, dummy_var
+  double precision, dimension(pb%mesh%nn) :: mu_star, y_gr, tau_gr
+  double precision, dimension(pb%mesh%nn) :: cos_psi, cohesion, f_phi_sqrt, L_sb
+  double precision, dimension(pb%mesh%nn) :: e_ps, y_ps, e_ps_bulk, y_ps_bulk
+  double precision, dimension(pb%mesh%nn) :: dv_dtau_ps_d, dv_dtau_ps_s
+  double precision, dimension(pb%mesh%nn) :: dv_dtheta_ps_d, dv_dtheta_ps_s
+
+  tan_psi = calc_tan_psi(theta, pb)         ! Dilatation angle
+
+  mu_star = pb%cns_params%mu_tilde_star
+  L_sb = pb%cns_params%lambda*pb%cns_params%w
+
+  ! Pre-compute the denominator for efficiency
+  denom = 1.0/(pb%cns_params%a*(sigma+tau*tan_psi))
+  ! Pre-compute a dummy variable that we will re-use a few times
+  dummy_var = (tau*(1 - mu_star*tan_psi) - sigma*(mu_star + tan_psi))*denom
+
+  ! The granular flow strain rate for the case when the shear stress approaches
+  ! the shear strength of the grain contacts
+  y_gr = pb%cns_params%y_gr_star*exp(dummy_var)
+
+  ! Pre-compute the square root of the porosity function. This will serve as
+  ! a basis for calculating the full porosity functions for either itheta_law
+  f_phi_sqrt = 1.0/(2*(pb%cns_params%phi0 - theta))
+
+  ! Shear strain rate [1/s] due to viscous flow (pressure solution)
+  e_ps = calc_e_ps(sigma, theta, .true., .false., pb)   ! Compaction rate
+  y_ps = calc_e_ps(tau, theta, .false., .false., pb)
+
+  e_ps_bulk = 0
+  y_ps_bulk = 0
+  if (pb%features%localisation == 1) then
+    e_ps_bulk = calc_e_ps(sigma, theta2, .true., .true., pb)
+    y_ps_bulk = calc_e_ps(tau, theta2, .false., .true., pb)
+  endif
+
+  mu_tilde = calc_mu_tilde(y_gr, pb)           ! Grain-boundary friction
+
+  cohesion = 0
+  if (pb%features%cohesion == 1) then
+    cos_psi = cos(atan(tan_psi))
+    cohesion = (PI/pb%cns_params%H)*(tan_psi*alpha*pb%coh_params%C_star)/(cos_psi*(1-mu_tilde*tan_psi))
+  endif
+
+  ! Calculate the shear strength of the grain contacts, if the gouge were
+  ! to deform by granular flow. To allow for granular flow (y_gr != 0),
+  ! tau_gr should be near tau (frictional 'yield')
+  ! tau_gr = (mu_tilde + tan_psi)/(1 - mu_tilde*tan_psi)*sigma + cohesion
+  ! Use the error function to approximate the frictional yielding of the
+  ! contacts. If tau_gr < 0.95*tau, this function quickly approaches zero
+  ! NOTE: the use of an error function is more expensive than an if-statement
+  ! but is continuous, which is required for the solver to converge
+  ! y_gr = 0.5*(1 + erf(100*(tau-0.95*tau_gr)/tau_gr))*y_gr
+
+  ! The total slip velocity is the combined contribution of granular flow
+  ! and pressure solution (parallel processes)
+  v = pb%cns_params%w*(pb%cns_params%lambda*(y_gr + y_ps) + (1-pb%cns_params%lambda)*y_ps_bulk)
+
+  !write(6,*) tau, v
+
+  ! SEISMIC: the nett rate of change of porosity is given by the relation
+  ! phi_dot = -(1 - phi)*strain_rate, where the strain rate equals
+  ! the compaction rate by pressure solution (e_ps) minus the dilatation
+  ! rate by granular flow (tan_psi*v/w). Note that compaction is measured
+  ! positive, dilatation negative
+  dth_dt = (1 - theta)*(tan_psi*y_gr - e_ps)
+  dth2_dt = -(1 - theta2)*e_ps_bulk
+
+  ! Next, calculate the partial derivatives dv_dtau and dv_dtheta for the
+  ! pressure solution creep. The functional form depends on the rate-limiting
+  ! mechanism (diffusion, dissolution, or precipitation)
+  ! Note that the pressure solution strain rate is multiplied by the
+  ! the gouge layer thickness (pb%cns_params%w) to obtain a velocity
+
+  dv_dtau_ps_d = L_sb*pb%cns_params%IPS_const_diff*f_phi_sqrt**2
+  dv_dtheta_ps_d = 4*dv_dtau_ps_d*f_phi_sqrt*tau
+
+  dv_dtau_ps_s =  L_sb*(y_ps + pb%cns_params%IPS_const_diss1)* &
+                  pb%cns_params%IPS_const_diss2*2*pb%cns_params%phi0*f_phi_sqrt
+  dv_dtheta_ps_s = 2*dv_dtau_ps_s*f_phi_sqrt*tau
+
+  ! The partial derivatives dv_dtau and dv_dtheta of the overall slip velocity
+  ! are the sum of the partial derivatives of the pressure solution and
+  ! granular flow velocities.
+
+  dv_dtau = dv_dtau_ps_d + dv_dtau_ps_s + &
+            L_sb*y_gr*((1-mu_star*tan_psi)*denom - tan_psi*dummy_var*pb%cns_params%a*denom)
+  dv_dtheta = dv_dtau_ps_d + dv_dtau_ps_s + &
+              L_sb*y_gr*(2*pb%cns_params%H*(sigma + mu_star*tau)*denom + &
+              2*pb%cns_params%H*tau*dummy_var*pb%cns_params%a*denom)
+
+end subroutine CNS_derivs
+
+!--------------------------------------------------------------------------------------
 ! SEISMIC: calculate the dilatation angle, which is a geometric consequence
 ! of the instantaneous porosity (theta)
 !--------------------------------------------------------------------------------------
@@ -378,12 +488,12 @@ function compute_velocity(tau,sigma,theta,theta2,alpha,pb) result(v)
   ! Calculate the shear strength of the grain contacts, if the gouge were
   ! to deform by granular flow. To allow for granular flow (y_gr != 0),
   ! tau_gr should be near tau (frictional 'yield')
-  tau_gr = (mu_tilde + tan_psi)/(1 - mu_tilde*tan_psi)*sigma + cohesion
+  ! tau_gr = (mu_tilde + tan_psi)/(1 - mu_tilde*tan_psi)*sigma + cohesion
   ! Use the error function to approximate the frictional yielding of the
   ! contacts. If tau_gr < 0.9*tau, this function quickly approaches zero
   ! NOTE: the use of an error function is more expensive than an if-statement
   ! but is continuous, which is required for the solver to converge
-  y_gr = 0.5*(1 + erf(100*(tau-0.95*tau_gr)/tau_gr))*y_gr
+  ! y_gr = 0.5*(1 + erf(100*(tau-0.95*tau_gr)/tau_gr))*y_gr
 
   ! The total slip velocity is the combined contribution of granular flow
   ! and pressure solution (parallel processes)
@@ -449,15 +559,16 @@ function calc_e_ps(sigma,theta,truncate,bulk,pb) result(e_ps_dot)
   endif
 
   e_ps_dot_d = Z_diff*sigma/(2*pb%cns_params%phi0 - 2*theta)**2
-  e_ps_dot_s =  Z_diss1*(exp(Z_diss2*sigma*pb%cns_params%phi0/(pb%cns_params%phi0 - theta)) - 1)
+  !e_ps_dot_s =  Z_diss1*(exp(Z_diss2*sigma*pb%cns_params%phi0/(pb%cns_params%phi0 - theta)) - 1)
+  e_ps_dot_s =  Z_diss1*Z_diss2*sigma*pb%cns_params%phi0/(pb%cns_params%phi0 - theta)
 
   e_ps_dot = e_ps_dot_d + e_ps_dot_s
 
   ! If truncation is required, use an error function to set the strain rate
   ! to zero. A cut-off porosity of about 3% is chosen here, which corresponds
   ! to the percolation limit of aggregates
-  if (truncate .eqv. .true.) e_ps_dot = 0.5*(1 + erf(100*(theta-0.03)))*e_ps_dot
-  !!if (truncate .eqv. .true.) e_ps_dot = erf(2*theta/0.05)*e_ps_dot
+  if (truncate .eqv. .true.) e_ps_dot = 0.5*(1 + erf(50*(theta-0.06)))*e_ps_dot
+  !if (truncate .eqv. .true.) e_ps_dot = erf(2*theta/0.05)*e_ps_dot
 
 end function calc_e_ps
 

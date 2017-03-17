@@ -21,7 +21,7 @@ subroutine derivs(time,yt,dydt,pb)
 
   use problem_class
   use fault_stress, only : compute_stress
-  use friction, only : dtheta_dt, dalpha_dt, dmu_dv_dtheta, compute_velocity
+  use friction, only : dtheta_dt, dalpha_dt, dmu_dv_dtheta, compute_velocity, CNS_derivs
 
   type(problem_type), intent(inout) :: pb
   double precision, intent(in) :: time, yt(pb%neqs*pb%mesh%nn)
@@ -86,12 +86,14 @@ subroutine derivs(time,yt,dydt,pb)
     ! SEISMIC: if the CNS model is selected, compute the slip velocity as
     ! a function of the (current) state of stress and porosity
     tau = yt(2::pb%neqs)
-    dtau_dt = dydt(2::pb%neqs)
-    v = compute_velocity(tau, sigma, theta, theta2, alpha, pb)
+    !dtau_dt = dydt(2::pb%neqs)
+    !v = compute_velocity(tau, sigma, theta, theta2, alpha, pb)
+    call CNS_derivs(v, dth_dt, dth2_dt, dmu_dv, dmu_dtheta, tau, sigma, theta, theta2, alpha, pb)
   else
     ! SEISMIC: for the classical rate-and-state model formulation, the slip
     ! velocity is stored in yt(2::pb%neqs), and tau is not used (set to zero)
     v = yt(2::pb%neqs)
+    call dtheta_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
   endif
 
   ! compute shear stress rate from elastic interactions, for 0D, 1D & 2D
@@ -116,7 +118,7 @@ subroutine derivs(time,yt,dydt,pb)
 
   ! state evolution law, dtheta/dt = f(v,theta)
   ! SEISMIC: in the CNS formulation, theta is the gouge porosity
-  call dtheta_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
+  !call dtheta_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
   dydt(1::pb%neqs) = dth_dt
 
   if (pb%features%stress_coupling == 1) then
@@ -137,7 +139,7 @@ subroutine derivs(time,yt,dydt,pb)
   ! velocity to shear stress (dV/dtau) and velocity to porosity (dV/dtheta),
   ! respectively. For compatibility, the names of these variables are not
   ! changed.
-  call dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
+  !call dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
 
   if (pb%i_rns_law == 3) then
     ! SEISMIC: the total dtau_dt results from the slip deficit and
@@ -146,8 +148,9 @@ subroutine derivs(time,yt,dydt,pb)
     ! dtau/dt = k(Vlp - Vs) - eta*(dV/dtau * dtau/dt + dV/dtheta * dtheta/dt)
     ! Rearrangement gives:
     ! dtau/dt = ( k[Vlp - Vs] - eta*dV/dtheta * dtheta/dt)/(1 + eta*dV/dtau)
-    dydt(2::pb%neqs) = (dtau_dt + dtau_per - pb%zimpedance*dmu_dtheta*dydt(1::pb%neqs))/(1 + pb%zimpedance*dmu_dv)
+    dydt(2::pb%neqs) = (dtau_dt + dtau_per - pb%zimpedance*dmu_dtheta*dth_dt)/(1 + pb%zimpedance*dmu_dv)
   else
+    call dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
     ! SEISMIC: the rate-and-state formulation computes the the time-derivative
     ! of velocity, rather than stress
 
