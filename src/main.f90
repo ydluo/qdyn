@@ -8,8 +8,12 @@ program main
   use initialize
   use solver
   use my_mpi, only: init_mpi
+  use derivs_all
 
-  type(problem_type) :: pb
+  type(problem_type), pointer :: pb
+  allocate(pb)
+
+  odepb => pb
 
   call init_mpi()
   call read_main(pb)

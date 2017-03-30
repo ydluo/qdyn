@@ -9,7 +9,7 @@ module solver
 
   integer(kind=8), save :: iktotal
 
-  public  :: solve
+  public  :: solve, init_lsoda
 
 contains
 
@@ -72,6 +72,7 @@ subroutine do_bsstep(pb)
 
   use derivs_all
   use ode_bs
+  use ode_lsoda_main, only: dlsoda
 
   type(problem_type), intent(inout) :: pb
 
@@ -110,12 +111,29 @@ subroutine do_bsstep(pb)
   call derivs(pb%time,yt,dydt,pb)
   yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
   ! One step
-  call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb,ik)
+  !call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb,ik)
+
+  ! SEISMIC NOTE: what is happening here?
   if (pb%dt_max >  0.d0) then
     pb%dt_try = min(pb%dt_next,pb%dt_max)
   else
     pb%dt_try = pb%dt_next
   endif
+
+  pb%lsoda%istate = 2
+  call dlsoda(  derivs_lsoda, pb%lsoda%neq, yt, pb%time, pb%lsoda%tout, &
+                pb%lsoda%itol, pb%lsoda%rtol, pb%lsoda%atol, pb%lsoda%itask, &
+                pb%lsoda%istate, pb%lsoda%iopt, pb%lsoda%rwork, pb%lsoda%lrw, &
+                pb%lsoda%iwork, pb%lsoda%liw, jac_lsoda, pb%lsoda%jt)
+
+  if (pb%lsoda%istate /= 2) then
+    write (6,*) "Next iteration by LSODA solver failed!"
+    write (6,*) "Current value of istate: ", pb%lsoda%istate
+    write (6,*) "Will now terminate..."
+    stop
+  endif
+
+
   iktotal=ik+iktotal
   !  if (MY_RANK==0) write(6,*) 'iktotal=',iktotal,'pb%time=',pb%time
   ! Unpack yt into v, theta
@@ -251,6 +269,100 @@ subroutine check_stop(pb)
 
 end subroutine check_stop
 
+
+subroutine init_lsoda(pb)
+
+  use problem_class
+  use derivs_all
+  use ode_lsoda_main, only: dlsoda
+
+  type(problem_type), intent(inout) :: pb
+  double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
+  integer :: LRN, LRS
+  integer :: ind_stress_coupling, ind_cohesion, ind_localisation
+
+  ! Basic parameters
+  pb%lsoda%neq(1) = pb%neqs * pb%mesh%nn   ! number of equations
+  pb%lsoda%tout = pb%dt_try                     ! ignored for itask = {2,5} (one-step)
+  pb%lsoda%itol = 1                     ! use scalar rtol and atol
+  pb%lsoda%rtol(1) = pb%acc                ! relative tolerance
+  pb%lsoda%atol(1) = 0                     ! absolute tolerance
+  pb%lsoda%jt = 2                       ! 1 = user supplied full, 2 = internal full jacobian
+  pb%lsoda%iopt = 0                     ! no optional parameters
+
+  ! Set-up rwork vector
+  LRN = 20 + 16*pb%lsoda%neq(1)            ! size of rwork for non-stiff equations
+  LRS = 22 + 9*pb%lsoda%neq(1) + pb%lsoda%neq(1)**2   ! size of rwork for stiff equations
+  pb%lsoda%lrw = max(LRN, LRS)                  ! size of rwork for either case
+  allocate(pb%lsoda%rwork(pb%lsoda%lrw))        ! allocate rwork
+  pb%lsoda%rwork(5) = pb%dt_try         ! set initial step size
+
+  ! Set-up iwork vector
+  pb%lsoda%liw = 20+pb%lsoda%neq(1)                   ! size of iwork
+  allocate(pb%lsoda%iwork(pb%lsoda%liw))  ! allocate iwork
+  pb%lsoda%iwork(6) = 500                 ! max number of internal steps for convergence, default 500
+
+  ! Check if max time step is limited by user
+  if (pb%dt_max >  0.d0) then
+    pb%lsoda%itask = 5                    ! one-step mode, do not exceed dt_max
+    pb%lsoda%rwork(6) = pb%dt_max         ! max time step, do not set for infinite (default)
+  else
+    pb%lsoda%itask = 2                    ! one-step mode, unlimited dt
+  endif
+
+  pb%lsoda%istate = 1                     ! first call, do sanity checks etc.
+
+  ! Prepare yt for first call
+  ind_stress_coupling = 2 + pb%features%stress_coupling
+  ind_cohesion = ind_stress_coupling + pb%features%cohesion
+  ind_localisation = ind_cohesion + pb%features%localisation
+
+  ! SEISMIC: in the case of the CNS model, solve for tau and not v
+  if (pb%i_rns_law == 3) then   ! SEISMIC: CNS model
+    yt(2::pb%neqs) = pb%tau
+  else  ! SEISMIC: not CNS model (i.e. rate-and-state)
+    yt(2::pb%neqs) = pb%v
+  endif
+  yt(1::pb%neqs) = pb%theta
+  ! SEISMIC NOTE/WARNING: I don't know how permanent this temporary solution is,
+  ! but in case it gets fixed more permanently, derivs_all.f90 needs adjustment
+  if (pb%features%stress_coupling == 1) then           ! Temp solution for normal stress coupling
+    yt(ind_stress_coupling::pb%neqs) = pb%sigma
+  endif
+  if (pb%features%cohesion == 1) then
+    yt(ind_cohesion::pb%neqs) = pb%alpha
+  endif
+  if (pb%features%localisation == 1) then
+    yt(ind_localisation::pb%neqs) = pb%theta2
+  endif
+
+  call dlsoda(  derivs_lsoda, pb%lsoda%neq, yt, pb%time, pb%lsoda%tout, &
+                pb%lsoda%itol, pb%lsoda%rtol, pb%lsoda%atol, pb%lsoda%itask, &
+                pb%lsoda%istate, pb%lsoda%iopt, pb%lsoda%rwork, pb%lsoda%lrw, &
+                pb%lsoda%iwork, pb%lsoda%liw, jac_lsoda, pb%lsoda%jt)
+
+  ! istate output values:
+  !  1: nothing was done (t = tout)
+  !  2: great success!
+  ! -1: excessive amount of work done
+  ! -2: too much accuracy requested for machine precision
+  ! -3: illegal output detected before integrating
+  ! -4: repeated error test failures
+  ! -5: repeated convergence test failures
+  ! -6: EWT(i) become zero (error became zero)
+  ! -7: length of RWORK/IWORK was too small to proceed
+
+  if (pb%lsoda%istate /= 2) then
+    write (6,*) "Initiation of LSODA solver failed!"
+    write (6,*) "Current value of istate: ", pb%lsoda%istate
+    write (6,*) "Will now terminate..."
+    stop
+  endif
+  ! We've made the first call
+  ! No changes in parameters except tout and itask are allowed
+  pb%lsoda%istate = 2
+
+end subroutine init_lsoda
 
 
 end module solver

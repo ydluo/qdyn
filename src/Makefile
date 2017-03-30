@@ -22,7 +22,7 @@ F90 = mpif90
 # For parallel runs with OpenMP:
 #OPT = -O3 -ip -ipo -parallel -openmp -par-threshold:50
 #-no-inline-factor
-OPT = -O3
+OPT = -O3 -pg -g
 #OPT = -Og -Wall -Wextra -pedantic -fimplicit-none -fcheck=all -fbacktrace
 #OPT = -O0 -warn all -C
 #OPT = -O0 -warn all -parallel -par-report3  -C

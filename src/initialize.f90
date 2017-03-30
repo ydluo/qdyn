@@ -17,6 +17,7 @@ subroutine init_all(pb)
   use fault_stress, only : init_kernel
   use output, only : ot_init, ox_init
   use friction, only : set_theta_star, friction_mu
+  use solver, only : init_lsoda
 !!$  use omp_lib
 
   type(problem_type), intent(inout) :: pb
@@ -68,11 +69,13 @@ subroutine init_all(pb)
   if (pb%i_rns_law /= 3) then
     pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
   endif
-  
+
   call init_kernel(pb%lam,pb%smu,pb%mesh,pb%kernel, &
                    pb%D,pb%H,pb%i_sigma_cpl,pb%finite)
   call ot_init(pb)
   call ox_init(pb)
+
+  call init_lsoda(pb)
 
   if (is_mpi_master()) write(6,*) 'Initialization completed'
 
