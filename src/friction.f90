@@ -504,6 +504,9 @@ function calc_e_ps(sigma,theta,truncate,bulk,pb) result(e_ps_dot)
   double precision, dimension(pb%mesh%nn) :: Z_diff, Z_diss1, Z_diss2
   logical, intent(in) :: truncate, bulk
 
+  ! Check if the pressure soltuion rate is calculated for the localised
+  ! zone, or for the bulk. As the grain size may be different between these
+  ! zones, different kinetics may be supplied
   if (bulk .eqv. .true.) then
     Z_diff = pb%cns_params%IPS_const_diff_bulk
     Z_diss1 = pb%cns_params%IPS_const_diss1_bulk
