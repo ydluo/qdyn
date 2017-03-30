@@ -2,11 +2,15 @@
 
 module derivs_all
 
+  use problem_class
   implicit none
+
+  type(problem_type), pointer :: odepb
 
   private
 
-  public :: derivs
+  public :: derivs, derivs_lsoda, jac_lsoda
+  public :: odepb
 
 
 contains
@@ -19,7 +23,6 @@ contains
 
 subroutine derivs(time,yt,dydt,pb)
 
-  use problem_class
   use fault_stress, only : compute_stress
   use friction, only : dtheta_dt, dalpha_dt, dmu_dv_dtheta, compute_velocity, CNS_derivs
 
@@ -157,5 +160,31 @@ subroutine derivs(time,yt,dydt,pb)
    endif
 
 end subroutine derivs
+
+!--------------------------------------------------------------------------------------
+! SEISMIC: the subroutine derivs_lsoda is a wrapper that interfaces between derivs
+! and the LSODA solver routine
+!--------------------------------------------------------------------------------------
+subroutine derivs_lsoda(neq, time, yt, dydt)
+  ! NOTE: neq = pb%neq * pb%mesh%nn
+  integer :: neq, i
+  double precision :: time
+  double precision :: yt(neq)
+  double precision :: dydt(neq)
+
+  call derivs(time,yt,dydt,odepb)
+
+end subroutine derivs_lsoda
+
+!--------------------------------------------------------------------------------------
+! SEISMIC: jacobian for lsoda
+!--------------------------------------------------------------------------------------
+subroutine jac_lsoda(neq, time, yt, ml, mu, pd, nrpd)
+integer :: neq, ml, mu, nrpd
+double precision :: time, yt(neq), pd(nrpd,neq)
+
+end subroutine jac_lsoda
+
+
 
 end module derivs_all
