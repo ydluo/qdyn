@@ -111,7 +111,7 @@ subroutine do_bsstep(pb)
   call derivs(pb%time,yt,dydt,pb)
   yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
   ! One step
-  !call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb,ik)
+  call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb,ik)
 
   ! SEISMIC NOTE: what is happening here?
   if (pb%dt_max >  0.d0) then
@@ -120,18 +120,18 @@ subroutine do_bsstep(pb)
     pb%dt_try = pb%dt_next
   endif
 
-  pb%lsoda%istate = 2
-  call dlsoda(  derivs_lsoda, pb%lsoda%neq, yt, pb%time, pb%lsoda%tout, &
-                pb%lsoda%itol, pb%lsoda%rtol, pb%lsoda%atol, pb%lsoda%itask, &
-                pb%lsoda%istate, pb%lsoda%iopt, pb%lsoda%rwork, pb%lsoda%lrw, &
-                pb%lsoda%iwork, pb%lsoda%liw, jac_lsoda, pb%lsoda%jt)
-
-  if (pb%lsoda%istate /= 2) then
-    write (6,*) "Next iteration by LSODA solver failed!"
-    write (6,*) "Current value of istate: ", pb%lsoda%istate
-    write (6,*) "Will now terminate..."
-    stop
-  endif
+  ! pb%lsoda%istate = 2
+  ! call dlsoda(  derivs_lsoda, pb%lsoda%neq, yt, pb%time, pb%lsoda%tout, &
+  !               pb%lsoda%itol, pb%lsoda%rtol, pb%lsoda%atol, pb%lsoda%itask, &
+  !               pb%lsoda%istate, pb%lsoda%iopt, pb%lsoda%rwork, pb%lsoda%lrw, &
+  !               pb%lsoda%iwork, pb%lsoda%liw, jac_lsoda, pb%lsoda%jt)
+  !
+  ! if (pb%lsoda%istate /= 2) then
+  !   write (6,*) "Next iteration by LSODA solver failed!"
+  !   write (6,*) "Current value of istate: ", pb%lsoda%istate
+  !   write (6,*) "Will now terminate..."
+  !   stop
+  ! endif
 
 
   iktotal=ik+iktotal

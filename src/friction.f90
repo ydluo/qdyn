@@ -525,7 +525,9 @@ function calc_e_ps(sigma,theta,truncate,bulk,pb) result(e_ps_dot)
   ! If truncation is required, use an error function to set the strain rate
   ! to zero. A cut-off porosity of about 3% is chosen here, which corresponds
   ! to the percolation limit of aggregates
-  if (truncate .eqv. .true.) e_ps_dot = 0.5*(1 + erf(50*(theta-0.06)))*e_ps_dot
+  ! if (truncate .eqv. .true.) e_ps_dot = 0.5*(1 + erf(50*(theta-0.06)))*e_ps_dot
+  ! if (truncate .eqv. .true.) e_ps_dot = e_ps_dot * (theta - 0.02)/pb%cns_params%phi0
+  if (truncate .eqv. .true.) e_ps_dot = e_ps_dot * (1.0 - 0.02/theta)
 
 end function calc_e_ps
 

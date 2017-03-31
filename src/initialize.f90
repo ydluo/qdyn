@@ -75,7 +75,7 @@ subroutine init_all(pb)
   call ot_init(pb)
   call ox_init(pb)
 
-  call init_lsoda(pb)
+  ! call init_lsoda(pb)
 
   if (is_mpi_master()) write(6,*) 'Initialization completed'
 
