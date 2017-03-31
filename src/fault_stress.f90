@@ -156,6 +156,11 @@ subroutine init_kernel_2D(k,mu,m,D,H)
    ! where 
    !   H = half-thickness of the fault damage zone
    !   D = damage level = 1 - (damaged shear modulus) / (intact shear modulus)
+   !
+   ! Kernel for finite slab, to model ring-shear laboratory experiments:
+   ! elastic layer of thickness H, fault in the middle of the layer,
+   ! driven by imposed fault-parallel velocity at distance H from fault
+   !   kernel(k) = 1/2*mu*|k| * cotanh(H*|k|)
    
    ! Define wavenumber
     allocate( kk(k%nnfft) )
@@ -173,7 +178,13 @@ subroutine init_kernel_2D(k,mu,m,D,H)
     k%kernel = 0.5d0*mu*kk
 
    ! Compute kernel for damaged medium
-    if (D>0 .and. H>0) k%kernel = k%kernel * (1-D) / tanh( H*kk + atanh(1-D) )
+    if (D>0d0 .and. H>0d0) k%kernel = k%kernel * (1-D) / tanh( H*kk + atanh(1-D) )
+    
+   ! Compute kernel for finite slab
+    if (D==0d0 .and. H>0d0) then
+      k%kernel = k%kernel / tanh( H*kk )
+      if (kk(1)==0d0) k%kernel(1) = 0.5d0*mu/H
+    endif
    
  !- Read coefficient I(n) from pre-calculated file.
   elseif (k%finite == 1) then !NOTE: damaged zones are not available for FINITE=1
