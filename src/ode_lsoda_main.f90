@@ -1857,7 +1857,7 @@ contains
    2700 Istate = -3
         RETURN
   !----------------------- END OF SUBROUTINE DLSODE ----------------------
-  99999 END
+  99999 END SUBROUTINE DLSODE
   !*==DLSODA.spg  processed by SPAG 6.72Dc at 17:57 on 29 Mar 2017
         SUBROUTINE DLSODA(F,Neq,Y,T,Tout,Itol,Rtol,Atol,Itask,Istate,Iopt,&
        &                  Rwork,Lrw,Iwork,Liw,JAC,Jt)
@@ -3614,7 +3614,7 @@ contains
    2800 Istate = -3
         RETURN
   !----------------------- End of Subroutine DLSODA ----------------------
-  99999 END
+  99999 END SUBROUTINE DLSODA
   !*==DLSODPK.spg  processed by SPAG 6.72Dc at 17:57 on 29 Mar 2017
         SUBROUTINE DLSODPK(F,Neq,Y,T,Tout,Itol,Rtol,Atol,Itask,Istate,    &
        &                   Iopt,Rwork,Lrw,Iwork,Liw,JAC,PSOL,Mf)
@@ -5460,7 +5460,7 @@ contains
    2800 Istate = -3
         RETURN
   !----------------------- End of Subroutine DLSODPK ---------------------
-  99999 END
+  99999 END SUBROUTINE DLSODPK
   !*==DLSODI.spg  processed by SPAG 6.72Dc at 17:57 on 29 Mar 2017
         SUBROUTINE DLSODI(RES,ADDA,JAC,Neq,Y,Ydoti,T,Tout,Itol,Rtol,Atol, &
        &                  Itask,Istate,Iopt,Rwork,Lrw,Iwork,Liw,Mf)
@@ -7343,7 +7343,7 @@ contains
    3000 Istate = -3
         RETURN
   !----------------------- End of Subroutine DLSODI ----------------------
-  99999 END
+  99999 END SUBROUTINE DLSODI
   !*==DLSOIBT.spg  processed by SPAG 6.72Dc at 17:57 on 29 Mar 2017
   !DECK DLSOIBT
         SUBROUTINE DLSOIBT(RES,ADDA,JAC,Neq,Y,Ydoti,T,Tout,Itol,Rtol,Atol,&
@@ -9259,6 +9259,6 @@ contains
    3100 Istate = -3
         RETURN
   !----------------------- End of Subroutine DLSOIBT ---------------------
-  99999 END
+  99999 END SUBROUTINE DLSOIBT
 
 end module ode_lsoda_main

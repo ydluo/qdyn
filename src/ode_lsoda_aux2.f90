@@ -120,7 +120,7 @@ contains
         ENDIF
         Ipvt(N) = N
         IF ( A(N,N).EQ.0.0D0 ) Info = N
-        END
+        END SUBROUTINE DGEFA
   !*==DGESL.spg  processed by SPAG 6.72Dc at 17:57 on 29 Mar 2017
   !DECK DGESL
         SUBROUTINE DGESL(A,Lda,N,Ipvt,B,Job)
@@ -251,7 +251,7 @@ contains
               CALL DAXPY(k-1,t,A(1,k),1,B(1),1)
            ENDDO
         ENDIF
-        END
+        END SUBROUTINE DGESL
   !*==DGBFA.spg  processed by SPAG 6.72Dc at 17:57 on 29 Mar 2017
   !DECK DGBFA
         SUBROUTINE DGBFA(Abd,Lda,N,Ml,Mu,Ipvt,Info)
@@ -440,7 +440,7 @@ contains
         ENDIF
         Ipvt(N) = N
         IF ( Abd(m,N).EQ.0.0D0 ) Info = N
-        END
+        END SUBROUTINE DGBFA
   !*==DGBSL.spg  processed by SPAG 6.72Dc at 17:57 on 29 Mar 2017
   !DECK DGBSL
         SUBROUTINE DGBSL(Abd,Lda,N,Ml,Mu,Ipvt,B,Job)
@@ -591,7 +591,7 @@ contains
               CALL DAXPY(lm,t,Abd(la,k),1,B(lb),1)
            ENDDO
         ENDIF
-        END
+        END SUBROUTINE DGBSL
   !*==DAXPY.spg  processed by SPAG 6.72Dc at 17:57 on 29 Mar 2017
   !DECK DAXPY
         SUBROUTINE DAXPY(N,Da,Dx,Incx,Dy,Incy)
@@ -695,7 +695,7 @@ contains
            Dy(i+3) = Dy(i+3) + Da*Dx(i+3)
         ENDDO
         RETURN
-  99999 END
+  99999 END SUBROUTINE DAXPY
   !*==DCOPY.spg  processed by SPAG 6.72Dc at 17:57 on 29 Mar 2017
   !DECK DCOPY
         SUBROUTINE DCOPY(N,Dx,Incx,Dy,Incy)
@@ -800,7 +800,7 @@ contains
            Dy(i+6) = Dx(i+6)
         ENDDO
         RETURN
-  99999 END
+  99999 END SUBROUTINE DCOPY
   !*==DDOT.spg  processed by SPAG 6.72Dc at 17:57 on 29 Mar 2017
   !DECK DDOT
         DOUBLE PRECISION FUNCTION DDOT(N,Dx,Incx,Dy,Incy)
@@ -901,7 +901,7 @@ contains
        &          + Dx(i+3)*Dy(i+3) + Dx(i+4)*Dy(i+4)
         ENDDO
         RETURN
-  99999 END
+  99999 END FUNCTION DDOT
   !*==DNRM2.spg  processed by SPAG 6.72Dc at 17:57 on 29 Mar 2017
   !DECK DNRM2
         DOUBLE PRECISION FUNCTION DNRM2(N,Dx,Incx)
@@ -1072,7 +1072,7 @@ contains
   !              COMPUTE SQUARE ROOT AND ADJUST FOR SCALING.
   !
         DNRM2 = xmax*SQRT(sum)
-  99999 END
+  99999 END FUNCTION DNRM2
   !*==DSCAL.spg  processed by SPAG 6.72Dc at 17:57 on 29 Mar 2017
   !DECK DSCAL
         SUBROUTINE DSCAL(N,Da,Dx,Incx)
@@ -1156,7 +1156,7 @@ contains
            ENDDO
            RETURN
         ENDIF
-        END
+        END SUBROUTINE DSCAL
   !*==IDAMAX.spg  processed by SPAG 6.72Dc at 17:57 on 29 Mar 2017
   !DECK IDAMAX
         INTEGER FUNCTION IDAMAX(N,Dx,Incx)
@@ -1241,7 +1241,7 @@ contains
            ix = ix + Incx
         ENDDO
         RETURN
-  99999 END
+  99999 END FUNCTION IDAMAX
   !*==XERRWD.spg  processed by SPAG 6.72Dc at 17:57 on 29 Mar 2017
   !DECK XERRWD
         SUBROUTINE XERRWD(Msg,Nmes,Nerr,Level,Ni,I1,I2,Nr,R1,R2)
@@ -1340,7 +1340,7 @@ contains
         IF ( Level.NE.2 ) RETURN
         STOP
   !----------------------- End of Subroutine XERRWD ----------------------
-        END
+END SUBROUTINE XERRWD
   !*==XSETF.spg  processed by SPAG 6.72Dc at 17:57 on 29 Mar 2017
   !DECK XSETF
         SUBROUTINE XSETF(Mflag)
@@ -1377,7 +1377,7 @@ contains
   !***FIRST EXECUTABLE STATEMENT  XSETF
         IF ( Mflag.EQ.0 .OR. Mflag.EQ.1 ) junk = IXSAV(2,Mflag,.TRUE.)
   !----------------------- End of Subroutine XSETF -----------------------
-        END
+END SUBROUTINE XSETF
   !*==XSETUN.spg  processed by SPAG 6.72Dc at 17:57 on 29 Mar 2017
   !DECK XSETUN
         SUBROUTINE XSETUN(Lun)
@@ -1412,7 +1412,7 @@ contains
   !***FIRST EXECUTABLE STATEMENT  XSETUN
         IF ( Lun.GT.0 ) junk = IXSAV(1,Lun,.TRUE.)
   !----------------------- End of Subroutine XSETUN ----------------------
-        END
+END SUBROUTINE XSETUN
   !*==IXSAV.spg  processed by SPAG 6.72Dc at 17:57 on 29 Mar 2017
   !DECK IXSAV
         INTEGER FUNCTION IXSAV(Ipar,Ivalue,Iset)
@@ -1487,7 +1487,7 @@ contains
         ENDIF
   !
   !----------------------- End of Function IXSAV -------------------------
-        END
+END FUNCTION IXSAV
   !*==IUMACH.spg  processed by SPAG 6.72Dc at 17:57 on 29 Mar 2017
   !DECK IUMACH
         INTEGER FUNCTION IUMACH()
@@ -1522,6 +1522,6 @@ contains
         IUMACH = 6
   !
   !----------------------- End of Function IUMACH ------------------------
-        END
+END FUNCTION IUMACH
 
 end module ode_lsoda_aux2

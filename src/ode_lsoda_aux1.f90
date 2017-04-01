@@ -46,7 +46,7 @@ contains
         IF ( comp.NE.1.0D0 ) GOTO 100
         DUMACH = u*2.0D0
   !----------------------- End of Function DUMACH ------------------------
-        END
+        END FUNCTION DUMACH
   !*==DUMSUM.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
         SUBROUTINE DUMSUM(A,B,C)
         IMPLICIT NONE
@@ -54,7 +54,7 @@ contains
   !     Routine to force normal storing of A + B, for DUMACH.
         DOUBLE PRECISION A , B , C
         C = A + B
-        END
+        END SUBROUTINE DUMSUM
   !*==DCFODE.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DCFODE
         SUBROUTINE DCFODE(Meth,Elco,Tesco)
@@ -189,7 +189,7 @@ contains
            rq1fac = rq1fac/fnq
         ENDDO
   !----------------------- END OF SUBROUTINE DCFODE ----------------------
-        END
+        END SUBROUTINE DCFODE
   !*==DINTDY.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DINTDY
         SUBROUTINE DINTDY(T,K,Yh,Nyh,Dky,Iflag)
@@ -313,7 +313,7 @@ contains
         ENDDO
         RETURN
   !----------------------- END OF SUBROUTINE DINTDY ----------------------
-  99999 END
+  99999 END SUBROUTINE DINTDY
   !*==DPREPJ.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DPREPJ
         SUBROUTINE DPREPJ(Neq,Y,Yh,Nyh,Ewt,Ftem,Savf,Wm,Iwm,F,JAC)
@@ -519,7 +519,7 @@ contains
         CALL DGBFA(Wm(3),meband,N,ml,mu,Iwm(21),ier)
         IF ( ier.NE.0 ) IERpj = 1
   !----------------------- END OF SUBROUTINE DPREPJ ----------------------
-        END
+        END SUBROUTINE DPREPJ
   !*==DSOLSY.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSOLSY
         SUBROUTINE DSOLSY(Wm,Iwm,X,Tem)
@@ -615,7 +615,7 @@ contains
         meband = 2*ml + mu + 1
         CALL DGBSL(Wm(3),meband,N,ml,mu,Iwm(21),X,0)
   !----------------------- END OF SUBROUTINE DSOLSY ----------------------
-        END
+END SUBROUTINE DSOLSY
   !*==DSRCOM.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSRCOM
         SUBROUTINE DSRCOM(Rsav,Isav,Job)
@@ -684,7 +684,7 @@ contains
         ENDDO
         RETURN
   !----------------------- END OF SUBROUTINE DSRCOM ----------------------
-  99999 END
+  99999 END SUBROUTINE DSRCOM
   !*==DSTODE.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSTODE
         SUBROUTINE DSTODE(Neq,Y,Yh,Nyh,Yh1,Ewt,Savf,Acor,Wm,Iwm,F,JAC,    &
@@ -1248,7 +1248,7 @@ contains
    1400 HOLd = H
         JSTart = 1
   !----------------------- END OF SUBROUTINE DSTODE ----------------------
-        END
+        END SUBROUTINE DSTODE
   !*==DEWSET.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DEWSET
         SUBROUTINE DEWSET(N,Itol,Rtol,Atol,Ycur,Ewt)
@@ -1298,7 +1298,7 @@ contains
            Ewt(i) = Rtol(i)*ABS(Ycur(i)) + Atol(i)
         ENDDO
   !----------------------- END OF SUBROUTINE DEWSET ----------------------
-        END
+        END SUBROUTINE DEWSET
   !*==DVNORM.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DVNORM
         DOUBLE PRECISION FUNCTION DVNORM(N,V,W)
@@ -1336,7 +1336,7 @@ contains
         ENDDO
         DVNORM = SQRT(sum/N)
   !----------------------- END OF FUNCTION DVNORM ------------------------
-        END
+        END FUNCTION DVNORM
   !*==DIPREP.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DIPREP
         SUBROUTINE DIPREP(Neq,Y,Rwork,Ia,Ja,Ipflag,F,JAC)
@@ -1421,7 +1421,7 @@ contains
         ENDIF
         LEWt = lewtn
   !----------------------- End of Subroutine DIPREP ----------------------
-        END
+        END SUBROUTINE DIPREP
   !*==DPREP.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DPREP
         SUBROUTINE DPREP(Neq,Y,Yh,Savf,Ewt,Ftem,Ia,Ja,Wk,Iwk,Ipper,F,JAC)
@@ -1704,7 +1704,7 @@ contains
    700  Ipper = -5
         RETURN
   !----------------------- End of Subroutine DPREP -----------------------
-  99999 END
+  99999 END SUBROUTINE DPREP
   !*==JGROUP.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK JGROUP
         SUBROUTINE JGROUP(N,Ia,Ja,Maxg,Ngrp,Igp,Jgp,Incl,Jdone,Ier)
@@ -1777,7 +1777,7 @@ contains
    100  Ngrp = ng - 1
         RETURN
   !----------------------- End of Subroutine JGROUP ----------------------
-  99999 END
+  99999 END SUBROUTINE JGROUP
   !*==ADJLR.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK ADJLR
         SUBROUTINE ADJLR(N,Isp,Ldif)
@@ -1804,7 +1804,7 @@ contains
         lnfc = 9*N + 2 + jlmax + jumax + nzlu
         Ldif = MAX(0,lsfc-lnfc)
   !----------------------- End of Subroutine ADJLR -----------------------
-        END
+END SUBROUTINE ADJLR
   !*==CNTNZU.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK CNTNZU
         SUBROUTINE CNTNZU(N,Ia,Ja,Nzsut)
@@ -1845,7 +1845,7 @@ contains
         ENDDO
         Nzsut = num
   !----------------------- End of Subroutine CNTNZU ----------------------
-        END
+        END SUBROUTINE CNTNZU
   !*==DPRJS.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DPRJS
         SUBROUTINE DPRJS(Neq,Y,Yh,Nyh,Ewt,Ftem,Savf,Wk,Iwk,F,JAC)
@@ -2059,7 +2059,7 @@ contains
         RETURN
    400  IERpj = 2
   !----------------------- End of Subroutine DPRJS -----------------------
-        END
+        END SUBROUTINE DPRJS
   !*==DSOLSS.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSOLSS
         SUBROUTINE DSOLSS(Wk,Iwk,X,Tem)
@@ -2145,7 +2145,7 @@ contains
    300  IERsl = 1
   !
   !----------------------- End of Subroutine DSOLSS ----------------------
-        END
+        END SUBROUTINE DSOLSS
   !*==DSRCMS.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSRCMS
         SUBROUTINE DSRCMS(Rsav,Isav,Job)
@@ -2207,7 +2207,7 @@ contains
         RETURN
   !
   !----------------------- End of Subroutine DSRCMS ----------------------
-  99999 END
+  99999 END SUBROUTINE DSRCMS
   !*==ODRV.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK ODRV
         SUBROUTINE ODRV(N,Ia,Ja,A,P,Ip,Nsp,Isp,Path,Flag)
@@ -2392,7 +2392,7 @@ contains
   ! ** error -- insufficient storage
    100  Flag = 10*N + 1
         RETURN
-  99999 END
+  99999 END SUBROUTINE ODRV
   !*==MD.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
         SUBROUTINE MD(N,Ia,Ja,Max,V,L,Head,Last,Next,Mark,Flag)
         IMPLICIT NONE
@@ -2536,7 +2536,7 @@ contains
            ENDIF
         ENDIF
   !
-        END
+        END SUBROUTINE MD
   !*==MDI.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
         SUBROUTINE MDI(N,Ia,Ja,Max,V,L,Head,Last,Next,Mark,Tag,Flag)
         IMPLICIT NONE
@@ -2616,7 +2616,7 @@ contains
   !
   ! ** error-  insufficient storage
    100  Flag = 9*N + vi
-        END
+        END SUBROUTINE MDI
   !*==MDM.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
         SUBROUTINE MDM(Vk,Tail,V,L,Last,Next,Mark)
         IMPLICIT NONE
@@ -2676,7 +2676,7 @@ contains
            GOTO 100
         ENDIF
   !
-        END
+        END SUBROUTINE MDM
   !*==MDP.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
         SUBROUTINE MDP(K,Ek,Tail,V,L,Head,Last,Next,Mark)
         IMPLICIT NONE
@@ -2780,7 +2780,7 @@ contains
   !----terminate boundary list
         L(Tail) = 0
   !
-        END
+        END SUBROUTINE MDP
   !*==MDU.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
         SUBROUTINE MDU(Ek,Dmin,V,L,Head,Last,Next,Mark)
         IMPLICIT NONE
@@ -2878,7 +2878,7 @@ contains
    50      ENDDO
         ENDIF
   !
-        END
+        END SUBROUTINE MDU
   !*==SRO.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
         SUBROUTINE SRO(N,Ip,Ia,Ja,A,Q,R,Dflag)
         IMPLICIT NONE
@@ -2995,7 +2995,7 @@ contains
            ENDIF
         ENDDO
   !
-        END
+        END SUBROUTINE SRO
   !*==CDRV.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK CDRV
         SUBROUTINE CDRV(N,R,C,Ic,Ia,Ja,A,B,Z,Nsp,Isp,Rsp,Esp,Path,Flag)
@@ -3266,7 +3266,7 @@ contains
   ! ** error.. insufficient storage
    400  Flag = 10*N + 1
         RETURN
-  99999 END
+  99999 END SUBROUTINE CDRV
   !*==NROC.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
         SUBROUTINE NROC(N,Ic,Ia,Ja,A,Jar,Ar,P,Flag)
         IMPLICIT NONE
@@ -3509,7 +3509,7 @@ contains
   !
   ! ** error.. duplicate entry in a
    100  Flag = N + k
-        END
+        END SUBROUTINE NROC
   !*==NSFC.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
         SUBROUTINE NSFC(N,R,Ic,Ia,Ja,Jlmax,Il,Jl,Ijl,Jumax,Iu,Ju,Iju,Q,   &
        &                Ira,Jra,Irac,Irl,Jrl,Iru,Jru,Flag)
@@ -3888,7 +3888,7 @@ contains
         RETURN
   ! ** error.. insufficient storage for ju
    800  Flag = 6*N + k
-        END
+        END SUBROUTINE NSFC
   !*==NNFC.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
         SUBROUTINE NNFC(N,R,C,Ic,Ia,Ja,A,Z,B,Lmax,Il,Jl,Ijl,L,D,Umax,Iu,  &
        &                Ju,Iju,U,Row,Tmp,Irl,Jrl,Flag)
@@ -4064,7 +4064,7 @@ contains
   ! ** error.. zero pivot
    100     Flag = 8*N + k
         ENDIF
-        END
+        END SUBROUTINE NNFC
   !*==NNSC.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
         SUBROUTINE NNSC(N,R,C,Il,Jl,Ijl,L,D,Iu,Ju,Iju,U,Z,B,Tmp)
         IMPLICIT NONE
@@ -4127,7 +4127,7 @@ contains
            Z(C(k)) = -sum
            k = k - 1
         ENDDO
-        END
+        END SUBROUTINE NNSC
   !*==NNTC.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
         SUBROUTINE NNTC(N,R,C,Il,Jl,Ijl,L,D,Iu,Ju,Iju,U,Z,B,Tmp)
         IMPLICIT NONE
@@ -4190,7 +4190,7 @@ contains
            Z(R(k)) = Tmp(k)
            k = k - 1
         ENDDO
-        END
+        END SUBROUTINE NNTC
   !*==DSTODA.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSTODA
         SUBROUTINE DSTODA(Neq,Y,Yh,Nyh,Yh1,Ewt,Savf,Acor,Wm,Iwm,F,JAC,    &
@@ -4889,7 +4889,7 @@ contains
    1500 HOLd = H
         JSTart = 1
   !----------------------- End of Subroutine DSTODA ----------------------
-        END
+        END SUBROUTINE DSTODA
   !*==DPRJA.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DPRJA
         SUBROUTINE DPRJA(Neq,Y,Yh,Nyh,Ewt,Ftem,Savf,Wm,Iwm,F,JAC)
@@ -5063,7 +5063,7 @@ contains
         CALL DGBFA(Wm(3),meband,N,ml,mu,Iwm(21),ier)
         IF ( ier.NE.0 ) IERpj = 1
   !----------------------- End of Subroutine DPRJA -----------------------
-        END
+END SUBROUTINE DPRJA
   !*==DMNORM.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DMNORM
         DOUBLE PRECISION FUNCTION DMNORM(N,V,W)
@@ -5084,7 +5084,7 @@ contains
         ENDDO
         DMNORM = vm
   !----------------------- End of Function DMNORM ------------------------
-        END
+        END FUNCTION DMNORM
   !*==DFNORM.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DFNORM
         DOUBLE PRECISION FUNCTION DFNORM(N,A,W)
@@ -5109,7 +5109,7 @@ contains
         ENDDO
         DFNORM = an
   !----------------------- End of Function DFNORM ------------------------
-        END
+        END FUNCTION DFNORM
   !*==DBNORM.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DBNORM
         DOUBLE PRECISION FUNCTION DBNORM(N,A,Nra,Ml,Mu,W)
@@ -5142,7 +5142,7 @@ contains
         ENDDO
         DBNORM = an
   !----------------------- End of Function DBNORM ------------------------
-        END
+        END FUNCTION DBNORM
   !*==DSRCMA.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSRCMA
         SUBROUTINE DSRCMA(Rsav,Isav,Job)
@@ -5205,7 +5205,7 @@ contains
         RETURN
   !
   !----------------------- End of Subroutine DSRCMA ----------------------
-  99999 END
+  99999 END SUBROUTINE DSRCMA
   !*==DRCHEK.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DRCHEK
         SUBROUTINE DRCHEK(Job,G,Neq,Y,Yh,Nyh,G0,G1,Gx,Jroot,Irt)
@@ -5384,7 +5384,7 @@ contains
         RETURN
   !
   !----------------------- End of Subroutine DRCHEK ----------------------
-  99999 END
+  99999 END SUBROUTINE DRCHEK
   !*==DROOTS.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DROOTS
         SUBROUTINE DROOTS(Ng,Hmin,Jflag,X0,X1,G0,G1,Gx,X,Jroot)
@@ -5617,7 +5617,7 @@ contains
         Jflag = 3
         RETURN
   !----------------------- End of Subroutine DROOTS ----------------------
-  99999 END
+  99999 END SUBROUTINE DROOTS
   !*==DSRCAR.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSRCAR
         SUBROUTINE DSRCAR(Rsav,Isav,Job)
@@ -5699,7 +5699,7 @@ contains
         RETURN
   !
   !----------------------- End of Subroutine DSRCAR ----------------------
-  99999 END
+  99999 END SUBROUTINE DSRCAR
   !*==DSTODPK.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSTODPK
         SUBROUTINE DSTODPK(Neq,Y,Yh,Nyh,Yh1,Ewt,Savf,Savx,Acor,Wm,Iwm,F,  &
@@ -6274,7 +6274,7 @@ contains
    1400 HOLd = H
         JSTart = 1
   !----------------------- End of Subroutine DSTODPK ---------------------
-        END
+        END SUBROUTINE DSTODPK
   !*==DPKSET.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DPKSET
         SUBROUTINE DPKSET(Neq,Y,Ysv,Ewt,Ftem,Savf,Wm,Iwm,F,JAC)
@@ -6340,7 +6340,7 @@ contains
         IF ( ier.EQ.0 ) RETURN
         IERpj = 1
   !----------------------- End of Subroutine DPKSET ----------------------
-        END
+        END SUBROUTINE DPKSET
   !*==DSOLPK.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSOLPK
         SUBROUTINE DSOLPK(Neq,Y,Savf,X,Ewt,Wm,Iwm,F,PSOL)
@@ -6500,7 +6500,7 @@ contains
         IF ( iflag.EQ.3 ) IERsl = 1
         IF ( iflag.LT.0 ) IERsl = -1
   !----------------------- End of Subroutine DSOLPK ----------------------
-        END
+        END SUBROUTINE DSOLPK
   !*==DSPIOM.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSPIOM
         SUBROUTINE DSPIOM(Neq,Tn,Y,Savf,B,Wght,N,Maxl,Kmp,Delta,Hl0,Jpre, &
@@ -6731,7 +6731,7 @@ contains
    300  IF ( ier.LT.0 ) Iflag = -1
         IF ( ier.GT.0 ) Iflag = 3
   !----------------------- End of Subroutine DSPIOM ----------------------
-        END
+        END SUBROUTINE DSPIOM
   !*==DATV.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DATV
         SUBROUTINE DATV(Neq,Y,Savf,V,Wght,Ftem,F,PSOL,Z,Vtem,Wp,Iwp,Hl0,  &
@@ -6863,7 +6863,7 @@ contains
            Z(i) = Z(i)*Wght(i)
         ENDDO
   !----------------------- End of Subroutine DATV ------------------------
-        END
+        END SUBROUTINE DATV
   !*==DORTHOG.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DORTHOG
         SUBROUTINE DORTHOG(Vnew,V,Hes,N,Ll,Ldhes,Kmp,Snormw)
@@ -6951,7 +6951,7 @@ contains
         Snormw = SQRT(arg)
   !
   !----------------------- End of Subroutine DORTHOG ---------------------
-        END
+        END SUBROUTINE DORTHOG
   !*==DSPIGMR.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSPIGMR
         SUBROUTINE DSPIGMR(Neq,Tn,Y,Savf,B,Wght,N,Maxl,Maxlp1,Kmp,Delta,  &
@@ -7206,7 +7206,7 @@ contains
         IF ( ier.GT.0 ) Iflag = 3
   !
   !----------------------- End of Subroutine DSPIGMR ---------------------
-        END
+        END SUBROUTINE DSPIGMR
   !*==DPCG.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DPCG
         SUBROUTINE DPCG(Neq,Tn,Y,Savf,R,Wght,N,Maxl,Delta,Hl0,Jpre,Mnewt, &
@@ -7362,7 +7362,7 @@ contains
            RETURN
         ENDIF
   !----------------------- End of Subroutine DPCG ------------------------
-  99999 END
+  99999 END SUBROUTINE DPCG
   !*==DPCGS.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DPCGS
         SUBROUTINE DPCGS(Neq,Tn,Y,Savf,R,Wght,N,Maxl,Delta,Hl0,Jpre,Mnewt,&
@@ -7525,7 +7525,7 @@ contains
            RETURN
         ENDIF
   !----------------------- End of Subroutine DPCGS -----------------------
-  99999 END
+  99999 END SUBROUTINE DPCGS
   !*==DATP.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DATP
         SUBROUTINE DATP(Neq,Y,Savf,P,Wght,Hl0,Wk,F,W)
@@ -7595,7 +7595,7 @@ contains
            W(i) = P(i) - fac*(Wk(i)-Savf(i))
         ENDDO
   !----------------------- End of Subroutine DATP ------------------------
-        END
+        END SUBROUTINE DATP
   !*==DUSOL.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DUSOL
         SUBROUTINE DUSOL(Neq,Tn,Y,Savf,B,Wght,N,Delta,Hl0,Mnewt,PSOL,Npsl,&
@@ -7694,7 +7694,7 @@ contains
         CALL DCOPY(N,B,1,X,1)
         RETURN
   !----------------------- End of Subroutine DUSOL -----------------------
-  99999 END
+  99999 END SUBROUTINE DUSOL
   !*==DSRCPK.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSRCPK
         SUBROUTINE DSRCPK(Rsav,Isav,Job)
@@ -7744,7 +7744,7 @@ contains
         ENDDO
         RETURN
   !----------------------- End of Subroutine DSRCPK ----------------------
-  99999 END
+  99999 END SUBROUTINE DSRCPK
   !*==DHEFA.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DHEFA
         SUBROUTINE DHEFA(A,Lda,N,Ipvt,Info,Job)
@@ -7925,7 +7925,7 @@ contains
            RETURN
         ENDIF
   !----------------------- End of Subroutine DHEFA -----------------------
-        END
+        END SUBROUTINE DHEFA
   !*==DHESL.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DHESL
         SUBROUTINE DHESL(A,Lda,N,Ipvt,B)
@@ -7995,7 +7995,7 @@ contains
            CALL DAXPY(k-1,t,A(1,k),1,B(1),1)
         ENDDO
   !----------------------- End of Subroutine DHESL -----------------------
-        END
+        END SUBROUTINE DHESL
   !*==DHEQR.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DHEQR
         SUBROUTINE DHEQR(A,Lda,N,Q,Info,Ijob)
@@ -8150,7 +8150,7 @@ contains
            RETURN
         ENDIF
   !----------------------- End of Subroutine DHEQR -----------------------
-        END
+        END SUBROUTINE DHEQR
   !*==DHELS.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DHELS
         SUBROUTINE DHELS(A,Lda,N,Q,B)
@@ -8222,7 +8222,7 @@ contains
            CALL DAXPY(k-1,t,A(1,k),1,B(1),1)
         ENDDO
   !----------------------- End of Subroutine DHELS -----------------------
-        END
+        END SUBROUTINE DHELS
   !*==DLHIN.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DLHIN
         SUBROUTINE DLHIN(Neq,N,T0,Y0,Ydot,F,Tout,Uround,Ewt,Itol,Atol,Y,  &
@@ -8366,7 +8366,7 @@ contains
         Ier = 0
         RETURN
   !----------------------- End of Subroutine DLHIN -----------------------
-  99999 END
+  99999 END SUBROUTINE DLHIN
   !*==DSTOKA.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSTOKA
         SUBROUTINE DSTOKA(Neq,Y,Yh,Nyh,Yh1,Ewt,Savf,Savx,Acor,Wm,Iwm,F,   &
@@ -8989,7 +8989,7 @@ contains
    1400 HOLd = H
         JSTart = 1
   !----------------------- End of Subroutine DSTOKA ----------------------
-        END
+        END SUBROUTINE DSTOKA
   !*==DSETPK.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSETPK
         SUBROUTINE DSETPK(Neq,Y,Ysv,Ewt,Ftem,Savf,Jok,Wm,Iwm,F,JAC)
@@ -9059,7 +9059,7 @@ contains
         IF ( ier.EQ.0 ) RETURN
         IERpj = 1
   !----------------------- End of Subroutine DSETPK ----------------------
-        END
+        END SUBROUTINE DSETPK
   !*==DSRCKR.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSRCKR
         SUBROUTINE DSRCKR(Rsav,Isav,Job)
@@ -9135,7 +9135,7 @@ contains
         ENDDO
         RETURN
   !----------------------- End of Subroutine DSRCKR ----------------------
-  99999 END
+  99999 END SUBROUTINE DSRCKR
   !*==DAINVG.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DAINVG
         SUBROUTINE DAINVG(RES,ADDA,Neq,T,Y,Ydot,Miter,Ml,Mu,Pw,Ipvt,Ier)
@@ -9205,7 +9205,7 @@ contains
         Ier = -Ier
         RETURN
   !----------------------- End of Subroutine DAINVG ----------------------
-  99999 END
+  99999 END SUBROUTINE DAINVG
   !*==DSTODI.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSTODI
         SUBROUTINE DSTODI(Neq,Y,Yh,Nyh,Yh1,Ewt,Savf,Savr,Acor,Wm,Iwm,RES, &
@@ -9726,7 +9726,7 @@ contains
    1600 HOLd = H
         JSTart = 1
   !----------------------- End of Subroutine DSTODI ----------------------
-        END
+        END SUBROUTINE DSTODI
   !*==DPREPJI.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DPREPJI
         SUBROUTINE DPREPJI(Neq,Y,Yh,Nyh,Ewt,Rtem,Savr,S,Wm,Iwm,RES,JAC,   &
@@ -9910,7 +9910,7 @@ contains
   ! Error return for IRES = 2 or IRES = 3 return from RES. ---------------
    800  IERpj = ires
   !----------------------- End of Subroutine DPREPJI ---------------------
-        END
+        END SUBROUTINE DPREPJI
   !*==DAIGBT.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DAIGBT
         SUBROUTINE DAIGBT(RES,ADDA,Neq,T,Y,Ydot,Mb,Nb,Pw,Ipvt,Ier)
@@ -9952,7 +9952,7 @@ contains
         Ier = -Ier
         RETURN
   !----------------------- End of Subroutine DAIGBT ----------------------
-  99999 END
+  99999 END SUBROUTINE DAIGBT
   !*==DPJIBT.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DPJIBT
         SUBROUTINE DPJIBT(Neq,Y,Yh,Nyh,Ewt,Rtem,Savr,S,Wm,Iwm,RES,JAC,    &
@@ -10126,7 +10126,7 @@ contains
   ! Error return for IRES = 2 or IRES = 3 return from RES. ---------------
    400  IERpj = ires
   !----------------------- End of Subroutine DPJIBT ----------------------
-        END
+        END SUBROUTINE DPJIBT
   !*==DSLSBT.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSLSBT
         SUBROUTINE DSLSBT(Wm,Iwm,X,Tem)
@@ -10157,7 +10157,7 @@ contains
         lpc = lpb + lblox
         CALL DSOLBT(mb,nb,Wm(3),Wm(lpb),Wm(lpc),X,Iwm(21))
   !----------------------- End of Subroutine DSLSBT ----------------------
-        END
+        END SUBROUTINE DSLSBT
   !*==DDECBT.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DDECBT
         SUBROUTINE DDECBT(M,N,A,B,C,Ip,Ier)
@@ -10270,7 +10270,7 @@ contains
    100  Ier = k
         RETURN
   !----------------------- End of Subroutine DDECBT ----------------------
-  99999 END
+  99999 END SUBROUTINE DDECBT
   !*==DSOLBT.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DSOLBT
         SUBROUTINE DSOLBT(M,N,A,B,C,Y,Ip)
@@ -10331,7 +10331,7 @@ contains
            Y(i,1) = Y(i,1) - dp
         ENDDO
   !----------------------- End of Subroutine DSOLBT ----------------------
-        END
+        END SUBROUTINE DSOLBT
   !*==DIPREPI.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DIPREPI
         SUBROUTINE DIPREPI(Neq,Y,S,Rwork,Ia,Ja,Ic,Jc,Ipflag,RES,JAC,ADDA)
@@ -10416,7 +10416,7 @@ contains
         ENDIF
         LEWt = lewtn
   !----------------------- End of Subroutine DIPREPI ---------------------
-        END
+        END SUBROUTINE DIPREPI
   !*==DPREPI.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DPREPI
         SUBROUTINE DPREPI(Neq,Y,S,Yh,Savr,Ewt,Rtem,Ia,Ja,Ic,Jc,Wk,Iwk,    &
@@ -10810,7 +10810,7 @@ contains
    1000 Ipper = -ier - 5
         LREq = 2 + (2*N+1)/LRAt
   !----------------------- End of Subroutine DPREPI ----------------------
-        END
+        END SUBROUTINE DPREPI
   !*==DAINVGS.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DAINVGS
         SUBROUTINE DAINVGS(Neq,T,Y,Wk,Iwk,Tem,Ydot,Ier,RES,ADDA)
@@ -10911,7 +10911,7 @@ contains
         IF ( imul.EQ.10 ) Ier = 4
         RETURN
   !----------------------- End of Subroutine DAINVGS ---------------------
-  99999 END
+  99999 END SUBROUTINE DAINVGS
   !*==DPRJIS.spg  processed by SPAG 6.72Dc at 17:55 on 29 Mar 2017
   !DECK DPRJIS
         SUBROUTINE DPRJIS(Neq,Y,Yh,Nyh,Ewt,Rtem,Savr,S,Wk,Iwk,RES,JAC,    &
@@ -11073,6 +11073,6 @@ contains
   ! Error return for IRES = 2 or IRES = 3 return from RES. ---------------
    400  IERpj = ires
   !----------------------- End of Subroutine DPRJIS ----------------------
-        END
+        END SUBROUTINE DPRJIS
 
 end module ode_lsoda_aux1
