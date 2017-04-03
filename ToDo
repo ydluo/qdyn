@@ -1,11 +1,13 @@
 (Priorities are not indicated)
 
+Bugs:
++ function read_qdyn_in in src/qdyn.m is inconsistent with qdyn.in format
+
 Physics:
 + 2D kernel for damage zones with finite fault size (FINITE=1)
 + compute surface deformation to compare to GPS data
 + complete testing of normal stress coupling 
 + slip-dependent friction law (Olivier Lengline)
-+ 2D kernel for finite slab geometry
 + 3D kernel for fault in infinite medium
 + double spring-block model
 + variable strike
@@ -20,7 +22,6 @@ Physics:
 
 Code engineering and optimization:
 + remove redundancy in QSB/*.m
-+ update function read_qdyn_in in src/qdyn.m
 + python wrapper to enable runs on clusters without matlab license (Martijn)
 + inputs as fortran namelists
 + use parallel MPI I/O
@@ -43,7 +44,5 @@ Packaging:
 + do "matlab publish" for the examples
 + automatically update "modification date" in google doc user's manual with Google Apps Script
 + add copyright notices at the beginning of each source file (see http://www.gnu.org/licenses/gpl-howto.html)
-+ replace Num.Rec. code by something else: 
-  Lapusta's method (Noda and Lapusta 2010) 
-  or Gear's method in ODEPACK (http://computation.llnl.gov/casc/odepack/, used by Jessica Hawthorne)
-+ document equations and friction laws in manual
++ replace ODE solver by Lapusta's method (Noda and Lapusta 2010) 
+  or Gear's method in ODEPACK (http://computation.llnl.gov/casc/odepack/)
