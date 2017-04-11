@@ -23,6 +23,7 @@ F90 = mpif90
 #OPT = -O3 -ip -ipo -parallel -openmp -par-threshold:50
 #-no-inline-factor
 OPT = -O3 -pg -g
+#OPT = -O3
 #OPT = -Og -Wall -Wextra -pedantic -fimplicit-none -fcheck=all -fbacktrace
 #OPT = -O0 -warn all -C
 #OPT = -O0 -warn all -parallel -par-report3  -C

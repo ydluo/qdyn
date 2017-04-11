@@ -289,6 +289,7 @@ subroutine init_lsoda(pb)
   pb%lsoda%atol(1) = 0                     ! absolute tolerance
   pb%lsoda%jt = 2                       ! 1 = user supplied full, 2 = internal full jacobian
   pb%lsoda%iopt = 0                     ! no optional parameters
+  pb%lsoda%itask = 2                    ! one-step mode, no t_crit
 
   ! Set-up rwork vector
   LRN = 20 + 16*pb%lsoda%neq(1)            ! size of rwork for non-stiff equations
@@ -304,10 +305,10 @@ subroutine init_lsoda(pb)
 
   ! Check if max time step is limited by user
   if (pb%dt_max >  0.d0) then
-    pb%lsoda%itask = 5                    ! one-step mode, do not exceed dt_max
+    pb%lsoda%rwork(5:10) = 0.0            ! reset rwork
+    pb%lsoda%iwork(5:10) = 0              ! reset iwork
     pb%lsoda%rwork(6) = pb%dt_max         ! max time step, do not set for infinite (default)
-  else
-    pb%lsoda%itask = 2                    ! one-step mode, unlimited dt
+    pb%lsoda%iopt = 1                     ! using optional input
   endif
 
   pb%lsoda%istate = 1                     ! first call, do sanity checks etc.
