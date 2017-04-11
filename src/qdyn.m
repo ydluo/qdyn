@@ -49,8 +49,9 @@
 %		MU 	shear modulus (Pa)
 %		LAM 	elastic modulus LAMBDA for 3D simulations (Pa)
 %		VS 	shear wave velocity (m/s). If VS=0 radiation damping is turned off
-%		H	half-thickness of the fault damage zone
 %		D	damage level = 1 - (damaged shear modulus) / (intact shear modulus)
+%		H	if D>0, half-thickness of the fault damage zone
+%     if D=0, half-thickness of elastic slab bisected by fault
 %		L 	fault length if MESHDIM=1
 %		    	stiffness is MU/L if MESHDIM=0
 %		FINITE	boundary conditions if MESHDIM=1
@@ -61,6 +62,8 @@
 %			    error message "finite kernel is too small", create a larger kernel file
 %			    using the function TabKernelFiniteFlt.m, update the file name in
 %			    subroutine init_kernel_2D of src/fault_stress.f90, and recompile
+%     2 = same as 0 but slip is symmetric relative to first element
+%     3 = same as 1 but slip is symmetric relative to first element
 %		W  	distance between displacement loading and fault if MESHDIM=1 and FINITE=0
 %		DIP_W	dipping angle (degree). If depthdependent, values must be given
 %			from deeper to shallower depth.
@@ -148,7 +151,7 @@
 %		DYN_SKIP number of dynamic events to skip (warm up cycles)
 %
 %		Other parameters:
-%		EXEC_PATH path to the Fortran qdyn executable. 
+%		EXEC_PATH path to the Fortran qdyn executable.
 %			The default path is the directory containing qdyn.m
 %		NPROCS number of processors for parallel MPI runs
 %			The default value is 1 (serial run)
@@ -433,7 +436,7 @@ function export_branch_input()
   fprintf(fid,'%15.6f\n',DIP_W(1));
   fprintf(fid,'%20.6f %20.6f\n',LAM,MU);
   fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
-    [X(:),Y(:),Z(:),SIGMA(:),V_0(:),TH_0(:),A(:),B(:),DC(:),V1(:),V2(:),MU_SS(:),V_SS(:),CO(:)]');
+    [X;Y;Z;SIGMA;V_0;TH_0;A;B;DC;V1;V2;MU_SS;V_SS;CO]);
   fclose(fid);
 
 end
@@ -464,13 +467,13 @@ function export_main_input()
       iw0 = iproc*nw;
       % If NW/NPROCS is not integer, leave the rest to the last processor
       if iproc==NPROCS, nw = nw + mod(NW,NPROCS); end
-      iloc = i0 + [1:NX*nw]';
-      iwloc = iw0 + [1:nw]';
+      iloc = i0 + [1:NX*nw];
+      iwloc = iw0 + [1:nw];
     else
       filename = 'qdyn.in';
       nw = NW;
-      iloc = [1:N]';
-      iwloc = [1:NW]';
+      iloc = [1:N];
+      iwloc = [1:NW];
     end
 
     fid=fopen(filename,'w');
@@ -478,7 +481,7 @@ function export_main_input()
     if MESHDIM == 2
       fprintf(fid,'%u %u     NX, NW\n' , NX, nw);
       fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
-      fprintf(fid,'%.15g %.15g \n', [DW(iwloc),DIP_W(iwloc)]');
+      fprintf(fid,'%.15g %.15g \n', [DW(iwloc);DIP_W(iwloc)]);
     else
       fprintf(fid,'%u     NN\n' , N);
       fprintf(fid,'%.15g %.15g      L, W\n', L, W);
@@ -498,11 +501,12 @@ function export_main_input()
     fprintf(fid,'%.15g %.15g %.15g    M0, DYN_th_on, DYN_th_off\n', DYN_M,DYN_TH_ON,DYN_TH_OFF);
 
     fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %u %u %.15g\n',...
-      [SIGMA(iloc),V_0(iloc),TH_0(iloc),A(iloc),B(iloc),DC(iloc),V1(iloc),V2(iloc), ...
-       MU_SS(iloc),V_SS(iloc),IOT(iloc),IASP(iloc),CO(iloc)]');
+      [SIGMA(iloc);V_0(iloc);TH_0(iloc);A(iloc);B(iloc);DC(iloc);V1(iloc);V2(iloc); ...
+       MU_SS(iloc);V_SS(iloc);IOT(iloc);IASP(iloc);CO(iloc)]);
 
     if NPROCS>1
-      fprintf(fid,'%.15g %.15g %.15g %.15g\n', [X(iloc),Y(iloc),Z(iloc),DIP(iloc)]');
+      fprintf(fid,'%.15g %.15g %.15g %.15g\n', ...
+              [X(iloc);Y(iloc);Z(iloc);DIP(iloc)]);
     end
 
     fclose(fid);

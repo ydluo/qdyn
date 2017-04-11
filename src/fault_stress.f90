@@ -9,7 +9,8 @@ module fault_stress
 
   type kernel_2D_fft
     double precision, dimension(:), allocatable :: kernel
-    integer :: nnfft, finite
+    integer :: nnfft
+    logical :: finite, symmetric
     type (OouraFFT_type) :: m_fft
   end type kernel_2D_fft
 
@@ -18,16 +19,10 @@ module fault_stress
     integer :: nw, nx, nwLocal, nwGlobal, nnLocal, nnGlobal
   end type kernel_3D
 
-!  type fault_coord
-!    double precision, dimension(:), allocatable :: xlocarray,ylocarray,zlocarray
-!    double precision, dimension(:), allocatable :: xglobarray,yglobarray,zglobarray
-!  end type fault_coord
-
   type kernel_3D_fft
     integer :: nxfft, nw, nx, nwLocal, nwGlobal, nnLocalfft, nnGlobalfft
     double precision, dimension(:,:,:), allocatable :: kernel, kernel_n
     type (OouraFFT_type) :: m_fft
-!    type (fault_coord) :: fault
   end type kernel_3D_fft
 
   type kernel_3D_fft2d
@@ -63,7 +58,7 @@ contains
 !   dtau_dt = - K*( v - Vpl )
 
 !=============================================================
-subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,finite)
+subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt)
 !NOTE: damaged zones (D, H) only available for 2D problems
 
   use mesh, only : mesh_type
@@ -71,7 +66,7 @@ subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,finite)
 
   double precision, intent(in) :: lambda,mu,D,H
   type(mesh_type), intent(in) :: m
-  integer, intent(in) :: i_sigma_cpl,finite
+  integer, intent(in) :: i_sigma_cpl,k2_opt
   type(kernel_type), intent(inout) :: k
 
   write(6,*) 'Intializing kernel: ...'
@@ -93,7 +88,13 @@ subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,finite)
     call init_kernel_1D(k%k1,mu,m%Lfault)
   case(2)
     allocate(k%k2f)
-    k%k2f%finite = finite
+    if (k2_opt<2) then
+      k%k2f%finite = (k2_opt==1)
+      k%k2f%symmetric = .false.
+    else
+      k%k2f%finite = (k2_opt==3)
+      k%k2f%symmetric = .true.
+    endif
     call init_kernel_2D(k%k2f,mu,m,D,H)
   case(3)
     allocate(k%k3)
@@ -135,12 +136,14 @@ subroutine init_kernel_2D(k,mu,m,D,H)
   double precision, allocatable :: kk(:)
   integer :: i
 
-  k%nnfft = (k%finite+1)*m%nn
+  k%nnfft = m%nn
+  if (k%finite) k%nnfft = k%nnfft*2
+  if (k%symmetric) k%nnfft = k%nnfft*2
   allocate (k%kernel(k%nnfft))
 
   write(6,*) 'FFT applied'
 
-  if (k%finite == 0) then
+  if (.not. k%finite) then
 
    ! Kernel for a 1D in a 2D homogeneous elastic medium,
    ! assuming antiplane deformation (slip in the direction off the 2D plane)
@@ -150,12 +153,18 @@ subroutine init_kernel_2D(k,mu,m,D,H)
    !   k = wavenumber
    !
    ! Kernel for 1D fault surrounded by a damaged zone of uniform thickness and compliance
-   ! derived from equations 47-49 of Ampuero et al (2002, http://onlinelibrary.wiley.com/doi/10.1029/2001JB000452/full)
+   ! derived from equations 47-49 of Ampuero et al (2002,
+   ! http://onlinelibrary.wiley.com/doi/10.1029/2001JB000452/full)
    ! by setting s=0 (low frequency limit = static)
    !   kernel(k) = 1/2*mu*(1-D)*|k| * cotanh[ H*|k| + arctanh(1-D) ]
    ! where
    !   H = half-thickness of the fault damage zone
    !   D = damage level = 1 - (damaged shear modulus) / (intact shear modulus)
+   !
+   ! Kernel for finite slab, to model ring-shear laboratory experiments:
+   ! elastic layer of thickness H, fault in the middle of the layer,
+   ! driven by imposed fault-parallel velocity at distance H from fault
+   !   kernel(k) = 1/2*mu*|k| * cotanh(H*|k|)
 
    ! Define wavenumber
     allocate( kk(k%nnfft) )
@@ -173,10 +182,16 @@ subroutine init_kernel_2D(k,mu,m,D,H)
     k%kernel = 0.5d0*mu*kk
 
    ! Compute kernel for damaged medium
-    if (D>0 .and. H>0) k%kernel = k%kernel * (1-D) / tanh( H*kk + atanh(1-D) )
+    if (D>0d0 .and. H>0d0) k%kernel = k%kernel * (1-D) / tanh( H*kk + atanh(1-D) )
+
+   ! Compute kernel for finite slab
+    if (D==0d0 .and. H>0d0) then
+      k%kernel = k%kernel / tanh( H*kk )
+      if (kk(1)==0d0) k%kernel(1) = 0.5d0*mu/H
+    endif
 
  !- Read coefficient I(n) from pre-calculated file.
-  elseif (k%finite == 1) then !NOTE: damaged zones are not available for FINITE=1
+  else !NOTE: damaged zones are not available for FINITE=1
     write(6,*) 'Reading kernel ',SRC_PATH,'/kernel_I.tab'
     open(57,file=SRC_PATH//'/kernel_I.tab')
     do i=1,k%nnfft/2-1
@@ -436,12 +451,22 @@ subroutine compute_stress_2d(tau,k2f,v)
   integer :: nn
 
   nn = size(v)
-  tmp( 1 : nn ) = v
-  tmp( nn+1 : k2f%nnfft ) = 0d0
+  if (k2f%symmetric) then
+    tmp( 1 : nn ) = v(nn:1:-1)
+    tmp( nn+1 : 2*nn ) = v
+    tmp( 2*nn+1 : k2f%nnfft ) = 0d0
+  else
+    tmp( 1 : nn ) = v
+    tmp( nn+1 : k2f%nnfft ) = 0d0
+  endif
   call my_rdft(1,tmp,k2f%m_fft)
   tmp = - k2f%kernel * tmp
   call my_rdft(-1,tmp,k2f%m_fft)
-  tau = tmp(1:nn)
+  if (k2f%symmetric) then
+    tau = tmp(nn+1:2*nn)
+  else
+    tau = tmp(1:nn)
+  endif
 
 end subroutine compute_stress_2d
 
