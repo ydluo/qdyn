@@ -210,6 +210,9 @@ subroutine init_kernel_2D(k,mu,m,D,H)
 
  ! factor 2/N from the inverse FFT convention
   k%kernel = k%kernel *2.d0/dble(k%nnfft)
+ 
+ ! symmetric stress is computed on a twice longer fault
+  if (k%symmetric) k%kernel = k%kernel / 2d0
 
   return
 
@@ -451,13 +454,12 @@ subroutine compute_stress_2d(tau,k2f,v)
   integer :: nn
 
   nn = size(v)
+  tmp = 0d0
   if (k2f%symmetric) then
-    tmp( 1 : nn ) = v(nn:1:-1)
-    tmp( nn+1 : 2*nn ) = v
-    tmp( 2*nn+1 : k2f%nnfft ) = 0d0
+    tmp(1:nn) = v(nn:1:-1)
+    tmp(nn+1:2*nn) = v
   else
-    tmp( 1 : nn ) = v
-    tmp( nn+1 : k2f%nnfft ) = 0d0
+    tmp(1:nn) = v
   endif
   call my_rdft(1,tmp,k2f%m_fft)
   tmp = - k2f%kernel * tmp
