@@ -107,8 +107,8 @@ Y. Luo, J. P. Ampuero (2012), Simulation of Complex Tremor Migration Patterns, A
 Y. Luo, J. P. Ampuero, K. Miyakoshi and K. Irikura (2017)
   *Surface effects on earthquake moment-area scaling relations*  
   PAGEOPH, Topical Volume on *"Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"*
-  [doi:10.1007/s00024-017-1467-4] (https://link.springer.com/article/10.1007/s00024-017-1467-4)  
-  [PDF] (https://rdcu.be/oOL9)
+  [doi:10.1007/s00024-017-1467-4](https://link.springer.com/article/10.1007/s00024-017-1467-4)  
+  [PDF](https://rdcu.be/oOL9)
   
 Y. Luo, J. P. Ampuero, P. Galvez, M. van den Ende and B. Idini. (2017). 
 *QDYN: a Quasi-DYNamic earthquake simulator (v1.1) [Data set]*. Zenodo. doi:10.5281/zenodo.322459  
