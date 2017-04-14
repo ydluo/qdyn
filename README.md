@@ -5,7 +5,7 @@
 
 ## News 
 
-*Feb 2017* | [**QDYN v1.1 has been released**](https://github.com/ydluo/qdyn/releases/tag/qdyn_1.1) and published online via [zenodo] (https://zenodo.org/record/322459#.WLNq3BiZNE4). This new version introduces MPI parallelization for 3D simulations in HPC clusters and faults surrounded by damaged zones in 2D. You can cite it as:  
+*Feb 2017* | [**QDYN v1.1 has been released**](https://github.com/ydluo/qdyn/releases/tag/qdyn_1.1) and published online via [zenodo](https://zenodo.org/record/322459#.WLNq3BiZNE4). This new version introduces MPI parallelization for 3D simulations in HPC clusters and faults surrounded by damaged zones in 2D. You can cite it as:  
   Y. Luo, J. P. Ampuero, P. Galvez, M. van den Ende and B. Idini (2017)  
   *QDYN: a Quasi-DYNamic earthquake simulator (v1.1)*  
   Zenodo. doi:10.5281/zenodo.322459  
@@ -15,11 +15,11 @@
   Y. Luo, J. P. Ampuero, K. Miyakoshi and K. Irikura (2017)  
   *Surface effects on earthquake moment-area scaling relations*   
   PAGEOPH, Topical Volume on *"Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"*  
-  doi:10.1007/s00024-017-1467-4  [PDF] (https://rdcu.be/oOL9)
+  doi:10.1007/s00024-017-1467-4  [PDF](https://rdcu.be/oOL9)
 
-*Nov 2014* | A *QDYN* tutorial session was offered at the [School on "Earthquakes: nucleation, triggering and relationship with aseismic processes"] (http://earthquakes.sciencesconf.org/) at Cargese, Corsica, 3 - 10 November 2014 
+*Nov 2014* | A *QDYN* tutorial session was offered at the [School on "Earthquakes: nucleation, triggering and relationship with aseismic processes"](http://earthquakes.sciencesconf.org/) at Cargese, Corsica, 3 - 10 November 2014 
 
-*QDYN* was previously hosted on [GoogleCode] (https://code.google.com/p/qdyn/) and is now on [Github] (http://ydluo.github.io/qdyn). Both [SVN] (https://subversion.apache.org) and [GIT] (https://git-scm.com) version control systems are supported. 
+*QDYN* was previously hosted on [GoogleCode](https://code.google.com/p/qdyn/) and is now on [Github](http://ydluo.github.io/qdyn). Both [SVN](https://subversion.apache.org) and [GIT](https://git-scm.com) version control systems are supported. 
 
 
 --------------------------------
