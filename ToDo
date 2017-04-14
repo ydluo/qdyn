@@ -2,6 +2,7 @@
 
 Bugs:
 + function read_qdyn_in in src/qdyn.m is inconsistent with qdyn.in format
++ anyone knows how to fix the image link ![](https://goo.gl/pI9uAo) in wiki/Simulation_Cascadia_Tremor -- Content length exceeded?
 
 Physics:
 + 2D kernel for damage zones with finite fault size (FINITE=1)
