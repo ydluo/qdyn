@@ -292,7 +292,7 @@ Parse_Inputs(varargin{:});
 % generate the mesh
 [X,Y,Z,DIP] = generate_mesh();
 
-if MESHDIM<2 & NPROCS>1 
+if MESHDIM<2 && NPROCS>1 
   disp('MPI parallelization is only implemented for MESHDIM=2. Resetting NPROCS=1.')
   NPROCS = 1;
 end
@@ -366,7 +366,7 @@ case {'run', 'write'},
   end
 
  % rename input and output files
-  if length(NAME)
+  if ~isempty(NAME)
     movefile('fort.18',[NAME '.ot']); 
     movefile('fort.19',[NAME '.ox']); 
     copyfile('qdyn.in',[NAME '.in']); 
@@ -543,12 +543,13 @@ end
 for k=2:2:length(varargin),
   assignin('caller', upper(varargin{k-1}), varargin{k} );
 end
+end % of function Parse_Inputs
 
 %-----------
 % WARNING: this function needs update to comply with the current format of qdyn.in
 function pars = read_qdyn_in(name)
 
-if ~exist('name','var') || ~length(name), name = 'qdyn'; end
+if ~exist('name','var') || isempty(name), name = 'qdyn'; end
 name = [name '.in'];
 
 fid=fopen(name);
@@ -576,19 +577,19 @@ DTTRY = rdat(1);
 DTMAX = rdat(2);
 ACC   = rdat(3);
 fclose(fid);
-[X,A,B,DC,V1,V2,V_0,TH_0,]=textread(name,'','headerlines',6);
+[X,A,B,DC,V1,V2,V_0,TH_0,] = textread(name,'','headerlines',6);
 
 % wrap UPPER CASE variables in parameter structure fields with the same name 
 fpars = who;
 for k= find( strcmp(fpars,upper(fpars)) )' ,
   pars.(fpars{k}) = eval(fpars{k}) ;
 end
-
+end % of function read_qdyn_in
 
 % read outputs from qdyn.f
 function [ot,ox] = read_qdyn_out_mpi(name)
 
-if exist('name','var') && length(name)
+if exist('name','var') && ~isempty(name)
   namet = [name '.ot'];
   namex = [name '.ox'];
 else
@@ -619,12 +620,13 @@ end
   ox.dtaud = cosa(:,:,8);
   ox.d = cosa(:,:,9);
   ox.sigma = cosa(:,:,10);
+end % of function read_qdyn_out_mpi
 
 %-----------
 % read outputs from qdyn.f
 function [ot,ox] = read_qdyn_out(name)
 
-if exist('name','var') && length(name)
+if exist('name','var') && ~isempty(name)
   namet = [name '.ot'];
   namex = [name '.ox'];
 else
@@ -659,6 +661,7 @@ if uimatlab
 else 
   [ot,ox] = read_qdyn_out_Octave(namet,namex)
 end
+end % of function read_qdyn_out
 
 %---
 % adapted from http://www.mathworks.com/matlabcentral/fileexchange/23868-is-this-matlab-or-octave-
@@ -674,3 +677,4 @@ for elem = 1:numel(LIC)
         break
     end
 end
+end % of function uiIsMatLab
