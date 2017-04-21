@@ -1,7 +1,6 @@
 (Priorities are not indicated)
 
 Bugs:
-+ function read_qdyn_in in src/qdyn.m is inconsistent with qdyn.in format
 + anyone knows how to fix the image link ![](https://goo.gl/pI9uAo) in wiki/Simulation_Cascadia_Tremor -- Content length exceeded?
 
 Physics:
