@@ -316,7 +316,7 @@ case 'set',
 case 'read',
   pars = read_qdyn_in(NAME);
   pars.NAME = NAME;
-  %[ot,ox] = read_qdyn_out(NAME);
+  [ot,ox] = read_qdyn_out(NAME);
 
 case {'run', 'write'},
 
