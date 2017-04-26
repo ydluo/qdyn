@@ -101,7 +101,7 @@ end subroutine ot_read_stations
 subroutine ot_init(pb)
 
   use problem_class
-  use constants, only: OUT_MASTER
+  use constants, only: OUT_MASTER, OCTAVE_OUTPUT
   use my_mpi, only : is_MPI_parallel, is_mpi_master, my_mpi_tag
   use mesh, only : mesh_get_size
 
@@ -157,12 +157,16 @@ subroutine ot_init(pb)
 else
 
   pb%ot%unit = 18 
-  write(pb%ot%unit,'(a)')'# macroscopic values:'
-  write(pb%ot%unit,'(a)')'# 1=t,2=loc_size,3=crack_size,4=potcy,5=pot_rate'
-  write(pb%ot%unit,'(a)')'# values at selected point:'
-  write(pb%ot%unit,'(a)')'# 6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip'
-  write(pb%ot%unit,'(a)')'# values at max(V) location:'
-  write(pb%ot%unit,'(a)')'# 11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip, 17=sigma'
+  if (OCTAVE_OUTPUT) then
+    write(pb%ot%unit,'(a)')'# macroscopic values:'
+    write(pb%ot%unit,'(a)')'# 1=t,2=loc_size,3=crack_size,4=potcy,5=pot_rate'
+    write(pb%ot%unit,'(a)')'# values at selected point:'
+    write(pb%ot%unit,'(a)')'# 6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip'
+    write(pb%ot%unit,'(a)')'# values at max(V) location:'
+    write(pb%ot%unit,'(a)')'# 11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip, 17=sigma'
+  else
+    open(pb%ot%unit,form='unformatted',access='stream')
+  endif
 
   pb%ot%unit = 22
   write(pb%ot%unit,'(a)')'# Seismicity record:' 
@@ -192,7 +196,7 @@ end subroutine ot_init
 subroutine ox_init(pb)
  
   use problem_class
-  use constants, only : OUT_MASTER
+  use constants, only : OUT_MASTER, OCTAVE_OUTPUT
   use my_mpi, only : is_MPI_parallel, is_mpi_master
   use mesh, only : mesh_get_size
 
@@ -227,7 +231,15 @@ subroutine ox_init(pb)
     endif
 
   else
-    write(pb%ox%unit,'(a,i10)')'# nx= ',pb%ox%count    
+     if (OCTAVE_OUTPUT) then
+         write(pb%ox%unit,'(a,i10)') '# nx= ',pb%ox%count
+     else
+         open(pb%ox%unit,form='unformatted',access='stream')
+         write(pb%ox%unit) pb%ox%count
+         do i=1,pb%mesh%nn,pb%ox%nxout
+           write(pb%ox%unit) pb%mesh%x(i)
+         enddo
+     endif
   endif
 
   pb%ox%dyn_stat = 0
@@ -270,21 +282,37 @@ subroutine ot_write(pb)
    !JPA warning: ivmax outputs not implemented in parallel yet
 
   else
-    if (OCTAVE_OUTPUT) then
+    if (OCTAVE_OUTPUT) then ! NOTE: Octave output is still ASCII.
      ! for Octave: comma as field delimiter and no spaces
       ot_fmt = '(g0.16,16(",",g0.6))'
-    else
-      ot_fmt = '(e24.16,16e14.6)'
-    endif
-    write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
-      pb%ot%lcnew*pb%mesh%dx, pb%ot%pot, pb%ot%pot_rate,    &
+      write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
+      pb%ot%lcnew*pb%mesh%dx, pb%ot%pot, pb%ot%pot_rate,  &
       pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
       pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
-      pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
+      pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),  &
      ! for ivmax
-      pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
+      pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),  &
       pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
       pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
+    else
+      ! macroscopic values:
+      !   1=t,2=loc_size,3=crack_size,4=potcy,5=pot_rate
+      ! values at selected point:
+      !   6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip
+      ! values at max(V) location:
+      !   11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip, 17=sigma
+      
+      write(pb%ot%unit) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
+      pb%ot%lcnew*pb%mesh%dx, pb%ot%pot, pb%ot%pot_rate,    &
+      pb%v(pb%ot%ic), pb%theta(pb%ot%ic),                   &
+      pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic),    &
+      pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),                  &
+      pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax), &
+      pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),       &
+      pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
+      if (pb%it+1 == pb%itstop) close(pb%ot%unit)
+    endif
+    
   endif  
 
   if (is_MPI_parallel()) return
@@ -319,7 +347,7 @@ end subroutine ot_write
 subroutine ox_write(pb)
  
   use problem_class
-  use constants, only: OUT_MASTER
+  use constants, only: OUT_MASTER, OCTAVE_OUTPUT
   use my_mpi, only: is_MPI_parallel, is_mpi_master, my_mpi_tag, synchronize_all
 
   type (problem_type), intent(inout) :: pb
@@ -445,13 +473,23 @@ if (is_MPI_parallel()) then
 
 else
  if (mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
-  if (pb%ox%i_ox_seq == 0) then
-    write(pb%ox%unit,'(a,2i8,e14.6)')'# x t v theta dtau tau_dot slip sigma',pb%it,pb%ot%ivmax,pb%time
+  if (pb%ox%i_ox_seq == 0) then 
   ! JPA: this output should also contain y and z
-    do ixout=1,pb%mesh%nn,pb%ox%nxout
-      write(pb%ox%unit,'(e15.7,e24.16,6e15.7)') pb%mesh%x(ixout),pb%time,pb%v(ixout),   &
-        pb%theta(ixout),pb%tau(ixout), pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
-    enddo
+    if (OCTAVE_OUTPUT) then
+        write(pb%ox%unit,'(a,2i8,e14.6)')'# x t v theta dtau tau_dot slip sigma',pb%it,pb%ot%ivmax,pb%time
+        do ixout=1,pb%mesh%nn,pb%ox%nxout
+          write(pb%ox%unit,'(e15.7,e24.16,6e15.7)') pb%mesh%x(ixout),pb%time,pb%v(ixout),   &
+            pb%theta(ixout),pb%tau(ixout), pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
+        enddo
+    else
+        write(pb%ox%unit) pb%time 
+        do ixout=1,pb%mesh%nn,pb%ox%nxout
+           write(pb%ox%unit) pb%v(ixout),pb%theta(ixout),pb%tau(ixout), &
+             pb%dtau_dt(ixout), pb%slip(ixout), pb%sigma(ixout)             
+        enddo
+        if (pb%it+1 == pb%itstop) close(pb%ox%unit)
+    endif
+    
   else
     pb%ox%unit = pb%ox%unit + 1
     write(pb%ox%unit,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
