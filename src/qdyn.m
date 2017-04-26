@@ -649,49 +649,78 @@ function [ot,ox] = read_qdyn_out(name)
 
     if uimatlab
         % time series
-        fid = fopen(namet, 'r');
-        hdr = fread(fid, 'double');
-        fclose(fid);
-        
-        hdr = reshape(hdr, 17, length(hdr)/17)';
-        ot.t = hdr(:,1);
-        ot.locl = hdr(:,2);
-        ot.cl = hdr(:,3);
-        ot.p = hdr(:,4);
-        ot.pdot = hdr(:,5);
-        ot.vc = hdr(:,6);
-        ot.thc = hdr(:,7);
-        ot.omc = hdr(:,8);
-        ot.tauc = hdr(:,9);
-        ot.dc = hdr(:,10);
-        ot.xm = hdr(:,11);
-        ot.v = hdr(:,12);
-        ot.th = hdr(:,13);
-        ot.om = hdr(:,14);
-        ot.tau = hdr(:,15);
-        ot.d = hdr(:,16);
-        ot.sigma = hdr(:,17);
+        [~, file_sys] = system(['file ',namet]);
+        isasc = textscan(file_sys, '%s', 2);
+        if strcmp('ASCII', isasc{1}(2))
+            [ot.t, ot.locl, ot.cl, ot.p, ot.pdot, ...
+                ot.vc, ot.thc, ot.omc, ot.tauc, ot.dc, ...
+                ot.xm, ot.v, ot.th, ot.om, ot.tau, ot.d, ot.sigma ] = ...
+                textread(namet, '', 'headerlines', 6);
+        else % binary output
+            fid = fopen(namet, 'r');
+            hdr = fread(fid, 'double');
+            fclose(fid);
+
+            hdr = reshape(hdr, 17, length(hdr)/17)';
+            ot.t = hdr(:,1);
+            ot.locl = hdr(:,2);
+            ot.cl = hdr(:,3);
+            ot.p = hdr(:,4);
+            ot.pdot = hdr(:,5);
+            ot.vc = hdr(:,6);
+            ot.thc = hdr(:,7);
+            ot.omc = hdr(:,8);
+            ot.tauc = hdr(:,9);
+            ot.dc = hdr(:,10);
+            ot.xm = hdr(:,11);
+            ot.v = hdr(:,12);
+            ot.th = hdr(:,13);
+            ot.om = hdr(:,14);
+            ot.tau = hdr(:,15);
+            ot.d = hdr(:,16);
+            ot.sigma = hdr(:,17);
+        end
         
         %snapshots
-        fid = fopen(namex, 'r');
-        nx = fread(fid, 1, 'int32');
-        ox.x = fread(fid, nx, 'double');
-        i = 1;
-        while 1
-            time = fread(fid, 1, 'double'); 
-            if isempty(time)
-                fclose(fid);
-                break
-            else
-                ox.t(i,:) = time; 
-                hdr = fread(fid, [6, nx], 'double')';
-                ox.v(:,i) = hdr(:,1);
-                ox.th(:,i) = hdr(:,2);
-                ox.dtau(:,i) = hdr(:,3);
-                ox.dtaud(:,i) = hdr(:,4);
-                ox.d(:,i) = hdr(:,5);
-                ox.sigma(:,i) = hdr(:,6);
-                i = i + 1;
+        [~, file_sys] = system(['file ',namex]);
+        isasc = textscan(file_sys, '%s', 2);
+        if strcmp('ASCII', isasc{1}(2))
+            fid = fopen(namex);
+            NSX = fscanf(fid, '# nx=%u');
+            fclose(fid);
+            cosa = textread(namex,'','commentstyle','shell');
+            ncosa = size(cosa);
+            NST = ncosa(1)/NSX;
+            cosa = reshape(cosa, NSX, NST, ncosa(2));
+            ox.x = cosa(:,1,1);
+            ox.t = cosa(1,:,2)';
+            ox.v = cosa(:,:,3);
+            ox.th = cosa(:,:,4);
+            ox.dtau = cosa(:,:,5);
+            ox.dtaud = cosa(:,:,6);
+            ox.d = cosa(:,:,7);
+            ox.sigma = cosa(:,:,8);
+        else % binary output
+            fid = fopen(namex, 'r');
+            nx = fread(fid, 1, 'int32');
+            ox.x = fread(fid, nx, 'double');
+            i = 1;
+            while 1
+                time = fread(fid, 1, 'double'); 
+                if isempty(time)
+                    fclose(fid);
+                    break
+                else
+                    ox.t(i,:) = time; 
+                    hdr = fread(fid, [6, nx], 'double')';
+                    ox.v(:,i) = hdr(:,1);
+                    ox.th(:,i) = hdr(:,2);
+                    ox.dtau(:,i) = hdr(:,3);
+                    ox.dtaud(:,i) = hdr(:,4);
+                    ox.d(:,i) = hdr(:,5);
+                    ox.sigma(:,i) = hdr(:,6);
+                    i = i + 1;
+                end
             end
         end
     else 

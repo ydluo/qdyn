@@ -8,6 +8,10 @@ module constants
 
  ! set OCTAVE_OUTPUT = .true. if you are using Octave instead of Matlab
   logical, parameter :: OCTAVE_OUTPUT = .false.
+  
+ ! set BIN_OUTPUT = .true. for snapshot and time serie binary outputs. 
+ ! Only available for MESHDIM = 1, OX_SEQ = 0, OCTAVE_OUTPUT = .false., DYN_FLAG = 0
+  logical, parameter :: BIN_OUTPUT = .false.
 
 ! set the type of faulting:
 !   1 : strike-slip (right-lateral)
