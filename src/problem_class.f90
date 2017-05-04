@@ -58,6 +58,14 @@ module problem_class
   end type lsoda_type
   ! End of features structure
 
+  ! SEISMIC: requested features structure (normal stress coupling, cohesion)
+  type rk45_type
+    integer :: iflag
+    double precision, dimension(:), allocatable :: work
+    integer, dimension(:), allocatable :: iwork
+  end type rk45_type
+  ! End of features structure
+
   type problem_type
     type (mesh_type) :: mesh
     type (kernel_type) :: kernel
@@ -93,6 +101,7 @@ module problem_class
     type (cohesion_type) :: coh_params
     type (features_type) :: features
     type (lsoda_type) :: lsoda
+    type (rk45_type) :: rk45
   end type problem_type
 
 end module problem_class

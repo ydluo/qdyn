@@ -9,9 +9,10 @@ mesh.o: constants.o parallel.o
 ode_bs.o: derivs_all.o parallel.o problem_class.o
 ode_lsoda_aux1.o: ode_lsoda_aux2.o
 ode_lsoda_main.o: derivs_all.o ode_lsoda_aux1.o ode_lsoda_aux2.o
+ode_rk45.o: derivs_all.o
 okada.o: constants.o
 output.o: constants.o mesh.o parallel.o problem_class.o
 parallel.o: constants.o
 problem_class.o: fault_stress.o mesh.o
-solver.o: derivs_all.o friction.o ode_bs.o ode_lsoda_main.o output.o \
-	parallel.o problem_class.o
+solver.o: derivs_all.o friction.o ode_bs.o ode_lsoda_main.o ode_rk45.o \
+	output.o parallel.o problem_class.o

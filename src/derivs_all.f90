@@ -9,7 +9,7 @@ module derivs_all
 
   private
 
-  public :: derivs, derivs_lsoda, jac_lsoda
+  public :: derivs, derivs_lsoda, derivs_rk45, jac_lsoda
   public :: odepb
 
 
@@ -186,5 +186,17 @@ double precision :: time, yt(neq), pd(nrpd,neq)
 end subroutine jac_lsoda
 
 
+!--------------------------------------------------------------------------------------
+! SEISMIC: the subroutine derivs_rk45 is a wrapper that interfaces between derivs
+! and the Runge-Kutta-Fehlberg solver routine
+!--------------------------------------------------------------------------------------
+subroutine derivs_rk45(time, yt, dydt)
+  double precision :: time
+  double precision :: yt(*)
+  double precision :: dydt(*)
+
+  call derivs(time,yt,dydt,odepb)
+
+end subroutine derivs_rk45
 
 end module derivs_all

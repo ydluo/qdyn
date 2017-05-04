@@ -17,7 +17,7 @@ subroutine init_all(pb)
   use fault_stress, only : init_kernel
   use output, only : ot_init, ox_init
   use friction, only : set_theta_star, friction_mu
-  use solver, only : init_lsoda
+  use solver, only : init_lsoda, init_rk45
 !!$  use omp_lib
 
   type(problem_type), intent(inout) :: pb
@@ -75,7 +75,8 @@ subroutine init_all(pb)
   call ot_init(pb)
   call ox_init(pb)
 
-  call init_lsoda(pb)
+  !call init_lsoda(pb)
+  call init_rk45(pb)
 
   if (is_mpi_master()) write(6,*) 'Initialization completed'
 

@@ -9,7 +9,7 @@ module solver
 
   integer(kind=8), save :: iktotal
 
-  public  :: solve, init_lsoda
+  public  :: solve, init_lsoda, init_rk45
 
 contains
 
@@ -73,9 +73,11 @@ subroutine do_bsstep(pb)
   use derivs_all
   use ode_bs
   use ode_lsoda_main, only: dlsoda
+  use ode_rk45, only: rkf45_d
 
   type(problem_type), intent(inout) :: pb
 
+  double precision :: t0
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
   integer :: ik, ind_stress_coupling, ind_cohesion, ind_localisation
 
@@ -111,7 +113,7 @@ subroutine do_bsstep(pb)
   call derivs(pb%time,yt,dydt,pb)
   yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
   ! One step
-  call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb,ik)
+  !call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb,ik)
 
   ! SEISMIC NOTE: what is happening here?
   if (pb%dt_max >  0.d0) then
@@ -119,6 +121,34 @@ subroutine do_bsstep(pb)
   else
     pb%dt_try = pb%dt_next
   endif
+
+  pb%rk45%iflag = -2 ! Reset to one-step mode each call
+  t0 = pb%time
+  call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, pb%tmax, &
+                pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
+
+  pb%dt_did = pb%time - t0
+
+  !write (6,*) pb%time, pb%tmax
+  !stop
+
+  ! Basic error checking. See description of rkf45_d in ode_rk45.f90 for details
+  select case (pb%rk45%iflag)
+  case (3)
+    write (6,*) "RK45 error [3]: relative error tolerance too small"
+    stop
+  case (4)
+    !write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
+  case (5)
+    write (6,*) "RK45 error [5]: solution vanished, relative error test is not possible"
+    stop
+  case (6)
+    write (6,*) "RK45 error [6]: requested accuracy could not be achieved"
+    stop
+  case (8)
+    write (6,*) "RK45 error [8]: invalid input parameters"
+    stop
+  end select
 
   ! pb%lsoda%istate = 2
   ! call dlsoda(  derivs_lsoda, pb%lsoda%neq, yt, pb%time, pb%lsoda%tout, &
@@ -364,6 +394,73 @@ subroutine init_lsoda(pb)
   pb%lsoda%istate = 2
 
 end subroutine init_lsoda
+
+
+subroutine init_rk45(pb)
+
+  use problem_class
+  use derivs_all
+  use ode_rk45, only: rkf45_d
+
+  type(problem_type), intent(inout) :: pb
+  double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt
+  integer :: nwork
+  integer :: ind_stress_coupling, ind_cohesion, ind_localisation
+
+  write (6,*) "Initialising RK45 solver"
+
+  nwork = 3 + 6*pb%neqs*pb%mesh%nn
+  pb%rk45%iflag = -1
+  allocate(pb%rk45%work(nwork))
+  allocate(pb%rk45%iwork(5))
+
+  ! Prepare yt for first call
+  ind_stress_coupling = 2 + pb%features%stress_coupling
+  ind_cohesion = ind_stress_coupling + pb%features%cohesion
+  ind_localisation = ind_cohesion + pb%features%localisation
+
+  ! SEISMIC: in the case of the CNS model, solve for tau and not v
+  if (pb%i_rns_law == 3) then   ! SEISMIC: CNS model
+    yt(2::pb%neqs) = pb%tau
+  else  ! SEISMIC: not CNS model (i.e. rate-and-state)
+    yt(2::pb%neqs) = pb%v
+  endif
+  yt(1::pb%neqs) = pb%theta
+  ! SEISMIC NOTE/WARNING: I don't know how permanent this temporary solution is,
+  ! but in case it gets fixed more permanently, derivs_all.f90 needs adjustment
+  if (pb%features%stress_coupling == 1) then           ! Temp solution for normal stress coupling
+    yt(ind_stress_coupling::pb%neqs) = pb%sigma
+  endif
+  if (pb%features%cohesion == 1) then
+    yt(ind_cohesion::pb%neqs) = pb%alpha
+  endif
+  if (pb%features%localisation == 1) then
+    yt(ind_localisation::pb%neqs) = pb%theta2
+  endif
+
+  call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, pb%time+pb%dt_try, &
+                pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
+
+  select case (pb%rk45%iflag)
+  case (3)
+    write (6,*) "RK45 error [3]: relative error tolerance too small"
+    stop
+  case (4)
+    write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
+  case (5)
+    write (6,*) "RK45 error [5]: solution vanished, relative error test is not possible"
+    stop
+  case (6)
+    write (6,*) "RK45 error [6]: requested accuracy could not be achieved"
+    stop
+  case (8)
+    write (6,*) "RK45 error [8]: invalid input parameters"
+    stop
+  end select
+
+write (6,*) "Finished initialising RK45 solver"
+
+end subroutine init_rk45
 
 
 end module solver
