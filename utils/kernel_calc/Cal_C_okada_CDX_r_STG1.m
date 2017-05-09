@@ -39,7 +39,7 @@ RES_s = [50];
 mu = 40e9;
 lam = 40e9;
 Ws = 22e3;
-DIPs = 90;
+DIP = 90;
 RES = 5;       %(2*RES-1)^2 points for a square rupture
 ZZc0 = -11e3;       %starting center Z of rupture 
 
@@ -83,9 +83,6 @@ for  iL = 1:1:numel(LL)
         z0 = (-RES+1:1:RES-1)*dw+Zc;
         Z = reshape(repmat(z0,NX,1),1,N);
         Y = zeros(size(X));
-        DIP = ones(size(X))*DIPs;
-        XX = ones(size(X))*dx;
-        WW = ones(size(X))*dw;
         display(['Square rupture ' num2str(L/1000)  'km*' num2str(L/1000) 'km | Resolution = ' num2str(RES)])
     end
     
@@ -102,15 +99,12 @@ for  iL = 1:1:numel(LL)
         z0 = (-RES+1:1:RES-1)*dw-Ws/2;
         Z = reshape(repmat(z0,NX,1),1,N);
         Y = zeros(size(X));
-        DIP = ones(size(X))*DIPs;
-        XX = ones(size(X))*dx;
-        WW = ones(size(X))*dw;  
         display(['Rectangular rupture ' num2str(W/1000)  'km*' num2str(L_a(ii)/1000) 'km | Resolution = ' num2str(RES)])
       
     end
         
     disp('Compute kernel')
-    K = qdyn_okada_kernel_CDX(N,NW,NX,mu,lam,X,Y,Z,DIP,XX,WW);
+    K = qdyn_okada_kernel([NX,NW],mu,lam,X,Y,Z,DIP,dx,dw);
     
     display('Calculating C value ...');    
     tau = ones(size(X'));

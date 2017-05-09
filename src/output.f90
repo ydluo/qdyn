@@ -26,7 +26,7 @@ subroutine screen_init(pb)
   write(6,*) 'Values at selected point of the fault:'
   K = pb%mesh%Lfault
   if (pb%mesh%dim == 1) then   
-    if (pb%kernel%k2f%finite .eqv. .false.) K = pb%mesh%W
+    if (.not. pb%kernel%k2f%finite) K = pb%mesh%W
   endif
   K = PI*pb%smu/K
   if (pb%mesh%dim < 2) then   

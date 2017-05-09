@@ -88,14 +88,7 @@ subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt)
     call init_kernel_1D(k%k1,mu,m%Lfault)
   case(2)
     allocate(k%k2f)
-    if (k2_opt<2) then
-      k%k2f%finite = (k2_opt==1)
-      k%k2f%symmetric = .false.
-    else
-      k%k2f%finite = (k2_opt==3)
-      k%k2f%symmetric = .true.
-    endif
-    call init_kernel_2D(k%k2f,mu,m,D,H)
+    call init_kernel_2D(k%k2f,mu,m,D,H,k2_opt)
   case(3) 
     allocate(k%k3)
     call init_kernel_3D(k%k3,lambda,mu,m,k%has_sigma_coupling) ! 3D no fft
@@ -124,7 +117,7 @@ end subroutine init_kernel_1D
 
 
 !----------------------------------------------------------------------
-subroutine init_kernel_2D(k,mu,m,D,H)
+subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
 
   use mesh, only : mesh_type
   use constants, only : PI, SRC_PATH
@@ -132,9 +125,18 @@ subroutine init_kernel_2D(k,mu,m,D,H)
   type(kernel_2d_fft), intent(inout) :: k
   type(mesh_type), intent(in) :: m
   double precision, intent(in) :: mu,D,H
+  integer, intent(in) :: k2_opt
 
   double precision, allocatable :: kk(:)
   integer :: i
+
+  if (k2_opt<2) then
+    k%finite = (k2_opt==1)
+    k%symmetric = .false.
+  else
+    k%finite = (k2_opt==3)
+    k%symmetric = .true.
+  endif
 
   k%nnfft = m%nn 
   if (k%finite) k%nnfft = k%nnfft*2

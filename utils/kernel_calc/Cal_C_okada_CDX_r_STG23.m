@@ -37,7 +37,7 @@ DsVS = 4e3;    %depth of shallow VS zone
 mu = 40e9;
 lam = 40e9;
 Ws = 22e3;
-DIPs = 90;
+DIP = 90;
 %RES = 5;       %(2*RES-1)^2 points for a square rupture
 ZZc0 = -11e3;       %starting center Z of rupture 
 
@@ -106,9 +106,6 @@ for  iL = 1:1:numel(LL)
         z0 = (-RES+1:1:RES-1)*dw+Zc;
         Z = reshape(repmat(z0,NX,1),1,N);
         Y = zeros(size(X));
-        DIP = ones(size(X))*DIPs;
-        XX = ones(size(X))*dx;
-        WW = ones(size(X))*dw;
         display(['Square rupture ' num2str(L/1000)  'km*' num2str(L/1000) 'km | Resolution = ' num2str(RES)])
     end
     
@@ -125,14 +122,11 @@ for  iL = 1:1:numel(LL)
         z0 = (-RES+1:1:RES-1)*dw-Ws/2;
         Z = reshape(repmat(z0,NX,1),1,N);
         Y = zeros(size(X));
-        DIP = ones(size(X))*DIPs;
-        XX = ones(size(X))*dx;
-        WW = ones(size(X))*dw;  
         display(['Rectangular rupture ' num2str(W/1000)  'km*' num2str(L_a(ii)/1000) 'km | Resolution = ' num2str(RES)])
       
     end
         
-    K = qdyn_okada_kernel_CDX(N,NW,NX,mu,lam,X,Y,Z,DIP,XX,WW);
+    K = qdyn_okada_kernel([NX,NW],mu,lam,X,Y,Z,DIP,dx,dw);
     
     end
 
@@ -152,7 +146,7 @@ for iL = 1:1:numel(LLo)
 
     disp(['Generating Full Kernel for Rectangular Rupture: L = ' num2str(L/1000) 'km']);
     IIr = find(X<L);
-    L_a(iL) = max(X(IIr))+0.5*XX(1);
+    L_a(iL) = max(X(IIr))+0.5*dx;
     Xr = X(IIr);
     Yr = Y(IIr);
     Zr = Z(IIr);
@@ -198,7 +192,7 @@ for iL = 1:1:numel(LLo)
     Dr = Kr\taur;
     Cr(iL) =  mean(taur)*W/(mean(Dr)*mu);
     display(['Cr = ' num2str(Cr(iL))]);
-    L_ar(iL) = max(Xr)-min(Xr)+XX(1);
+    L_ar(iL) = max(Xr)-min(Xr)+dx;
     fprintf(fid_r,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cr(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
     taur(Zr>= -DsVS) = 0;
     Drs = Kr\taur;
@@ -210,7 +204,7 @@ for iL = 1:1:numel(LLo)
     IIr = find(X<L);
     Zc = 0;
     Xc1 = Ws;
-    Xc2 = max(X(IIr))+0.5*XX(1)-Ws;
+    Xc2 = max(X(IIr))+0.5*dx-Ws;
     II1 = find(((X-Xc1).^2+(Z-Zc).^2)<=Ws^2);
     II2 = find(((X-Xc2).^2+(Z-Zc).^2)<=Ws^2);
     II3 = find(X>=Xc1);
@@ -221,12 +215,12 @@ for iL = 1:1:numel(LLo)
     Zr = Z(IIr);
     Kr = K(IIr,IIr);
     display('Calculating Cr value :...');
-    L_ar(iL) = max(Xr)-min(Xr)+XX(1);
+    L_ar(iL) = max(Xr)-min(Xr)+dx;
     taur = ones(size(Xr'));
     Dr = Kr\taur;
     Cr(iL) =  mean(taur)*W/(mean(Dr)*mu);
     display(['Cr = ' num2str(Cr(iL))]);
-    L_ar(iL) = max(Xr)-min(Xr)+XX(1);
+    L_ar(iL) = max(Xr)-min(Xr)+dx;
     fprintf(fid_r,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cr(iL),W,L_ar(iL),Ws,Zc,numel(Xr)*dx*dw,RES);    
     taur(Zr>= -DsVS) = 0;
     Drs = Kr\taur;
@@ -255,7 +249,7 @@ for iL = 1:1:numel(LLo)
     IIr = find(X<L);
     Zc = -Ws/2;
     Xc1 = Ws/2;
-    Xc2 = max(X(IIr))+0.5*XX(1)-Ws/2;
+    Xc2 = max(X(IIr))+0.5*dx-Ws/2;
     II1 = find(((X-Xc1).^2+(Z-Zc).^2)<=(Ws/2)^2);
     II2 = find(((X-Xc2).^2+(Z-Zc).^2)<=(Ws/2)^2);
     II3 = find(X>=Xc1);
@@ -266,12 +260,12 @@ for iL = 1:1:numel(LLo)
     Zr = Z(IIr);
     Kr = K(IIr,IIr);
     display('Calculating Cr1 value :...');
-    L_ar(iL) = max(Xr)-min(Xr)+XX(1);
+    L_ar(iL) = max(Xr)-min(Xr)+dx;
     taur = ones(size(Xr'));
     Dr = Kr\taur;
     Cr1(iL) = mean(taur)*W/(mean(Dr)*mu);
     display(['Cr1 = ' num2str(Cr1(iL))]);
-    L_ar1(iL) = max(Xr)-min(Xr)+XX(1);
+    L_ar1(iL) = max(Xr)-min(Xr)+dx;
     fprintf(fid_r1,'%.15g %.15g %.15g %.15g %.15g %.15g %u\n',Cr1(iL),W,L_ar1(iL),Ws,Zc,numel(Xr)*dx*dw,RES);
     taur(Zr>= -DsVS) = 0;
     Dr1s = Kr\taur;

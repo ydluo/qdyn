@@ -51,7 +51,7 @@
 %		VS 	shear wave velocity (m/s). If VS=0 radiation damping is turned off
 %		D	damage level = 1 - (damaged shear modulus) / (intact shear modulus)
 %		H	if D>0, half-thickness of the fault damage zone
-%     if D=0, half-thickness of elastic slab bisected by fault
+%			if D=0, half-thickness of elastic slab bisected by fault
 %		L 	fault length if MESHDIM=1
 %		    	stiffness is MU/L if MESHDIM=0
 %		FINITE	boundary conditions if MESHDIM=1
@@ -62,8 +62,8 @@
 %			    error message "finite kernel is too small", create a larger kernel file 
 %			    using the function TabKernelFiniteFlt.m, update the file name in
 %			    subroutine init_kernel_2D of src/fault_stress.f90, and recompile
-%     2 = same as 0 but slip is symmetric relative to first element
-%     3 = same as 1 but slip is symmetric relative to first element
+%			2 = same as 0 but slip is symmetric relative to first element
+%			3 = same as 1 but slip is symmetric relative to first element
 %		W  	distance between displacement loading and fault if MESHDIM=1 and FINITE=0
 %		DIP_W	dipping angle (degree). If depthdependent, values must be given
 %			from deeper to shallower depth.
