@@ -5,6 +5,12 @@
 
 ## News 
 
+*Apr 2017* | Earthquake cycle simulations with a micro-physics model of granular flow and ductile creep of fault gouges based on *QDYN* presented at the EGU General Assembly 2017, session on *Earthquakes: from slow to fast, from the field to the laboratory*:    
+  M. van den Ende, J. Chen, J. P. Ampuero and A. Niemeijer (2017)  
+  *Earthquake and slow-slip nucleation investigated with a micro-physics based seismic cycle simulator*  
+  Geophysical Research Abstracts, Vol. 19, EGU2017-7249  
+  Abstract [PDF](http://meetingorganizer.copernicus.org/EGU2017/EGU2017-7249.pdf) -- Presentation [PPT](http://presentations.copernicus.org/EGU2017-7249_presentation.pptx)  
+
 *Feb 2017* | [**QDYN v1.1 has been released**](https://github.com/ydluo/qdyn/releases/tag/qdyn_1.1) and published online via [zenodo](https://zenodo.org/record/322459#.WLNq3BiZNE4). This new version introduces MPI parallelization for 3D simulations in HPC clusters and faults surrounded by damaged zones in 2D. You can cite it as:  
   Y. Luo, J. P. Ampuero, P. Galvez, M. van den Ende and B. Idini (2017)  
   *QDYN: a Quasi-DYNamic earthquake simulator (v1.1)*  
@@ -13,9 +19,9 @@
 
 *Jan 2017* | In the following paper we used *QDYN* to simulate earthquake cycles and obtained events spanning a broad range of magnitudes to study earthquake scaling relations:  
   Y. Luo, J. P. Ampuero, K. Miyakoshi and K. Irikura (2017)  
-  *Surface effects on earthquake moment-area scaling relations*   
-  PAGEOPH, Topical Volume on *"Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"*  
-  doi:10.1007/s00024-017-1467-4  [PDF](https://rdcu.be/oOL9)
+  *Surface effects on earthquake moment-area scaling relations*     
+  PAGEOPH, Topical Volume on *"Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"*  [doi:10.1007/s00024-017-1467-4](https://link.springer.com/article/10.1007/s00024-017-1467-4)  
+  [PDF](https://rdcu.be/oOL9)  
 
 *Nov 2014* | A *QDYN* tutorial session was offered at the [School on "Earthquakes: nucleation, triggering and relationship with aseismic processes"](http://earthquakes.sciencesconf.org/) at Cargese, Corsica, 3 - 10 November 2014 
 
