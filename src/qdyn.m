@@ -83,7 +83,7 @@
 %		TH_SS	reference steady-state state (default: TH_SS=DC/V_SS)
 %		RNS_LAW	type of rate-and-state friction law:
 %			0 = original
-%			1 = with cutt-off velocities
+%			1 = with cut-off velocities
 %		V1 	cut-off velocity of direct effect (m/s)
 %		V2 	cut-off velocity of evolution effect (m/s), controls the transition
 %			from weakening to strengtherning when a<b. V2 should be <= V1
