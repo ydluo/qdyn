@@ -35,6 +35,9 @@ function [Ks,Kn] = qdyn_okada_kernel(NN,mu,lam,X,Y,Z,DIP,DX,DW,fault_type)
   mesh_mode = length(NN);
   if mesh_mode==1
     N = NN; 
+    if length(DIP)==1, DIP=ones(NN,1)*DIP; end
+    if length(DX)==1, DX=ones(NN,1)*DX; end
+    if length(DW)==1, DW=ones(NN,1)*DW; end
   else
     NX = NN(1);
     NW = NN(2);
