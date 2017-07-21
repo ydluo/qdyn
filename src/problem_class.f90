@@ -26,7 +26,7 @@ module problem_class
     double precision, dimension(:), allocatable :: tau_max, t_rup, v_max, t_vmax
   end type ox_type
 
-  ! SEISMIC: definition of structure that holds the CNS model parameters
+  ! SEISMIC: structure that holds the CNS model parameters
   ! See input.f90 for a description of the parameters
   type cns_type
     double precision, dimension(:), allocatable :: &
@@ -35,7 +35,17 @@ module problem_class
   end type cns_type
   ! End of the CNS model structure
 
-  ! SEISMIC: definition of structure that holds the cohesion model parameters
+  ! SEISMIC: structure that holds the thermal pressurisation (TP) model parameters
+  ! See input.f90 for a description of the parameters
+  type tp_type
+    double precision, dimension(:), allocatable :: &
+      rhoc, beta, eta, k_t, k_p, w, P_a, T_a, Pi, Theta, PiTheta, P, T, &
+      P_prev, PiTheta_prev, Theta_prev
+    double precision :: t_prev
+  end type tp_type
+  ! End of the TP model structure
+
+  ! SEISMIC: structure that holds the cohesion model parameters
   ! See input.f90 for a description of the parameters
   type cohesion_type
     double precision, dimension(:), allocatable :: &
@@ -43,13 +53,13 @@ module problem_class
   end type cohesion_type
   ! End of cohesion model structure
 
-  ! SEISMIC: requested features structure (normal stress coupling, cohesion)
+  ! SEISMIC: requested features structure
   type features_type
     integer :: stress_coupling, cohesion, localisation
   end type features_type
   ! End of features structure
 
-  ! SEISMIC: requested features structure (normal stress coupling, cohesion)
+  ! SEISMIC: LSODA implicit solver parameters
   type lsoda_type
     integer :: neq(1), itol, jt, lrw, liw, itask, istate, iopt
     double precision :: rtol(1), atol(1), tout
@@ -58,7 +68,7 @@ module problem_class
   end type lsoda_type
   ! End of features structure
 
-  ! SEISMIC: requested features structure (normal stress coupling, cohesion)
+  ! SEISMIC: Runge-Kutta-Fehlberg solver parameters
   type rk45_type
     integer :: iflag
     double precision, dimension(:), allocatable :: work
@@ -98,6 +108,7 @@ module problem_class
 
     ! SEISMIC: add structure that holds the CNS model parameters
     type (cns_type) :: cns_params
+    type (tp_type) :: tp_params
     type (cohesion_type) :: coh_params
     type (features_type) :: features
     type (lsoda_type) :: lsoda

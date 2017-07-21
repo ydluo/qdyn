@@ -74,6 +74,7 @@ subroutine do_bsstep(pb)
   use ode_bs
   use ode_lsoda_main, only: dlsoda
   use ode_rk45, only: rkf45_d
+  use output, only : screen_write, ox_write, ot_write
 
   type(problem_type), intent(inout) :: pb
 
@@ -113,7 +114,7 @@ subroutine do_bsstep(pb)
   call derivs(pb%time,yt,dydt,pb)
   yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
   ! One step
-  !call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb,ik)
+  ! call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb,ik)
 
   ! SEISMIC NOTE: what is happening here?
   if (pb%dt_max >  0.d0) then
@@ -129,9 +130,6 @@ subroutine do_bsstep(pb)
 
   pb%dt_did = pb%time - t0
 
-  !write (6,*) pb%time, pb%tmax
-  !stop
-
   ! Basic error checking. See description of rkf45_d in ode_rk45.f90 for details
   select case (pb%rk45%iflag)
   case (3)
@@ -146,6 +144,9 @@ subroutine do_bsstep(pb)
     write (6,*) "RK45 error [6]: requested accuracy could not be achieved"
     stop
   case (8)
+    call ot_write(pb)
+    call screen_write(pb)
+    call ox_write(pb)
     write (6,*) "RK45 error [8]: invalid input parameters"
     stop
   end select

@@ -356,23 +356,24 @@ subroutine CNS_derivs(v, dth_dt, dth2_dt, dv_dtau, dv_dtheta, tau, sigma, theta,
 
   ! If localisation is requested, calculate pressure solution rates
   ! in the bulk zone, otherwise set to zero
-  e_ps_bulk = 0
-  y_ps_bulk = 0
-  if (pb%features%localisation == 1) then
-    e_ps_bulk = calc_e_ps(sigma, theta2, .true., .true., pb)
-    y_ps_bulk = calc_e_ps(tau, theta2, .false., .true., pb)
-  endif
+  ! e_ps_bulk = 0
+  ! y_ps_bulk = 0
+  ! if (pb%features%localisation == 1) then
+  !   e_ps_bulk = calc_e_ps(sigma, theta2, .true., .true., pb)
+  !   y_ps_bulk = calc_e_ps(tau, theta2, .false., .true., pb)
+  ! endif
 
   ! Cohesion is still in progress...
-  cohesion = 0
-  if (pb%features%cohesion == 1) then
-    cos_psi = cos(atan(tan_psi))
-    cohesion = (PI/pb%cns_params%H)*(tan_psi*alpha*pb%coh_params%C_star)/(cos_psi*(1-mu_tilde*tan_psi))
-  endif
+  ! cohesion = 0
+  ! if (pb%features%cohesion == 1) then
+  !   cos_psi = cos(atan(tan_psi))
+  !   cohesion = (PI/pb%cns_params%H)*(tan_psi*alpha*pb%coh_params%C_star)/(cos_psi*(1-mu_tilde*tan_psi))
+  ! endif
 
   ! The total slip velocity is the combined contribution of granular flow
   ! and pressure solution (parallel processes)
-  v = pb%cns_params%w*(pb%cns_params%lambda*(y_gr + y_ps) + (1-pb%cns_params%lambda)*y_ps_bulk)
+  !v = pb%cns_params%w*(pb%cns_params%lambda*(y_gr + y_ps) + (1-pb%cns_params%lambda)*y_ps_bulk)
+  v = pb%cns_params%w*(y_gr + y_ps)
 
   ! SEISMIC: the nett rate of change of porosity is given by the relation
   ! phi_dot = -(1 - phi)*strain_rate, where the strain rate equals
@@ -380,7 +381,7 @@ subroutine CNS_derivs(v, dth_dt, dth2_dt, dv_dtau, dv_dtheta, tau, sigma, theta,
   ! rate by granular flow (tan_psi*v/w). Note that compaction is measured
   ! positive, dilatation negative
   dth_dt = (1 - theta)*(tan_psi*y_gr - e_ps)
-  dth2_dt = -(1 - theta2)*e_ps_bulk
+  !dth2_dt = -(1 - theta2)*e_ps_bulk
 
   ! Next, calculate the partial derivatives dv_dtau and dv_dtheta for the
   ! pressure solution creep. The functional form depends on the rate-limiting
@@ -388,22 +389,31 @@ subroutine CNS_derivs(v, dth_dt, dth2_dt, dv_dtau, dv_dtheta, tau, sigma, theta,
   ! Note that the pressure solution strain rate is multiplied by the
   ! the gouge layer thickness (pb%cns_params%w) to obtain a velocity
 
-  dv_dtau_ps_d = L_sb*pb%cns_params%IPS_const_diff*f_phi_sqrt**2
-  dv_dtheta_ps_d = 4*dv_dtau_ps_d*f_phi_sqrt*tau
+  ! dv_dtau_ps_d = L_sb*pb%cns_params%IPS_const_diff*f_phi_sqrt**2
+  ! dv_dtheta_ps_d = 4*dv_dtau_ps_d*f_phi_sqrt*tau
 
-  dv_dtau_ps_s =  L_sb*(y_ps + pb%cns_params%IPS_const_diss1)* &
-                  pb%cns_params%IPS_const_diss2*2*pb%cns_params%phi0*f_phi_sqrt
-  dv_dtheta_ps_s = 2*dv_dtau_ps_s*f_phi_sqrt*tau
+  ! dv_dtau_ps_s =  L_sb*(y_ps + pb%cns_params%IPS_const_diss1)* &
+  !                 pb%cns_params%IPS_const_diss2*2*pb%cns_params%phi0*f_phi_sqrt
+  ! dv_dtheta_ps_s = 2*dv_dtau_ps_s*f_phi_sqrt*tau
+
+  dv_dtau_ps_s = y_ps/tau
+  dv_dtheta_ps_s = y_ps*(pb%cns_params%phi0 - 0.02)/((theta - 0.02)*(pb%cns_params%phi0 - theta))
 
   ! The partial derivatives dv_dtau and dv_dtheta of the overall slip velocity
   ! are the sum of the partial derivatives of the pressure solution and
   ! granular flow velocities.
 
-  dv_dtau = dv_dtau_ps_d + dv_dtau_ps_s + &
-            L_sb*y_gr*((1-mu_star*tan_psi)*denom - tan_psi*dummy_var*pb%cns_params%a*denom)
-  dv_dtheta = dv_dtau_ps_d + dv_dtau_ps_s + &
-              L_sb*y_gr*(2*pb%cns_params%H*(sigma + mu_star*tau)*denom + &
-              2*pb%cns_params%H*tau*dummy_var*pb%cns_params%a*denom)
+  ! dv_dtau = dv_dtau_ps_d + dv_dtau_ps_s + &
+  !           L_sb*y_gr*((1-mu_star*tan_psi)*denom - tan_psi*dummy_var*pb%cns_params%a*denom)
+  ! dv_dtheta = dv_dtau_ps_d + dv_dtau_ps_s + &
+  !             L_sb*y_gr*(2*pb%cns_params%H*(sigma + mu_star*tau)*denom + &
+  !             2*pb%cns_params%H*tau*dummy_var*pb%cns_params%a*denom)
+
+  dv_dtau = L_sb*(dv_dtau_ps_s + &
+            y_gr*((1-mu_tilde*tan_psi)*denom - tan_psi*dummy_var*pb%cns_params%a*denom))
+  dv_dtheta = L_sb*(dv_dtau_ps_s + &
+              y_gr*(2*pb%cns_params%H*(sigma + mu_tilde*tau)*denom + &
+              2*pb%cns_params%H*tau*dummy_var*pb%cns_params%a*denom))
 
 end subroutine CNS_derivs
 
@@ -432,8 +442,7 @@ function compute_velocity(tau,sigma,theta,theta2,alpha,pb) result(v)
   denom = 1.0/(pb%cns_params%a*(sigma+tau*tan_psi))
   mu_star = pb%cns_params%mu_tilde_star
 
-  ! The granular flow strain rate for the case when the shear stress approaches
-  ! the shear strength of the grain contacts
+  ! The granular flow strain rate
   y_gr = pb%cns_params%y_gr_star*exp((tau*(1 - mu_star*tan_psi) - sigma*(mu_star + tan_psi))*denom)
 
   ! Shear strain rate [1/s] due to viscous flow (pressure solution)
