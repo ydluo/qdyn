@@ -3,7 +3,7 @@
 module problem_class
 
   use fault_stress, only : kernel_type
-  use mesh, only : mesh_type
+  use mesh, only : mesh_type, spectral_mesh_type
 
   implicit none
 
@@ -30,18 +30,23 @@ module problem_class
   ! See input.f90 for a description of the parameters
   type cns_type
     double precision, dimension(:), allocatable :: &
-      a, mu_tilde_star, IPS_const_diff, IPS_const_diss1, IPS_const_diss2, H, w, y_gr_star, phi0, lambda, &
+      a, mu_tilde_star, IPS_const_diff, IPS_const_diss1, IPS_const_diss2, H, w, &
+      y_gr_star, phi_c, phi0, lambda, &
       IPS_const_diff_bulk, IPS_const_diss1_bulk, IPS_const_diss2_bulk
   end type cns_type
   ! End of the CNS model structure
 
   ! SEISMIC: structure that holds the thermal pressurisation (TP) model parameters
   ! See input.f90 for a description of the parameters
+  ! Spectral mesh parameters (Dlogl, lw_max, Nl) are hard-coded in mesh.f90
   type tp_type
+    type (spectral_mesh_type) :: mesh
     double precision, dimension(:), allocatable :: &
-      rhoc, beta, eta, k_t, k_p, w, P_a, T_a, Pi, Theta, PiTheta, P, T, &
-      P_prev, PiTheta_prev, Theta_prev
-    double precision :: t_prev
+      rhoc, inv_rhoc, beta, eta, k_t, k_p, l, w, inv_w, P, T, P_a, T_a, &
+      Pi, Theta, PiTheta, Omega, &
+      tau_y_prev, phi_dot_prev, phi_prev, P_prev, PiTheta_prev, Theta_prev, &
+      alpha_th, alpha_hy, Lam, Lam_prime, Lam_T, phi_b
+    double precision :: t_prev=0d0
   end type tp_type
   ! End of the TP model structure
 
@@ -54,8 +59,12 @@ module problem_class
   ! End of cohesion model structure
 
   ! SEISMIC: requested features structure
+  ! stress_coupling: normal stress variations at subduction interfaces
+  ! tp: thermal pressurisation
+  ! cohesion: time-dependent cohesion (CNS model)
+  ! localisation: localisation of deformation (CNS model)
   type features_type
-    integer :: stress_coupling, cohesion, localisation
+    integer :: stress_coupling, tp, cohesion, localisation
   end type features_type
   ! End of features structure
 
@@ -80,7 +89,8 @@ module problem_class
     type (mesh_type) :: mesh
     type (kernel_type) :: kernel
    ! Basic variables
-    double precision, dimension(:), allocatable :: tau, dtau_dt, sigma, slip, v, theta, theta2, alpha
+    double precision, dimension(:), allocatable :: tau, dtau_dt, dtheta_dt, dtheta2_dt
+    double precision, dimension(:), allocatable :: sigma, slip, v, theta, theta2, alpha
    ! Boundary conditions
     integer :: i_sigma_cpl=0, finite=0
    ! Friction properties
@@ -91,7 +101,7 @@ module problem_class
    ! Periodic loading
     double precision :: Tper=0d0, Aper=0d0, Omper=0d0
    ! Time solver
-    double precision :: time=0d0, dt_try=0d0, dt_did=0d0, dt_next=0d0, dt_max=0d0, tmax, acc
+    double precision :: t_prev=0d0, time=0d0, dt_try=0d0, dt_did=0d0, dt_next=0d0, dt_max=0d0, tmax, acc
     integer :: NSTOP, itstop=-1, it=0
     double precision :: vmaxglob
    ! For outputs
@@ -108,7 +118,7 @@ module problem_class
 
     ! SEISMIC: add structure that holds the CNS model parameters
     type (cns_type) :: cns_params
-    type (tp_type) :: tp_params
+    type (tp_type) :: tp
     type (cohesion_type) :: coh_params
     type (features_type) :: features
     type (lsoda_type) :: lsoda

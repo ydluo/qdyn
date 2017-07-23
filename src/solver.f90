@@ -124,11 +124,11 @@ subroutine do_bsstep(pb)
   endif
 
   pb%rk45%iflag = -2 ! Reset to one-step mode each call
-  t0 = pb%time
+  pb%t_prev = pb%time
   call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, pb%tmax, &
                 pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
 
-  pb%dt_did = pb%time - t0
+  pb%dt_did = pb%time - pb%t_prev
 
   ! Basic error checking. See description of rkf45_d in ode_rk45.f90 for details
   select case (pb%rk45%iflag)
@@ -202,24 +202,38 @@ end subroutine do_bsstep
 subroutine update_field(pb)
 
   use output, only : crack_size
-  use friction, only : friction_mu, compute_velocity
+  use friction, only : friction_mu, dtheta_dt
+  use friction_cns, only : compute_velocity
   use my_mpi, only: max_allproc, is_MPI_parallel
+  use diffusion_solver, only : update_PT_final
 
   type(problem_type), intent(inout) :: pb
 
+  double precision, dimension(pb%mesh%nn) :: P_prev
   integer :: i,ix,iw
+
+  ! SEISMIC: obtain P at the previous time step
+  P_prev = 0d0
+  if (pb%features%tp == 1) P_prev = pb%tp%P_prev
 
   ! SEISMIC: in case of the CNS model, re-compute the slip velocity with
   ! the final value of tau, sigma, and porosity. Otherwise, use the standard
   ! rate-and-state expression to calculate tau as a function of velocity
   if (pb%i_rns_law == 3) then
-    pb%v = compute_velocity(pb%tau, pb%sigma, pb%theta, pb%theta2, pb%alpha, pb)
+    pb%v = compute_velocity(pb%tau, pb%sigma-P_prev, pb%theta, pb%theta2, pb%alpha, pb)
   else
-    pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
+    pb%tau = (pb%sigma-P_prev) * friction_mu(pb%v,pb%theta,pb) + pb%coh
   endif
   ! Update slip
   ! SEISMIC NOTE: slip needs to be calculated after velocity!
   pb%slip = pb%slip + pb%v*pb%dt_did
+
+  ! SEISMIC: if thermal pressurisation is requested, update P and T
+  if (pb%features%tp == 1) then
+    call dtheta_dt( pb%v, pb%tau, pb%sigma-P_prev, pb%theta, pb%theta2, &
+                    pb%dtheta_dt, pb%dtheta2_dt, pb)
+    call update_PT_final(pb%dt_did, pb)
+  endif
 
   ! update potency and potency rate
   if (pb%mesh%dim == 0 .or. pb%mesh%dim == 1) then

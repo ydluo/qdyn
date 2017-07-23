@@ -24,7 +24,9 @@ contains
 subroutine derivs(time,yt,dydt,pb)
 
   use fault_stress, only : compute_stress
-  use friction, only : dtheta_dt, dalpha_dt, dmu_dv_dtheta, compute_velocity, CNS_derivs
+  use friction, only : dtheta_dt, dmu_dv_dtheta
+  use friction_cns, only : dalpha_dt, compute_velocity, CNS_derivs
+  use diffusion_solver, only : update_PT, calc_dP_dt
 
   type(problem_type), intent(inout) :: pb
   double precision, intent(in) :: time, yt(pb%neqs*pb%mesh%nn)
@@ -33,9 +35,15 @@ subroutine derivs(time,yt,dydt,pb)
   double precision, dimension(pb%mesh%nn) :: theta, theta2, sigma, alpha, tau, v
   double precision, dimension(pb%mesh%nn) :: dsigma_dt, dtau_dt, dth_dt, dth2_dt
   double precision, dimension(pb%mesh%nn) :: dmu_dv, dmu_dtheta
-  double precision :: dtau_per
+  double precision, dimension(pb%mesh%nn) :: dP_dt, dtau_dP
+  double precision :: dtau_per, dt
 
   integer :: ind_stress_coupling, ind_cohesion, ind_localisation
+
+  ! SEISMIC: initialise vectors to zero. If unitialised, each compiler
+  ! may produce different results depending on its conventions
+  dP_dt = 0d0
+  dtau_dP = 0d0
 
   ! storage conventions:
   !
@@ -68,6 +76,14 @@ subroutine derivs(time,yt,dydt,pb)
     sigma = pb%sigma
   endif
 
+  ! SEISMIC: when thermal pressurisation is requested, update P and T
+  ! then calculate effective stress sigma_e = sigma - P
+  if (pb%features%tp == 1) then
+    dt = time - pb%t_prev
+    call update_PT(pb%tau*pb%V/(2*pb%tp%w), pb%dtheta_dt, pb%theta, dt, pb)
+    sigma = sigma - pb%tp%P
+  endif
+
   if (pb%features%cohesion == 1) then
     alpha = yt(ind_cohesion::pb%neqs)
   endif
@@ -88,7 +104,7 @@ subroutine derivs(time,yt,dydt,pb)
     ! The subroutine below calculates the slip velocity, time-derivatives of
     ! the porosity (theta), and partial derivatives required for radiation
     ! damping. These operations are combined into one subroutine for efficiency
-    call CNS_derivs(v, dth_dt, dth2_dt, dmu_dv, dmu_dtheta, tau, sigma, theta, theta2, alpha, pb)
+    call CNS_derivs(v, dth_dt, dth2_dt, dmu_dv, dmu_dtheta, dtau_dP, tau, sigma, theta, theta2, alpha, pb)
   else
     ! SEISMIC: for the classical rate-and-state model formulation, the slip
     ! velocity is stored in yt(2::pb%neqs), and tau is not used (set to zero)
@@ -130,12 +146,19 @@ subroutine derivs(time,yt,dydt,pb)
     dydt(ind_localisation::pb%neqs) = dth2_dt
   endif
 
+  if (pb%features%tp == 1) then
+    call calc_dP_dt(tau*V/(2*pb%tp%w), dth_dt, theta, dP_dt, pb)
+  endif
+
   ! SEISMIC: calculate radiation damping. For rate-and-state, dmu_dv and
   ! dmu_dtheta contain the partial derivatives of friction to V and theta,
   ! respectively. For the CNS model, these variables contain the partials of
   ! velocity to shear stress (dV/dtau) and velocity to porosity (dV/dtheta),
   ! respectively. For compatibility, the names of these variables are not
   ! changed.
+  ! An additional component is added When thermal pressurisation is requested,
+  ! to include the change in pressure (and effective normal stress). This
+  ! component is initiated as zero, but updated when TP is requested
 
   if (pb%i_rns_law == 3) then
     ! SEISMIC: the total dtau_dt results from the slip deficit and
@@ -144,18 +167,21 @@ subroutine derivs(time,yt,dydt,pb)
     ! dtau/dt = k(Vlp - Vs) - eta*(dV/dtau * dtau/dt + dV/dtheta * dtheta/dt)
     ! Rearrangement gives:
     ! dtau/dt = ( k[Vlp - Vs] - eta*dV/dtheta * dtheta/dt)/(1 + eta*dV/dtau)
-    dydt(2::pb%neqs) = (dtau_dt + dtau_per - pb%zimpedance*dmu_dtheta*dth_dt)/(1 + pb%zimpedance*dmu_dv)
+    dydt(2::pb%neqs) = (dtau_dt + dtau_per - pb%zimpedance* &
+    (dmu_dtheta*dth_dt + dtau_dP*dP_dt)) /(1 + pb%zimpedance*dmu_dv)
   else
     ! SEISMIC: the rate-and-state formulation computes the the time-derivative
     ! of velocity, rather than stress
     call dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
+
+    dtau_dP = -tau/sigma
 
     ! Time derivative of the elastic equilibrium equation
     !  dtau_load/dt + dtau_elastostatic/dt -impedance*dv/dt = sigma*( dmu/dv*dv/dt + dmu/dtheta*dtheta/dt )
     ! Rearranged in the following form:
     !  dv/dt = ( dtau_load/dt + dtau_elastostatic/dt - sigma*dmu/dtheta*dtheta/dt )/( sigma*dmu/dv + impedance )
 
-    dydt(2::pb%neqs) = ( dtau_per + dtau_dt - sigma*dmu_dtheta*dydt(1::pb%neqs) ) &
+    dydt(2::pb%neqs) = ( dtau_per + dtau_dt - sigma*dmu_dtheta*dth_dt - dtau_dP*dP_dt ) &
                      / ( sigma*dmu_dv + pb%zimpedance )
    endif
 

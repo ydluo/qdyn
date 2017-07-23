@@ -18,6 +18,7 @@ subroutine init_all(pb)
   use output, only : ot_init, ox_init
   use friction, only : set_theta_star, friction_mu
   use solver, only : init_lsoda, init_rk45
+  use diffusion_solver, only: init_tp
 !!$  use omp_lib
 
   type(problem_type), intent(inout) :: pb
@@ -75,6 +76,12 @@ subroutine init_all(pb)
   call ot_init(pb)
   call ox_init(pb)
 
+  ! SEISMIC: initialise thermal pressurisation model (diffusion_solver.f90)
+  if (pb%features%tp == 1) then
+    call init_tp(pb)
+  endif
+
+  ! SEISMIC: initialise additional ODE solvers
   !call init_lsoda(pb)
   call init_rk45(pb)
 

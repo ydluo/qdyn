@@ -25,7 +25,7 @@ subroutine screen_init(pb)
 
   write(6,*) 'Values at selected point of the fault:'
   K = pb%mesh%Lfault
-  if (pb%mesh%dim == 1) then   
+  if (pb%mesh%dim == 1) then
     if (pb%kernel%k2f%finite .eqv. .false.) K = pb%mesh%W
   endif
   K = PI*pb%smu/K
@@ -139,6 +139,7 @@ subroutine ot_init(pb)
       write(pb%ot%unit,'(a)')'# 1=t'
       write(pb%ot%unit,'(a)')'# values at selected point:'
       write(pb%ot%unit,'(a)')'# 2=V, 3=theta, 4=V*theta/dc, 5=tau, 6=slip'
+      if (pb%features%tp == 1) write(pb%ot%unit,'(a)')'# 7=P, 8=T'
       close(pb%ot%unit)
     endif
 !JPA WARNING Implementation in progress
@@ -163,7 +164,10 @@ else
   write(pb%ot%unit,'(a)')'# 6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip'
   write(pb%ot%unit,'(a)')'# values at max(V) location:'
   write(pb%ot%unit,'(a)')'# 11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip, 17=sigma'
-  if (pb%features%cohesion == 1) write(pb%ot%unit,'(a)')'# 18=alpha'
+  if (pb%features%tp == 1) then
+    write(pb%ot%unit,'(a)')'# 18=P, 19=T (selected point)'
+    write(pb%ot%unit,'(a)')'# 20=P, 21=T (at max(V))'
+  endif
 
   pb%ot%unit = 22
   write(pb%ot%unit,'(a)')'# Seismicity record:'
@@ -260,12 +264,23 @@ subroutine ot_write(pb)
      !JPA add test to prevent appenaingd data to a file from a previous simulation
       if (OCTAVE_OUTPUT) then
         ot_fmt = '(g0.16,5(",",g0.6))'
+        if (pb%features%tp == 1) ot_fmt = '(g0.16,7(",",g0.6))'
       else
         ot_fmt = '(e24.16,5e14.6)'
+        if (pb%features%tp == 1) ot_fmt = '(e24.16,7e14.6)'
       endif
-      write(pb%ot%unit,ot_fmt) pb%time, pb%v(pb%ot%ic), pb%theta(pb%ot%ic), &
-          pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
-          pb%tau(pb%ot%ic), pb%slip(pb%ot%ic)
+
+      ! If thermal pressurisation is requested, output P and T
+      if (pb%features%tp == 1) then
+        write(pb%ot%unit,ot_fmt) pb%time, pb%v(pb%ot%ic), pb%theta(pb%ot%ic), &
+            pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
+            pb%tau(pb%ot%ic), pb%slip(pb%ot%ic), &
+            pb%tp%P(pb%ot%ic), pb%tp%T(pb%ot%ic)
+      else
+        write(pb%ot%unit,ot_fmt) pb%time, pb%v(pb%ot%ic), pb%theta(pb%ot%ic), &
+            pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
+            pb%tau(pb%ot%ic), pb%slip(pb%ot%ic)
+      endif
       close(pb%ot%unit)
     endif
    !JPA warning: ivmax outputs not implemented in parallel yet
@@ -274,18 +289,36 @@ subroutine ot_write(pb)
     if (OCTAVE_OUTPUT) then
      ! for Octave: comma as field delimiter and no spaces
       ot_fmt = '(g0.16,16(",",g0.6))'
+      if (pb%features%tp == 1) ot_fmt = '(g0.16,20(",",g0.6))'
     else
       ot_fmt = '(e24.16,16e14.6)'
+      if (pb%features%tp == 1) ot_fmt = '(e24.16,20e14.6)'
     endif
-    write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
-      pb%ot%lcnew*pb%mesh%dx, pb%ot%pot, pb%ot%pot_rate,    &
-      pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
-      pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
-      pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
-     ! for ivmax
-      pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
-      pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
-      pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
+    if (pb%features%tp == 1) then
+      write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
+        pb%ot%lcnew*pb%mesh%dx, pb%ot%pot, pb%ot%pot_rate,    &
+        pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
+        pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
+        pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
+        ! for ivmax
+        pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
+        pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
+        pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), &
+        pb%sigma(pb%ot%ivmax)-pb%tp%P(pb%ot%ivmax), &
+        ! write P, T
+        pb%tp%P(pb%ot%ic), pb%tp%T(pb%ot%ic), pb%tp%P(pb%ot%ivmax), pb%tp%T(pb%ot%ivmax)
+    else
+      write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
+        pb%ot%lcnew*pb%mesh%dx, pb%ot%pot, pb%ot%pot_rate,    &
+        pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
+        pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
+        pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
+        ! for ivmax
+        pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
+        pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
+        pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
+    endif
+
   endif
 
   if (is_MPI_parallel()) return

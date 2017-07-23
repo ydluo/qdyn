@@ -35,7 +35,9 @@ subroutine read_main(pb)
   write(6,*) pb%itheta_law
   read(15,*) pb%i_rns_law
   read(15,*) pb%i_sigma_cpl
-  read(15,*) pb%features%stress_coupling, pb%features%cohesion, pb%features%localisation ! SEISMIC
+  ! SEISMIC: various simulation features can be turned on (1) or off (0)
+  read(15,*)  pb%features%stress_coupling, pb%features%tp, &
+              pb%features%cohesion, pb%features%localisation
   read(15,*)pb%ot%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nxout_dyn,    &
             pb%ox%i_ox_seq, pb%ox%i_ox_dyn
   read(15,*) pb%beta, pb%smu, pb%lam, pb%D, pb%H, pb%ot%v_th
@@ -77,7 +79,8 @@ subroutine read_main(pb)
   !   mu_tilde_star:    reference friction coefficient at y_gr_star
   !   y_gr_star:        reference granular fow strain rate
   !   H:                dilatancy geometric factor
-  !   phi0:             initial (reference) porosity
+  !   phi_c:            critical state porosity
+  !   phi0:             lower cut-off porosity
   !   IPS_const_diff:   pressure solution (temperature-dependent) constant
   !                     for diffusion controlled pressure solution creep
   !   IPS_const_diss1:  pressure solution (temperature-dependent) constant
@@ -85,8 +88,6 @@ subroutine read_main(pb)
   !   IPS_const_diss2:  pressure solution (temperature-dependent) constant
   !                     for dissolution controlled pressure solution creep
   !   w:                total thickness of the fault zone
-  !   lambda:           relative thickness of localised zone
-  !                     (0 = non-existent shear band, 1 = entire fault zone)
   !
   ! Note that these parameters are material (gouge) properties, and are
   ! generally not spatically uniform, and hence are allocatable
@@ -97,16 +98,16 @@ subroutine read_main(pb)
     if (pb%itheta_law == 3) then
       allocate( pb%cns_params%a(n), pb%cns_params%mu_tilde_star(n), &
                 pb%cns_params%y_gr_star(n), pb%cns_params%H(n), &
-                pb%cns_params%phi0(n), pb%cns_params%IPS_const_diff(n), &
-                pb%cns_params%IPS_const_diss1(n), pb%cns_params%IPS_const_diss2(n), &
-                pb%cns_params%w(n) )
+                pb%cns_params%phi_c(n), pb%cns_params%phi0(n), &
+                pb%cns_params%IPS_const_diff(n), pb%cns_params%IPS_const_diss1(n), &
+                pb%cns_params%IPS_const_diss2(n), pb%cns_params%w(n) )
 
       do i=1,n
         read(15,*)pb%cns_params%a(i), pb%cns_params%mu_tilde_star(i), &
                   pb%cns_params%y_gr_star(i), pb%cns_params%H(i), &
-                  pb%cns_params%phi0(i), pb%cns_params%IPS_const_diff(i), &
-                  pb%cns_params%IPS_const_diss1(i), pb%cns_params%IPS_const_diss2(i), &
-                  pb%cns_params%w(i)
+                  pb%cns_params%phi_c(i), pb%cns_params%phi0(i), &
+                  pb%cns_params%IPS_const_diff(i), pb%cns_params%IPS_const_diss1(i), &
+                  pb%cns_params%IPS_const_diss2(i), pb%cns_params%w(i)
         if (pb%cns_params%IPS_const_diff(i)*pb%cns_params%IPS_const_diss1(i) /= 0) then
           write(6,*) "input.f90: ambiguous rate-controlling mechanism for itheta_law = 3"
           write(6,*) "For each fault element, either IPS_const_diff or IPS_const_diss1 must be zero"
@@ -160,11 +161,38 @@ subroutine read_main(pb)
     end do
   endif
 
+  ! <SEISMIC>
+  ! Read input parameters for the thermal pressurisation (TP) model.
+  ! These parameters and corresponding units are (in order):
+  !
+  !   rhoc:   density times specific heat capacity of host rock [J/K/m^3]
+  !   beta:   bulk compressibility [Pa]
+  !   eta:    dynamic viscocity [Pa s]
+  !   w:      half-width of shear distribution profile [m]
+  !   k_t:    thermal conductivity [J/s/K/m]
+  !   k_p:    intrinsic hydraulic permeability [m^2]
+  !   l:      nett thermal expansion coefficient [1/K]
+  !   P_a:    ambient fluid pressure [Pa]
+  !   T_a:    ambient temperature [K]
+  !
+  if (pb%features%tp == 1) then
+    allocate (  pb%tp%rhoc(n), pb%tp%beta(n), pb%tp%eta(n), pb%tp%w(n), &
+                pb%tp%k_t(n), pb%tp%k_p(n), pb%tp%l(n), &
+                pb%tp%P_a(n), pb%tp%T_a(n) )
+    do i=1,n
+      read(15,*)pb%tp%rhoc(i), pb%tp%beta(i), pb%tp%eta(i), pb%tp%w(i), &
+                pb%tp%k_t(i), pb%tp%k_p(i), pb%tp%l(i), &
+                pb%tp%P_a(i), pb%tp%T_a(i)
+    end do
+  endif
+  ! End reading TP model parameters
+  ! </SEISMIC>
+
   if (is_MPI_parallel()) then
     call read_mesh_nodes(15,pb%mesh)
     call ot_read_stations(pb%ot)
   endif
-  
+
   close(15)
   write(6,*) 'Input complete'
 

@@ -13,10 +13,18 @@ module mesh
     double precision, pointer :: xglob(:), yglob(:), zglob(:), dipglob(:), dwglob(:) ! same on global grid (nx*nwglobal count)
   end type mesh_type
 
+  ! SEISMIC: discretisation of spectral domain for diffusion solver
+  type spectral_mesh_type
+    double precision, dimension(:), allocatable :: lw, F_inv ! dimensionless wavenumbers, inv Fourier kernel
+    double precision :: Dlogl=0.3, lw_max=10.0 ! logarithmic grid spacing, max dimensionless wavenumber
+    integer :: Nl=60 ! number of mesh elements
+  end type spectral_mesh_type
+
   integer, allocatable, save :: nnLocal_perproc(:),nnoffset_glob_perproc(:)
 
-  public :: mesh_type, read_mesh_parameters, read_mesh_nodes, init_mesh, mesh_get_size 
+  public :: mesh_type, read_mesh_parameters, read_mesh_nodes, init_mesh, mesh_get_size
   public :: nnLocal_perproc, nnoffset_glob_perproc
+  public :: spectral_mesh_type
 
 contains
 
@@ -64,7 +72,7 @@ subroutine read_mesh_nodes(iin,m)
 
   integer :: i
 
-  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%dip(m%nn))     
+  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%dip(m%nn))
   do i=1,m%nn
     read(iin,*) m%x(i),m%y(i),m%z(i),m%dip(i)
   enddo
