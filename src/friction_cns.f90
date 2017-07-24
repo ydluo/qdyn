@@ -146,8 +146,7 @@ subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dv_dP, &
   double precision, dimension(pb%mesh%nn) :: mu_star, y_gr, tau_gr
   double precision, dimension(pb%mesh%nn) :: cos_psi, cohesion, f_phi_sqrt, L_sb
   double precision, dimension(pb%mesh%nn) :: e_ps, y_ps, e_ps_bulk, y_ps_bulk
-  double precision, dimension(pb%mesh%nn) :: dv_dtau_ps_d, dv_dtau_ps_s
-  double precision, dimension(pb%mesh%nn) :: dv_dphi_ps_d, dv_dphi_ps_s
+  double precision, dimension(pb%mesh%nn) :: dv_dtau_ps, dv_dphi_ps
 
   ! Pre-define some internal variables
   tan_psi = calc_tan_psi(phi, pb)               ! Dilatation angle
@@ -205,32 +204,17 @@ subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dv_dP, &
   ! pressure solution creep. The functional form depends on the rate-limiting
   ! mechanism (diffusion, dissolution, or precipitation)
 
-  ! TODO: fix these partials for diffusion/dissolution control, with cut-off
-
-  ! dv_dtau_ps_d = L_sb*pb%cns_params%IPS_const_diff*f_phi_sqrt**2
-  ! dv_dphi_ps_d = 4*dv_dtau_ps_d*f_phi_sqrt*tau
-  !
-  ! dv_dtau_ps_s =  L_sb*(y_ps + pb%cns_params%IPS_const_diss1)* &
-  !                 pb%cns_params%IPS_const_diss2*2*pb%cns_params%phi_c*f_phi_sqrt
-  ! dv_dphi_ps_s = 2*dv_dtau_ps_s*f_phi_sqrt*tau
-
-  dv_dtau_ps_s = y_ps/tau
-  dv_dphi_ps_s =  y_ps*(pb%cns_params%phi_c - pb%cns_params%phi0)/ &
+  dv_dtau_ps = y_ps/tau
+  dv_dphi_ps =  y_ps*(pb%cns_params%phi_c - pb%cns_params%phi0)/ &
                   ((phi - pb%cns_params%phi0)*(pb%cns_params%phi_c - phi))
 
   ! The partial derivatives dv_dtau and dv_dphi of the overall slip velocity
   ! are the sum of the partial derivatives of the pressure solution and
   ! granular flow velocities.
 
-  ! dv_dtau = dv_dtau_ps_d + dv_dtau_ps_s + &
-  !           L_sb*y_gr*((1-mu_star*tan_psi)*denom - tan_psi*dummy_var*pb%cns_params%a_tilde*denom)
-  ! dv_dphi = dv_dtau_ps_d + dv_dtau_ps_s + &
-  !             L_sb*y_gr*(2*pb%cns_params%H*(sigma + mu_star*tau)*denom + &
-  !             2*pb%cns_params%H*tau*dummy_var*pb%cns_params%a_tilde*denom)
-
-  dv_dtau = L_sb*(dv_dtau_ps_s + &
+  dv_dtau = L_sb*(dv_dtau_ps + &
             y_gr*((1-mu_tilde*tan_psi)*denom - tan_psi*dummy_var*pb%cns_params%a_tilde*denom))
-  dv_dphi = L_sb*(dv_dtau_ps_s + &
+  dv_dphi = L_sb*(dv_dphi_ps + &
               y_gr*(2*pb%cns_params%H*(sigma + mu_tilde*tau)*denom + &
               2*pb%cns_params%H*tau*dummy_var*pb%cns_params%a_tilde*denom))
 
