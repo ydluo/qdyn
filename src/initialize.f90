@@ -12,7 +12,7 @@ subroutine init_all(pb)
 
   use problem_class
   use mesh, only : init_mesh, mesh_get_size
-  use constants, only : PI
+  use constants, only : PI, USE_RK_SOLVER
   use my_mpi, only: is_MPI_master
   use fault_stress, only : init_kernel
   use output, only : ot_init, ox_init
@@ -81,9 +81,11 @@ subroutine init_all(pb)
     call init_tp(pb)
   endif
 
-  ! SEISMIC: initialise additional ODE solvers
-  !call init_lsoda(pb)
-  call init_rk45(pb)
+  ! SEISMIC: initialise Runge-Kutta ODE solver, if selected (see constants.f90)
+  if (USE_RK_SOLVER .eqv. .true.) then
+    call init_rk45(pb)
+    !call init_lsoda(pb)
+  endif
 
   if (is_mpi_master()) write(6,*) 'Initialization completed'
 

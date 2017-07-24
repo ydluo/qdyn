@@ -16,8 +16,8 @@ module mesh
   ! SEISMIC: discretisation of spectral domain for diffusion solver
   type spectral_mesh_type
     double precision, dimension(:), allocatable :: lw, F_inv ! dimensionless wavenumbers, inv Fourier kernel
-    double precision :: Dlogl=0.3, lw_max=10.0 ! logarithmic grid spacing, max dimensionless wavenumber
-    integer :: Nl=60 ! number of mesh elements
+    double precision :: Dlogl=0.8, lw_max=10.0 ! logarithmic grid spacing, max dimensionless wavenumber
+    integer :: Nl=20 ! number of mesh elements
   end type spectral_mesh_type
 
   integer, allocatable, save :: nnLocal_perproc(:),nnoffset_glob_perproc(:)

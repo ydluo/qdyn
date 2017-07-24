@@ -32,7 +32,6 @@ subroutine read_main(pb)
 
   if (pb%mesh%dim==1) read(15,*) pb%finite
   read(15,*) pb%itheta_law
-  write(6,*) pb%itheta_law
   read(15,*) pb%i_rns_law
   read(15,*) pb%i_sigma_cpl
   ! SEISMIC: various simulation features can be turned on (1) or off (0)
@@ -50,29 +49,9 @@ subroutine read_main(pb)
 
   n = mesh_get_size(pb%mesh) ! number of nodes in this processor
   allocate ( pb%tau(n), pb%sigma(n), pb%v(n), pb%theta(n),  &
-             pb%a(n), pb%b(n), pb%dc(n), pb%v1(n), &
-             pb%v2(n), pb%mu_star(n), pb%v_star(n), &
-             pb%ot%iot(n),pb%ot%iasp(n),pb%coh(n))
+             pb%ot%iot(n), pb%ot%iasp(n), pb%coh(n))
 
   !JPA if MPI, read only the nodes of this processor
-  ! SEISMIC: the CNS model allows for an initial state of stress that is
-  ! read from the input file
-  if (pb%i_rns_law == 3) then
-    do i=1,n
-      read(15,*)pb%sigma(i), pb%tau(i), pb%v(i), pb%theta(i),  &
-                pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
-                pb%v2(i), pb%mu_star(i), pb%v_star(i), &
-                pb%ot%iot(i), pb%ot%iasp(i), pb%coh(i)
-    end do
-  else
-    do i=1,n
-      read(15,*)pb%sigma(i), pb%v(i), pb%theta(i),  &
-                pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
-                pb%v2(i), pb%mu_star(i), pb%v_star(i), &
-                pb%ot%iot(i), pb%ot%iasp(i), pb%coh(i)
-    end do
-  endif
-
   ! <SEISMIC>
   ! Read input parameters for the CNS model. These parameters are (in order):
   !   a:                coefficient of logarithmic rate dependence
@@ -93,43 +72,45 @@ subroutine read_main(pb)
   ! generally not spatically uniform, and hence are allocatable
   ! See friction.f90 for a description of and references to the CNS model
   ! See user manual for detailed definitions of the above parameters (TODO)
-
-  if (pb%i_rns_law == 3) then
-    if (pb%itheta_law == 3) then
-      allocate( pb%cns_params%a(n), pb%cns_params%mu_tilde_star(n), &
-                pb%cns_params%y_gr_star(n), pb%cns_params%H(n), &
-                pb%cns_params%phi_c(n), pb%cns_params%phi0(n), &
-                pb%cns_params%IPS_const_diff(n), pb%cns_params%IPS_const_diss1(n), &
-                pb%cns_params%IPS_const_diss2(n), pb%cns_params%w(n) )
-
-      do i=1,n
-        read(15,*)pb%cns_params%a(i), pb%cns_params%mu_tilde_star(i), &
-                  pb%cns_params%y_gr_star(i), pb%cns_params%H(i), &
-                  pb%cns_params%phi_c(i), pb%cns_params%phi0(i), &
-                  pb%cns_params%IPS_const_diff(i), pb%cns_params%IPS_const_diss1(i), &
-                  pb%cns_params%IPS_const_diss2(i), pb%cns_params%w(i)
-        if (pb%cns_params%IPS_const_diff(i)*pb%cns_params%IPS_const_diss1(i) /= 0) then
-          write(6,*) "input.f90: ambiguous rate-controlling mechanism for itheta_law = 3"
-          write(6,*) "For each fault element, either IPS_const_diff or IPS_const_diss1 must be zero"
-          stop
-        endif
-      end do
-    else
-      write(6,*) "input.f90: incompatible theta law with chosen rate-and-state law"
-      write(6,*) "If the CNS friction law is chosen, theta law must be 3"
-      stop
-    endif
-  endif
-
-  ! End reading CNS model parameters
   ! </SEISMIC>
 
+  ! If the CNS model is selected
+  if (pb%i_rns_law == 3) then
+    allocate( pb%cns_params%a_tilde(n), pb%cns_params%mu_tilde_star(n), &
+              pb%cns_params%y_gr_star(n), pb%cns_params%H(n), &
+              pb%cns_params%phi_c(n), pb%cns_params%phi0(n), &
+              pb%cns_params%IPS_const_diff(n), pb%cns_params%IPS_const_diss1(n), &
+              pb%cns_params%IPS_const_diss2(n), pb%cns_params%L(n) )
+    do i=1,n
+      read(15,*)pb%sigma(i), pb%tau(i), pb%theta(i),  &
+                pb%cns_params%a_tilde(i), pb%cns_params%mu_tilde_star(i), &
+                pb%cns_params%y_gr_star(i), pb%cns_params%H(i), &
+                pb%cns_params%phi_c(i), pb%cns_params%phi0(i), &
+                pb%cns_params%IPS_const_diff(i), pb%cns_params%IPS_const_diss1(i), &
+                pb%cns_params%IPS_const_diss2(i), pb%cns_params%L(i), &
+                pb%ot%iot(i), pb%ot%iasp(i)
+    end do
+  ! Else, the RSF model is selected
+  else
+    allocate ( pb%a(n), pb%b(n), pb%dc(n), pb%v1(n), &
+               pb%v2(n), pb%mu_star(n), pb%v_star(n))
+    do i=1,n
+      read(15,*)pb%sigma(i), pb%v(i), pb%theta(i),  &
+                pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
+                pb%v2(i), pb%mu_star(i), pb%v_star(i), &
+                pb%ot%iot(i), pb%ot%iasp(i), pb%coh(i)
+    end do
+  endif
+
+  ! <SEISMIC>
+  ! Read input parameters for the time-dependent cohesion model (CNS only).
+  ! These parameters and corresponding units are (in order):
+  !
   if (pb%features%cohesion == 1) then
     allocate (  pb%alpha(n), pb%coh_params%alpha0(n), &
                 pb%coh_params%alpha_c(n), pb%coh_params%compl(n), &
                 pb%coh_params%C_star(n), pb%coh_params%E_surf(n), &
                 pb%coh_params%NG_const(n))
-
     do i=1,n
       read(15,*)pb%alpha(i), pb%coh_params%alpha0(i), &
                 pb%coh_params%alpha_c(i), pb%coh_params%compl(i), &
@@ -142,12 +123,17 @@ subroutine read_main(pb)
       pb%alpha(i) = 0
     end do
   endif
+  ! End reading cohesion model parameters
+  ! </SEISMIC>
 
+  ! <SEISMIC>
+  ! Read input parameters for the localisation model (CNS only).
+  ! These parameters and corresponding units are (in order):
+  !
   if (pb%features%localisation == 1) then
     allocate (  pb%cns_params%lambda(n), pb%theta2(n), &
                 pb%cns_params%IPS_const_diff_bulk(n), pb%cns_params%IPS_const_diss1_bulk(n), &
                 pb%cns_params%IPS_const_diss2_bulk(n) )
-
     do i=1,n
       read(15,*)pb%cns_params%lambda(i), pb%theta2(i), &
                 pb%cns_params%IPS_const_diff_bulk(i), pb%cns_params%IPS_const_diss1_bulk(i), &
@@ -160,6 +146,8 @@ subroutine read_main(pb)
       pb%theta2(i) = 0
     end do
   endif
+  ! End reading localisation model parameters
+  ! </SEISMIC>
 
   ! <SEISMIC>
   ! Read input parameters for the thermal pressurisation (TP) model.

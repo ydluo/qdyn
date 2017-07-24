@@ -86,29 +86,34 @@ subroutine dtheta_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
   double precision, dimension(pb%mesh%nn), intent(in) :: theta, theta2
   double precision, dimension(pb%mesh%nn) :: dth_dt, dth2_dt, omega
 
-  omega = v * theta / pb%dc
-  select case (pb%itheta_law)
-
-  case(0) ! "aging" in the no-healing approximation
-    dth_dt = -omega
-
-  case(1) ! "aging" law
-    dth_dt = 1.d0-omega
-
-  case(2) ! "slip" law
-    dth_dt = -omega*log(omega)
-
-  case (3) ! SEISMIC: CNS model
+  ! SEISMIC: If the CNS model is selected
+  if (pb%i_rns_law == 3) then
     call dphi_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
+  ! SEISMIC: Else, the RSF model is selected (with various theta laws)
+  else
 
-! new friction law:
-!  case(xxx)
-!    implement here your state evolution law: dtheta/dt = g(v,theta)
-!    dth_dt = ...
+    omega = v * theta / pb%dc
+    select case (pb%itheta_law)
 
-  case default
-    stop 'dtheta_dt: unknown state evolution law type'
-  end select
+    case(0) ! "aging" in the no-healing approximation
+      dth_dt = -omega
+
+    case(1) ! "aging" law
+      dth_dt = 1.d0-omega
+
+    case(2) ! "slip" law
+      dth_dt = -omega*log(omega)
+
+  ! new friction law:
+  !  case(xxx)
+  !    implement here your state evolution law: dtheta/dt = g(v,theta)
+  !    dth_dt = ...
+
+    case default
+      stop 'dtheta_dt: unknown state evolution law type'
+    end select
+
+  endif
 
 end subroutine dtheta_dt
 
@@ -128,6 +133,10 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
   case(1)
     dmu_dtheta = pb%b * pb%v2 / ( pb%v2*theta + pb%dc )
     dmu_dv = pb%a * pb%v1 / v / ( pb%v1 + v )
+
+  case(3) ! SEISMIC: CNS model
+    write (6,*) "friction.f90::dmu_dv_dtheta is deprecated for the CNS model"
+    stop
 
   case default
     write (6,*) "dmu_dv_dtheta: unkown friction law type"

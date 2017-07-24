@@ -19,7 +19,7 @@ contains
 subroutine solve(pb)
 
   use output, only : screen_init, screen_write, ox_write, ot_write
-  use my_mpi, only: is_MPI_parallel, is_mpi_master, finalize_mpi
+  use my_mpi, only : is_MPI_parallel, is_mpi_master, finalize_mpi
 
   type(problem_type), intent(inout)  :: pb
 
@@ -75,6 +75,7 @@ subroutine do_bsstep(pb)
   use ode_lsoda_main, only: dlsoda
   use ode_rk45, only: rkf45_d
   use output, only : screen_write, ox_write, ot_write
+  use constants, only : USE_RK_SOLVER
 
   type(problem_type), intent(inout) :: pb
 
@@ -110,47 +111,60 @@ subroutine do_bsstep(pb)
     yt(ind_localisation::pb%neqs) = pb%theta2
   endif
 
-  ! this update of derivatives is only needed to set up the scaling (yt_scale)
-  call derivs(pb%time,yt,dydt,pb)
-  yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
-  ! One step
-  ! call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb,ik)
+  ! SEISMIC: user-defined switch (constants.f90) to use either the Runge-Kutta
+  ! method, or Bulirsch-Stoer
+  if (USE_RK_SOLVER .eqv. .true.) then
 
-  ! SEISMIC NOTE: what is happening here?
-  if (pb%dt_max >  0.d0) then
-    pb%dt_try = min(pb%dt_next,pb%dt_max)
+    ! Set-up Runge-Kutta solver
+    pb%rk45%iflag = -2 ! Reset to one-step mode each call
+    pb%t_prev = pb%time
+
+    ! Call Runge-Kutta solver routine
+    call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, pb%tmax, &
+                  pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
+
+    ! Set time step
+    pb%dt_did = pb%time - pb%t_prev
+
+    ! Basic error checking. See description of rkf45_d in ode_rk45.f90 for details
+    select case (pb%rk45%iflag)
+    case (3)
+      write (6,*) "RK45 error [3]: relative error tolerance too small"
+      stop
+    case (4)
+      !write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
+    case (5)
+      write (6,*) "RK45 error [5]: solution vanished, relative error test is not possible"
+      stop
+    case (6)
+      write (6,*) "RK45 error [6]: requested accuracy could not be achieved"
+      stop
+    case (8)
+      call ot_write(pb)
+      call screen_write(pb)
+      call ox_write(pb)
+      write (6,*) "RK45 error [8]: invalid input parameters"
+      stop
+    end select
   else
-    pb%dt_try = pb%dt_next
+    ! Use Bulirsch-Stoer method
+
+    ! this update of derivatives is only needed to set up the scaling (yt_scale)
+    call derivs(pb%time,yt,dydt,pb)
+    yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
+    ! One step
+    call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb,ik)
+
+    ! SEISMIC NOTE: what is happening here?
+    if (pb%dt_max >  0.d0) then
+      pb%dt_try = min(pb%dt_next,pb%dt_max)
+    else
+      pb%dt_try = pb%dt_next
+    endif
   endif
 
-  pb%rk45%iflag = -2 ! Reset to one-step mode each call
-  pb%t_prev = pb%time
-  call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, pb%tmax, &
-                pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
-
-  pb%dt_did = pb%time - pb%t_prev
-
-  ! Basic error checking. See description of rkf45_d in ode_rk45.f90 for details
-  select case (pb%rk45%iflag)
-  case (3)
-    write (6,*) "RK45 error [3]: relative error tolerance too small"
-    stop
-  case (4)
-    !write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
-  case (5)
-    write (6,*) "RK45 error [5]: solution vanished, relative error test is not possible"
-    stop
-  case (6)
-    write (6,*) "RK45 error [6]: requested accuracy could not be achieved"
-    stop
-  case (8)
-    call ot_write(pb)
-    call screen_write(pb)
-    call ox_write(pb)
-    write (6,*) "RK45 error [8]: invalid input parameters"
-    stop
-  end select
-
+  ! SEISMIC: below here is some code that calls the LSODA solver method
+  ! In development, do not use!
   ! pb%lsoda%istate = 2
   ! call dlsoda(  derivs_lsoda, pb%lsoda%neq, yt, pb%time, pb%lsoda%tout, &
   !               pb%lsoda%itol, pb%lsoda%rtol, pb%lsoda%atol, pb%lsoda%itask, &

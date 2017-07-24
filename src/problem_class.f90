@@ -30,7 +30,7 @@ module problem_class
   ! See input.f90 for a description of the parameters
   type cns_type
     double precision, dimension(:), allocatable :: &
-      a, mu_tilde_star, IPS_const_diff, IPS_const_diss1, IPS_const_diss2, H, w, &
+      a_tilde, mu_tilde_star, IPS_const_diff, IPS_const_diss1, IPS_const_diss2, H, L, &
       y_gr_star, phi_c, phi0, lambda, &
       IPS_const_diff_bulk, IPS_const_diss1_bulk, IPS_const_diss2_bulk
   end type cns_type
@@ -51,7 +51,7 @@ module problem_class
   ! End of the TP model structure
 
   ! SEISMIC: structure that holds the cohesion model parameters
-  ! See input.f90 for a description of the parameters
+  ! This feature is still in development
   type cohesion_type
     double precision, dimension(:), allocatable :: &
       alpha0, alpha_c, compl, C_star, E_surf, NG_const
@@ -116,7 +116,7 @@ module problem_class
     double precision :: DYN_M,DYN_th_on,DYN_th_off
     integer :: DYN_FLAG,DYN_SKIP
 
-    ! SEISMIC: add structure that holds the CNS model parameters
+    ! SEISMIC: added structures
     type (cns_type) :: cns_params
     type (tp_type) :: tp
     type (cohesion_type) :: coh_params

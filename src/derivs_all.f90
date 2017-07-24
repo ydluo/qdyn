@@ -1,4 +1,6 @@
 !Module for derivs
+! SEISMIC reference:
+! [VdE] Van den Ende et al. (subm.), Tectonophysics
 
 module derivs_all
 
@@ -67,16 +69,18 @@ subroutine derivs(time,yt,dydt,pb)
   ! Note that the values of tau, sigma, etc. are only set if they're being
   ! used. They just serve as dummy variables otherwise
   theta = yt(1::pb%neqs)
-  theta2 = 0
+  theta2 = 0d0
 
   if (pb%features%stress_coupling == 1) then
     sigma = yt(ind_stress_coupling::pb%neqs)
     dsigma_dt = dydt(ind_stress_coupling::pb%neqs)
+    ! SEISMIC NOTE: when thermal pressurisation is considered, dsigma_dt
+    ! should be updated with dP/dt. Or not??
   else
     sigma = pb%sigma
   endif
 
-  ! SEISMIC: when thermal pressurisation is requested, update P and T
+  ! SEISMIC: when thermal pressurisation is requested, update P and T,
   ! then calculate effective stress sigma_e = sigma - P
   if (pb%features%tp == 1) then
     dt = time - pb%t_prev
@@ -84,10 +88,14 @@ subroutine derivs(time,yt,dydt,pb)
     sigma = sigma - pb%tp%P
   endif
 
+  ! SEISMIC: when cohesion is requested, update alpha (asperity size) for
+  ! time-dependent cohesion calculations (in development)
   if (pb%features%cohesion == 1) then
     alpha = yt(ind_cohesion::pb%neqs)
   endif
 
+  ! SEISMIC: when localisation is requested, keep track of the porosity in the
+  ! bulk zone (separate from the localised shear band)
   if (pb%features%localisation == 1) then
     theta2 = yt(ind_localisation::pb%neqs)
   endif
@@ -97,7 +105,7 @@ subroutine derivs(time,yt,dydt,pb)
     ! compute the velocity and use that to compute dtau_dt, which is stored
     ! in dydt(2::pb%neqs). tau is stored as yt(2::pb%neqs). The system of
     ! ordinary differential equations is then solved in the same way as with
-    ! the rate-and-state formulation.
+    ! the rate-and-state formulation. See [VdE], Section 3.2
 
     tau = yt(2::pb%neqs)
 
@@ -110,7 +118,7 @@ subroutine derivs(time,yt,dydt,pb)
     ! velocity is stored in yt(2::pb%neqs), and tau is not used (set to zero)
     v = yt(2::pb%neqs)
 
-    ! SEISMIC: calculate time-derivative of theta
+    ! SEISMIC: calculate time-derivative of state variable (theta)
     call dtheta_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
   endif
 
@@ -131,21 +139,24 @@ subroutine derivs(time,yt,dydt,pb)
   ! SEISMIC: in the CNS formulation, theta is the gouge porosity
   dydt(1::pb%neqs) = dth_dt
 
-  ! SEISMIC: pack normal stress changes if needed
+  ! SEISMIC: pack normal stress changes if requested
   if (pb%features%stress_coupling == 1) then
     dydt(ind_stress_coupling::pb%neqs) = dsigma_dt
   endif
 
-  ! SEISMIC: pack rate of grain-boundary healing, if needed
+  ! SEISMIC: pack rate of grain-boundary healing, if requested
   if (pb%features%cohesion == 1) then
     dydt(ind_cohesion::pb%neqs) = dalpha_dt(v,tau,sigma,theta,alpha,pb)
   endif
 
-  ! SEISMIC: if localisation is included, pack porosity change of bulk
+  ! SEISMIC: if localisation is requested, pack porosity change of bulk
   if (pb%features%localisation == 1) then
     dydt(ind_localisation::pb%neqs) = dth2_dt
   endif
 
+  ! SEISMIC: calculate dP/dt for the thermal pressurisation model. Note that
+  ! P and T are updated outside of this solver routine, using a the spectral
+  ! approach of Noda & Lapusta (2010)
   if (pb%features%tp == 1) then
     call calc_dP_dt(tau*V/(2*pb%tp%w), dth_dt, theta, dP_dt, pb)
   endif
@@ -167,13 +178,16 @@ subroutine derivs(time,yt,dydt,pb)
     ! dtau/dt = k(Vlp - Vs) - eta*(dV/dtau * dtau/dt + dV/dtheta * dtheta/dt)
     ! Rearrangement gives:
     ! dtau/dt = ( k[Vlp - Vs] - eta*dV/dtheta * dtheta/dt)/(1 + eta*dV/dtau)
+    ! See [VdE], Section 3.2
     dydt(2::pb%neqs) = (dtau_dt + dtau_per - pb%zimpedance* &
     (dmu_dtheta*dth_dt + dtau_dP*dP_dt)) /(1 + pb%zimpedance*dmu_dv)
   else
     ! SEISMIC: the rate-and-state formulation computes the the time-derivative
-    ! of velocity, rather than stress
+    ! of velocity, rather than stress, so the partial derivatives of friction
+    ! to velocity and theta are required
     call dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
 
+    ! For thermal pressurisation, the partial derivative of tau to P is -mu
     dtau_dP = -tau/sigma
 
     ! Time derivative of the elastic equilibrium equation
@@ -203,14 +217,13 @@ subroutine derivs_lsoda(neq, time, yt, dydt)
 end subroutine derivs_lsoda
 
 !--------------------------------------------------------------------------------------
-! SEISMIC: jacobian for lsoda
+! SEISMIC: jacobian for lsoda (TODO)
 !--------------------------------------------------------------------------------------
 subroutine jac_lsoda(neq, time, yt, ml, mu, pd, nrpd)
 integer :: neq, ml, mu, nrpd
 double precision :: time, yt(neq), pd(nrpd,neq)
 
 end subroutine jac_lsoda
-
 
 !--------------------------------------------------------------------------------------
 ! SEISMIC: the subroutine derivs_rk45 is a wrapper that interfaces between derivs

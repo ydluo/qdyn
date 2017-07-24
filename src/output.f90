@@ -480,12 +480,27 @@ if (is_MPI_parallel()) then
 else
  if (mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
   if (pb%ox%i_ox_seq == 0) then
-    write(pb%ox%unit,'(a,2i8,e14.6)')'# x t v theta dtau tau_dot slip sigma',pb%it,pb%ot%ivmax,pb%time
-  ! JPA: this output should also contain y and z
-    do ixout=1,pb%mesh%nn,pb%ox%nxout
-      write(pb%ox%unit,'(e15.7,e24.16,6e15.7)') pb%mesh%x(ixout),pb%time,pb%v(ixout),   &
-        pb%theta(ixout),pb%tau(ixout), pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
-    enddo
+
+    ! <begin TP output conditional>
+    ! SEISMIC: if thermal pressurisation is requested, write P and T output
+    if (pb%features%tp == 1) then
+      write(pb%ox%unit,'(a,2i8,e14.6)')'# x t v theta dtau tau_dot slip sigma_e P T',pb%it,pb%ot%ivmax,pb%time
+      ! JPA: this output should also contain y and z
+      do ixout=1,pb%mesh%nn,pb%ox%nxout
+        write(pb%ox%unit,'(e15.7,e24.16,8e15.7)') pb%mesh%x(ixout),pb%time,pb%v(ixout),   &
+          pb%theta(ixout),pb%tau(ixout), pb%dtau_dt(ixout),pb%slip(ixout), &
+          pb%sigma(ixout)-pb%tp%P(ixout), pb%tp%P(ixout), pb%tp%T(ixout)
+      enddo
+    else
+      write(pb%ox%unit,'(a,2i8,e14.6)')'# x t v theta dtau tau_dot slip sigma',pb%it,pb%ot%ivmax,pb%time
+      ! JPA: this output should also contain y and z
+      do ixout=1,pb%mesh%nn,pb%ox%nxout
+        write(pb%ox%unit,'(e15.7,e24.16,6e15.7)') pb%mesh%x(ixout),pb%time,pb%v(ixout),   &
+          pb%theta(ixout),pb%tau(ixout), pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
+      enddo
+    endif
+    ! <end TP output conditional>
+
   else
     pb%ox%unit = pb%ox%unit + 1
     write(pb%ox%unit,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time

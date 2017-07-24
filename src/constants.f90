@@ -31,6 +31,10 @@ module constants
 !   CUSTOM_REAL = 8  (double precision)
    integer, parameter :: CUSTOM_REAL = 8
 
+! Which ODE solver to use: Bulirsch-Stoer, or Runge-Kutta-Fehlberg. Set the
+! below logical to .true. to use Runge-Kutta, else Bulirsch-Stoer is used.
+   logical, parameter :: USE_RK_SOLVER = .true.
+
 !--- END of User Settings ---
 
  ! Path to directory containing the source files and kernel file.

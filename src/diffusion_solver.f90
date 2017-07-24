@@ -62,7 +62,7 @@ end subroutine init_tp
 !===============================================================================
 ! SEISMIC: initiate discretisation of the spectral domain for the spectral
 ! diffusion solver of [N&L]. Mesh parameters are hard-coded at the top of
-! this file
+! mesh.f90
 !===============================================================================
 subroutine init_spectral_mesh(sm)
 
@@ -200,6 +200,10 @@ subroutine update_PT(tau_y,phi_dot,phi,dt,pb)
   double precision, dimension(pb%mesh%nn) :: tau_y, phi_dot, phi, PT
   double precision :: dt
 
+  if (pb%i_rns_law /= 3) then
+    phi_dot = 0d0
+  endif
+
   ! Compute PiTheta and Theta for step t+dt
   call solve_spectral(tau_y, phi_dot, phi, dt, pb)
 
@@ -228,7 +232,11 @@ subroutine update_PT_final(dt,pb)
 
   ! Calculate mid-point values of tau_y, phi_dot, phi between t and t+dt
   tau_y_avg = 0.5*(pb%tau*0.5*pb%V*pb%tp%inv_w + pb%tp%tau_y_prev)
-  phi_dot_avg = 0.5*(pb%dtheta_dt + pb%tp%phi_dot_prev)
+  if (pb%i_rns_law == 3) then
+    phi_dot_avg = 0.5*(pb%dtheta_dt + pb%tp%phi_dot_prev)
+  else
+    phi_dot_avg = 0d0
+  endif
   phi_avg = 0.5*(pb%theta + pb%tp%phi_prev)
 
   ! Compute PiTheta and Theta for step t+dt

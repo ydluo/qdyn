@@ -16,10 +16,11 @@
 ! shear strength. Velocity-weakening behaviour emerges naturally from this
 ! model. This model is compatible with the thermal pressurisation model
 !
-! For details and derivation of the model, see:
-!   - Niemeijer & Spiers (2007), J. Geophys. Res., doi:10.1029/2007JB00500
-!   - Chen & Spiers (2016), JGR: Solid Earth, doi:10.1002/2016JB013470
-!   - Van den Ende et al. (subm.), Tectonophysics
+! References:
+!
+!   [NS]  Niemeijer & Spiers (2007), J. Geophys. Res., doi:10.1029/2007JB00500
+!   [CS]  Chen & Spiers (2016), JGR: Solid Earth, doi:10.1002/2016JB013470
+!   [VdE] Van den Ende et al. (subm.), Tectonophysics
 !
 ! In the view of rate-and-state friction, we take the porosity as the
 ! (microstructural) state, and the constitutive relations are solved for the
@@ -60,15 +61,19 @@ subroutine dphi_dt(v,tau,sigma,phi,phi2,dth_dt,dth2_dt,pb)
   e_ps_dot_bulk = 0
   y_ps_bulk = 0
 
+  ! If localisation is requested, calculate the values in the bulk
   if (pb%features%localisation == 1) then
     e_ps_dot_bulk = calc_e_ps(sigma, phi2, .true., .true., pb)
     y_ps_bulk = calc_e_ps(tau, phi2, .false., .true., pb)
   endif
 
-  y_gr =  (1.0/pb%cns_params%lambda)*(v/pb%cns_params%w - &
+  ! Calculate granular flow rate (assumed to operate only within the localised
+  ! zone) as y_gr = y_t - y_ps
+  y_gr =  (1.0/pb%cns_params%lambda)*(v/pb%cns_params%L - &
           (1-pb%cns_params%lambda)*y_ps_bulk) - y_ps
-  ! SEISMIC: the nett rate of change of porosity is given by the relation
-  ! phi_dot = -(1 - phi)*strain_rate, where the strain rate equals
+
+  ! The nett rate of change of porosity is given by the relation
+  ! phi_dot = -(1 - phi)*strain_rate [CS], where the strain rate equals
   ! the compaction rate by pressure solution (e_ps_dot) minus the dilatation
   ! rate by granular flow (tan_psi*y_gr). Note that compaction is measured
   ! positive, dilatation negative
@@ -78,7 +83,7 @@ subroutine dphi_dt(v,tau,sigma,phi,phi2,dth_dt,dth2_dt,pb)
 end subroutine dphi_dt
 
 !===============================================================================
-! SEISMIC: time-dependent cohesion, work in progess
+! SEISMIC: time-dependent cohesion, work in progess...
 !===============================================================================
 function dalpha_dt(v,tau,sigma,phi,alpha,pb) result(da_dt)
 
@@ -89,7 +94,7 @@ function dalpha_dt(v,tau,sigma,phi,alpha,pb) result(da_dt)
   double precision, dimension(pb%mesh%nn) :: y_ps, y_gr, x, y
   double precision, parameter :: small = 1e-15
 
-  write(6,*) "ERROR: The grain-boundary healing feature is work in progress..."
+  write(6,*) "ERROR: The grain-boundary healing feature is in development..."
   stop
 
   q = 2*(pb%cns_params%phi_c - phi)
@@ -99,7 +104,7 @@ function dalpha_dt(v,tau,sigma,phi,alpha,pb) result(da_dt)
   sin_psi = tan_psi * cos_psi
 
   y_ps = calc_e_ps(tau, phi, .false., .false., pb)   ! Press. soln. shear rate
-  y_gr = v/pb%cns_params%w - y_ps
+  y_gr = v/pb%cns_params%L - y_ps
 
   delta_alpha = alpha - pb%coh_params%alpha0
 
@@ -120,12 +125,11 @@ function dalpha_dt(v,tau,sigma,phi,alpha,pb) result(da_dt)
 
 end function dalpha_dt
 
-
 !===============================================================================
 ! SEISMIC: the subroutine below was written to optimise/reduce function calls,
 ! and to improve code handling (less code duplication, hopefully fewer bugs).
 !===============================================================================
-subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dtau_dP, &
+subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dv_dP, &
                         tau, sigma, phi, phi2, alpha, pb )
 
   use constants, only : PI
@@ -135,7 +139,7 @@ subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dtau_dP, &
   double precision, dimension(pb%mesh%nn), intent(in) :: tau, sigma, phi, phi2, alpha
 
   ! Output variables
-  double precision, dimension(pb%mesh%nn) :: v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dtau_dP
+  double precision, dimension(pb%mesh%nn) :: v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dv_dP
 
   ! Internal variables
   double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, denom, dummy_var
@@ -146,17 +150,16 @@ subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dtau_dP, &
   double precision, dimension(pb%mesh%nn) :: dv_dphi_ps_d, dv_dphi_ps_s
 
   ! Pre-define some internal variables
-  tan_psi = calc_tan_psi(phi, pb)             ! Dilatation angle
+  tan_psi = calc_tan_psi(phi, pb)               ! Dilatation angle
   mu_star = pb%cns_params%mu_tilde_star         ! Reference GB friction
-  L_sb = pb%cns_params%lambda*pb%cns_params%w   ! Thickness of localised zone
+  L_sb = pb%cns_params%lambda*pb%cns_params%L   ! Thickness of localised zone
 
   ! Pre-compute the denominator for efficiency
-  denom = 1.0/(pb%cns_params%a*(sigma+tau*tan_psi))
+  denom = 1.0/(pb%cns_params%a_tilde*(sigma+tau*tan_psi))
   ! Pre-compute a dummy variable that we will re-use a few times
   dummy_var = (tau*(1 - mu_star*tan_psi) - sigma*(mu_star + tan_psi))*denom
 
-  ! The granular flow strain rate for the case when the shear stress approaches
-  ! the shear strength of the grain contacts
+  ! The granular flow strain rate [CS, Eqn. 33b]
   y_gr = pb%cns_params%y_gr_star*exp(dummy_var)
 
   mu_tilde = calc_mu_tilde(y_gr, pb)           ! Grain-boundary friction
@@ -171,42 +174,42 @@ subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dtau_dP, &
 
   ! If localisation is requested, calculate pressure solution rates
   ! in the bulk zone, otherwise set to zero
-  ! e_ps_bulk = 0
-  ! y_ps_bulk = 0
-  ! if (pb%features%localisation == 1) then
-  !   e_ps_bulk = calc_e_ps(sigma, phi2, .true., .true., pb)
-  !   y_ps_bulk = calc_e_ps(tau, phi2, .false., .true., pb)
-  ! endif
+  e_ps_bulk = 0
+  y_ps_bulk = 0
+  if (pb%features%localisation == 1) then
+    e_ps_bulk = calc_e_ps(sigma, phi2, .true., .true., pb)
+    y_ps_bulk = calc_e_ps(tau, phi2, .false., .true., pb)
+  endif
 
-  ! Cohesion is still in progress...
-  ! cohesion = 0
-  ! if (pb%features%cohesion == 1) then
-  !   cos_psi = cos(atan(tan_psi))
-  !   cohesion = (PI/pb%cns_params%H)*(tan_psi*alpha*pb%coh_params%C_star)/(cos_psi*(1-mu_tilde*tan_psi))
-  ! endif
+  ! If cohesion is requested, calculate the contribution of cohesion to the
+  ! gouge strength. See [NS], Eqn. 20. This feature still in development...
+  cohesion = 0
+  if (pb%features%cohesion == 1) then
+    cos_psi = cos(atan(tan_psi))
+    cohesion = (PI/pb%cns_params%H)*(tan_psi*alpha*pb%coh_params%C_star)/(cos_psi*(1-mu_tilde*tan_psi))
+  endif
 
   ! The total slip velocity is the combined contribution of granular flow
   ! and pressure solution (parallel processes)
-  !v = pb%cns_params%w*(pb%cns_params%lambda*(y_gr + y_ps) + (1-pb%cns_params%lambda)*y_ps_bulk)
-  v = pb%cns_params%w*(y_gr + y_ps)
+  v = pb%cns_params%L*(pb%cns_params%lambda*(y_gr + y_ps) + (1-pb%cns_params%lambda)*y_ps_bulk)
 
-  ! SEISMIC: the nett rate of change of porosity is given by the relation
+  ! The nett rate of change of porosity is given by the relation
   ! phi_dot = -(1 - phi)*strain_rate, where the strain rate equals
   ! the compaction rate by pressure solution (e_ps) minus the dilatation
   ! rate by granular flow (tan_psi*v/w). Note that compaction is measured
   ! positive, dilatation negative
   dth_dt = (1 - phi)*(tan_psi*y_gr - e_ps)
-  !dth2_dt = -(1 - phi2)*e_ps_bulk
+  dth2_dt = -(1 - phi2)*e_ps_bulk
 
   ! Next, calculate the partial derivatives dv_dtau and dv_dphi for the
   ! pressure solution creep. The functional form depends on the rate-limiting
   ! mechanism (diffusion, dissolution, or precipitation)
-  ! Note that the pressure solution strain rate is multiplied by the
-  ! the gouge layer thickness (pb%cns_params%w) to obtain a velocity
+
+  ! TODO: fix these partials for diffusion/dissolution control, with cut-off
 
   ! dv_dtau_ps_d = L_sb*pb%cns_params%IPS_const_diff*f_phi_sqrt**2
   ! dv_dphi_ps_d = 4*dv_dtau_ps_d*f_phi_sqrt*tau
-
+  !
   ! dv_dtau_ps_s =  L_sb*(y_ps + pb%cns_params%IPS_const_diss1)* &
   !                 pb%cns_params%IPS_const_diss2*2*pb%cns_params%phi_c*f_phi_sqrt
   ! dv_dphi_ps_s = 2*dv_dtau_ps_s*f_phi_sqrt*tau
@@ -219,20 +222,20 @@ subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dtau_dP, &
   ! granular flow velocities.
 
   ! dv_dtau = dv_dtau_ps_d + dv_dtau_ps_s + &
-  !           L_sb*y_gr*((1-mu_star*tan_psi)*denom - tan_psi*dummy_var*pb%cns_params%a*denom)
+  !           L_sb*y_gr*((1-mu_star*tan_psi)*denom - tan_psi*dummy_var*pb%cns_params%a_tilde*denom)
   ! dv_dphi = dv_dtau_ps_d + dv_dtau_ps_s + &
   !             L_sb*y_gr*(2*pb%cns_params%H*(sigma + mu_star*tau)*denom + &
-  !             2*pb%cns_params%H*tau*dummy_var*pb%cns_params%a*denom)
+  !             2*pb%cns_params%H*tau*dummy_var*pb%cns_params%a_tilde*denom)
 
   dv_dtau = L_sb*(dv_dtau_ps_s + &
-            y_gr*((1-mu_tilde*tan_psi)*denom - tan_psi*dummy_var*pb%cns_params%a*denom))
+            y_gr*((1-mu_tilde*tan_psi)*denom - tan_psi*dummy_var*pb%cns_params%a_tilde*denom))
   dv_dphi = L_sb*(dv_dtau_ps_s + &
               y_gr*(2*pb%cns_params%H*(sigma + mu_tilde*tau)*denom + &
-              2*pb%cns_params%H*tau*dummy_var*pb%cns_params%a*denom))
+              2*pb%cns_params%H*tau*dummy_var*pb%cns_params%a_tilde*denom))
 
-  ! When thermal pressurisation is requested, update dtau_dP (= dV/dP)
+  ! When thermal pressurisation is requested, update dV_dP
   if (pb%features%tp == 1) then
-    dtau_dP = pb%cns_params%w*y_gr*tau*(1 + tan_psi**2)*pb%cns_params%a*denom**2
+    dv_dP = pb%cns_params%L*y_gr*tau*(1 + tan_psi**2)*pb%cns_params%a_tilde*denom**2
   endif
 
 end subroutine CNS_derivs
@@ -251,15 +254,16 @@ function compute_velocity(tau,sigma,phi,phi2,alpha,pb) result(v)
   double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, denom, y_ps
   double precision, dimension(pb%mesh%nn) :: mu_star, y_gr, tau_gr
   double precision, dimension(pb%mesh%nn) :: cos_psi, cohesion
-  double precision, dimension(pb%mesh%nn) :: y_ps_bulk
+  double precision, dimension(pb%mesh%nn) :: y_ps_bulk, v
 
-  tan_psi = calc_tan_psi(phi, pb)         ! Dilatation angle
+  ! Dilatation angle
+  tan_psi = calc_tan_psi(phi, pb)
 
   ! Pre-compute the denominator for efficiency
-  denom = 1.0/(pb%cns_params%a*(sigma+tau*tan_psi))
+  denom = 1.0/(pb%cns_params%a_tilde*(sigma+tau*tan_psi))
   mu_star = pb%cns_params%mu_tilde_star
 
-  ! The granular flow strain rate
+  ! The granular flow strain rate [CS, Eqn. 33b]
   y_gr = pb%cns_params%y_gr_star*exp((tau*(1 - mu_star*tan_psi) - sigma*(mu_star + tan_psi))*denom)
 
   ! Shear strain rate [1/s] due to viscous flow (pressure solution)
@@ -268,23 +272,19 @@ function compute_velocity(tau,sigma,phi,phi2,alpha,pb) result(v)
   if (pb%features%localisation == 1) then
     y_ps_bulk = calc_e_ps(tau, phi2, .false., .true., pb)
   endif
-  mu_tilde = calc_mu_tilde(y_gr, pb)           ! Grain-boundary friction
 
-  cohesion = 0
-  if (pb%features%cohesion == 1) then
-    cos_psi = cos(atan(tan_psi))
-    cohesion = (PI/pb%cns_params%H)*(tan_psi*alpha*pb%coh_params%C_star)/(cos_psi*(1-mu_tilde*tan_psi))
-  endif
+  ! Grain-boundary friction
+  mu_tilde = calc_mu_tilde(y_gr, pb)
 
   ! The total slip velocity is the combined contribution of granular flow
   ! and pressure solution (parallel processes)
-  v = pb%cns_params%w*(pb%cns_params%lambda*(y_gr + y_ps) + (1-pb%cns_params%lambda)*y_ps_bulk)
+  v = pb%cns_params%L*(pb%cns_params%lambda*(y_gr + y_ps) + (1-pb%cns_params%lambda)*y_ps_bulk)
 
 end function compute_velocity
 
 !===============================================================================
 ! SEISMIC: calculate the dilatation angle, which is a geometric consequence
-! of the instantaneous porosity (phi)
+! of the instantaneous porosity (phi). See [NS], Eqn. 2
 !===============================================================================
 function calc_tan_psi(phi,pb) result(tan_psi)
 
@@ -299,6 +299,7 @@ end function calc_tan_psi
 !===============================================================================
 ! SEISMIC: calculate the grain-boundary coefficient of friction, which is
 ! logarithmically rate-strengthening, assuming some atomic scale jump process
+! See [CS], Section 3.5
 !===============================================================================
 function calc_mu_tilde(y_gr,pb) result(mu_tilde)
 
@@ -308,7 +309,7 @@ function calc_mu_tilde(y_gr,pb) result(mu_tilde)
 
   ! NOTE: the granular flow strain rate should be used here,
   ! not the total strain rate
-  mu_tilde =  pb%cns_params%mu_tilde_star + pb%cns_params%a * &
+  mu_tilde =  pb%cns_params%mu_tilde_star + pb%cns_params%a_tilde * &
               log(abs(y_gr)/pb%cns_params%y_gr_star)
 
 end function calc_mu_tilde
@@ -349,6 +350,7 @@ function calc_e_ps(sigma,phi,truncate,bulk,pb) result(e_ps_dot)
 
   ! The porosity cut-off should only apply to volumetric strain rates (i.e.
   ! compaction, not for shear). Phi0 can be taken as the percolation threshold
+  ! See [VdE], Eqn. 6 (NOTE: update this when paper is accepted)
   if (truncate .eqv. .true.) then
     e_ps_dot = e_ps_dot * (phi - pb%cns_params%phi0)/pb%cns_params%phi_c
   endif
