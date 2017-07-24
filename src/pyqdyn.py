@@ -200,7 +200,7 @@ class qdyn:
 	# Render the mesh, and populate it uniformly with the input parameters
 	# After render_mesh() was called, the self.mesh_dict can be modified
 	# in the script file to introduce heterogeneity in the parameters
-	# See examples/RSF/tse_rice.py for an example
+	# See examples/PyQDYN/Tse+Rice/tse_rice.py for an example
 	def render_mesh(self):
 
 		settings = self.set_dict

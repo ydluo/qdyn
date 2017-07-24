@@ -571,6 +571,7 @@ end
 THETA_LAW = sscanf(fgetl(fid), '%u');
 RNS_LAW = sscanf(fgetl(fid), '%u');
 SIGMA_CPL = sscanf(fgetl(fid), '%u');
+rdat = sscanf(fgetl(fid), '%u %u %u %u');
 rdat = sscanf(fgetl(fid), '%u %u %u %u %u %u'); NTOUT = rdat(1); IC = rdat(2); NXOUT = rdat(3); NXOUT_DYN = rdat(4); OX_SEQ  = rdat(5); OX_DYN = rdat(6);
 rdat = sscanf(fgetl(fid), '%f %f %f %f %f %f'); VS = rdat(1); MU = rdat(2); LAM = rdat(3); D = rdat(4); H = rdat(5); V_TH = rdat(6);
 rdat = sscanf(fgetl(fid), '%f %f'); TPER = rdat(1); APER = rdat(2);
