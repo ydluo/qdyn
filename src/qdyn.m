@@ -51,7 +51,7 @@
 %		VS 	shear wave velocity (m/s). If VS=0 radiation damping is turned off
 %		D	damage level = 1 - (damaged shear modulus) / (intact shear modulus)
 %		H	if D>0, half-thickness of the fault damage zone
-%     if D=0, half-thickness of elastic slab bisected by fault
+%			if D=0, half-thickness of elastic slab bisected by fault
 %		L 	fault length if MESHDIM=1
 %		    	stiffness is MU/L if MESHDIM=0
 %		FINITE	boundary conditions if MESHDIM=1
@@ -62,8 +62,8 @@
 %			    error message "finite kernel is too small", create a larger kernel file
 %			    using the function TabKernelFiniteFlt.m, update the file name in
 %			    subroutine init_kernel_2D of src/fault_stress.f90, and recompile
-%     2 = same as 0 but slip is symmetric relative to first element
-%     3 = same as 1 but slip is symmetric relative to first element
+%			2 = same as 0 but slip is symmetric relative to first element
+%			3 = same as 1 but slip is symmetric relative to first element
 %		W  	distance between displacement loading and fault if MESHDIM=1 and FINITE=0
 %		DIP_W	dipping angle (degree). If depthdependent, values must be given
 %			from deeper to shallower depth.
@@ -83,7 +83,7 @@
 %		TH_SS	reference steady-state state (default: TH_SS=DC/V_SS)
 %		RNS_LAW	type of rate-and-state friction law:
 %			0 = original
-%			1 = with cutt-off velocities
+%			1 = with cut-off velocities
 %		V1 	cut-off velocity of direct effect (m/s)
 %		V2 	cut-off velocity of evolution effect (m/s), controls the transition
 %			from weakening to strengtherning when a<b. V2 should be <= V1
@@ -292,7 +292,7 @@ Parse_Inputs(varargin{:});
 % generate the mesh
 [X,Y,Z,DIP] = generate_mesh();
 
-if MESHDIM<2 & NPROCS>1
+if MESHDIM<2 && NPROCS>1 
   disp('MPI parallelization is only implemented for MESHDIM=2. Resetting NPROCS=1.')
   NPROCS = 1;
 end
@@ -316,26 +316,26 @@ case 'set',
 case 'read',
   pars = read_qdyn_in(NAME);
   pars.NAME = NAME;
-  [ot,ox]= read_qdyn_out(NAME);
+  [ot,ox] = read_qdyn_out(NAME);
 
 case {'run', 'write'},
 
   % make vectors if constants
-   DW(1:NW) =DW;
-   DIP_W(1:NW) =DIP_W;
-   A(1:N)   =A;
-   B(1:N)   =B;
-   DC(1:N)  =DC;
-   V_0(1:N) =V_0;
-   TH_0(1:N)=TH_0;
-   V1(1:N) =V1;
-   V2(1:N) =V2;
-   SIGMA(1:N) =SIGMA;
-   MU_SS(1:N)=MU_SS;
-   V_SS(1:N)=V_SS;
-   IOT(1:N)=IOT;
-   IASP(1:N)=IASP;
-   CO(1:N)=CO;
+   DW(1:NW) = DW;
+   DIP_W(1:NW) = DIP_W;
+   A(1:N) = A;
+   B(1:N) = B;
+   DC(1:N) = DC;
+   V_0(1:N) = V_0;
+   TH_0(1:N)= TH_0;
+   V1(1:N) = V1;
+   V2(1:N) = V2;
+   SIGMA(1:N) = SIGMA;
+   MU_SS(1:N) = MU_SS;
+   V_SS(1:N) = V_SS;
+   IOT(1:N) = IOT;
+   IASP(1:N) = IASP;
+   CO(1:N) = CO;
 
   % For branching faults.
   % NOTE: this is an undocumented feature implemented by Percy
@@ -366,7 +366,7 @@ case {'run', 'write'},
   end
 
  % rename input and output files
-  if length(NAME)
+  if ~isempty(NAME)
     movefile('fort.18',[NAME '.ot']);
     movefile('fort.19',[NAME '.ox']);
     copyfile('qdyn.in',[NAME '.in']);
@@ -476,7 +476,7 @@ function export_main_input()
       iwloc = [1:NW];
     end
 
-    fid=fopen(filename,'w');
+    fid = fopen(filename,'w');
     fprintf(fid,'%u     meshdim\n' , MESHDIM);
     if MESHDIM == 2
       fprintf(fid,'%u %u     NX, NW\n' , NX, nw);
@@ -526,14 +526,16 @@ end % of function qdyn
 % or else the default value will be taken.
 function Parse_Inputs(varargin)
 
-if isempty(varargin), return, end
+if isempty(varargin)
+    return
+end
 
 % 1. Override defaults by input structure
 if isstruct(varargin{1})
  % process input parameter structure
   parsin = varargin{1};
   fparsin = fieldnames(parsin);
-  for k=1:length(fparsin),
+  for k=1:length(fparsin)
     assignin('caller', upper(fparsin{k}), parsin.(fparsin{k}) );
   end
  % separate the input Property/Value pairs
@@ -541,58 +543,68 @@ if isstruct(varargin{1})
 end
 
 % 2. Override defaults and previously set parameters by Property/Value pairs
-for k=2:2:length(varargin),
+for k = 2:2:length(varargin)
   assignin('caller', upper(varargin{k-1}), varargin{k} );
 end
-end
+end % of function Parse_Inputs
 
 %-----------
-% WARNING: this function needs update to comply with the current format of qdyn.in
 function pars = read_qdyn_in(name)
-
-if ~exist('name','var') || ~length(name), name = 'qdyn'; end
+if ~exist('name','var') || isempty(name)
+    name = 'qdyn';
+end
 name = [name '.in'];
 
-fid=fopen(name);
-rline=fgetl(fid); rdat = sscanf(rline,'%f');
-MU_SS = rdat(1);
-V_SS  = rdat(2);
-THETA_LAW = rdat(3);
-SIGMA = rdat(4);
-rline=fgetl(fid); rdat = sscanf(rline,'%f');
-MU = rdat(1);
-VS = rdat(2);
-W  = rdat(3);
-rline=fgetl(fid); rdat = sscanf(rline,'%f');
-L     = rdat(1);
-NSTOP = rdat(2);
-TMAX  = rdat(3);
-rline=fgetl(fid); rdat = sscanf(rline,'%f');
-TPER  = rdat(1);
-APER  = rdat(2);
-rline=fgetl(fid); rdat = sscanf(rline,'%f');
-NXOUT = rdat(1);
-NTOUT = rdat(2);
-rline=fgetl(fid); rdat = sscanf(rline,'%f');
-DTTRY = rdat(1);
-DTMAX = rdat(2);
-ACC   = rdat(3);
+fid = fopen(name);
+MESHDIM = sscanf(fgetl(fid), '%u');
+if MESHDIM == 2
+    rdat = sscanf(fgetl(fid), '%u %u'); NX = rdat(1); NW = rdat(2);
+    rdat = sscanf(fgetl(fid), '%.15g %.15g  %.15g'); L = rdat(1); W = rdat(2); Z_CORNER = rdat(3);
+    rdat = sscanf(fgetl(fid), '%.15g %.15g'); DW(iwloc) = rdat(1); DIP_W(iwloc) = rdat(2);
+else
+    N = sscanf(fgetl(fid), '%u');
+    rdat = sscanf(fgetl(fid), '%f %f'); L = rdat(1); W = rdat(2);
+end
+if MESHDIM == 1
+    FINITE = sscanf(fgetl(fid), '%u');
+end
+THETA_LAW = sscanf(fgetl(fid), '%u');
+RNS_LAW = sscanf(fgetl(fid), '%u');
+SIGMA_CPL = sscanf(fgetl(fid), '%u');
+rdat = sscanf(fgetl(fid), '%u %u %u %u %u %u'); NTOUT = rdat(1); IC = rdat(2); NXOUT = rdat(3); NXOUT_DYN = rdat(4); OX_SEQ  = rdat(5); OX_DYN = rdat(6);
+rdat = sscanf(fgetl(fid), '%f %f %f %f %f %f'); VS = rdat(1); MU = rdat(2); LAM = rdat(3); D = rdat(4); H = rdat(5); V_TH = rdat(6);
+rdat = sscanf(fgetl(fid), '%f %f'); TPER = rdat(1); APER = rdat(2);
+rdat = sscanf(fgetl(fid), '%f %f %f %f'); DTTRY = rdat(1); DTMAX = rdat(2); TMAX = rdat(3); ACC = rdat(4);
+NSTOP = sscanf(fgetl(fid), '%u');
+rdat = sscanf(fgetl(fid), '%u %u'); DYN_FLAG = rdat(1); DYN_SKIP = rdat(2);
+rdat = sscanf(fgetl(fid), '%f %f %f'); DYN_M = rdat(1); DYN_TH_ON = rdat(2); DYN_TH_OFF = rdat(3);
+rdat = textscan(fid, '%f %f %f %f %f %f %f %f %f %f %u %u %f');
+SIGMA = rdat{1};
+V_0 = rdat{2};
+TH_0 = rdat{3};
+A = rdat{4};
+B = rdat{5};
+DC = rdat{6};
+V1 = rdat{7};
+V2 = rdat{8};
+MU_SS = rdat{9};
+V_SS = rdat{10};
+IOT = rdat{11};
+IASP = rdat{12};
+CO = rdat{13};
 fclose(fid);
-[X,A,B,DC,V1,V2,V_0,TH_0,]=textread(name,'','headerlines',6);
 
 % wrap UPPER CASE variables in parameter structure fields with the same name
 fpars = who;
-for k= find( strcmp(fpars,upper(fpars)) )' ,
-  pars.(fpars{k}) = eval(fpars{k}) ;
+for k = find( strcmp(fpars,upper(fpars)) )'
+  pars.(fpars{k}) = eval(fpars{k});
 end
-
-end
-
+end % of function read_qdyn_in
 
 % read outputs from qdyn.f
 function [ot,ox] = read_qdyn_out_mpi(name)
 
-if exist('name','var') && length(name)
+if exist('name','var') && ~isempty(name)
   namet = [name '.ot'];
   namex = [name '.ox'];
 else
@@ -623,49 +635,99 @@ end
   ox.dtaud = cosa(:,:,8);
   ox.d = cosa(:,:,9);
   ox.sigma = cosa(:,:,10);
-end
+end % of function read_qdyn_out_mpi
 
 %-----------
 % read outputs from qdyn.f
 function [ot,ox] = read_qdyn_out(name)
+    if exist('name','var') && ~isempty(name)
+        namet = [name '.ot'];
+        namex = [name '.ox'];
+    else
+        namet = 'fort.18';
+        namex = 'fort.19';
+    end
 
-if exist('name','var') && length(name)
-  namet = [name '.ot'];
-  namex = [name '.ox'];
-else
-  namet = 'fort.18';
-  namex = 'fort.19';
-end
+    if uimatlab
+        % time series
+        [~, file_sys] = system(['file ',namet]);
+        isasc = textscan(file_sys, '%s', 2);
+        if strcmp('ASCII', isasc{1}(2))
+            [ot.t, ot.locl, ot.cl, ot.p, ot.pdot, ...
+                ot.vc, ot.thc, ot.omc, ot.tauc, ot.dc, ...
+                ot.xm, ot.v, ot.th, ot.om, ot.tau, ot.d, ot.sigma ] = ...
+                textread(namet, '', 'headerlines', 6);
+        else % binary output
+            fid = fopen(namet, 'r');
+            hdr = fread(fid, 'double');
+            fclose(fid);
 
-if uimatlab
-  % time series
-  disp(namet);
-  [ot.t, ot.locl, ot.cl, ot.p, ot.pdot, ...
-   ot.vc, ot.thc, ot.omc, ot.tauc, ot.dc, ...
-   ot.xm, ot.v, ot.th, ot.om, ot.tau, ot.d, ot.sigma ] = ...
-    textread(namet,'','headerlines',6);
+            hdr = reshape(hdr, 17, length(hdr)/17)';
+            ot.t = hdr(:,1);
+            ot.locl = hdr(:,2);
+            ot.cl = hdr(:,3);
+            ot.p = hdr(:,4);
+            ot.pdot = hdr(:,5);
+            ot.vc = hdr(:,6);
+            ot.thc = hdr(:,7);
+            ot.omc = hdr(:,8);
+            ot.tauc = hdr(:,9);
+            ot.dc = hdr(:,10);
+            ot.xm = hdr(:,11);
+            ot.v = hdr(:,12);
+            ot.th = hdr(:,13);
+            ot.om = hdr(:,14);
+            ot.tau = hdr(:,15);
+            ot.d = hdr(:,16);
+            ot.sigma = hdr(:,17);
+        end
 
-  % snapshots
-  fid=fopen(namex);
-  NSX=fscanf(fid,'# nx=%u');
-  fclose(fid);
-  cosa = textread(namex,'','commentstyle','shell');
-  ncosa = size(cosa);
-  NST=ncosa(1)/NSX;
-  cosa=reshape(cosa,NSX,NST,ncosa(2));
-  ox.x = cosa(:,1,1);
-  ox.t = cosa(1,:,2)';
-  ox.v = cosa(:,:,3);
-  ox.th= cosa(:,:,4);
-  ox.dtau = cosa(:,:,5);
-  ox.dtaud = cosa(:,:,6);
-  ox.d = cosa(:,:,7);
-  ox.sigma = cosa(:,:,8);
-
-else
-  [ot,ox] = read_qdyn_out_Octave(namet,namex)
-end
-end
+        %snapshots
+        [~, file_sys] = system(['file ',namex]);
+        isasc = textscan(file_sys, '%s', 2);
+        if strcmp('ASCII', isasc{1}(2))
+            fid = fopen(namex);
+            NSX = fscanf(fid, '# nx=%u');
+            fclose(fid);
+            cosa = textread(namex,'','commentstyle','shell');
+            ncosa = size(cosa);
+            NST = ncosa(1)/NSX;
+            cosa = reshape(cosa, NSX, NST, ncosa(2));
+            ox.x = cosa(:,1,1);
+            ox.t = cosa(1,:,2)';
+            ox.v = cosa(:,:,3);
+            ox.th = cosa(:,:,4);
+            ox.dtau = cosa(:,:,5);
+            ox.dtaud = cosa(:,:,6);
+            ox.d = cosa(:,:,7);
+            ox.sigma = cosa(:,:,8);
+        else % binary output
+            fid = fopen(namex, 'r');
+            nx = fread(fid, 1, 'int32');
+            ox.x = fread(fid, nx, 'double');
+            i = 1;
+            while 1
+                time = fread(fid, 1, 'double');
+                if isempty(time)
+                    fclose(fid);
+                    break
+                else
+                    ox.t(i,:) = time;
+                    hdr = fread(fid, [6, nx], 'double')';
+                    ox.v(:,i) = hdr(:,1);
+                    ox.th(:,i) = hdr(:,2);
+                    ox.dtau(:,i) = hdr(:,3);
+                    ox.dtaud(:,i) = hdr(:,4);
+                    ox.d(:,i) = hdr(:,5);
+                    ox.sigma(:,i) = hdr(:,6);
+                    i = i + 1;
+                end
+            end
+        end
+    else
+        [ot,ox] = read_qdyn_out_Octave(namet,namex)
+    end
+end % of function read_qdyn_out
 
 %---
 % adapted from http://www.mathworks.com/matlabcentral/fileexchange/23868-is-this-matlab-or-octave-
@@ -681,4 +743,4 @@ for elem = 1:numel(LIC)
         break
     end
 end
-end
+end % of function uiIsMatLab

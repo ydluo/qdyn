@@ -18,7 +18,11 @@ contains
 ! of along-strike size L and along-dip size W 
 ! centered at (SX,SY,SZ) with dip angle S_DIP and strike parallel to X
 ! in a homogeneous elastic half-space with Lame moduli LAM and MU.
-! The source and receiver faults are either strike-slip or thrust (mode).
+! The source and receiver faults are either strike-slip or thrust:
+! mode = 1 right-lateral strike-slip 
+!       -1 left-lateral strike-slip 
+!        2 thrust dip-slip
+!       -2 normal dip-slip
 !
 subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau,sigma,mode)
 
@@ -39,7 +43,6 @@ subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau,sigm
   S_DEPTH = -1d0*SZ
 
   select case (mode)
-!PG : For planar faults and fault-strike along X axis
     case (1) ! strike-slip (right-lateral)
       Ustrike = 1d0
       Udip = 0d0
@@ -65,7 +68,7 @@ subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau,sigm
       n_dir(2) = -cos(O_DIP/180d0*PI)
       n_dir(3) = -sin(O_DIP/180d0*PI)
     case default
-      stop 'FATAL ERROR in okada.compute_kernel : mode should be 1 (strike-slip) or 2 (thrust)'
+      stop 'FATAL ERROR in okada.compute_kernel : mode should be +/- 1 (strike-slip) or 2 (thrust)'
   end select
   Unorm = 0d0 ! no opening
 
