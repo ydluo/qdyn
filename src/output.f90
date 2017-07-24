@@ -21,6 +21,9 @@ subroutine screen_init(pb)
 
   double precision :: K
 
+  ! SEISMIC: skip this for CNS model
+  if (pb%i_rns_law == 3) return
+
   if (pb%ot%ic<1) return
 
   write(6,*) 'Values at selected point of the fault:'

@@ -49,12 +49,17 @@ subroutine read_main(pb)
 
   n = mesh_get_size(pb%mesh) ! number of nodes in this processor
   allocate ( pb%tau(n), pb%sigma(n), pb%v(n), pb%theta(n),  &
-             pb%ot%iot(n), pb%ot%iasp(n), pb%coh(n))
+             pb%v_star(n), pb%ot%iot(n), pb%ot%iasp(n), &
+             pb%dc(n), pb%coh(n))
 
   !JPA if MPI, read only the nodes of this processor
   ! <SEISMIC>
   ! Read input parameters for the CNS model. These parameters are (in order):
-  !   a:                coefficient of logarithmic rate dependence
+  !   sigma:            applied normal stress (effective if no TP)
+  !   tau:              initial shear stress
+  !   theta:            initial porosity (phi in CNS formulation)
+  !   v_star:           load-point velocity
+  !   a_tilde:          coefficient of logarithmic rate dependence
   !   mu_tilde_star:    reference friction coefficient at y_gr_star
   !   y_gr_star:        reference granular fow strain rate
   !   H:                dilatancy geometric factor
@@ -82,18 +87,19 @@ subroutine read_main(pb)
               pb%cns_params%IPS_const_diff(n), pb%cns_params%IPS_const_diss1(n), &
               pb%cns_params%IPS_const_diss2(n), pb%cns_params%L(n) )
     do i=1,n
-      read(15,*)pb%sigma(i), pb%tau(i), pb%theta(i),  &
+      read(15,*)pb%sigma(i), pb%tau(i), pb%theta(i), pb%v_star(i),  &
                 pb%cns_params%a_tilde(i), pb%cns_params%mu_tilde_star(i), &
                 pb%cns_params%y_gr_star(i), pb%cns_params%H(i), &
                 pb%cns_params%phi_c(i), pb%cns_params%phi0(i), &
                 pb%cns_params%IPS_const_diff(i), pb%cns_params%IPS_const_diss1(i), &
                 pb%cns_params%IPS_const_diss2(i), pb%cns_params%L(i), &
                 pb%ot%iot(i), pb%ot%iasp(i)
+      pb%dc(i) = 1.0
     end do
   ! Else, the RSF model is selected
   else
-    allocate ( pb%a(n), pb%b(n), pb%dc(n), pb%v1(n), &
-               pb%v2(n), pb%mu_star(n), pb%v_star(n))
+    allocate ( pb%a(n), pb%b(n), pb%v1(n), &
+               pb%v2(n), pb%mu_star(n))
     do i=1,n
       read(15,*)pb%sigma(i), pb%v(i), pb%theta(i),  &
                 pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
@@ -154,7 +160,7 @@ subroutine read_main(pb)
   ! These parameters and corresponding units are (in order):
   !
   !   rhoc:   density times specific heat capacity of host rock [J/K/m^3]
-  !   beta:   bulk compressibility [Pa]
+  !   beta:   bulk compressibility [1/Pa]
   !   eta:    dynamic viscocity [Pa s]
   !   w:      half-width of shear distribution profile [m]
   !   k_t:    thermal conductivity [J/s/K/m]

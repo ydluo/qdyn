@@ -4,10 +4,10 @@
 !
 ! This module handles integration of the diffusion equations for heat and
 ! fluid pressure, following the method proposed by Noda & Lapusta (2010) [N&L].
-! The diffusion is solved in a discretised spectral domain, which is
-! numerically stable for large time steps (as opposed to discretisation
-! methods in the spatial domain, such as FEM, FD, etc.). This procedure
-! allows for efficient modelling of frictional heating and associated
+! The diffusion normal to the fault plane is solved in a discretised spectral
+! domain, which is numerically stable for large time steps (as opposed to
+! discretisation methods in the spatial domain, such as FEM, FD, etc.). This
+! procedure allows for efficient modelling of frictional heating and associated
 ! pressurisation of the pore fluid (thermal pressurisation: TP)
 ! This module is compatible with both the rate-and-state friction and the
 ! Chen-Niemeijer-Spiers frameworks

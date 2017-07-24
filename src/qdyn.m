@@ -490,6 +490,7 @@ function export_main_input()
     fprintf(fid,'%u   itheta_law\n', THETA_LAW);
     fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
     fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);
+    fprintf(fid,'0 0 0 0     stress_coupling, thermal press., cohesion, localisation\n');
     fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', ...
                 NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);
     fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g   beta, smu, lambda, D, H, v_th\n', ...
@@ -543,6 +544,7 @@ end
 for k=2:2:length(varargin),
   assignin('caller', upper(varargin{k-1}), varargin{k} );
 end
+end
 
 %-----------
 % WARNING: this function needs update to comply with the current format of qdyn.in
@@ -584,6 +586,8 @@ for k= find( strcmp(fpars,upper(fpars)) )' ,
   pars.(fpars{k}) = eval(fpars{k}) ;
 end
 
+end
+
 
 % read outputs from qdyn.f
 function [ot,ox] = read_qdyn_out_mpi(name)
@@ -619,6 +623,7 @@ end
   ox.dtaud = cosa(:,:,8);
   ox.d = cosa(:,:,9);
   ox.sigma = cosa(:,:,10);
+end
 
 %-----------
 % read outputs from qdyn.f
@@ -660,6 +665,7 @@ if uimatlab
 else
   [ot,ox] = read_qdyn_out_Octave(namet,namex)
 end
+end
 
 %---
 % adapted from http://www.mathworks.com/matlabcentral/fileexchange/23868-is-this-matlab-or-octave-
@@ -674,4 +680,5 @@ for elem = 1:numel(LIC)
         uiIsMatLab = true;
         break
     end
+end
 end

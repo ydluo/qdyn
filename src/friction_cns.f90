@@ -215,7 +215,8 @@ subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dv_dP, &
   ! dv_dphi_ps_s = 2*dv_dtau_ps_s*f_phi_sqrt*tau
 
   dv_dtau_ps_s = y_ps/tau
-  dv_dphi_ps_s = y_ps*(pb%cns_params%phi_c - 0.02)/((phi - 0.02)*(pb%cns_params%phi_c - phi))
+  dv_dphi_ps_s =  y_ps*(pb%cns_params%phi_c - pb%cns_params%phi0)/ &
+                  ((phi - pb%cns_params%phi0)*(pb%cns_params%phi_c - phi))
 
   ! The partial derivatives dv_dtau and dv_dphi of the overall slip velocity
   ! are the sum of the partial derivatives of the pressure solution and
@@ -251,9 +252,8 @@ function compute_velocity(tau,sigma,phi,phi2,alpha,pb) result(v)
   type(problem_type), intent(in) :: pb
   double precision, dimension(pb%mesh%nn), intent(in) :: tau, sigma, phi
   double precision, dimension(pb%mesh%nn), intent(in) :: phi2, alpha
-  double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, denom, y_ps
-  double precision, dimension(pb%mesh%nn) :: mu_star, y_gr, tau_gr
-  double precision, dimension(pb%mesh%nn) :: cos_psi, cohesion
+  double precision, dimension(pb%mesh%nn) :: tan_psi, denom, mu_star
+  double precision, dimension(pb%mesh%nn) :: y_ps, y_gr, tau_gr
   double precision, dimension(pb%mesh%nn) :: y_ps_bulk, v
 
   ! Dilatation angle
@@ -272,9 +272,6 @@ function compute_velocity(tau,sigma,phi,phi2,alpha,pb) result(v)
   if (pb%features%localisation == 1) then
     y_ps_bulk = calc_e_ps(tau, phi2, .false., .true., pb)
   endif
-
-  ! Grain-boundary friction
-  mu_tilde = calc_mu_tilde(y_gr, pb)
 
   ! The total slip velocity is the combined contribution of granular flow
   ! and pressure solution (parallel processes)
