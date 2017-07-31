@@ -26,7 +26,7 @@ contains
 subroutine derivs(time,yt,dydt,pb)
 
   use fault_stress, only : compute_stress
-  use friction, only : dtheta_dt, dmu_dv_dtheta
+  use friction, only : dtheta_dt, dmu_dv_dtheta, friction_mu
   use friction_cns, only : dalpha_dt, compute_velocity, CNS_derivs
   use diffusion_solver, only : update_PT, calc_dP_dt
 
@@ -38,6 +38,7 @@ subroutine derivs(time,yt,dydt,pb)
   double precision, dimension(pb%mesh%nn) :: dsigma_dt, dtau_dt, dth_dt, dth2_dt
   double precision, dimension(pb%mesh%nn) :: dmu_dv, dmu_dtheta
   double precision, dimension(pb%mesh%nn) :: dP_dt, dtau_dP
+  double precision, dimension(pb%mesh%nn) :: dummy1, dummy2
   double precision :: dtau_per, dt
 
   integer :: ind_stress_coupling, ind_cohesion, ind_localisation
@@ -46,6 +47,8 @@ subroutine derivs(time,yt,dydt,pb)
   ! may produce different results depending on its conventions
   dP_dt = 0d0
   dtau_dP = 0d0
+  dummy1 = 0d0
+  dummy2 = 1d0
 
   ! storage conventions:
   !
@@ -83,8 +86,15 @@ subroutine derivs(time,yt,dydt,pb)
   ! SEISMIC: when thermal pressurisation is requested, update P and T,
   ! then calculate effective stress sigma_e = sigma - P
   if (pb%features%tp == 1) then
+    ! Time step
     dt = time - pb%t_prev
-    call update_PT(pb%tau*pb%V/(2*pb%tp%w), pb%dtheta_dt, pb%theta, dt, pb)
+    if (pb%i_rns_law == 3) then
+      ! SEISMIC: CNS model uses porosity
+      call update_PT(pb%tau*pb%V/(2*pb%tp%w), pb%dtheta_dt, pb%theta, dt, pb)
+    else
+      ! SEISMIC: replace porosity for dummies when using RSF
+      call update_PT(pb%tau*pb%V/(2*pb%tp%w), dummy1, dummy2, dt, pb)
+    endif
     sigma = sigma - pb%tp%P
   endif
 
@@ -117,6 +127,10 @@ subroutine derivs(time,yt,dydt,pb)
     ! SEISMIC: for the classical rate-and-state model formulation, the slip
     ! velocity is stored in yt(2::pb%neqs), and tau is not used (set to zero)
     v = yt(2::pb%neqs)
+
+    if (pb%features%tp == 1) then
+      tau = friction_mu(v, theta, pb)*sigma
+    endif
 
     ! SEISMIC: calculate time-derivative of state variable (theta)
     call dtheta_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
@@ -158,7 +172,13 @@ subroutine derivs(time,yt,dydt,pb)
   ! P and T are updated outside of this solver routine, using a the spectral
   ! approach of Noda & Lapusta (2010)
   if (pb%features%tp == 1) then
-    call calc_dP_dt(tau*V/(2*pb%tp%w), dth_dt, theta, dP_dt, pb)
+    if (pb%i_rns_law == 3) then
+      ! SEISMIC: CNS model uses porosity
+      call calc_dP_dt(tau*v/(2*pb%tp%w), dth_dt, theta, dP_dt, pb)
+    else
+      ! SEISMIC: replace porosity for dummies when using RSF
+      call calc_dP_dt(tau*v/(2*pb%tp%w), dummy1, dummy2, dP_dt, pb)
+    endif
   endif
 
   ! SEISMIC: calculate radiation damping. For rate-and-state, dmu_dv and

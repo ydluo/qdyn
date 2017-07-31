@@ -200,22 +200,8 @@ subroutine update_PT(tau_y,phi_dot,phi,dt,pb)
   double precision, dimension(pb%mesh%nn) :: tau_y, phi_dot, phi, PT
   double precision :: dt
 
-  if (pb%i_rns_law /= 3) then
-    phi_dot = 0d0
-  endif
-
   ! Compute PiTheta and Theta for step t+dt
   call solve_spectral(tau_y, phi_dot, phi, dt, pb)
-
-  ! Construct T from inv Fourier transformation, add ambient T
-  !pb%tp%T = inv_Fourier(pb%tp%Theta, pb) + pb%tp%T_a
-  !write(6,*) pb%tp%T-pb%tp%T_a
-
-  ! Construct P + Lam'T from inv Fourier transformation
-  !PT = inv_Fourier(pb%tp%PiTheta, pb)
-
-  ! Calculate P, add ambient P
-  !pb%tp%P = PT - pb%tp%Lam_prime*pb%tp%T + pb%tp%P_a
 
 end subroutine update_PT
 
@@ -227,20 +213,24 @@ end subroutine update_PT
 subroutine update_PT_final(dt,pb)
 
   type(problem_type), intent(inout) :: pb
-  double precision, dimension(pb%mesh%nn) :: tau_y_avg, phi_dot_avg, phi_avg
+  double precision, dimension(pb%mesh%nn) :: tau_y_avg, phi_dot_avg, phi_avg, dP_dt
   double precision :: dt
 
   ! Calculate mid-point values of tau_y, phi_dot, phi between t and t+dt
   tau_y_avg = 0.5*(pb%tau*0.5*pb%V*pb%tp%inv_w + pb%tp%tau_y_prev)
   if (pb%i_rns_law == 3) then
+    ! CNS model: include porosity
+    phi_avg = 0.5*(pb%theta + pb%tp%phi_prev)
     phi_dot_avg = 0.5*(pb%dtheta_dt + pb%tp%phi_dot_prev)
   else
+    ! RSF: ignore state
+    phi_avg = 1d0
     phi_dot_avg = 0d0
   endif
-  phi_avg = 0.5*(pb%theta + pb%tp%phi_prev)
 
   ! Compute PiTheta and Theta for step t+dt
   call solve_spectral(tau_y_avg, phi_dot_avg, phi_avg, dt, pb)
+  call calc_dP_dt(tau_y_avg, phi_dot_avg, phi_avg, dP_dt, pb)
 
   ! Update initial values of tau*y_dot, phi_dot, phi, and P
   pb%tp%tau_y_prev = pb%tau*0.5*pb%V*pb%tp%inv_w
@@ -290,12 +280,12 @@ subroutine calc_dP_dt(tau_y,phi_dot,phi,dP_dt,pb)
 
       ! Pressure-related parameters in spectral domain
       A_P = pb%tp%alpha_hy(i)*(pb%tp%mesh%lw(j)*pb%tp%inv_w(i))**2
-      B_P = ( pb%tp%Lam_T(i)*tau_y(i) - pb%tp%phi_b(i)*phi_dot(i) )*pb%tp%Omega(n)
+      B_P = ( pb%tp%Lam_T(i)*tau_y(i) - 0*pb%tp%phi_b(i)*phi_dot(i) )*pb%tp%Omega(n)
       ! Update PiTtheta(t+dt)
       ! Note that PiTheta contains the spectral representation of
       ! Pi + Lambda_prime*Theta, where Pi is the Fourier transform of P
       ! and Theta is the Fourier transform of T [see N&L, Eqn. 5 and 7]
-      dPiTheta = -A_T*pb%tp%PiTheta(n) + B_T
+      dPiTheta = -A_P*pb%tp%PiTheta(n) + B_P
       dPi = dPiTheta - pb%tp%Lam_prime(i)*dTheta
 
       ! Collect the inverse Fourier transformation
@@ -346,7 +336,7 @@ subroutine solve_spectral(tau_y,phi_dot,phi,dt,pb)
 
       ! Pressure-related parameters in spectral domain
       A_P = pb%tp%alpha_hy(i)*(pb%tp%mesh%lw(j)*pb%tp%inv_w(i))**2
-      B_P = ( pb%tp%Lam_T(i)*tau_y(i) - pb%tp%phi_b(i)*phi_dot(i) )*pb%tp%Omega(n)
+      B_P = ( pb%tp%Lam_T(i)*tau_y(i) - 0*pb%tp%phi_b(i)*phi_dot(i) )*pb%tp%Omega(n)
       exp_P = exp(-A_P*dt)
       ! Update PiTtheta(t+dt)
       ! Note that PiTheta contains the spectral representation of

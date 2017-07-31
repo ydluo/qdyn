@@ -95,6 +95,7 @@ subroutine read_main(pb)
                 pb%cns_params%IPS_const_diss2(i), pb%cns_params%L(i), &
                 pb%ot%iot(i), pb%ot%iasp(i)
       pb%dc(i) = 1.0
+      pb%V(i) = 0.0
     end do
   ! Else, the RSF model is selected
   else

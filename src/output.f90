@@ -21,21 +21,25 @@ subroutine screen_init(pb)
 
   double precision :: K
 
-  ! SEISMIC: skip this for CNS model
-  if (pb%i_rns_law == 3) return
+  ! SEISMIC: skip calculating critical stiffness for CNS model
+  ! Is not very useful
+  if (pb%i_rns_law /= 3) then
 
   if (pb%ot%ic<1) return
 
-  write(6,*) 'Values at selected point of the fault:'
-  K = pb%mesh%Lfault
-  if (pb%mesh%dim == 1) then
-    if (.not. pb%kernel%k2f%finite) K = pb%mesh%W
+    write(6,*) 'Values at selected point of the fault:'
+    K = pb%mesh%Lfault
+    if (pb%mesh%dim == 1) then
+      if (.not. pb%kernel%k2f%finite) K = pb%mesh%W
+    endif
+    K = PI*pb%smu/K
+    if (pb%mesh%dim < 2) then
+      write(6,*) 'K/Kc = ',K/(pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
+      write(6,*) 'K/Kb = ',K/(pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
+    end if
+
   endif
-  K = PI*pb%smu/K
-  if (pb%mesh%dim < 2) then
-    write(6,*) 'K/Kc = ',K/(pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
-    write(6,*) 'K/Kb = ',K/(pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
-  end if
+
   write(6,*)
   write(6,*) '    it,  dt (secs), time (yrs), v_max (m/s), sigma_max (MPa)'
 

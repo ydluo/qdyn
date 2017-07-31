@@ -244,8 +244,10 @@ subroutine update_field(pb)
 
   ! SEISMIC: if thermal pressurisation is requested, update P and T
   if (pb%features%tp == 1) then
-    call dtheta_dt( pb%v, pb%tau, pb%sigma-P_prev, pb%theta, pb%theta2, &
-                    pb%dtheta_dt, pb%dtheta2_dt, pb)
+    if (pb%i_rns_law == 3) then
+      call dtheta_dt( pb%v, pb%tau, pb%sigma-P_prev, pb%theta, pb%theta2, &
+                      pb%dtheta_dt, pb%dtheta2_dt, pb)
+    endif
     call update_PT_final(pb%dt_did, pb)
   endif
 
