@@ -45,9 +45,6 @@ subroutine init_tp(pb)
   call init_variables(pb)
   call init_source(pb)
 
-  ! Precompute 1.0/rhoc (taken as time-constant)
-  pb%tp%inv_rhoc = 1.0/pb%tp%rhoc
-
   ! Calculate remaining parameters (not necessarily time-constant)
   if (pb%i_rns_law == 3) then
     ! If using CNS, pass the initial porosity
@@ -131,6 +128,7 @@ subroutine init_variables(pb)
 
   integer :: i
 
+  ! Allocate variables
   allocate (  pb%tp%P(pb%mesh%nn), &
               pb%tp%T(pb%mesh%nn), &
               pb%tp%inv_w(pb%mesh%nn), &
@@ -139,6 +137,16 @@ subroutine init_variables(pb)
               pb%dtheta_dt(pb%mesh%nn), &
               pb%dtheta2_dt(pb%mesh%nn) )
 
+  ! Allocate parameters
+  allocate (  pb%tp%inv_rhoc(pb%mesh%nn), &
+              pb%tp%alpha_th(pb%mesh%nn), &
+              pb%tp%alpha_hy(pb%mesh%nn), &
+              pb%tp%Lam(pb%mesh%nn), &
+              pb%tp%Lam_prime(pb%mesh%nn), &
+              pb%tp%Lam_T(pb%mesh%nn), &
+              pb%tp%phi_b(pb%mesh%nn) )
+
+  ! Allocate previous values
   allocate (  pb%tp%P_prev(pb%mesh%nn), &
               pb%tp%tau_y_prev(pb%mesh%nn), &
               pb%tp%phi_dot_prev(pb%mesh%nn), &
@@ -148,6 +156,7 @@ subroutine init_variables(pb)
               pb%tp%PiTheta_prev(pb%mesh%nn*pb%tp%mesh%Nl) )
 
   do i=1,pb%mesh%nn
+    pb%tp%inv_rhoc = 1.0/pb%tp%rhoc(i)
     pb%tp%inv_w(i) = 1.0/pb%tp%w(i)
     pb%tp%P(i) = pb%tp%P_a(i)
     pb%tp%P_prev(i) = pb%tp%P_a(i)
