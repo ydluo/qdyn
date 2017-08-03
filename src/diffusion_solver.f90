@@ -280,7 +280,7 @@ subroutine calc_dP_dt(tau_y,phi_dot,phi,dP_dt,pb)
 
       ! Pressure-related parameters in spectral domain
       A_P = pb%tp%alpha_hy(i)*(pb%tp%mesh%lw(j)*pb%tp%inv_w(i))**2
-      B_P = ( pb%tp%Lam_T(i)*tau_y(i) - 0*pb%tp%phi_b(i)*phi_dot(i) )*pb%tp%Omega(n)
+      B_P = ( pb%tp%Lam_T(i)*tau_y(i) - pb%tp%phi_b(i)*phi_dot(i) )*pb%tp%Omega(n)
       ! Update PiTtheta(t+dt)
       ! Note that PiTheta contains the spectral representation of
       ! Pi + Lambda_prime*Theta, where Pi is the Fourier transform of P
@@ -336,7 +336,7 @@ subroutine solve_spectral(tau_y,phi_dot,phi,dt,pb)
 
       ! Pressure-related parameters in spectral domain
       A_P = pb%tp%alpha_hy(i)*(pb%tp%mesh%lw(j)*pb%tp%inv_w(i))**2
-      B_P = ( pb%tp%Lam_T(i)*tau_y(i) - 0*pb%tp%phi_b(i)*phi_dot(i) )*pb%tp%Omega(n)
+      B_P = ( pb%tp%Lam_T(i)*tau_y(i) - pb%tp%phi_b(i)*phi_dot(i) )*pb%tp%Omega(n)
       exp_P = exp(-A_P*dt)
       ! Update PiTtheta(t+dt)
       ! Note that PiTheta contains the spectral representation of
