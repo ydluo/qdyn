@@ -91,7 +91,7 @@ subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt)
     call init_kernel_2D(k%k2f,mu,m,D,H,k2_opt)
   case(3) 
     allocate(k%k3)
-    call init_kernel_3D(k%k3,lambda,mu,m,k%has_sigma_coupling) ! 3D no fft
+    call init_kernel_3D(k%k3,lambda,mu,m,k%has_sigma_coupling,.false.) ! 3D no fft
   case(4)
     allocate(k%k3f)
     call init_kernel_3D_fft(k%k3f,lambda,mu,m,k%has_sigma_coupling) ! 3D with FFT along-strike
@@ -371,7 +371,7 @@ subroutine init_kernel_3D_fft2d(k,lambda,mu,m)
 end subroutine init_kernel_3D_fft2d
 
 !----------------------------------------------------------------------
-subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling)
+subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling,unstructured)
 
   use mesh, only : mesh_type
   use okada, only : compute_kernel
@@ -380,39 +380,64 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling)
   type(kernel_3d), intent(inout) :: k
   double precision, intent(in) :: lambda,mu
   type(mesh_type), intent(in) :: m
-  logical, intent(in) :: sigma_coupling
+  logical, intent(in) :: sigma_coupling, unstructured
 
   double precision :: tau, sigma_n
-  integer :: i, j, IRET
+  integer :: i, j, ii, IRET
 
-    write(6,*) 'Generating 3D kernel...'
-    write(6,*) 'NO FFT applied'
-    !kernel(i,j): response at i of source at j
-    !because dx = constant, only need to calculate i at first column
-
+  write(6,*) 'Generating 3D kernel...'
+  write(6,*) 'NO FFT applied'
+   
+ !kernel(i,j): response at i of source at j
+  
+ ! unstructured fault mesh
+  if (unstructured) then
+    allocate (k%kernel(m%nn,m%nn))
+    if (sigma_coupling) allocate (k%kernel_n(m%nn,m%nn))
+    do i = 1,m%nn
+      do j = 1,m%nn
+      ! WARNING: TO DO: make m%dx a vector, use here m%dx(j)
+        call compute_kernel(lambda,mu, &
+               m%x(j),m%y(j),m%z(j),m%dip(j),m%dx,m%dw(j),   &
+               m%x(i),m%y(i),m%z(i),m%dip(i), &
+               IRET,tau,sigma_n,FAULT_TYPE)
+        if (IRET /= 0) then
+          write(6,*) '!!WARNING!! : Kernel Singular, set value to 0,(i,j)',i,j
+          tau = 0d0
+          sigma_n = 0d0
+        end if
+        k%kernel(i,j) = tau  
+        if (sigma_coupling) k%kernel_n(i,j) = sigma_n
+      end do
+    end do
+    
+  else
+   !because dx = constant, only need to calculate i at first column
     allocate (k%kernel(m%nw,m%nn))
     if (sigma_coupling) allocate (k%kernel_n(m%nw,m%nn))
     do i = 1,m%nw
+      ii = 1+(i-1)*m%nx
       do j = 1,m%nn
-        call compute_kernel(lambda,mu,m%x(j),m%y(j),m%z(j),  &
-               m%dip(j),m%dx,m%dw((j-1)/m%nx+1),   &
-               m%x(1+(i-1)*m%nx),m%y(1+(i-1)*m%nx),   &
-               m%z(1+(i-1)*m%nx),m%dip(1+(i-1)*m%nx),IRET,tau,sigma_n,FAULT_TYPE)
-        if (IRET == 0) then
-          k%kernel(i,j) = tau  
-          if (sigma_coupling) k%kernel_n(i,j) = sigma_n    
-        else
+        call compute_kernel(lambda,mu, &
+               m%x(j),m%y(j),m%z(j),m%dip(j),m%dx,m%dw((j-1)/m%nx+1),   &
+               m%x(ii),m%y(ii),m%z(ii),m%dip(ii), &
+               IRET,tau,sigma_n,FAULT_TYPE)
+        if (IRET /= 0) then
           write(6,*) '!!WARNING!! : Kernel Singular, set value to 0,(i,j)',i,j
-          k%kernel(i,j) = 0d0
-          if (sigma_coupling) k%kernel_n(i,j) = 0d0
+          tau = 0d0
+          sigma_n = 0d0
         end if
+        k%kernel(i,j) = tau  
+        if (sigma_coupling) k%kernel_n(i,j) = sigma_n
       end do
     end do
     do j = 1,m%nn
       write(99,*) k%kernel(1,j)
       if (sigma_coupling) write(99,*) k%kernel_n(1,j)
     end do
-
+  
+  endif
+  
 end subroutine init_kernel_3D
 
 !=========================================================
@@ -482,9 +507,16 @@ subroutine compute_stress_3d(tau,sigma_n,k3,v)
   double precision, intent(inout) :: tau(:), sigma_n(:)
   double precision, intent(in) :: v(:)
 
-  integer :: nnLocal,nnGlobal,nw,nxLocal,nxGlobal,k,iw,ix,j,jw,jx,idx,jj,ix0_proc
+  integer :: nn,nnLocal,nnGlobal,nw,nxLocal,nxGlobal,k,iw,ix,j,jw,jx,idx,jj,ix0_proc
   double precision :: tsum
 
+! unstructured fault mesh
+if ( size(k3%kernel,1) == size(k3%kernel,1) ) then
+  nn = size(k3%kernel,1)
+  tau = - matmul(k3%kernel,v)
+  if (allocated(k3%kernel_n)) sigma_n = - matmul(k3%kernel_n,v)
+
+else
   nnLocal = size(tau)
   nw = size(k3%kernel,1)
   nxLocal = nnLocal/nw
@@ -529,6 +561,7 @@ subroutine compute_stress_3d(tau,sigma_n,k3,v)
          do jx=1,nxGlobal
            j = j+1
            idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the kernel
+           ! WARNING: are we sure this symmetry is valid for the normal-stress kernel?
            jj = (jw-1)*nxGlobal + idx + 1 
            tsum = tsum - k3%kernel_n(iw,jj) * v(j)
          end do
@@ -539,6 +572,8 @@ subroutine compute_stress_3d(tau,sigma_n,k3,v)
   !$OMP END PARALLEL
 
   end if
+
+end if
 
 end subroutine compute_stress_3d
 
