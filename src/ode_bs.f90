@@ -19,7 +19,7 @@ contains
       double precision, intent(out) :: hdid, hnext
       type(problem_type), intent(inout) :: pb
                           !NOTE: inout needed by FFT in compute_stress
-      
+
       integer, parameter :: KMAXX=8, IMAX=KMAXX+1
       double precision, parameter :: SAFE1=.25d0, SAFE2=.7d0, &
                                      REDMAX=1.d-5, REDMIN=.7d0, &
@@ -63,7 +63,7 @@ contains
         kopt=kmax
       endif
       reduct=.false.
-!PG      
+!PG
     ik=0
     main_loop: do
 
@@ -80,8 +80,8 @@ contains
         xest=(h/nseq(k))**2
         call pzextr(k,xest,yseq,y,yerr,nv)
         if (k == 1) cycle
-        errmax=maxval(dabs(yerr/yscal)) 
-        if (is_MPI_parallel()) then  
+        errmax=maxval(dabs(yerr/yscal))
+        if (is_MPI_parallel()) then
           call max_allproc(errmax,errmaxglob)
           errmax=errmaxglob
         endif
@@ -144,7 +144,7 @@ contains
       integer, intent(in) :: nstep,nvar
       double precision, intent(in) :: y(nvar),dydx(nvar),xs,htot
       double precision, intent(out) :: yout(nvar)
-      type(problem_type), intent(inout)  :: pb 
+      type(problem_type), intent(inout)  :: pb
 
       double precision :: x, h,h2,swap(nvar),ym(nvar),yn(nvar)
       integer :: n
@@ -185,7 +185,7 @@ contains
         deallocate(qcol)
         allocate(qcol(nv,IMAX))
       endif
-        
+
       x(iest)=xest
       dy=yest
       yz=yest
@@ -208,4 +208,3 @@ contains
       END SUBROUTINE pzextr
 
 end module ode_bs
-

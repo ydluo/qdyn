@@ -3,7 +3,7 @@ module output
 ! OUTPUT: This module manages outputs
 
   implicit none
-  private  
+  private
   public :: screen_init, ot_read_stations, ot_init, ox_init, &
             screen_write, ot_write, ox_write,  &
             time_write, crack_size
@@ -20,19 +20,26 @@ subroutine screen_init(pb)
   type (problem_type), intent(inout) :: pb
 
   double precision :: K
-  
+
+  ! SEISMIC: skip calculating critical stiffness for CNS model
+  ! Is not very useful
+  if (pb%i_rns_law /= 3) then
+
   if (pb%ot%ic<1) return
 
-  write(6,*) 'Values at selected point of the fault:'
-  K = pb%mesh%Lfault
-  if (pb%mesh%dim == 1) then   
-    if (.not. pb%kernel%k2f%finite) K = pb%mesh%W
+    write(6,*) 'Values at selected point of the fault:'
+    K = pb%mesh%Lfault
+    if (pb%mesh%dim == 1) then
+      if (.not. pb%kernel%k2f%finite) K = pb%mesh%W
+    endif
+    K = PI*pb%smu/K
+    if (pb%mesh%dim < 2) then
+      write(6,*) 'K/Kc = ',K/(pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
+      write(6,*) 'K/Kb = ',K/(pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
+    end if
+
   endif
-  K = PI*pb%smu/K
-  if (pb%mesh%dim < 2) then   
-    write(6,*) 'K/Kc = ',K/(pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
-    write(6,*) 'K/Kb = ',K/(pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
-  end if
+
   write(6,*)
   write(6,*) '    it,  dt (secs), time (yrs), v_max (m/s), sigma_max (MPa)'
 
@@ -43,7 +50,7 @@ end subroutine screen_init
 !=====================================================================
 !output one step to screen
 subroutine screen_write(pb)
-  
+
   use constants, only : YEAR
   use problem_class
   use my_mpi, only : is_MPI_parallel, is_mpi_master, max_allproc
@@ -53,7 +60,7 @@ subroutine screen_write(pb)
 
   sigma_max = maxval(pb%sigma)
 
-  if (is_MPI_parallel()) then 
+  if (is_MPI_parallel()) then
     call max_allproc(sigma_max,sigma_max_glob)
     if (is_mpi_master()) write(6,'(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,&
                               pb%vmaxglob, sigma_max_glob/1.0D6
@@ -68,7 +75,7 @@ end subroutine screen_write
 !=====================================================================
 ! write time of every step
 subroutine time_write(pb)
- 
+
   use problem_class
   type (problem_type), intent(inout) :: pb
 
@@ -89,7 +96,7 @@ subroutine ot_read_stations(ot)
   open(unit=200,file='stations.dat',action='read')
   read(200,*) nsta
   allocate(ot%xsta(nsta),ot%ysta(nsta),ot%zsta(nsta))
-  do ista=1,nsta 
+  do ista=1,nsta
     read(200,*) ot%xsta(ista), ot%ysta(ista), ot%zsta(ista)
   enddo
   close(200)
@@ -119,7 +126,7 @@ subroutine ot_init(pb)
     dmin2 = 0.01d0*pb%mesh%dx ! distance tolerance = 1% grid size
     dmin2 = dmin2*dmin2
     nsta = 1 !NOTE: currently only one station implemented
-    do ista=1,nsta 
+    do ista=1,nsta
       do ik=1,n
         d2 = (pb%mesh%x(ik)-pb%ot%xsta(ista))**2 &
            + (pb%mesh%y(ik)-pb%ot%ysta(ista))**2 &
@@ -139,11 +146,12 @@ subroutine ot_init(pb)
       write(pb%ot%unit,'(a)')'# 1=t'
       write(pb%ot%unit,'(a)')'# values at selected point:'
       write(pb%ot%unit,'(a)')'# 2=V, 3=theta, 4=V*theta/dc, 5=tau, 6=slip'
+      if (pb%features%tp == 1) write(pb%ot%unit,'(a)')'# 7=P, 8=T'
       close(pb%ot%unit)
     endif
 !JPA WARNING Implementation in progress
 !    pb%ot%unit = 22
-!    write(pb%ot%unit,'(a)')'# Seismicity record:' 
+!    write(pb%ot%unit,'(a)')'# Seismicity record:'
 !    write(pb%ot%unit,'(a)')'# 1=loc, 2=t, 3=v'
 !  pb%ot%unit = 10000
 !  do i=1,n
@@ -156,7 +164,7 @@ subroutine ot_init(pb)
 
 else
 
-  pb%ot%unit = 18 
+  pb%ot%unit = 18
   if (.not.BIN_OUTPUT) then
     write(pb%ot%unit,'(a)')'# macroscopic values:'
     write(pb%ot%unit,'(a)')'# 1=t,2=loc_size,3=crack_size,4=potcy,5=pot_rate'
@@ -164,12 +172,16 @@ else
     write(pb%ot%unit,'(a)')'# 6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip'
     write(pb%ot%unit,'(a)')'# values at max(V) location:'
     write(pb%ot%unit,'(a)')'# 11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip, 17=sigma'
+    if (pb%features%tp == 1) then
+      write(pb%ot%unit,'(a)')'# 18=P, 19=T (selected point)'
+      write(pb%ot%unit,'(a)')'# 20=P, 21=T (at max(V))'
+    endif
   else
     open(pb%ot%unit,form='unformatted',access='stream')
   endif
 
   pb%ot%unit = 22
-  write(pb%ot%unit,'(a)')'# Seismicity record:' 
+  write(pb%ot%unit,'(a)')'# Seismicity record:'
   write(pb%ot%unit,'(a)')'# 1=loc, 2=t, 3=v'
 
   pb%ot%unit = 10000
@@ -194,7 +206,7 @@ end subroutine ot_init
 !=====================================================================
 ! write ox file header
 subroutine ox_init(pb)
- 
+
   use problem_class
   use constants, only : OUT_MASTER, BIN_OUTPUT
   use my_mpi, only : is_MPI_parallel, is_mpi_master
@@ -211,7 +223,7 @@ subroutine ox_init(pb)
     pb%ox%unit = 19
   else
 !    pb%ox%unit = 1000
-    pb%ox%unit = 999 
+    pb%ox%unit = 999
   endif
 
   pb%ox%count=0
@@ -252,7 +264,7 @@ end subroutine ox_init
 !=====================================================================
 ! Export timeseries
 subroutine ot_write(pb)
- 
+
   use problem_class
   use constants, only : OCTAVE_OUTPUT, BIN_OUTPUT
   use my_mpi, only : is_MPI_parallel
@@ -262,8 +274,8 @@ subroutine ot_write(pb)
   character(30) :: ot_fmt
 
   pb%ot%unit = 18
-  if (is_MPI_parallel()) then 
-   ! if "ic" station is in this processor 
+  if (is_MPI_parallel()) then
+   ! if "ic" station is in this processor
     if (pb%ot%ic>0) then
       open(pb%ot%unit,access='APPEND',status='old',iostat=ios)
       if (ios>0) stop 'Fatal error: ot_write: Error opening a fort.18 file'
@@ -271,35 +283,63 @@ subroutine ot_write(pb)
      !JPA add test to prevent appenaingd data to a file from a previous simulation
       if (OCTAVE_OUTPUT) then
         ot_fmt = '(g0.16,5(",",g0.6))'
+        if (pb%features%tp == 1) ot_fmt = '(g0.16,7(",",g0.6))'
       else
         ot_fmt = '(e24.16,5e14.6)'
+        if (pb%features%tp == 1) ot_fmt = '(e24.16,7e14.6)'
       endif
-      write(pb%ot%unit,ot_fmt) pb%time, pb%v(pb%ot%ic), pb%theta(pb%ot%ic), &
-          pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
-          pb%tau(pb%ot%ic), pb%slip(pb%ot%ic)
+
+      ! If thermal pressurisation is requested, output P and T
+      if (pb%features%tp == 1) then
+        write(pb%ot%unit,ot_fmt) pb%time, pb%v(pb%ot%ic), pb%theta(pb%ot%ic), &
+            pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
+            pb%tau(pb%ot%ic), pb%slip(pb%ot%ic), &
+            pb%tp%P(pb%ot%ic), pb%tp%T(pb%ot%ic)
+      else
+        write(pb%ot%unit,ot_fmt) pb%time, pb%v(pb%ot%ic), pb%theta(pb%ot%ic), &
+            pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
+            pb%tau(pb%ot%ic), pb%slip(pb%ot%ic)
+      endif
       close(pb%ot%unit)
-    endif  
+    endif
    !JPA warning: ivmax outputs not implemented in parallel yet
 
   else
     if (.not.BIN_OUTPUT) then
-      
-      if (OCTAVE_OUTPUT) then 
+
+      if (OCTAVE_OUTPUT) then
         ! for Octave: comma as field delimiter and no spaces
         ot_fmt = '(g0.16,16(",",g0.6))'
+        if (pb%features%tp == 1) ot_fmt = '(g0.16,20(",",g0.6))'
       else
         ot_fmt = '(e24.16,16e14.6)'
+        if (pb%features%tp == 1) ot_fmt = '(e24.16,20e14.6)'
       endif
-      write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
-      pb%ot%lcnew*pb%mesh%dx, pb%ot%pot, pb%ot%pot_rate,  &
-      pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
-      pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
-      pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),  &
-     ! for ivmax
-      pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),  &
-      pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
-      pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
-      
+      if (pb%features%tp == 1) then
+        write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
+          pb%ot%lcnew*pb%mesh%dx, pb%ot%pot, pb%ot%pot_rate,    &
+          pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
+          pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
+          pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
+          ! for ivmax
+          pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
+          pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
+          pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), &
+          pb%sigma(pb%ot%ivmax)-pb%tp%P(pb%ot%ivmax), &
+          ! write P, T
+          pb%tp%P(pb%ot%ic), pb%tp%T(pb%ot%ic), pb%tp%P(pb%ot%ivmax), pb%tp%T(pb%ot%ivmax)
+      else
+        write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
+          pb%ot%lcnew*pb%mesh%dx, pb%ot%pot, pb%ot%pot_rate,    &
+          pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
+          pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
+          pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
+          ! for ivmax
+          pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
+          pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
+          pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
+      endif
+
     else
       ! macroscopic values:
       !   1=t,2=loc_size,3=crack_size,4=potcy,5=pot_rate
@@ -307,19 +347,36 @@ subroutine ot_write(pb)
       !   6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip
       ! values at max(V) location:
       !   11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip, 17=sigma
-      
-      write(pb%ot%unit) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
-      pb%ot%lcnew*pb%mesh%dx, pb%ot%pot, pb%ot%pot_rate,    &
-      pb%v(pb%ot%ic), pb%theta(pb%ot%ic),                   &
-      pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic),    &
-      pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),                  &
-      pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax), &
-      pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),       &
-      pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
+      ! If thermal pressurisation: 18=P, 19=T, 20=P_max, 21=T_max
+
+      if (pb%features%tp == 1) then
+        write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
+          pb%ot%lcnew*pb%mesh%dx, pb%ot%pot, pb%ot%pot_rate,    &
+          pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
+          pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
+          pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
+          ! for ivmax
+          pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
+          pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
+          pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), &
+          pb%sigma(pb%ot%ivmax)-pb%tp%P(pb%ot%ivmax), &
+          ! write P, T
+          pb%tp%P(pb%ot%ic), pb%tp%T(pb%ot%ic), pb%tp%P(pb%ot%ivmax), pb%tp%T(pb%ot%ivmax)
+      else
+        write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
+          pb%ot%lcnew*pb%mesh%dx, pb%ot%pot, pb%ot%pot_rate,    &
+          pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
+          pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
+          pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
+          ! for ivmax
+          pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
+          pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
+          pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
+      endif
       if (pb%it+1 == pb%itstop) close(pb%ot%unit)
     endif
-    
-  endif  
+
+  endif
 
   if (is_MPI_parallel()) return
  !JPA warning: the ot outputs below are not yet implemented in parallel
@@ -351,7 +408,7 @@ end subroutine ot_write
 !=====================================================================
 ! Export snapshots
 subroutine ox_write(pb)
- 
+
   use problem_class
   use constants, only: OUT_MASTER, BIN_OUTPUT
   use my_mpi, only: is_MPI_parallel, is_mpi_master, my_mpi_tag, synchronize_all
@@ -390,9 +447,9 @@ if (is_MPI_parallel()) then
           pb%v_glob(ixout),pb%theta_glob(ixout),pb%tau_glob(ixout),   &
           pb%dtau_dt_glob(ixout),pb%slip_glob(ixout), pb%sigma_glob(ixout)
       enddo
-      close(pb%ox%unit) !Closing snapshot      
-      endif 
-    endif  
+      close(pb%ox%unit) !Closing snapshot
+      endif
+    endif
   else
   !local
       !Each processor writes an output file.
@@ -412,10 +469,10 @@ if (is_MPI_parallel()) then
 !  close(pb%ox%unit)
  endif
 
- if (pb%ox%i_ox_dyn == 1) then 
+ if (pb%ox%i_ox_dyn == 1) then
    if (OUT_MASTER) then
      call pb_global(pb)
-     if (is_mpi_master()) then 
+     if (is_mpi_master()) then
       if (pb%ox%dyn_stat2 == 0 .and. pb%vmaxglob >= pb%DYN_th_on ) then
         pb%ox%dyn_stat2 = 1
         do ixout=1,pb%mesh%nnglob,pb%ox%nxout_dyn
@@ -469,33 +526,49 @@ if (is_MPI_parallel()) then
            pb%t_rup_glob(ixout),pb%tau_max_glob(ixout),pb%t_vmax_glob(ixout),pb%v_max_glob(ixout)
         enddo
         close(20003+3*pb%ox%dyn_count2)
-        pb%ox%dyn_count2 = pb%ox%dyn_count2 + 1      
+        pb%ox%dyn_count2 = pb%ox%dyn_count2 + 1
       endif
      endif
    else
    ! writing in chuncks
-   endif 
+   endif
  endif
 
 else
  if (mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
-  if (pb%ox%i_ox_seq == 0) then 
-  ! JPA: this output should also contain y and z
+  if (pb%ox%i_ox_seq == 0) then
+
+    ! <begin TP output conditional>
+    ! SEISMIC: if thermal pressurisation is requested, write P and T output
     if (.not.BIN_OUTPUT) then
+      if (pb%features%tp == 1) then
+        write(pb%ox%unit,'(a,2i8,e14.6)')'# x t v theta dtau tau_dot slip sigma_e P T',pb%it,pb%ot%ivmax,pb%time
+        ! JPA: this output should also contain y and z
+        do ixout=1,pb%mesh%nn,pb%ox%nxout
+          write(pb%ox%unit,'(e15.7,e24.16,8e15.7)') pb%mesh%x(ixout),pb%time,pb%v(ixout),   &
+            pb%theta(ixout),pb%tau(ixout), pb%dtau_dt(ixout),pb%slip(ixout), &
+            pb%sigma(ixout)-pb%tp%P(ixout), pb%tp%P(ixout), pb%tp%T(ixout)
+        enddo
+      else
         write(pb%ox%unit,'(a,2i8,e14.6)')'# x t v theta dtau tau_dot slip sigma',pb%it,pb%ot%ivmax,pb%time
+        ! JPA: this output should also contain y and z
         do ixout=1,pb%mesh%nn,pb%ox%nxout
           write(pb%ox%unit,'(e15.7,e24.16,6e15.7)') pb%mesh%x(ixout),pb%time,pb%v(ixout),   &
             pb%theta(ixout),pb%tau(ixout), pb%dtau_dt(ixout),pb%slip(ixout), pb%sigma(ixout)
         enddo
+      endif
     else
-        write(pb%ox%unit) pb%time 
-        do ixout=1,pb%mesh%nn,pb%ox%nxout
-           write(pb%ox%unit) pb%v(ixout),pb%theta(ixout),pb%tau(ixout), &
-             pb%dtau_dt(ixout), pb%slip(ixout), pb%sigma(ixout)             
-        enddo
-        if (pb%it+1 == pb%itstop) close(pb%ox%unit)
+      ! SEISMIC: need to add P/T here too...
+      write(pb%ox%unit) pb%time
+      do ixout=1,pb%mesh%nn,pb%ox%nxout
+         write(pb%ox%unit) pb%v(ixout),pb%theta(ixout),pb%tau(ixout), &
+           pb%dtau_dt(ixout), pb%slip(ixout), pb%sigma(ixout)
+      enddo
+      if (pb%it+1 == pb%itstop) close(pb%ox%unit)
+
     endif
-    
+    ! <end TP output conditional>
+
   else
     pb%ox%unit = pb%ox%unit + 1
     write(pb%ox%unit,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
@@ -566,10 +639,10 @@ else
       enddo
       close(20003+3*pb%ox%dyn_count2)
 
-      pb%ox%dyn_count2 = pb%ox%dyn_count2 + 1      
-    endif 
-   
-  endif  
+      pb%ox%dyn_count2 = pb%ox%dyn_count2 + 1
+    endif
+
+  endif
 
   if (pb%DYN_FLAG == 1) then
 
@@ -607,10 +680,10 @@ else
           write(222,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
         endif
       endif
-    endif 
-   
-  endif  
-  
+    endif
+
+  endif
+
 endif
 
 end subroutine ox_write
@@ -619,7 +692,7 @@ end subroutine ox_write
 ! distance between largest peak on the left half
 ! and largest peak on the right half
 function crack_size(s,n)
-       
+
   integer :: n
   double precision ::  s(n)
   double precision ::  stemp,smax,s1,s2,xL,xR
@@ -661,7 +734,7 @@ function crack_size(s,n)
     end if
   end do
 
-   
+
   !iL = maxloc(s(1:imin))
   smax=s(iL)
   xL = dble(iL);
@@ -670,7 +743,7 @@ function crack_size(s,n)
     s2 = s(iL-1)-2d0*s(iL)+s(iL+1)
     if (s2 /= 0d0) xL = xL-s1/s2
   endif
-      
+
   !iR = maxloc(s(imin:n))
   smax=s(iR)
   xR = dble(iR);
@@ -688,8 +761,8 @@ end function crack_size
 ! Collect global fault nodes to master processor for outputs
 subroutine pb_global(pb)
 
-  use mesh, only: nnLocal_perproc,nnoffset_glob_perproc 
-  use problem_class 
+  use mesh, only: nnLocal_perproc,nnoffset_glob_perproc
+  use problem_class
   use my_mpi, only: my_mpi_rank, gather_allvdouble_root
 
   type(problem_type), intent(inout) :: pb
@@ -715,18 +788,16 @@ subroutine pb_global(pb)
   pb%slip_glob=0
   pb%sigma_glob=0
 
-  call gather_allvdouble_root(pb%v,nnLocal,pb%v_glob,nnLocal_perproc, & 
-                           nnoffset_glob_perproc,nnGlobal)  
-  call gather_allvdouble_root(pb%theta,nnLocal,pb%theta_glob,nnLocal_perproc, & 
+  call gather_allvdouble_root(pb%v,nnLocal,pb%v_glob,nnLocal_perproc, &
                            nnoffset_glob_perproc,nnGlobal)
-  call gather_allvdouble_root(pb%tau,nnLocal,pb%tau_glob,nnLocal_perproc, & 
+  call gather_allvdouble_root(pb%theta,nnLocal,pb%theta_glob,nnLocal_perproc, &
                            nnoffset_glob_perproc,nnGlobal)
-  call gather_allvdouble_root(pb%dtau_dt,nnLocal,pb%dtau_dt_glob,nnLocal_perproc, & 
+  call gather_allvdouble_root(pb%tau,nnLocal,pb%tau_glob,nnLocal_perproc, &
                            nnoffset_glob_perproc,nnGlobal)
-  call gather_allvdouble_root(pb%slip,nnLocal,pb%slip_glob,nnLocal_perproc, & 
+  call gather_allvdouble_root(pb%slip,nnLocal,pb%slip_glob,nnLocal_perproc, &
                            nnoffset_glob_perproc,nnGlobal)
-  call gather_allvdouble_root(pb%sigma,nnLocal,pb%sigma_glob,nnLocal_perproc, & 
-                           nnoffset_glob_perproc,nnGlobal)         
+  call gather_allvdouble_root(pb%sigma,nnLocal,pb%sigma_glob,nnLocal_perproc, &
+                           nnoffset_glob_perproc,nnGlobal)
 
   pb%tau_max_glob=0d0
   pb%t_rup_glob=0d0

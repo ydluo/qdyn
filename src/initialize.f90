@@ -12,11 +12,13 @@ subroutine init_all(pb)
 
   use problem_class
   use mesh, only : init_mesh, mesh_get_size
-  use constants, only : PI
+  use constants, only : PI, USE_RK_SOLVER
   use my_mpi, only: is_MPI_master
   use fault_stress, only : init_kernel
   use output, only : ot_init, ox_init
   use friction, only : set_theta_star, friction_mu
+  use solver, only : init_lsoda, init_rk45
+  use diffusion_solver, only: init_tp
 !!$  use omp_lib
 
   type(problem_type), intent(inout) :: pb
@@ -27,9 +29,9 @@ subroutine init_all(pb)
   call init_mesh(pb%mesh)
 
  ! number of equations
-  pb%neqs=2
-  if (pb%i_sigma_cpl==1 .and. pb%mesh%dim==2) then
-    pb%neqs=3
+  pb%neqs = 2 + pb%features%localisation
+  if (pb%features%stress_coupling == 1 .and. pb%mesh%dim == 2) then
+    pb%neqs = pb%neqs + 1
   endif
 
  ! dt_max & perturbation
@@ -47,24 +49,43 @@ subroutine init_all(pb)
     pb%Omper = 0.d0
   endif
 
- ! impedance 
+ ! impedance
   if (pb%beta > 0d0) then
     pb%zimpedance = 0.5d0*pb%smu/pb%beta
   else
     pb%zimpedance = 0.d0
   endif
   if (is_mpi_master()) write(6,*) 'Impedance = ', pb%zimpedance
+  !---------------------- impedance ------------------
 
+  !---------------------- ref_value ------------------
   n = mesh_get_size(pb%mesh)
-  allocate ( pb%tau(n), pb%dtau_dt(n), pb%slip(n), pb%theta_star(n) )
+  ! SEISMIC: initialise pb%tau in input.f90 to be compatible with CNS model
+  allocate ( pb%dtau_dt(n), pb%slip(n), pb%theta_star(n) )
   pb%slip = 0d0
-  call set_theta_star(pb) ! ref theta value
-  pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
+  call set_theta_star(pb)
+
+  ! SEISMIC: the CNS model has the initial shear stress defined in the
+  ! input file, so we can skip the initial computation of friction
+  if (pb%i_rns_law /= 3) then
+    pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
+  endif
 
   call init_kernel(pb%lam,pb%smu,pb%mesh,pb%kernel, &
                    pb%D,pb%H,pb%i_sigma_cpl,pb%finite)
   call ot_init(pb)
   call ox_init(pb)
+
+  ! SEISMIC: initialise thermal pressurisation model (diffusion_solver.f90)
+  if (pb%features%tp == 1) then
+    call init_tp(pb)
+  endif
+
+  ! SEISMIC: initialise Runge-Kutta ODE solver, if selected (see constants.f90)
+  if (USE_RK_SOLVER .eqv. .true.) then
+    call init_rk45(pb)
+    !call init_lsoda(pb)
+  endif
 
   if (is_mpi_master()) write(6,*) 'Initialization completed'
 
