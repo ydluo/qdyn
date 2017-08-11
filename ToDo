@@ -1,0 +1,48 @@
+(Priorities are not indicated)
+
+Bugs:
++ anyone knows how to fix the image link ![](https://goo.gl/pI9uAo) in wiki/Simulation_Cascadia_Tremor -- Content length exceeded?
+
+Physics:
++ 2D kernel for damage zones with finite fault size (FINITE=1)
++ compute surface deformation to compare to GPS data
++ complete testing of normal stress coupling 
++ slip-dependent friction law (Olivier Lengline)
++ 3D kernel for fault in infinite medium
++ double spring-block model
++ variable strike
++ triangular elements: 
+  Meade http://www.sciencedirect.com/science/article/pii/S0098300407000593 
+  Nikkhoo and Walter (2015) http://gji.oxfordjournals.org/content/201/2/1117.short 
+  Pan et al http://www.seismosoc.org/publications/BSSA_html/bssa_104-6/2014161-esupp/ 
+  Gausian quadrature of Okada point sources
+  Gimbutas et al (2012 http://www.bssaonline.org/content/102/6/2776.short)
++ layered media: EDKS (Luis Rivera) or Relax (Sylvain Barbot)?
++ heterogeneous media: import kernel from Relax, Pylith, SPECFEM3D ?
+
+Code engineering and optimization:
++ remove redundancy in QSB/*.m
++ python wrapper to enable runs on clusters without matlab license (Martijn)
++ inputs as fortran namelists
++ use parallel MPI I/O
+    http://wgropp.cs.illinois.edu/courses/cs598-s16/lectures/lecture32.pdf
+    https://www.olcf.ornl.gov/wp-content/uploads/2011/10/Fall_IO.pdf
+  or a prallel I/O library like HDF5, NETCDF4 or ADIOS:
+    https://wiki.scinet.utoronto.ca/wiki/images/a/af/Netcdfhdf5.pdf
+    http://www.unidata.ucar.edu/software/netcdf/index.html
+    https://www.olcf.ornl.gov/center-projects/adios/ 
++ hierarchical matrix techniques (interface to Andrew Bradley's code)
++ try enormous FFT (parallel) http://research.colfaxinternational.com/post/2014/09/18/EFFT.aspx
+
+Outputs:
++ binary outputs
++ more options to set output times: 
+  at regular times (with switch to short time during events), 
+  at regular increment of log(v)
+
+Packaging:
++ do "matlab publish" for the examples
++ automatically update "modification date" in google doc user's manual with Google Apps Script
++ add copyright notices at the beginning of each source file (see http://www.gnu.org/licenses/gpl-howto.html)
++ replace ODE solver by Lapusta's method (Noda and Lapusta 2010) 
+  or Gear's method in ODEPACK (http://computation.llnl.gov/casc/odepack/)
