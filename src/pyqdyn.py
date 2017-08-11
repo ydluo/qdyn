@@ -71,7 +71,6 @@ class qdyn:
 		# Optional simulation features
 		set_dict["FEAT_STRESS_COUPL"] = 0	# Normal stress coupling
 		set_dict["FEAT_TP"] = 0				# Thermal pressurisation
-		set_dict["FEAT_COHESION"] = 0		# Gouge zone cohesion (CNS only)
 		set_dict["FEAT_LOCALISATION"] = 0	# Gouge zone localisation of strain (CNS only)
 
 		# Rate-and-state friction parameters
@@ -111,17 +110,6 @@ class qdyn:
 		# State of stress
 		"SIGMA": 5e7,						# (Effective) normal stress [Pa]
 		"TAU": 2e7,							# Initial shear stress [Pa]
-		}
-
-		# Parameters for time-dependent cohesion model (in development, do not use)
-		set_dict["SET_DICT_COHESION"] = {
-		"ALPHA": 0.1,
-		"ALPHA0": 0.1,
-		"ALPHA_C": 0.7,
-		"COMPL": 1.0/(37e9),
-		"C_STAR": 1e6,
-		"E_SURF": 0.5e6,
-		"NG_CONST": 6e-9
 		}
 
 		# Localisation settings
@@ -224,7 +212,6 @@ class qdyn:
 		mesh_params_general = ("IOT", "IASP")
 		mesh_params_RSF = ("SIGMA", "V_0", "TH_0", "A", "B", "DC", "V1", "V2", "MU_SS", "V_SS", "CO")
 		mesh_params_CNS = ("SIGMA", "TAU", "PHI_INI", "V_LP", "A_TILDE", "MU_TILDE_STAR", "Y_GR_STAR", "H", "PHI_C", "PHI0", "IPS_CONST_DIFF", "IPS_CONST_DISS1", "IPS_CONST_DISS2", "THICKNESS")
-		mesh_params_cohesion = ("ALPHA", "ALPHA0", "ALPHA_C", "COMPL", "C_STAR", "E_SURF", "NG_CONST")
 		mesh_params_localisation = ("LOCALISATION", "PHI_INI_BULK", "IPS_CONST_DIFF_BULK", "IPS_CONST_DISS1_BULK", "IPS_CONST_DISS2_BULK")
 		mesh_params_TP = ("RHOC", "BETA", "ETA", "HALFW", "K_T", "K_P", "LAM", "P_A", "T_A")
 
@@ -244,11 +231,6 @@ class qdyn:
 		else:
 			print "FRICTION_MODEL '%s' not recognised. Supported models: RSF, CNS" % (settings["FRICTION_MODEL"])
 			exit()
-
-		# Populate mesh with cohesion parameters
-		if settings["FEAT_COHESION"] == 1:
-			for param in mesh_params_cohesion:
-				mesh_dict[param] = np.ones(N)*settings["SET_DICT_COHESION"][param]
 
 		# Populate mesh with localisation parameters
 		if settings["FEAT_LOCALISATION"] == 1:
@@ -349,7 +331,7 @@ class qdyn:
 			# Some more general settings
 			# Note that i_sigma_law is replaced by the feature stress_coupling, but is kept for compatibility
 			input_str += "%u%s i_sigma_law\n" % (settings["SIGMA_CPL"], delimiter)
-			input_str += "%u %u %u %u%s stress_coupling, thermal press., cohesion, localisation\n" % (settings["FEAT_STRESS_COUPL"], settings["FEAT_TP"], settings["FEAT_COHESION"], settings["FEAT_LOCALISATION"], delimiter)
+			input_str += "%u %u %u%s stress_coupling, thermal press., localisation\n" % (settings["FEAT_STRESS_COUPL"], settings["FEAT_TP"], settings["FEAT_LOCALISATION"], delimiter)
 			input_str += "%u %u %u %u %u %u%s ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n" % (settings["NTOUT"], settings["IC"]+1, settings["NXOUT"], settings["NXOUT_DYN"], settings["OX_SEQ"], settings["OX_DYN"], delimiter)
 			input_str += "%.15g %.15g %.15g %.15g %.15g %.15g%s beta, smu, lambda, v_th\n" % (settings["VS"], settings["MU"], settings["LAM"], settings["D"], settings["HD"], settings["V_TH"], delimiter)
 			input_str += "%.15g %.15g%s Tper, Aper\n" % (settings["TPER"], settings["APER"], delimiter)
@@ -379,11 +361,6 @@ class qdyn:
 			else: # RSF model
 				for i in xrange(nloc):
 					input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n" % (mesh["SIGMA"][iloc[i]], mesh["V_0"][iloc[i]], mesh["TH_0"][iloc[i]], mesh["A"][iloc[i]], mesh["B"][iloc[i]], mesh["DC"][iloc[i]], mesh["V1"][iloc[i]], mesh["V2"][iloc[i]], mesh["MU_SS"][iloc[i]], mesh["V_SS"][iloc[i]], mesh["IOT"][iloc[i]], mesh["IASP"][iloc[i]], mesh["CO"][iloc[i]])
-			
-			# Check if cohesion is requested
-			if settings["FEAT_COHESION"] == 1:
-				for i in xrange(nloc):
-					input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g\n" % (mesh["ALPHA"][iloc[i]], mesh["ALPHA0"][iloc[i]], mesh["ALPHA_C"][iloc[i]], mesh["COMPL"][iloc[i]], mesh["C_STAR"][iloc[i]], mesh["E_SURF"][iloc[i]], mesh["NG_CONST"][iloc[i]])
 
 			# Check if localisation is requested
 			if settings["FEAT_LOCALISATION"] == 1:
@@ -454,9 +431,7 @@ class qdyn:
 		nheaders = 6
 
 		# Output file contents depends on the requested features
-		if self.set_dict["FEAT_COHESION"] == 1:
-			cols = ("t", "loc_size", "crack_size", "potcy", "pot_rate", "v", "theta", "v_theta_dc", "tau", "x", "x_max", "v_max", "theta_max", "omeg_max", "tau_max", "x_max", "sigma_max", "alpha")
-		elif self.set_dict["FEAT_LOCALISATION"] == 1:
+		if self.set_dict["FEAT_LOCALISATION"] == 1:
 			#cols = ("t", "loc_size", "crack_size", "potcy", "pot_rate", "v", "theta", "theta2", "v_theta_dc", "tau", "x", "x_max", "v_max", "theta_max", "theta2_max", "omeg_max", "tau_max", "x_max", "sigma_max")
 			cols = ("t", "loc_size", "crack_size", "potcy", "pot_rate", "v", "theta", "v_theta_dc", "tau", "x", "x_max", "v_max", "theta_max", "omeg_max", "tau_max", "x_max", "sigma_max")
 		elif self.set_dict["FEAT_TP"] == 1:

@@ -490,7 +490,7 @@ function export_main_input()
     fprintf(fid,'%u   itheta_law\n', THETA_LAW);
     fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
     fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);
-    fprintf(fid,'0 0 0 0     stress_coupling, thermal press., cohesion, localisation\n');
+    fprintf(fid,'0 0 0     stress_coupling, thermal press., localisation\n');
     fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', ...
                 NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);
     fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g   beta, smu, lambda, D, H, v_th\n', ...

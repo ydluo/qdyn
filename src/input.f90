@@ -35,8 +35,7 @@ subroutine read_main(pb)
   read(15,*) pb%i_rns_law
   read(15,*) pb%i_sigma_cpl
   ! SEISMIC: various simulation features can be turned on (1) or off (0)
-  read(15,*)  pb%features%stress_coupling, pb%features%tp, &
-              pb%features%cohesion, pb%features%localisation
+  read(15,*)  pb%features%stress_coupling, pb%features%tp, pb%features%localisation
   read(15,*)pb%ot%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nxout_dyn,    &
             pb%ox%i_ox_seq, pb%ox%i_ox_dyn
   read(15,*) pb%beta, pb%smu, pb%lam, pb%D, pb%H, pb%ot%v_th
@@ -108,30 +107,6 @@ subroutine read_main(pb)
                 pb%ot%iot(i), pb%ot%iasp(i), pb%coh(i)
     end do
   endif
-
-  ! <SEISMIC>
-  ! Read input parameters for the time-dependent cohesion model (CNS only).
-  ! These parameters and corresponding units are (in order):
-  !
-  if (pb%features%cohesion == 1) then
-    allocate (  pb%alpha(n), pb%coh_params%alpha0(n), &
-                pb%coh_params%alpha_c(n), pb%coh_params%compl(n), &
-                pb%coh_params%C_star(n), pb%coh_params%E_surf(n), &
-                pb%coh_params%NG_const(n))
-    do i=1,n
-      read(15,*)pb%alpha(i), pb%coh_params%alpha0(i), &
-                pb%coh_params%alpha_c(i), pb%coh_params%compl(i), &
-                pb%coh_params%C_star(i), pb%coh_params%E_surf(i), &
-                pb%coh_params%NG_const(i)
-    end do
-  else
-    allocate(pb%alpha(n))
-    do i=1,n
-      pb%alpha(i) = 0
-    end do
-  endif
-  ! End reading cohesion model parameters
-  ! </SEISMIC>
 
   ! <SEISMIC>
   ! Read input parameters for the localisation model (CNS only).

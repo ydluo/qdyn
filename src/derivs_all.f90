@@ -27,21 +27,21 @@ subroutine derivs(time,yt,dydt,pb)
 
   use fault_stress, only : compute_stress
   use friction, only : dtheta_dt, dmu_dv_dtheta, friction_mu
-  use friction_cns, only : dalpha_dt, compute_velocity, CNS_derivs
+  use friction_cns, only : compute_velocity, CNS_derivs
   use diffusion_solver, only : update_PT, calc_dP_dt
 
   type(problem_type), intent(inout) :: pb
   double precision, intent(in) :: time, yt(pb%neqs*pb%mesh%nn)
   double precision, intent(out) :: dydt(pb%neqs*pb%mesh%nn)
 
-  double precision, dimension(pb%mesh%nn) :: theta, theta2, sigma, alpha, tau, v
+  double precision, dimension(pb%mesh%nn) :: theta, theta2, sigma, tau, v
   double precision, dimension(pb%mesh%nn) :: dsigma_dt, dtau_dt, dth_dt, dth2_dt
   double precision, dimension(pb%mesh%nn) :: dmu_dv, dmu_dtheta
   double precision, dimension(pb%mesh%nn) :: dP_dt, dtau_dP
   double precision, dimension(pb%mesh%nn) :: dummy1, dummy2
   double precision :: dtau_per, dt
 
-  integer :: ind_stress_coupling, ind_cohesion, ind_localisation
+  integer :: ind_stress_coupling, ind_localisation
 
   ! SEISMIC: initialise vectors to zero. If unitialised, each compiler
   ! may produce different results depending on its conventions
@@ -55,18 +55,15 @@ subroutine derivs(time,yt,dydt,pb)
   ! theta = yt(1::pb%neqs)
   ! v = yt(2::pb%neqs)
   ! sigma = yt(ind_stress_coupling::pb%neqs)
-  ! alpha = yt(ind_cohesion::pb%neqs)
   !
   ! dtheta/dt = dydt(1::pb%neqs)
   ! dv/dt = dydt(2::pb%neqs)
   ! dsigma/dt = dydt(ind_stress_coupling::pb%neqs)
-  ! dalpha/dt = dydt(ind_cohesion::pb%neqs)
 
   ! SEISMIC: define the indices of yt and dydt based on which
   ! features are requested (defined in input file)
   ind_stress_coupling = 2 + pb%features%stress_coupling
-  ind_cohesion = ind_stress_coupling + pb%features%cohesion
-  ind_localisation = ind_cohesion + pb%features%localisation
+  ind_localisation = ind_stress_coupling + pb%features%localisation
 
   ! SEISMIC: start unpacking values of yt and dydt
   ! Note that the values of tau, sigma, etc. are only set if they're being
@@ -98,12 +95,6 @@ subroutine derivs(time,yt,dydt,pb)
     sigma = sigma - pb%tp%P
   endif
 
-  ! SEISMIC: when cohesion is requested, update alpha (asperity size) for
-  ! time-dependent cohesion calculations (in development)
-  if (pb%features%cohesion == 1) then
-    alpha = yt(ind_cohesion::pb%neqs)
-  endif
-
   ! SEISMIC: when localisation is requested, keep track of the porosity in the
   ! bulk zone (separate from the localised shear band)
   if (pb%features%localisation == 1) then
@@ -122,7 +113,7 @@ subroutine derivs(time,yt,dydt,pb)
     ! The subroutine below calculates the slip velocity, time-derivatives of
     ! the porosity (theta), and partial derivatives required for radiation
     ! damping. These operations are combined into one subroutine for efficiency
-    call CNS_derivs(v, dth_dt, dth2_dt, dmu_dv, dmu_dtheta, dtau_dP, tau, sigma, theta, theta2, alpha, pb)
+    call CNS_derivs(v, dth_dt, dth2_dt, dmu_dv, dmu_dtheta, dtau_dP, tau, sigma, theta, theta2, pb)
   else
     ! SEISMIC: for the classical rate-and-state model formulation, the slip
     ! velocity is stored in yt(2::pb%neqs), and tau is not used (set to zero)
@@ -156,11 +147,6 @@ subroutine derivs(time,yt,dydt,pb)
   ! SEISMIC: pack normal stress changes if requested
   if (pb%features%stress_coupling == 1) then
     dydt(ind_stress_coupling::pb%neqs) = dsigma_dt
-  endif
-
-  ! SEISMIC: pack rate of grain-boundary healing, if requested
-  if (pb%features%cohesion == 1) then
-    dydt(ind_cohesion::pb%neqs) = dalpha_dt(v,tau,sigma,theta,alpha,pb)
   endif
 
   ! SEISMIC: if localisation is requested, pack porosity change of bulk

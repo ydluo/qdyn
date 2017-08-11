@@ -81,7 +81,7 @@ subroutine do_bsstep(pb)
 
   double precision :: t0
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
-  integer :: ik, ind_stress_coupling, ind_cohesion, ind_localisation
+  integer :: ik, ind_stress_coupling, ind_localisation
 
   ! Pack v, theta into yt
   ! yt(2::pb%neqs) = pb%v(pb%rs_nodes) ! JPA Coulomb
@@ -89,8 +89,7 @@ subroutine do_bsstep(pb)
   ! SEISMIC: define the indices of yt and dydt based on which
   ! features are requested (defined in input file)
   ind_stress_coupling = 2 + pb%features%stress_coupling
-  ind_cohesion = ind_stress_coupling + pb%features%cohesion
-  ind_localisation = ind_cohesion + pb%features%localisation
+  ind_localisation = ind_stress_coupling + pb%features%localisation
 
   ! SEISMIC: in the case of the CNS model, solve for tau and not v
   if (pb%i_rns_law == 3) then   ! SEISMIC: CNS model
@@ -103,9 +102,6 @@ subroutine do_bsstep(pb)
   ! but in case it gets fixed more permanently, derivs_all.f90 needs adjustment
   if (pb%features%stress_coupling == 1) then           ! Temp solution for normal stress coupling
     yt(ind_stress_coupling::pb%neqs) = pb%sigma
-  endif
-  if (pb%features%cohesion == 1) then
-    yt(ind_cohesion::pb%neqs) = pb%alpha
   endif
   if (pb%features%localisation == 1) then
     yt(ind_localisation::pb%neqs) = pb%theta2
@@ -199,10 +195,6 @@ subroutine do_bsstep(pb)
     pb%sigma = yt(ind_stress_coupling::pb%neqs)
   endif
 
-  if (pb%features%cohesion == 1) then
-    pb%alpha = yt(ind_cohesion::pb%neqs)
-  endif
-
   if (pb%features%localisation == 1) then
     pb%theta2 = yt(ind_localisation::pb%neqs)
   endif
@@ -234,7 +226,7 @@ subroutine update_field(pb)
   ! the final value of tau, sigma, and porosity. Otherwise, use the standard
   ! rate-and-state expression to calculate tau as a function of velocity
   if (pb%i_rns_law == 3) then
-    pb%v = compute_velocity(pb%tau, pb%sigma-P_prev, pb%theta, pb%theta2, pb%alpha, pb)
+    pb%v = compute_velocity(pb%tau, pb%sigma-P_prev, pb%theta, pb%theta2, pb)
   else
     pb%tau = (pb%sigma-P_prev) * friction_mu(pb%v,pb%theta,pb) + pb%coh
   endif
@@ -340,7 +332,7 @@ subroutine init_lsoda(pb)
   type(problem_type), intent(inout) :: pb
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
   integer :: LRN, LRS
-  integer :: ind_stress_coupling, ind_cohesion, ind_localisation
+  integer :: ind_stress_coupling, ind_localisation
 
   ! Basic parameters
   pb%lsoda%neq(1) = pb%neqs * pb%mesh%nn   ! number of equations
@@ -376,8 +368,7 @@ subroutine init_lsoda(pb)
 
   ! Prepare yt for first call
   ind_stress_coupling = 2 + pb%features%stress_coupling
-  ind_cohesion = ind_stress_coupling + pb%features%cohesion
-  ind_localisation = ind_cohesion + pb%features%localisation
+  ind_localisation = ind_stress_coupling + pb%features%localisation
 
   ! SEISMIC: in the case of the CNS model, solve for tau and not v
   if (pb%i_rns_law == 3) then   ! SEISMIC: CNS model
@@ -390,9 +381,6 @@ subroutine init_lsoda(pb)
   ! but in case it gets fixed more permanently, derivs_all.f90 needs adjustment
   if (pb%features%stress_coupling == 1) then           ! Temp solution for normal stress coupling
     yt(ind_stress_coupling::pb%neqs) = pb%sigma
-  endif
-  if (pb%features%cohesion == 1) then
-    yt(ind_cohesion::pb%neqs) = pb%alpha
   endif
   if (pb%features%localisation == 1) then
     yt(ind_localisation::pb%neqs) = pb%theta2
@@ -436,7 +424,7 @@ subroutine init_rk45(pb)
   type(problem_type), intent(inout) :: pb
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt
   integer :: nwork
-  integer :: ind_stress_coupling, ind_cohesion, ind_localisation
+  integer :: ind_stress_coupling, ind_localisation
 
   write (6,*) "Initialising RK45 solver"
 
@@ -447,8 +435,7 @@ subroutine init_rk45(pb)
 
   ! Prepare yt for first call
   ind_stress_coupling = 2 + pb%features%stress_coupling
-  ind_cohesion = ind_stress_coupling + pb%features%cohesion
-  ind_localisation = ind_cohesion + pb%features%localisation
+  ind_localisation = ind_stress_coupling + pb%features%localisation
 
   ! SEISMIC: in the case of the CNS model, solve for tau and not v
   if (pb%i_rns_law == 3) then   ! SEISMIC: CNS model
@@ -461,9 +448,6 @@ subroutine init_rk45(pb)
   ! but in case it gets fixed more permanently, derivs_all.f90 needs adjustment
   if (pb%features%stress_coupling == 1) then           ! Temp solution for normal stress coupling
     yt(ind_stress_coupling::pb%neqs) = pb%sigma
-  endif
-  if (pb%features%cohesion == 1) then
-    yt(ind_cohesion::pb%neqs) = pb%alpha
   endif
   if (pb%features%localisation == 1) then
     yt(ind_localisation::pb%neqs) = pb%theta2

@@ -37,7 +37,7 @@ module friction_cns
   implicit none
   private
 
-  public :: dphi_dt, compute_velocity, dalpha_dt, CNS_derivs
+  public :: dphi_dt, compute_velocity, CNS_derivs
   private :: calc_tan_psi, calc_mu_tilde, calc_e_ps
 
 contains
@@ -83,60 +83,17 @@ subroutine dphi_dt(v,tau,sigma,phi,phi2,dth_dt,dth2_dt,pb)
 end subroutine dphi_dt
 
 !===============================================================================
-! SEISMIC: time-dependent cohesion, work in progess...
-!===============================================================================
-function dalpha_dt(v,tau,sigma,phi,alpha,pb) result(da_dt)
-
-  type(problem_type), intent(in) :: pb
-  double precision, dimension(pb%mesh%nn), intent(in) :: tau, sigma, phi, alpha, v
-  double precision, dimension(pb%mesh%nn) :: da_dt, psi, tan_psi, sin_psi, cos_psi
-  double precision, dimension(pb%mesh%nn) :: sigma_i, q, power_term, delta_alpha
-  double precision, dimension(pb%mesh%nn) :: y_ps, y_gr, x, y
-  double precision, parameter :: small = 1e-15
-
-  write(6,*) "ERROR: The grain-boundary healing feature is in development..."
-  stop
-
-  q = 2*(pb%cns_params%phi_c - phi)
-  tan_psi = pb%cns_params%H*q
-  psi = atan(tan_psi)
-  cos_psi = cos(psi)
-  sin_psi = tan_psi * cos_psi
-
-  y_ps = calc_e_ps(tau, phi, .false., .false., pb)   ! Press. soln. shear rate
-  y_gr = v/pb%cns_params%L - y_ps
-
-  delta_alpha = alpha - pb%coh_params%alpha0
-
-  ! 1.9 is approximately 6/pi, where 6 is the average grain coordination number (doesn't have to be precise)
-  sigma_i = 1.9*(sigma*cos_psi + tau*sin_psi)/(alpha*q)
-  power_term = ((pb%coh_params%alpha_c - alpha)/(pb%coh_params%alpha_c - pb%coh_params%alpha0))**1.3
-  da_dt = 0*(pb%coh_params%NG_const*power_term/q)*(pb%coh_params%E_surf - 0.5*pb%coh_params%compl*sigma_i**2) &
-          - y_gr
-
-  ! Define logical expressions, which should yield either 0 or 1 depending on
-  ! the sign of da_dt and delta_alpha. The addition of small should prevent
-  ! zero division
-  x = 0.5*(1.0 + (da_dt + small)/(abs(da_dt) + small))
-  y = 0.5*(1.0 + (delta_alpha + small)/(abs(delta_alpha) + small))
-
-  ! If da_dt < 0 and delta_alpha < 0, set da_dt to zero. Leave as is otherwise
-  da_dt = (x + (1-x)*y)*da_dt
-
-end function dalpha_dt
-
-!===============================================================================
 ! SEISMIC: the subroutine below was written to optimise/reduce function calls,
 ! and to improve code handling (less code duplication, hopefully fewer bugs).
 !===============================================================================
 subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dv_dP, &
-                        tau, sigma, phi, phi2, alpha, pb )
+                        tau, sigma, phi, phi2, pb )
 
   use constants, only : PI
 
   ! Input variables
   type(problem_type), intent(in) :: pb
-  double precision, dimension(pb%mesh%nn), intent(in) :: tau, sigma, phi, phi2, alpha
+  double precision, dimension(pb%mesh%nn), intent(in) :: tau, sigma, phi, phi2
 
   ! Output variables
   double precision, dimension(pb%mesh%nn) :: v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dv_dP
@@ -144,7 +101,7 @@ subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dv_dP, &
   ! Internal variables
   double precision, dimension(pb%mesh%nn) :: tan_psi, mu_tilde, denom, dummy_var
   double precision, dimension(pb%mesh%nn) :: mu_star, y_gr, tau_gr
-  double precision, dimension(pb%mesh%nn) :: cos_psi, cohesion, f_phi_sqrt, L_sb
+  double precision, dimension(pb%mesh%nn) :: f_phi_sqrt, L_sb
   double precision, dimension(pb%mesh%nn) :: e_ps, y_ps, e_ps_bulk, y_ps_bulk
   double precision, dimension(pb%mesh%nn) :: dv_dtau_ps, dv_dphi_ps
 
@@ -180,14 +137,6 @@ subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dv_dP, &
     y_ps_bulk = calc_e_ps(tau, phi2, .false., .true., pb)
   endif
 
-  ! If cohesion is requested, calculate the contribution of cohesion to the
-  ! gouge strength. See [NS], Eqn. 20. This feature still in development...
-  cohesion = 0
-  if (pb%features%cohesion == 1) then
-    cos_psi = cos(atan(tan_psi))
-    cohesion = (PI/pb%cns_params%H)*(tan_psi*alpha*pb%coh_params%C_star)/(cos_psi*(1-mu_tilde*tan_psi))
-  endif
-
   ! The total slip velocity is the combined contribution of granular flow
   ! and pressure solution (parallel processes)
   v = pb%cns_params%L*(pb%cns_params%lambda*(y_gr + y_ps) + (1-pb%cns_params%lambda)*y_ps_bulk)
@@ -207,14 +156,17 @@ subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dv_dP, &
   ! negligibly to radiation damping, we ignore this factor 2
 
   dv_dtau_ps = y_ps/tau
-  dv_dphi_ps = y_ps/(pb%cns_params%phi_c - phi)
+  dv_dphi_ps =  2*y_ps/(pb%cns_params%phi_c - phi)
 
   ! The partial derivatives dv_dtau and dv_dphi of the overall slip velocity
   ! are the sum of the partial derivatives of the pressure solution and
   ! granular flow velocities.
 
-  dv_dtau = L_sb*(dv_dtau_ps + y_gr*(1-mu_tilde*tan_psi)*denom)
-  dv_dphi = L_sb*(dv_dphi_ps + y_gr*2*pb%cns_params%H*(sigma + mu_tilde*tau)*denom )
+  dv_dtau = L_sb*(dv_dtau_ps + &
+            y_gr*((1-mu_tilde*tan_psi)*denom - tan_psi*dummy_var*pb%cns_params%a_tilde*denom))
+  dv_dphi = L_sb*(dv_dphi_ps + &
+              y_gr*(2*pb%cns_params%H*(sigma + mu_tilde*tau)*denom + &
+              2*pb%cns_params%H*tau*dummy_var*pb%cns_params%a_tilde*denom))
 
   ! When thermal pressurisation is requested, update dV_dP
   if (pb%features%tp == 1) then
@@ -227,13 +179,13 @@ end subroutine CNS_derivs
 ! SEISMIC: calculate the instantaneous fault slip velocity, resulting from
 ! parallel operation of granular flow and pressure solution creep
 !===============================================================================
-function compute_velocity(tau,sigma,phi,phi2,alpha,pb) result(v)
+function compute_velocity(tau,sigma,phi,phi2,pb) result(v)
 
   use constants, only : PI
 
   type(problem_type), intent(in) :: pb
   double precision, dimension(pb%mesh%nn), intent(in) :: tau, sigma, phi
-  double precision, dimension(pb%mesh%nn), intent(in) :: phi2, alpha
+  double precision, dimension(pb%mesh%nn), intent(in) :: phi2
   double precision, dimension(pb%mesh%nn) :: tan_psi, denom, mu_star
   double precision, dimension(pb%mesh%nn) :: y_ps, y_gr, tau_gr
   double precision, dimension(pb%mesh%nn) :: y_ps_bulk, v

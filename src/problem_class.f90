@@ -50,21 +50,13 @@ module problem_class
   end type tp_type
   ! End of the TP model structure
 
-  ! SEISMIC: structure that holds the cohesion model parameters
-  ! This feature is still in development
-  type cohesion_type
-    double precision, dimension(:), allocatable :: &
-      alpha0, alpha_c, compl, C_star, E_surf, NG_const
-  end type cohesion_type
-  ! End of cohesion model structure
-
   ! SEISMIC: requested features structure
   ! stress_coupling: normal stress variations at subduction interfaces
   ! tp: thermal pressurisation
   ! cohesion: time-dependent cohesion (CNS model)
   ! localisation: localisation of deformation (CNS model)
   type features_type
-    integer :: stress_coupling, tp, cohesion, localisation
+    integer :: stress_coupling, tp, localisation
   end type features_type
   ! End of features structure
 
@@ -119,7 +111,6 @@ module problem_class
     ! SEISMIC: added structures
     type (cns_type) :: cns_params
     type (tp_type) :: tp
-    type (cohesion_type) :: coh_params
     type (features_type) :: features
     type (lsoda_type) :: lsoda
     type (rk45_type) :: rk45
