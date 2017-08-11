@@ -28,7 +28,7 @@ if RUN_OR_READ
 
   p.L = L;
   %p.W = 1000*p.L;
-  p.FINITE=1;
+  p.FINITE=0;
   p.N = 2^nextpow2(RESOLUTION*p.L/Lb); 
   dx=p.L/p.N;
   Lb_over_dx = Lb/dx
@@ -39,7 +39,7 @@ if RUN_OR_READ
   p.A = p.B *( 1 +(1-AB_RATIO)*(1-2*exp(-(p.X/Lasp*2).^6)) ); 
   
   p.TMAX = 8* year; % 60?
-  p.NTOUT=10000;
+  p.NTOUT=100;
   p.NXOUT=1;
   p.NSTOP=0;
   %p.V_0 = 1.01*p.V_SS ;

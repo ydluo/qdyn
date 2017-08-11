@@ -9,14 +9,14 @@ module fault_stress
 
   type kernel_2D_fft
     double precision, dimension(:), allocatable :: kernel
-    integer :: nnfft 
+    integer :: nnfft
     logical :: finite, symmetric
     type (OouraFFT_type) :: m_fft
   end type kernel_2D_fft
 
   type kernel_3D
     double precision, dimension(:,:), allocatable :: kernel, kernel_n
-    integer :: nw, nx, nwLocal, nwGlobal, nnLocal, nnGlobal    
+    integer :: nw, nx, nwLocal, nwGlobal, nnLocal, nnGlobal
   end type kernel_3D
 
   type kernel_3D_fft
@@ -44,23 +44,23 @@ module fault_stress
 
 ! For MPI parallel
   integer, allocatable, save :: nnLocalfft_perproc(:),nnoffset_perproc(:)
-  
+
   public :: init_kernel, compute_stress, kernel_type
 
 contains
 ! K is stiffness, different in sign with convention in Dieterich (1992)
 ! compute shear stress rate from elastic interactions
-!   tau = - K*slip 
-!   dtau_dt = - K*slip_velocity 
+!   tau = - K*slip
+!   dtau_dt = - K*slip_velocity
 !
 ! To account for steady plate velocity, the input velocity must be v-vpl:
-!   tau = - K*( slip - Vpl*t ) 
+!   tau = - K*( slip - Vpl*t )
 !   dtau_dt = - K*( v - Vpl )
 
 !=============================================================
-subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt) 
+subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt)
 !NOTE: damaged zones (D, H) only available for 2D problems
-  
+
   use mesh, only : mesh_type
   use constants, only : FFT_TYPE
 
@@ -71,14 +71,14 @@ subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt)
 
   write(6,*) 'Intializing kernel: ...'
 
-  if (m%dim==2) then 
+  if (m%dim==2) then
     k%kind =3+FFT_TYPE
     if (m%nx < 4) then
       write(6,*) 'nx < 4, FFT disabled'
       k%kind = 3
     endif
   else
-    k%kind = m%dim+1       
+    k%kind = m%dim+1
   endif
 
   k%has_sigma_coupling = (i_sigma_cpl==1) ! only used in 3D
@@ -89,7 +89,7 @@ subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt)
   case(2)
     allocate(k%k2f)
     call init_kernel_2D(k%k2f,mu,m,D,H,k2_opt)
-  case(3) 
+  case(3)
     allocate(k%k3)
     call init_kernel_3D(k%k3,lambda,mu,m,k%has_sigma_coupling,.false.) ! 3D no fft
   case(4)
@@ -97,12 +97,12 @@ subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt)
     call init_kernel_3D_fft(k%k3f,lambda,mu,m,k%has_sigma_coupling) ! 3D with FFT along-strike
   case(5)
     allocate(k%k3f2)
-    call init_kernel_3D_fft2d(k%k3f2,lambda,mu,m) ! 3D with 2DFFT 
+    call init_kernel_3D_fft2d(k%k3f2,lambda,mu,m) ! 3D with 2DFFT
   end select
 
   write(6,*) 'Kernel intialized'
-  
-end subroutine init_kernel   
+
+end subroutine init_kernel
 
 !----------------------------------------------------------------------
 subroutine init_kernel_1D(k,mu,L)
@@ -138,7 +138,7 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
     k%symmetric = .true.
   endif
 
-  k%nnfft = m%nn 
+  k%nnfft = m%nn
   if (k%finite) k%nnfft = k%nnfft*2
   if (k%symmetric) k%nnfft = k%nnfft*2
   allocate (k%kernel(k%nnfft))
@@ -146,8 +146,8 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
   write(6,*) 'FFT applied'
 
   if (.not. k%finite) then
-  
-   ! Kernel for a 1D in a 2D homogeneous elastic medium, 
+
+   ! Kernel for a 1D in a 2D homogeneous elastic medium,
    ! assuming antiplane deformation (slip in the direction off the 2D plane)
    !   kernel(k) = 1/2*mu*|k|
    ! where
@@ -155,11 +155,11 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
    !   k = wavenumber
    !
    ! Kernel for 1D fault surrounded by a damaged zone of uniform thickness and compliance
-   ! derived from equations 47-49 of Ampuero et al (2002, 
+   ! derived from equations 47-49 of Ampuero et al (2002,
    ! http://onlinelibrary.wiley.com/doi/10.1029/2001JB000452/full)
    ! by setting s=0 (low frequency limit = static)
    !   kernel(k) = 1/2*mu*(1-D)*|k| * cotanh[ H*|k| + arctanh(1-D) ]
-   ! where 
+   ! where
    !   H = half-thickness of the fault damage zone
    !   D = damage level = 1 - (damaged shear modulus) / (intact shear modulus)
    !
@@ -167,7 +167,7 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
    ! elastic layer of thickness H, fault in the middle of the layer,
    ! driven by imposed fault-parallel velocity at distance H from fault
    !   kernel(k) = 1/2*mu*|k| * cotanh(H*|k|)
-   
+
    ! Define wavenumber
     allocate( kk(k%nnfft) )
     do i=0,k%nnfft/2-1
@@ -175,23 +175,23 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
     enddo
     kk(2::2) = kk(1::2)
     kk(2) = PI*dble(k%nnfft)/m%Lfault ! Nyquist
-    
-   ! To mimic the width W of the fault in the dimension normal to the 2D plane, 
-   ! we introduce a "2.5D" approximation: we replace k by sqrt(k^2 + (2*pi/W)^2) 
-    kk = sqrt( kk*kk + (2d0*PI/m%W)**2 ) 
-   
+
+   ! To mimic the width W of the fault in the dimension normal to the 2D plane,
+   ! we introduce a "2.5D" approximation: we replace k by sqrt(k^2 + (2*pi/W)^2)
+    kk = sqrt( kk*kk + (2d0*PI/m%W)**2 )
+
    ! Compute kernel for homogeneous medium
     k%kernel = 0.5d0*mu*kk
 
    ! Compute kernel for damaged medium
     if (D>0d0 .and. H>0d0) k%kernel = k%kernel * (1-D) / tanh( H*kk + atanh(1-D) )
-    
+
    ! Compute kernel for finite slab
     if (D==0d0 .and. H>0d0) then
       k%kernel = k%kernel / tanh( H*kk )
       if (kk(1)==0d0) k%kernel(1) = 0.5d0*mu/H
     endif
-   
+
  !- Read coefficient I(n) from pre-calculated file.
   else !NOTE: damaged zones are not available for FINITE=1
     write(6,*) 'Reading kernel ',SRC_PATH,'/kernel_I.tab'
@@ -212,10 +212,10 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
 
  ! factor 2/N from the inverse FFT convention
   k%kernel = k%kernel *2.d0/dble(k%nnfft)
- 
+
  ! symmetric stress is computed on a twice longer fault
-  if (k%symmetric) k%kernel = k%kernel / 2d0 
-  
+  if (k%symmetric) k%kernel = k%kernel / 2d0
+
   return
 
 100 stop 'Kernel file src/kernel_I.tab is too short. Use src/TabKernelFiniteFlt.m to create a longer one.'
@@ -239,7 +239,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
 
   double precision :: tau,sigma_n, y_src, z_src, dip_src, dw_src, y_obs, z_obs,dip_obs
   double precision, allocatable :: tmp(:), tmp_n(:)   ! for FFT
-  integer :: i, j, ii, jj, n, nn, IRET, iproc, NPROCS  
+  integer :: i, j, ii, jj, n, nn, IRET, iproc, NPROCS
 
   if (is_mpi_master()) then
     write(6,*) 'Generating 3D kernel...'
@@ -253,7 +253,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   k%nnLocalfft  = k%nwLocal*k%nxfft
   k%nnGlobalfft = k%nwGlobal*k%nxfft
 
-  allocate(k%kernel(k%nwLocal,k%nwGlobal,k%nxfft)) 
+  allocate(k%kernel(k%nwLocal,k%nwGlobal,k%nxfft))
   allocate(tmp(k%nxfft))
   if (sigma_coupling) allocate(k%kernel_n(k%nwLocal,k%nwGlobal,k%nxfft))
   allocate(tmp_n(k%nxfft))
@@ -266,7 +266,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
     dip_src = m%dipglob(nn)
     dw_src = m%dwglob(n)
     do j=1,k%nwLocal
-      jj = (j-1)*m%nx+1 
+      jj = (j-1)*m%nx+1
       y_obs = m%y(jj)
       z_obs = m%z(jj)
       dip_obs = m%dip(jj)
@@ -278,7 +278,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
         ii = i+1
         ! wrap up the negative relative-x-positions in the second half of the
         ! array to comply with conventions of fft convolution
-        if (i<0) ii = ii + k%nxfft  
+        if (i<0) ii = ii + k%nxfft
         tmp(ii) = tau
         tmp_n(ii) = sigma_n
       enddo
@@ -308,7 +308,7 @@ end subroutine init_kernel_3D_fft
 subroutine init_kernel_3D_fft2d(k,lambda,mu,m)
 
   use mesh, only : mesh_type
-  use fftsg, only : my_rdft2 
+  use fftsg, only : my_rdft2
 
   type(kernel_3d_fft2d), intent(inout) :: k
   double precision, intent(in) :: lambda, mu
@@ -326,7 +326,7 @@ subroutine init_kernel_3D_fft2d(k,lambda,mu,m)
   k%nwfft = 2 * m%nw ! fft convolution requires twice longer array
   k%nxfft = 2 * m%nx
   allocate(k%kernel(k%nxfft,k%nwfft))
-  allocate(Kij(k%nxfft,k%nwfft)) 
+  allocate(Kij(k%nxfft,k%nwfft))
   write(6,*) 'Allocated for FFT2 Dimensions of ', k%nxfft, ' x ', k%nwfft
 
   koef = 2.0d0 * (lambda + mu) / (lambda + 2.0d0*mu)
@@ -358,7 +358,7 @@ subroutine init_kernel_3D_fft2d(k,lambda,mu,m)
       T2 = (Jp/IpJp - Jm/IpJm) / Ip
       T3 = (Ip/IpJm - Im/ImJm) / Jm
       T4 = (Ip/IpJp - Im/ImJp) / Jp
-      Kij(i,j) = mu/(4.d0*PI) * ( koef*(T1 - T2) + T3 - T4 ) 
+      Kij(i,j) = mu/(4.d0*PI) * ( koef*(T1 - T2) + T3 - T4 )
     enddo
   enddo
 
@@ -387,9 +387,9 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling,unstructured)
 
   write(6,*) 'Generating 3D kernel...'
   write(6,*) 'NO FFT applied'
-   
+
  !kernel(i,j): response at i of source at j
-  
+
  ! unstructured fault mesh
   if (unstructured) then
     allocate (k%kernel(m%nn,m%nn))
@@ -406,11 +406,11 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling,unstructured)
           tau = 0d0
           sigma_n = 0d0
         end if
-        k%kernel(i,j) = tau  
+        k%kernel(i,j) = tau
         if (sigma_coupling) k%kernel_n(i,j) = sigma_n
       end do
     end do
-    
+
   else
    !because dx = constant, only need to calculate i at first column
     allocate (k%kernel(m%nw,m%nn))
@@ -427,7 +427,7 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling,unstructured)
           tau = 0d0
           sigma_n = 0d0
         end if
-        k%kernel(i,j) = tau  
+        k%kernel(i,j) = tau
         if (sigma_coupling) k%kernel_n(i,j) = sigma_n
       end do
     end do
@@ -435,9 +435,9 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling,unstructured)
       write(99,*) k%kernel(1,j)
       if (sigma_coupling) write(99,*) k%kernel_n(1,j)
     end do
-  
+
   endif
-  
+
 end subroutine init_kernel_3D
 
 !=========================================================
@@ -472,7 +472,7 @@ end subroutine compute_stress_1d
 subroutine compute_stress_2d(tau,k2f,v)
 
   use fftsg, only : my_rdft
-  
+
   type(kernel_2d_fft), intent(inout)  :: k2f
   double precision , intent(out) :: tau(:)
   double precision , intent(in) :: v(:)
@@ -482,16 +482,16 @@ subroutine compute_stress_2d(tau,k2f,v)
 
   nn = size(v)
   tmp = 0d0
-  if (k2f%symmetric) then 
+  if (k2f%symmetric) then
     tmp(1:nn) = v(nn:1:-1)
     tmp(nn+1:2*nn) = v
   else
     tmp(1:nn) = v
   endif
-  call my_rdft(1,tmp,k2f%m_fft) 
+  call my_rdft(1,tmp,k2f%m_fft)
   tmp = - k2f%kernel * tmp
   call my_rdft(-1,tmp,k2f%m_fft)
-  if (k2f%symmetric) then 
+  if (k2f%symmetric) then
     tau = tmp(nn+1:2*nn)
   else
     tau = tmp(1:nn)
@@ -520,12 +520,12 @@ else
   nnLocal = size(tau)
   nw = size(k3%kernel,1)
   nxLocal = nnLocal/nw
-  
+
   nnGlobal = size(v)
   nxGlobal = nnGlobal/nw
- 
+
   ix0_proc = 0
- 
+
   !$OMP PARALLEL PRIVATE(iw,ix,tsum,idx,jw,jx,jj,j,k)
   !$OMP DO SCHEDULE(STATIC)
    do k=1,nnLocal
@@ -537,7 +537,7 @@ else
          do jx=1,nxGlobal
            j = j+1
            idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the kernel
-           jj = (jw-1)*nxGlobal + idx + 1 
+           jj = (jw-1)*nxGlobal + idx + 1
            tsum = tsum - k3%kernel(iw,jj) * v(j)
            !NOTE: it could be more efficient to store kernel in (jj,iw) form
          end do
@@ -562,7 +562,7 @@ else
            j = j+1
            idx = abs(jx-ix)  ! note: abs(x) assumes some symmetries in the kernel
            ! WARNING: are we sure this symmetry is valid for the normal-stress kernel?
-           jj = (jw-1)*nxGlobal + idx + 1 
+           jj = (jw-1)*nxGlobal + idx + 1
            tsum = tsum - k3%kernel_n(iw,jj) * v(j)
          end do
        end do
@@ -594,7 +594,7 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
 
   type(kernel_3D_fft), intent(inout)  :: k3f
   double precision , intent(out) :: tau(:), sigma_n(:)
-  double precision , intent(in) :: v(:) 
+  double precision , intent(in) :: v(:)
   double precision :: vzk(k3f%nwGlobal,k3f%nxfft), tmpzk(k3f%nwLocal,k3f%nxfft)
   double precision :: tmpx(k3f%nxfft)
   integer :: n,k
@@ -610,7 +610,7 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
   do n = 1,k3f%nwLocal
     tmpx( 1 : k3f%nx ) = v( (n-1)*k3f%nx+1 : n*k3f%nx )
     tmpx( k3f%nx+1 : k3f%nxfft ) = 0d0  ! convolution requires zero-padding
-    call my_rdft(1,tmpx,k3f%m_fft) 
+    call my_rdft(1,tmpx,k3f%m_fft)
     tmpzk(n,:) = tmpx
   enddo
 !$OMP END DO
@@ -620,22 +620,22 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
    !Local array, convert from matrix to vector form
     ilocal=0
     do iwlocal=1,k3f%nwLocal
-      do ixlocal=1,k3f%nxfft 
+      do ixlocal=1,k3f%nxfft
         ilocal = ilocal+1
-        tmpzkarray(ilocal) = tmpzk(iwlocal,ixlocal) 
+        tmpzkarray(ilocal) = tmpzk(iwlocal,ixlocal)
       enddo
     enddo
 
    ! gather the global vzk from the pieces in all processors
-    call gather_allvdouble(tmpzkarray,k3f%nnLocalfft,vzkarray,nnLocalfft_perproc, & 
+    call gather_allvdouble(tmpzkarray,k3f%nnLocalfft,vzkarray,nnLocalfft_perproc, &
                      nnoffset_perproc,k3f%nnGlobalfft)
 
    !Global array, convert from vector to matrix form
     iglobal=0
     do iwglobal=1,k3f%nwGlobal
-      do ixglobal=1,k3f%nxfft 
+      do ixglobal=1,k3f%nxfft
         iglobal=iglobal+1
-        vzk(iwglobal,ixglobal)=vzkarray(iglobal)  
+        vzk(iwglobal,ixglobal)=vzkarray(iglobal)
       enddo
     enddo
 
@@ -644,17 +644,17 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
   endif
 !$OMP END SINGLE
 
-  !-- compute shear stress 
+  !-- compute shear stress
 
   ! convolution in Fourier domain is a product of complex numbers:
-  ! K*V = (ReK + i*ImK)*(ReV+i*ImV) 
+  ! K*V = (ReK + i*ImK)*(ReV+i*ImV)
   !     = ReK*ReV - ImK*ImV  + i*( ReK*ImV + ImK*ReV )
   !
   !$OMP SINGLE
   ! wavenumber = 0, real
-  tmpzk(:,1) = matmul( k3f%kernel(:,:,1), vzk(:,1) ) 
+  tmpzk(:,1) = matmul( k3f%kernel(:,:,1), vzk(:,1) )
   ! wavenumber = Nyquist, real
-  tmpzk(:,2) = matmul( k3f%kernel(:,:,2), vzk(:,2) ) 
+  tmpzk(:,2) = matmul( k3f%kernel(:,:,2), vzk(:,2) )
   !$OMP END SINGLE
 
   ! higher wavenumbers, complex
@@ -668,7 +668,7 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
                  + matmul( k3f%kernel(:,:,k+1), vzk(:,k) )
   enddo
   !$OMP END DO
-  
+
   !$OMP DO SCHEDULE(STATIC)
   do n = 1,k3f%nwLocal
     tmpx = - tmpzk(n,:)
@@ -677,13 +677,13 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
   enddo
   !$OMP END DO
 
-!-- compute normal stress 
+!-- compute normal stress
 
-  if (allocated(k3f%kernel_n)) then 
+  if (allocated(k3f%kernel_n)) then
   ! Same steps as for shear stress
-  
+
     !$OMP SINGLE
-    tmpzk(:,1) = matmul( k3f%kernel_n(:,:,1), vzk(:,1) ) 
+    tmpzk(:,1) = matmul( k3f%kernel_n(:,:,1), vzk(:,1) )
     tmpzk(:,2) = matmul( k3f%kernel_n(:,:,2), vzk(:,2) )
     !$OMP END SINGLE
     !$OMP DO SCHEDULE(STATIC)
@@ -694,7 +694,7 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
                    + matmul( k3f%kernel_n(:,:,k+1), vzk(:,k) )
     enddo
     !$OMP END DO
- 
+
     !$OMP DO SCHEDULE(STATIC)
     do n = 1,k3f%nwLocal
       tmpx = - tmpzk(n,:)
@@ -702,7 +702,7 @@ subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
       sigma_n( (n-1)*k3f%nx+1 : n*k3f%nx ) = tmpx(1:k3f%nx)
     enddo
     !$OMP END DO
-    
+
   endif
 
 !$OMP END PARALLEL
@@ -762,7 +762,7 @@ subroutine compute_stress_3d_fft2d(tau, k, v)
 
   ! Compute inverse 2D-FFT on complex product
   call my_rdft2(-1, tmpx, k%m_fft)
-  
+
   ! Extract only the valid part
   tau = reshape(tmpx(1:nx,1:nw), (/ nx*nw /))
 

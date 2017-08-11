@@ -4,7 +4,7 @@
 %		Features:
 % 		+ rate-and-state friction coefficient
 %   			Mu(V,Theta) = Muss + a*ln(V/Vss) + b*ln(Theta/Thetass)
-%           	  or with transitions between velocity-weakening and strengthening 
+%           	  or with transitions between velocity-weakening and strengthening
 %		  via cut-off velocities:
 %   			Mu = Muss - a*ln(1+V1/V) + b*ln(1+Theta*Dc/V2)
 %	  	+ evolution equations for the state variable: ageing law
@@ -13,30 +13,30 @@
 %   			dTheta/dT = -V*Theta/Dc * log(V*Theta/Dc)
 %                 or ageing law in the self-accelerating approximation:
 %   			dTheta/dT = -V*Theta/Dc
-%		+ spatially non-uniform friction parameters a, b, Dc, v1, v2 
+%		+ spatially non-uniform friction parameters a, b, Dc, v1, v2
 %		  and initial conditions v(0), theta(0), sigma(0)
 %		+ quasistatic stress balance with radiation damping, no inertia, no elastodynamics
-%		+ geometries: spring-block, straight linear fault in a 1D elastic medium, 
+%		+ geometries: spring-block, straight linear fault in a 1D elastic medium,
 %		  or 2D fault surface with depth-dependent dip angle in a 3D elastic half-space
 %		+ boundary/loading conditions
-%			. (in 2D) slip can be spatially periodic along-strike 
+%			. (in 2D) slip can be spatially periodic along-strike
 %			  and the fault is loaded by steady displacement at a distance W from the fault
 %			  (crustal plane model, mimics a finite seismogenic depth W)
-%		  	. or (in 2D and 3D) the fault area governed by rate-and-state friction has a 
+%		  	. or (in 2D and 3D) the fault area governed by rate-and-state friction has a
 %			  finite size and is loaded by steady sliding on the rest of the fault
 %
 % SYNTAX	[pars,ot,ox] = qdyn(mode,[parsin],['Property',Value,...])
 %
-% INPUTS 	mode	'set'	gives the default parameter structure (pars), 
+% INPUTS 	mode	'set'	gives the default parameter structure (pars),
 %				overrides by fields present in structure parsin
 %				or by Property/Value pairs
 %			'write' writes qdyn input file only
 %			'run'	sets parameters and runs a simulation
 %			'read' 	reads parameters and outputs from a previous simulation
-%		parsin	parameter structure to override the default parameters 
+%		parsin	parameter structure to override the default parameters
 %		'Prop' 	property to be set, a fieldname of the parameter structure
 %		Value   of the above property, overrides default and parsin
-%		
+%
 %		The parameters that can be set through 'parsin' or 'Prop/Value' pairs are listed below.
 %		Their default values can be obtained by running:
 %			pars = qdyn('set')
@@ -59,7 +59,7 @@
 %			    loaded by steady displacement at distance W from the fault
 %			1 = fault is infinitely long but only a segment of length L has
 %			    rate-and-state friction, the rest has steady slip. If you get the
-%			    error message "finite kernel is too small", create a larger kernel file 
+%			    error message "finite kernel is too small", create a larger kernel file
 %			    using the function TabKernelFiniteFlt.m, update the file name in
 %			    subroutine init_kernel_2D of src/fault_stress.f90, and recompile
 %			2 = same as 0 but slip is symmetric relative to first element
@@ -118,11 +118,11 @@
 %		OX_SEQ 	type of snapshot outputs
 %			0 = all snapshots in a single output file (fort.19)
 %			1 = one output file per snapshot (fort.1001, ...)
-%		NXOUT 	spatial interval (in number of elements) for snapshot outputs 
+%		NXOUT 	spatial interval (in number of elements) for snapshot outputs
 %		NTOUT 	temporal interval (number of time steps) for snapshot outputs
 %		OX_DYN	output specific snapshots of dynamic events defined by thresholds
-%			on peak slip velocity DYN_TH_ON and DYN_TH_OFF (see below) 
-%			0 = disable 
+%			on peak slip velocity DYN_TH_ON and DYN_TH_OFF (see below)
+%			0 = disable
 %			1 = enable outputs for event #i:
 %				event start: fort.19998+3i
 %				event end: fort.19999+3i
@@ -131,7 +131,7 @@
 % 		DYN_TH_ON peak slip rate threshold defining the beginning of a dynamic event
 %		DYN_TH_OFF peak slip rate threshold defining the end of a dynamic event
 %		IC 	index of selected element for time series output (ot)
-%		IOT 	Indices of elements for additional time series outputs. 
+%		IOT 	Indices of elements for additional time series outputs.
 %			Set IOT(i) = 1 to enable time series outputs at the i-th element.
 %			By default IOT(i)=-0 and this output is not done.
 %               	Each element has a separate output file named fort.xxxxx
@@ -145,13 +145,13 @@
 %		Parameters for integration with SPECFEM3D dynamic code:
 %		DYN_FLAG integration with dynamic code
 %			0 = disable
-%			1 = enable: stop QDYN at the DYN_SKIP+1-th dynamic event 
+%			1 = enable: stop QDYN at the DYN_SKIP+1-th dynamic event
 %			    with seismic moment > DYN_M
 %		DYN_M	target seismic moment of a dynamic event
 %		DYN_SKIP number of dynamic events to skip (warm up cycles)
 %
 %		Other parameters:
-%		EXEC_PATH path to the Fortran qdyn executable. 
+%		EXEC_PATH path to the Fortran qdyn executable.
 %			The default path is the directory containing qdyn.m
 %		NPROCS number of processors for parallel MPI runs
 %			The default value is 1 (serial run)
@@ -159,7 +159,7 @@
 % OUTPUTS 	pars	structure containing the parameters listed above, and:
 %			X,Y,Z = coordinates of center of fault elements
 %			DIP = dip angle of fault elements
-%		ot	structure containing time series outputs 
+%		ot	structure containing time series outputs
 %			ot.t	output times
 %			ot.locl	localization length (distance between stressing rate maxima)
 %			ot.cl	crack length (distance between slip rate maxima)
@@ -167,7 +167,7 @@
 %			ot.pdot	seismic potency rate
 %			-- outputs at the fault location with maximum slip rate:
 %			ot.xm	location of maximum slip rate point
-%			ot.v	maximum slip rate 
+%			ot.v	maximum slip rate
 %			ot.th	state variable theta
 %			ot.om 	(slip rate)*theta/dc
 %			ot.tau	stress
@@ -178,10 +178,10 @@
 %			ot.omc 	slip_rate*theta/dc
 %			ot.tauc	shear stress
 %			ot.dc	slip
-%		ox	structure containing snapshot outputs 
+%		ox	structure containing snapshot outputs
 %			ox.x	fault coordinates (for 2D)
 %			ox.t 	output times
-%			ox.v	slip rate 
+%			ox.v	slip rate
 %			ox.th	state variable
 %			ox.vd	slip acceleration
 %			ox.dtau shear stress relative to initial value
@@ -194,7 +194,7 @@
 %			[p,ot,ox] = qdyn('run','V_0',1.01*p.V_SS);
 %			semilogy(ot.t,ot.v)
 %
-% AUTHORS	QDYN development team https://github.com/ydluo/qdyn#developers	
+% AUTHORS	QDYN development team https://github.com/ydluo/qdyn#developers
 
 function [pars,ot,ox] = qdyn(mode,varargin)
 
@@ -236,7 +236,7 @@ DW=1e3;
 DIP_W=30.0;
 
 Z_CORNER=-50e3;
-IC=1;         % index of nodes for output ot 
+IC=1;         % index of nodes for output ot
 TMAX = 6*month;  % total simulation time
 NSTOP = 0;	% stop at (0) tmax, (1) end of localization or (2) max slip rate
 DTTRY = 1e2;   % first trial timestep
@@ -247,12 +247,12 @@ NXOUT_DYN = 1;	% space stride (cells) for dynamic snapshot outputs
 NTOUT = 100; 	% time stride (iterations) for snapshot outputs
 OX_SEQ = 0; 	% = 1 ; enable sequential ox output , from fort.1000 ...
 OX_DYN = 0; % = 1 ; enable sequential snapshot of dynamic events
-IOT = 0;    % = 1 to output ot of indicated nodes    
+IOT = 0;    % = 1 to output ot of indicated nodes
 IASP = 0;   % =1 indicating that it is an asperity
 %-- friction
-A = 0.9e-2; 
-B = 1e-2; 
-DC = 4e-4;	
+A = 0.9e-2;
+B = 1e-2;
+DC = 4e-4;
 MU_SS = 0.6;
 V_SS = 1e-9;
 TH_SS = DC/V_SS;
@@ -262,20 +262,20 @@ SIGMA_CPL = 0;
 CO = 0;
 %-- initial conditions
 SIGMA=1e8;
-V_0=V_SS ; 
+V_0=V_SS ;
 TH_0=TH_SS;
 V1=0.01;
 V2=1e-7;
-%-- branching fault 
+%-- branching fault
 %JPA This is an undocumented feature implemented by Percy
 BRANCH='.false.';
 STRIKE=0;
-XC=0; % Junction location. 
-YC=0; % 
+XC=0; % Junction location.
+YC=0; %
 
-%-- periodic loading 
+%-- periodic loading
 APER = 0;
-TPER = 1*year; 
+TPER = 1*year;
 
 % dynamic intergrating parameters
 DYN_FLAG = 0;
@@ -300,7 +300,7 @@ end
 % set steady state theta
 TH_SS = DC./V_SS;
 
-% wrap UPPER CASE VARIABLES in parameter structure fields with the same name 
+% wrap UPPER CASE VARIABLES in parameter structure fields with the same name
 fpars = who;
 for k= find( strcmp(fpars,upper(fpars)) )' ,
   pars.(fpars{k}) = eval(fpars{k}) ;
@@ -308,11 +308,11 @@ end
 
 switch mode
 
-case 'set', 
+case 'set',
   ot=[];
   ox=[];
   return % pars = qdyn('set',...)  --> do not compute, exit here
-  
+
 case 'read',
   pars = read_qdyn_in(NAME);
   pars.NAME = NAME;
@@ -321,7 +321,7 @@ case 'read',
 case {'run', 'write'},
 
   % make vectors if constants
-   DW(1:NW) = DW;  
+   DW(1:NW) = DW;
    DIP_W(1:NW) = DIP_W;
    A(1:N) = A;
    B(1:N) = B;
@@ -336,10 +336,10 @@ case {'run', 'write'},
    IOT(1:N) = IOT;
    IASP(1:N) = IASP;
    CO(1:N) = CO;
-    
+
   % For branching faults.
   % NOTE: this is an undocumented feature implemented by Percy
-   if strcmp(BRANCH,'.true.') 
+   if strcmp(BRANCH,'.true.')
      export_branch_input();
      ot = [];
      ox = [];
@@ -357,7 +357,7 @@ case {'run', 'write'},
     ox = [];
     return;
   end
-    
+
  % solve
   if NPROCS==1
     status = system([EXEC_PATH filesep 'qdyn']);
@@ -367,9 +367,9 @@ case {'run', 'write'},
 
  % rename input and output files
   if ~isempty(NAME)
-    movefile('fort.18',[NAME '.ot']); 
-    movefile('fort.19',[NAME '.ox']); 
-    copyfile('qdyn.in',[NAME '.in']); 
+    movefile('fort.18',[NAME '.ot']);
+    movefile('fort.19',[NAME '.ox']);
+    copyfile('qdyn.in',[NAME '.in']);
   end
 
  % output
@@ -397,13 +397,13 @@ function [X,Y,Z,DIP]=generate_mesh()
   case 0
     X = [];
   case 1
-    X = (-N/2+0.5:N/2-0.5) *L/N; 
+    X = (-N/2+0.5:N/2-0.5) *L/N;
   case 2
    % set x, y, z, dip of first row
     cd = cos(DIP_W(1)/180.*pi);
     sd = sin(DIP_W(1)/180.*pi);
     X = 0. + (0.5+(0:NX-1))*L/NX;
-    Y(1:NX) = 0.+0.5*DW(1)*cd;   
+    Y(1:NX) = 0.+0.5*DW(1)*cd;
     Z(1:NX) = Z_CORNER+0.5*DW(1)*sd;
     DIP(1:NX) = DIP_W(1);
    % set x, y, z, dip of row 2 to nw
@@ -417,21 +417,21 @@ function [X,Y,Z,DIP]=generate_mesh()
       Y(j0+1:j0+NX) = Y(j0) + 0.5*DW(i-1)*cd0 + 0.5*DW(i)*cd;
       Z(j0+1:j0+NX) = Z(j0) + 0.5*DW(i-1)*sd0 + 0.5*DW(i)*sd;
       DIP(j0+1:j0+NX) = DIP_W(i);
-    end 
+    end
   otherwise
     error('MESHDIM must be 0, 1 or 2');
-  end  
+  end
 
 end
 
-%-- 
+%--
 % This is a nested function: it has access to variables in the parent function
 function export_branch_input()
 
   r=sqrt(X.^2+Y.^2);
   X=r.*cosd(STRIKE)+XC;
   Y=r.*sind(STRIKE)+YC;
-  fid=fopen('qdyn_branch.in','w');    
+  fid=fopen('qdyn_branch.in','w');
   fprintf(fid,'%d\n',N);
   fprintf(fid,'%15.6f\n',DIP_W(1));
   fprintf(fid,'%20.6f %20.6f\n',LAM,MU);
@@ -457,7 +457,7 @@ end
 % This is a nested function: it has access to variables in the parent function
 function export_main_input()
 
-  for iproc=1:NPROCS  
+  for iproc=1:NPROCS
 
     if NPROCS>1
       filename = ['qdyn' sprintf('%06i',iproc-1) '.in'];
@@ -470,28 +470,29 @@ function export_main_input()
       iloc = i0 + [1:NX*nw];
       iwloc = iw0 + [1:nw];
     else
-      filename = 'qdyn.in'; 
+      filename = 'qdyn.in';
       nw = NW;
       iloc = [1:N];
       iwloc = [1:NW];
     end
 
     fid = fopen(filename,'w');
-    fprintf(fid,'%u     meshdim\n' , MESHDIM); 
+    fprintf(fid,'%u     meshdim\n' , MESHDIM);
     if MESHDIM == 2
-      fprintf(fid,'%u %u     NX, NW\n' , NX, nw);      
+      fprintf(fid,'%u %u     NX, NW\n' , NX, nw);
       fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
       fprintf(fid,'%.15g %.15g \n', [DW(iwloc);DIP_W(iwloc)]);
-    else  
-      fprintf(fid,'%u     NN\n' , N);      
+    else
+      fprintf(fid,'%u     NN\n' , N);
       fprintf(fid,'%.15g %.15g      L, W\n', L, W);
     end
-    if MESHDIM == 1, fprintf(fid,'%u   finite\n', FINITE); end   
+    if MESHDIM == 1, fprintf(fid,'%u   finite\n', FINITE); end
     fprintf(fid,'%u   itheta_law\n', THETA_LAW);
     fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
-    fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);    
+    fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);
+    fprintf(fid,'0 0 0     stress_coupling, thermal press., localisation\n');
     fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', ...
-                NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);     
+                NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);
     fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g   beta, smu, lambda, D, H, v_th\n', ...
                 VS, MU, LAM, D, H, V_TH);
     fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
@@ -503,24 +504,24 @@ function export_main_input()
     fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %u %u %.15g\n',...
       [SIGMA(iloc);V_0(iloc);TH_0(iloc);A(iloc);B(iloc);DC(iloc);V1(iloc);V2(iloc); ...
        MU_SS(iloc);V_SS(iloc);IOT(iloc);IASP(iloc);CO(iloc)]);
-   
+
     if NPROCS>1
       fprintf(fid,'%.15g %.15g %.15g %.15g\n', ...
               [X(iloc);Y(iloc);Z(iloc);DIP(iloc)]);
     end
-    
-    fclose(fid);    
+
+    fclose(fid);
   end
-end % of nested function 
+end % of nested function
 
 end % of function qdyn
 
 %-----------------------------------------------------------------------------
 %
 % PARSE_INPUTS sets variables in the caller function according to inputs.
-%	By convention the variables to set have UPPER CASE names. 
+%	By convention the variables to set have UPPER CASE names.
 %
-% WARNING: no checks yet 
+% WARNING: no checks yet
 % Field names in parsin and Property's should match field names in pars
 % or else the default value will be taken.
 function Parse_Inputs(varargin)
@@ -530,7 +531,7 @@ if isempty(varargin)
 end
 
 % 1. Override defaults by input structure
-if isstruct(varargin{1}) 
+if isstruct(varargin{1})
  % process input parameter structure
   parsin = varargin{1};
   fparsin = fieldnames(parsin);
@@ -557,11 +558,11 @@ name = [name '.in'];
 fid = fopen(name);
 MESHDIM = sscanf(fgetl(fid), '%u');
 if MESHDIM == 2
-    rdat = sscanf(fgetl(fid), '%u %u'); NX = rdat(1); NW = rdat(2); 
+    rdat = sscanf(fgetl(fid), '%u %u'); NX = rdat(1); NW = rdat(2);
     rdat = sscanf(fgetl(fid), '%.15g %.15g  %.15g'); L = rdat(1); W = rdat(2); Z_CORNER = rdat(3);
     rdat = sscanf(fgetl(fid), '%.15g %.15g'); DW(iwloc) = rdat(1); DIP_W(iwloc) = rdat(2);
 else
-    N = sscanf(fgetl(fid), '%u'); 
+    N = sscanf(fgetl(fid), '%u');
     rdat = sscanf(fgetl(fid), '%f %f'); L = rdat(1); W = rdat(2);
 end
 if MESHDIM == 1
@@ -570,6 +571,7 @@ end
 THETA_LAW = sscanf(fgetl(fid), '%u');
 RNS_LAW = sscanf(fgetl(fid), '%u');
 SIGMA_CPL = sscanf(fgetl(fid), '%u');
+rdat = sscanf(fgetl(fid), '%u %u %u %u');
 rdat = sscanf(fgetl(fid), '%u %u %u %u %u %u'); NTOUT = rdat(1); IC = rdat(2); NXOUT = rdat(3); NXOUT_DYN = rdat(4); OX_SEQ  = rdat(5); OX_DYN = rdat(6);
 rdat = sscanf(fgetl(fid), '%f %f %f %f %f %f'); VS = rdat(1); MU = rdat(2); LAM = rdat(3); D = rdat(4); H = rdat(5); V_TH = rdat(6);
 rdat = sscanf(fgetl(fid), '%f %f'); TPER = rdat(1); APER = rdat(2);
@@ -593,7 +595,7 @@ IASP = rdat{12};
 CO = rdat{13};
 fclose(fid);
 
-% wrap UPPER CASE variables in parameter structure fields with the same name 
+% wrap UPPER CASE variables in parameter structure fields with the same name
 fpars = who;
 for k = find( strcmp(fpars,upper(fpars)) )'
   pars.(fpars{k}) = eval(fpars{k});
@@ -614,7 +616,7 @@ end
   % time series
   [ot.t,ot.vc, ot.thc, ot.omc, ot.tauc, ot.dc ] = ...
     textread(namet,'','headerlines',4);
-  
+
   % snapshots
   fid=fopen(namex);
   NSX=fscanf(fid,'# nx=%u');
@@ -680,7 +682,7 @@ function [ot,ox] = read_qdyn_out(name)
             ot.d = hdr(:,16);
             ot.sigma = hdr(:,17);
         end
-        
+
         %snapshots
         [~, file_sys] = system(['file ',namex]);
         isasc = textscan(file_sys, '%s', 2);
@@ -706,12 +708,12 @@ function [ot,ox] = read_qdyn_out(name)
             ox.x = fread(fid, nx, 'double');
             i = 1;
             while 1
-                time = fread(fid, 1, 'double'); 
+                time = fread(fid, 1, 'double');
                 if isempty(time)
                     fclose(fid);
                     break
                 else
-                    ox.t(i,:) = time; 
+                    ox.t(i,:) = time;
                     hdr = fread(fid, [6, nx], 'double')';
                     ox.v(:,i) = hdr(:,1);
                     ox.th(:,i) = hdr(:,2);
@@ -723,7 +725,7 @@ function [ot,ox] = read_qdyn_out(name)
                 end
             end
         end
-    else 
+    else
         [ot,ox] = read_qdyn_out_Octave(namet,namex)
     end
 end % of function read_qdyn_out
@@ -743,4 +745,3 @@ for elem = 1:numel(LIC)
     end
 end
 end % of function uiIsMatLab
-
