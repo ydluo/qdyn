@@ -32,7 +32,7 @@ if RUN_OR_READ
 
   p.L = L;
   %p.W = 1000*p.L;
-  p.FINITE=1;
+  p.FINITE=0;
   p.N = 2^nextpow2(RESOLUTION*p.L/Lb); 
   dx=p.L/p.N;
   Lb_over_dx = Lb/dx

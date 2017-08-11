@@ -6,17 +6,25 @@ module mesh
   type mesh_type
     integer :: dim = 0  ! dim = 1, 2 ,3 ~xD
     integer :: nx, nw, nn, nnglob, nwglob ! along-strike, along-dip, total grid number
-    double precision :: dx !along-strike grid size(constant)  
+    double precision :: dx !along-strike grid size(constant)
     double precision :: Lfault, W, Z_CORNER ! fault length, width, lower-left corner z (follow Okada's convention)
     double precision, allocatable :: DIP_W(:) !along-dip grid size and dip (adjustable), nw count
     double precision, pointer :: x(:), y(:), z(:), dip(:), dw(:) !coordinates, dip and along-dip size of every grid (nx*nw count)
     double precision, pointer :: xglob(:), yglob(:), zglob(:), dipglob(:), dwglob(:) ! same on global grid (nx*nwglobal count)
   end type mesh_type
 
+  ! SEISMIC: discretisation of spectral domain for diffusion solver
+  type spectral_mesh_type
+    double precision, dimension(:), allocatable :: lw, F_inv ! dimensionless wavenumbers, inv Fourier kernel
+    double precision :: Dlogl=0.8, lw_max=10.0 ! logarithmic grid spacing, max dimensionless wavenumber
+    integer :: Nl=20 ! number of mesh elements
+  end type spectral_mesh_type
+
   integer, allocatable, save :: nnLocal_perproc(:),nnoffset_glob_perproc(:)
 
-  public :: mesh_type, read_mesh_parameters, read_mesh_nodes, init_mesh, mesh_get_size 
+  public :: mesh_type, read_mesh_parameters, read_mesh_nodes, init_mesh, mesh_get_size
   public :: nnLocal_perproc, nnoffset_glob_perproc
+  public :: spectral_mesh_type
 
 contains
 
@@ -36,7 +44,7 @@ subroutine read_mesh_parameters(iin,m)
 
   case(0,1)
     read(iin,*) m%nn
-    read(iin,*) m%Lfault, m%W 
+    read(iin,*) m%Lfault, m%W
 
   case(2) !3d problem
     read(iin,*) m%nx,m%nw
@@ -64,7 +72,7 @@ subroutine read_mesh_nodes(iin,m)
 
   integer :: i
 
-  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%dip(m%nn))     
+  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%dip(m%nn))
   do i=1,m%nn
     read(iin,*) m%x(i),m%y(i),m%z(i),m%dip(i)
   enddo
@@ -100,7 +108,7 @@ subroutine init_mesh_0D(m)
 
   type(mesh_type), intent(inout) :: m
 
-  write(6,*) 'Spring-block System' 
+  write(6,*) 'Spring-block System'
   allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn))
   m%dx = m%Lfault
   m%x = 0d0
@@ -117,14 +125,14 @@ subroutine init_mesh_1D(m)
 
   integer :: i
 
-  write(6,*) '1D fault, uniform grid' 
+  write(6,*) '1D fault, uniform grid'
   m%dx = m%Lfault/m%nn
   allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn))
   do i=1,m%nn
     m%x(i) = (i-m%nn*0.5d0-0.5d0)*m%dx
-    ! Assuming nn is even (usually a power of 2), 
-    ! the center of the two middle elements (i=nn/2 and nn/2+1) 
-    ! are located at x=-dx/2 and x=dx/2, respectively 
+    ! Assuming nn is even (usually a power of 2),
+    ! the center of the two middle elements (i=nn/2 and nn/2+1)
+    ! are located at x=-dx/2 and x=dx/2, respectively
     m%y(i) = 0d0
     m%z(i) = 0d0
   enddo
@@ -133,8 +141,8 @@ end subroutine init_mesh_1D
 
 !--------------------------------------------------------
   ! 2D fault, uniform grid along-strike
-  ! Assumptions: 
-  !   + the fault trace is parallel to x 
+  ! Assumptions:
+  !   + the fault trace is parallel to x
   !   + the lower "left" corner of the fault is at (0,0,Z_CORNER)
   !   + z is negative downwards (-depth)
   ! Storage scheme: faster index runs along-strike (x)
@@ -151,11 +159,11 @@ subroutine init_mesh_2D(m)
   integer, allocatable :: nwLocal_perproc(:), nwoffset_glob_perproc(:)
 
   write(6,*) '2D fault, uniform grid along-strike'
-  
+
 if (.not.is_MPI_parallel()) then
 
   m%dx = m%Lfault/m%nx
-  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%dip(m%nn)) 
+  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%dip(m%nn))
 
   ! set x, y, z, dip of first row
   cd = cos(m%DIP_W(1)/180d0*PI)
@@ -225,4 +233,3 @@ endif
 end subroutine init_mesh_2D
 
 end module mesh
-
