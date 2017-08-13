@@ -32,7 +32,7 @@ if RUN_OR_READ
 
   p.L = L;
   %p.W = 1000*p.L;
-  p.FINITE=0;
+  p.FINITE=1;
   p.N = 2^nextpow2(RESOLUTION*p.L/Lb); 
   dx=p.L/p.N;
   Lb_over_dx = Lb/dx
@@ -50,7 +50,7 @@ if RUN_OR_READ
   p.A = p.A - b*AB_RATIO*exp(-((p.X+(Lasp+Lasp_2)*0.6)/Lasp_2*2).^6); 
   
   p.TMAX = 8 * year; % 60?
-  p.NTOUT=200;
+  p.NTOUT=1000;
   p.NXOUT=1;
   p.NSTOP=0;
   %p.V_0 = 1.01*p.V_SS ;
@@ -64,8 +64,8 @@ if RUN_OR_READ
   p.TMAX = 2 *year;  
   p.NTOUT= 10;
 
-  p.V_0 = ox1.v(:,end);
-  p.TH_0= ox1.th(:,end);
+  p.V_0 = ox1.v(:,end)';
+  p.TH_0= ox1.th(:,end)';
   %p.V_0 =  (ox1.v(:,end)+ox1.v(end:-1:1,end))/2;
   %p.TH_0=  (ox1.th(:,end)+ox1.th(end:-1:1,end))/2;
   [p,ot,ox]=qdyn('run',p);
