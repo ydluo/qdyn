@@ -184,8 +184,10 @@ subroutine do_bsstep(pb)
   ! retreive the solution for slip velocity
   if (pb%i_rns_law == 3) then
     pb%tau = yt(2::pb%neqs)
+    pb%dtau_dt = yt(2::pb%neqs)
   else
     pb%v = yt(2::pb%neqs)
+    pb%dtau_dt = 0d0
   endif
 
   pb%theta = yt(1::pb%neqs)
