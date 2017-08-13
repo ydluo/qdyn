@@ -53,8 +53,8 @@ if RUN_OR_READ
   p.TMAX = 1.2*year;  
   p.NTOUT=50;
 
-  p.V_0 = ox1.v(:,end);
-  p.TH_0= ox1.th(:,end);
+  p.V_0 = ox1.v(:,end)';
+  p.TH_0= ox1.th(:,end)';
   %p.V_0 =  (ox1.v(:,end)+ox1.v(end:-1:1,end))/2;
   %p.TH_0=  (ox1.th(:,end)+ox1.th(end:-1:1,end))/2;
   [p,ot,ox]=qdyn('run',p);
