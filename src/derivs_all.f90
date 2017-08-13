@@ -45,6 +45,7 @@ subroutine derivs(time,yt,dydt,pb)
 
   ! SEISMIC: initialise vectors to zero. If unitialised, each compiler
   ! may produce different results depending on its conventions
+  tau = 0d0
   dP_dt = 0d0
   dtau_dP = 0d0
   dummy1 = 0d0
