@@ -16,9 +16,10 @@ Like in the MATLAB wrapper, all parameters are capitalised.
 
 TODO:
 - Rendering of 2D mesh for 3D simulations is not tested
-- Make compatible with Python 3.x
 
 """
+
+from __future__ import print_function
 
 import numpy as np
 from subprocess import call
@@ -178,7 +179,8 @@ class qdyn:
 
 	# Receive and store settings dict given by script file
 	def settings(self, set_dict):
-		for key, val in set_dict.iteritems():
+		for key in set_dict:
+			val = set_dict[key]
 			if type(val) == dict:
 				self.set_dict[key].update(val)
 			else:
@@ -206,7 +208,7 @@ class qdyn:
 			self.set_dict["N"] = N
 
 		if N < 1:
-			print "Number of mesh elements needs to be set before rendering mesh, unless MESHDIM = 0 (spring-block)"
+			print("Number of mesh elements needs to be set before rendering mesh, unless MESHDIM = 0 (spring-block)")
 			exit()
 
 		mesh_params_general = ("IOT", "IASP")
@@ -229,7 +231,7 @@ class qdyn:
 			for param in mesh_params_CNS:
 				mesh_dict[param] = np.ones(N)*settings["SET_DICT_CNS"][param]
 		else:
-			print "FRICTION_MODEL '%s' not recognised. Supported models: RSF, CNS" % (settings["FRICTION_MODEL"])
+			print("FRICTION_MODEL '%s' not recognised. Supported models: RSF, CNS" % (settings["FRICTION_MODEL"]))
 			exit()
 
 		# Populate mesh with localisation parameters
@@ -253,7 +255,7 @@ class qdyn:
 			mesh_dict["Y"] = np.ones(N)*settings["W"]
 
 		if dim == 2:
-			print "Warning: 2D faults currently require constant dip angle"
+			print("Warning: 2D faults currently require constant dip angle")
 			theta = settings["DIP_W"]*np.pi/180.0
 			mesh_dict["DW"] = np.ones(settings["NW"])*settings["DW"]
 			mesh_dict["DIP_W"] = np.ones(N)*settings["DIP_W"]
@@ -270,16 +272,16 @@ class qdyn:
 	def write_input(self):
 
 		if self.mesh_rendered == False:
-			print "The mesh has not yet been rendered!"
+			print("The mesh has not yet been rendered!")
 			exit()
 
 		# Optionally, output can be created to an external working directory
 		# This is still experimental...
 		if self.work_dir != "":
 			if not os.path.isdir(self.work_dir):
-				print "Creating %s" % (self.work_dir)
+				print("Creating %s" % (self.work_dir))
 				call(["mkdir", self.work_dir])
-			print "Switching working directory to %s" % (self.work_dir)
+			print("Switching working directory to %s" % (self.work_dir))
 			os.chdir(self.work_dir)
 
 		settings = self.set_dict
@@ -293,7 +295,7 @@ class qdyn:
 		nnLocal = 0
 
 		# Loop over processor nodes
-		for iproc in xrange(Nprocs):
+		for iproc in range(Nprocs):
 
 			nloc = nwLocal[iproc]*settings["NX"]	# number of fault elements hosted on node
 			iloc = np.zeros(nloc, dtype=int)		# buffer for indices of those elements
@@ -310,7 +312,7 @@ class qdyn:
 				input_str += "%u %u%s NX, NW\n" % (settings["NX"], nwLocal[iproc], delimiter)
 				input_str += "%.15g %.15g %.15g%s L, W, Z_CORNER\n" % (settings["L"], settings["W"], settings["Z_CORNER"], delimiter)
 				# TODO: MPI the stuff below
-				for i in xrange(settings["NW"]):
+				for i in range(settings["NW"]):
 					input_str += "%.15g %.15g \n" % (mesh["DW"][i], mesh["DIP_W"][i])
 			else:
 				input_str += "%u%s NN\n" % (settings["N"], delimiter)
@@ -341,8 +343,8 @@ class qdyn:
 			input_str += "%.15g %.15g %.15g%s M0, DYN_th_on, DYN_th_off\n" % (settings["DYN_M"], settings["DYN_TH_ON"], settings["DYN_TH_OFF"], delimiter)
 
 			# Loop over all fault segments that are hosted on this processor node
-			for i in xrange(nwLocal[iproc]):
-				for j in xrange(settings["NX"]):
+			for i in range(nwLocal[iproc]):
+				for j in range(settings["NX"]):
 					n = i*settings["NX"] + j
 					iloc[n] = j + i*settings["NX"] + nnLocal
 
@@ -350,30 +352,30 @@ class qdyn:
 			if settings["FRICTION_MODEL"] == "CNS":
 
 				if np.sum(mesh["IPS_CONST_DIFF"] * mesh["IPS_CONST_DISS1"]) != 0:
-					print "Ambiguous rate-controlling mechanism!"
-					print "For each fault element, either IPS_CONST_DIFF or IPS_CONST_DISS1 must be zero,"
-					print "i.e. each element must be either diffusion controlled (IPS_CONST_DIFF > 0)"
-					print "or dissolution controlled (IPS_CONST_DISS > 0), but not both"
+					print("Ambiguous rate-controlling mechanism!")
+					print("For each fault element, either IPS_CONST_DIFF or IPS_CONST_DISS1 must be zero,")
+					print("i.e. each element must be either diffusion controlled (IPS_CONST_DIFF > 0)")
+					print("or dissolution controlled (IPS_CONST_DISS > 0), but not both")
 					exit()
 
-				for i in xrange(nloc):
+				for i in range(nloc):
 					input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n" % (mesh["SIGMA"][iloc[i]], mesh["TAU"][iloc[i]], mesh["PHI_INI"][iloc[i]], mesh["V_LP"][iloc[i]], mesh["A_TILDE"][iloc[i]], mesh["MU_TILDE_STAR"][iloc[i]], mesh["Y_GR_STAR"][iloc[i]], mesh["H"][iloc[i]], mesh["PHI_C"][iloc[i]], mesh["PHI0"][iloc[i]], mesh["IPS_CONST_DIFF"][iloc[i]], mesh["IPS_CONST_DISS1"][iloc[i]], mesh["IPS_CONST_DISS2"][iloc[i]], mesh["THICKNESS"][iloc[i]], mesh["IOT"][iloc[i]], mesh["IASP"][iloc[i]])
 			else: # RSF model
-				for i in xrange(nloc):
+				for i in range(nloc):
 					input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n" % (mesh["SIGMA"][iloc[i]], mesh["V_0"][iloc[i]], mesh["TH_0"][iloc[i]], mesh["A"][iloc[i]], mesh["B"][iloc[i]], mesh["DC"][iloc[i]], mesh["V1"][iloc[i]], mesh["V2"][iloc[i]], mesh["MU_SS"][iloc[i]], mesh["V_SS"][iloc[i]], mesh["IOT"][iloc[i]], mesh["IASP"][iloc[i]], mesh["CO"][iloc[i]])
 
 			# Check if localisation is requested
 			if settings["FEAT_LOCALISATION"] == 1:
-				for i in xrange(nloc):
+				for i in range(nloc):
 					input_str += "%.15g %.15g %.15g %.15g %.15g\n" % (mesh["LOCALISATION"][iloc[i]], mesh["PHI_INI_BULK"][iloc[i]], mesh["IPS_CONST_DIFF_BULK"][iloc[i]], mesh["IPS_CONST_DISS1_BULK"][iloc[i]], mesh["IPS_CONST_DISS2_BULK"][iloc[i]])
 
 			# Check if thermal pressurisation is requested
 			if settings["FEAT_TP"] == 1:
-				for i in xrange(nloc):
+				for i in range(nloc):
 					input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n" % (mesh["RHOC"][iloc[i]], mesh["BETA"][iloc[i]], mesh["ETA"][iloc[i]], mesh["HALFW"][iloc[i]], mesh["K_T"][iloc[i]], mesh["K_P"][iloc[i]], mesh["LAM"][iloc[i]], mesh["P_A"][iloc[i]], mesh["T_A"][iloc[i]])
 
 			# Add mesh grid location information
-			for i in xrange(nloc):
+			for i in range(nloc):
 				input_str += "%.15g %.15g %.15g %.15g\n" % (mesh["X"][iloc[i]], mesh["Y"][iloc[i]], mesh["Z"][iloc[i]], mesh["DIP_W"][iloc[i]])
 
 			nnLocal += settings["NX"]*nwLocal[iproc]
@@ -390,7 +392,7 @@ class qdyn:
 	def run(self):
 
 		if not self.qdyn_input_written:
-			print "Input file has not yet been written. First call write_input() to render QDyn input file"
+			print("Input file has not yet been written. First call write_input() to render QDyn input file")
 			exit()
 
 		# Executable file (including path)
@@ -406,7 +408,7 @@ class qdyn:
 				"%i" % (self.set_dict["NPROC"]),
 				qdyn_exec
 				]
-			print cmd
+			print(cmd)
 			call(cmd)
 
 		# If a suffix is requested, rename output files
@@ -419,7 +421,7 @@ class qdyn:
 
 
 	# Read QDYN output data
-	def read_output(self, mirror=False, read_ot=True, filename_ot="fort.18", filename_ox="fort.19"):
+	def read_output(self, mirror=False, read_ot=True, filename_ot="fort.18", read_ox=True, filename_ox="fort.19"):
 
 		# If a suffix is specified (optional), change file names
 		suffix = self.set_dict["SUFFIX"]
@@ -449,31 +451,35 @@ class qdyn:
 			N_iot = int(np.sum(self.mesh_dict["IOT"]))
 			self.N_iot = N_iot
 			if N_iot > 0:
-				self.iot = [self.read_other_output(i) for i in xrange(N_iot)]
+				self.iot = [self.read_other_output(i) for i in range(N_iot)]
 		else:
 			self.ot = None
 			self.N_iot = 0
 
-		# Snapshot output template depends on requested features
-		if self.set_dict["FEAT_TP"] == 1: 
-			cols_ox = ("x", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma", "P", "T")
-		else:
-			cols_ox = ("x", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma")
-		
-		# Read snapshot output
-		data_ox = read_csv(filename_ox, header=0, names=cols_ox, delim_whitespace=True, comment="#")
+		if read_ox:
 
-		# Store snapshot data in self.ox
-		self.ox = data_ox
+			# Snapshot output template depends on requested features
+			if self.set_dict["FEAT_TP"] == 1: 
+				cols_ox = ("x", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma", "P", "T")
+			else:
+				cols_ox = ("x", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma")
+			
+			# Read snapshot output
+			data_ox = read_csv(filename_ox, header=0, names=cols_ox, delim_whitespace=True, comment="#")
 
-		# Sanitise output (check for near-infinite numbers, etc.)
-		self.ox = self.ox.apply(pd.to_numeric, errors="coerce")
-		
-		# If free surface was generated manually (i.e. without FINITE = 2 or 3),
-		# take only half data set (symmetric around first element)
-		if mirror == True:
-			data_ox = data_ox.loc[(data_ox["x"] > 0)]
+			# Store snapshot data in self.ox
 			self.ox = data_ox
+
+			# Sanitise output (check for near-infinite numbers, etc.)
+			self.ox = self.ox.apply(pd.to_numeric, errors="coerce")
+			
+			# If free surface was generated manually (i.e. without FINITE = 2 or 3),
+			# take only half data set (symmetric around first element)
+			if mirror == True:
+				data_ox = data_ox.loc[(data_ox["x"] > 0)]
+				self.ox = data_ox
+		else:
+			self.ox = None
 
 		return True
 
@@ -493,7 +499,7 @@ class qdyn:
 	# the simulation parameters are permanently stored (i.e. independent of any
 	# changes made to the script file)
 	def export_dicts(self):
-		print "Exporting settings/mesh dict..."
+		print("Exporting settings/mesh dict...")
 		with gzip.GzipFile("set_dict.tar.gz", "w") as f:
 			pickle.dump(self.set_dict, f, pickle.HIGHEST_PROTOCOL)
 		with gzip.GzipFile("mesh_dict.tar.gz", "w") as f:
