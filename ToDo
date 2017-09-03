@@ -22,8 +22,8 @@ Physics:
 + heterogeneous media: import kernel from Relax, Pylith, SPECFEM3D ?
 
 Code engineering and optimization:
++ add benchmarks
 + remove redundancy in QSB/*.m
-+ python wrapper to enable runs on clusters without matlab license (Martijn)
 + inputs as fortran namelists
 + use parallel MPI I/O
     http://wgropp.cs.illinois.edu/courses/cs598-s16/lectures/lecture32.pdf
