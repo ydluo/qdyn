@@ -123,7 +123,7 @@ subroutine ot_init(pb)
   if (is_MPI_parallel()) then
 
    ! find stations
-    dmin2 = 0.01d0*pb%mesh%dx ! distance tolerance = 1% grid size
+    dmin2 = 0.01d0*minval(pb%mesh%dx) ! distance tolerance = 1% grid size
     dmin2 = dmin2*dmin2
     nsta = 1 !NOTE: currently only one station implemented
     do ista=1,nsta
@@ -316,8 +316,8 @@ subroutine ot_write(pb)
         if (pb%features%tp == 1) ot_fmt = '(e24.16,20e14.6)'
       endif
       if (pb%features%tp == 1) then
-        write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
-          pb%ot%lcnew*pb%mesh%dx, pb%ot%pot, pb%ot%pot_rate,    &
+        write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx(1),  &
+          pb%ot%lcnew*pb%mesh%dx(1), pb%ot%pot, pb%ot%pot_rate,    &
           pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
           pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
           pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
@@ -329,8 +329,8 @@ subroutine ot_write(pb)
           ! write P, T
           pb%tp%P(pb%ot%ic), pb%tp%T(pb%ot%ic), pb%tp%P(pb%ot%ivmax), pb%tp%T(pb%ot%ivmax)
       else
-        write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
-          pb%ot%lcnew*pb%mesh%dx, pb%ot%pot, pb%ot%pot_rate,    &
+        write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx(1),  &
+          pb%ot%lcnew*pb%mesh%dx(1), pb%ot%pot, pb%ot%pot_rate,    &
           pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
           pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
           pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
@@ -350,8 +350,8 @@ subroutine ot_write(pb)
       ! If thermal pressurisation: 18=P, 19=T, 20=P_max, 21=T_max
 
       if (pb%features%tp == 1) then
-        write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
-          pb%ot%lcnew*pb%mesh%dx, pb%ot%pot, pb%ot%pot_rate,    &
+        write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx(1),  &
+          pb%ot%lcnew*pb%mesh%dx(1), pb%ot%pot, pb%ot%pot_rate,    &
           pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
           pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
           pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
@@ -363,8 +363,8 @@ subroutine ot_write(pb)
           ! write P, T
           pb%tp%P(pb%ot%ic), pb%tp%T(pb%ot%ic), pb%tp%P(pb%ot%ivmax), pb%tp%T(pb%ot%ivmax)
       else
-        write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx,  &
-          pb%ot%lcnew*pb%mesh%dx, pb%ot%pot, pb%ot%pot_rate,    &
+        write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx(1),  &
+          pb%ot%lcnew*pb%mesh%dx(1), pb%ot%pot, pb%ot%pot_rate,    &
           pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
           pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
           pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
