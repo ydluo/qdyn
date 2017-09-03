@@ -272,7 +272,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
       dip_obs = m%dip(jj)
       do i=-m%nx+1,m%nx
         call compute_kernel(lambda,mu, &
-                i*m%dx, y_src, z_src, dip_src, m%dx, dw_src,   &
+                i*m%dx(1), y_src, z_src, dip_src, m%dx(1), dw_src,   &
                 0d0, y_obs, z_obs, dip_obs, &
                 IRET,tau,sigma_n,FAULT_TYPE)
         ii = i+1
@@ -336,11 +336,11 @@ subroutine init_kernel_3D_fft2d(k,lambda,mu,m)
   ! We mirror the kernel along-strike and along-dip for 2D convolution
   do i = 1,k%nxfft
     if (i <= m%nx) then
-      Im = (dble(i-1) - 0.5d0) * m%dx
-      Ip = (dble(i-1) + 0.5d0) * m%dx
+      Im = (dble(i-1) - 0.5d0) * m%dx(1)
+      Ip = (dble(i-1) + 0.5d0) * m%dx(1)
     else
-      Im = (dble(m%nx*2 - i + 1) - .5d0) * m%dx
-      Ip = (dble(m%nx*2 - i + 1) + .5d0) * m%dx
+      Im = (dble(m%nx*2 - i + 1) - .5d0) * m%dx(1)
+      Ip = (dble(m%nx*2 - i + 1) + .5d0) * m%dx(1)
     endif
     do j = 1,k%nwfft
       if (j <= m%nw) then
@@ -396,9 +396,8 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling,unstructured)
     if (sigma_coupling) allocate (k%kernel_n(m%nn,m%nn))
     do i = 1,m%nn
       do j = 1,m%nn
-      ! WARNING: TO DO: make m%dx a vector, use here m%dx(j)
         call compute_kernel(lambda,mu, &
-               m%x(j),m%y(j),m%z(j),m%dip(j),m%dx,m%dw(j),   &
+               m%x(j),m%y(j),m%z(j),m%dip(j),m%dx(j),m%dw(j),   &
                m%x(i),m%y(i),m%z(i),m%dip(i), &
                IRET,tau,sigma_n,FAULT_TYPE)
         if (IRET /= 0) then
@@ -419,7 +418,7 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling,unstructured)
       ii = 1+(i-1)*m%nx
       do j = 1,m%nn
         call compute_kernel(lambda,mu, &
-               m%x(j),m%y(j),m%z(j),m%dip(j),m%dx,m%dw((j-1)/m%nx+1),   &
+               m%x(j),m%y(j),m%z(j),m%dip(j),m%dx(1),m%dw((j-1)/m%nx+1),   &
                m%x(ii),m%y(ii),m%z(ii),m%dip(ii), &
                IRET,tau,sigma_n,FAULT_TYPE)
         if (IRET /= 0) then
