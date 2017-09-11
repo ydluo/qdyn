@@ -455,7 +455,7 @@ subroutine init_rk45(pb)
     yt(ind_localisation::pb%neqs) = pb%theta2
   endif
 
-  call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, pb%time+pb%dt_try, &
+  call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, pb%time, &
                 pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
 
   select case (pb%rk45%iflag)

@@ -31,7 +31,7 @@ p.DW(1:p.NW)=p.W/p.NW;
 p.DIP_W(1:p.NW)=30.0;
 twm=0.5;
 %ts=0.5;
-p.ACC = 1e-14;
+p.ACC = 1e-10;
 
 %------------------------------
 Lb = p.MU*p.DC/p.SIGMA/p.B;
@@ -61,7 +61,7 @@ p.TMAX=twm*year;
 %end
  p.V_0 = 1.01*p.V_SS ;
 % p.V_0 = p.V_0/mean(p.V_0)*p.V_SS;
- p.V_00=p.V_0;
+% p.V_00=p.V_0;
 %   for i=1:1:p.N
 %       p.V_0(i) = p.V_00(mod((i+1024),p.N)+1);
 %   end
