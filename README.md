@@ -5,6 +5,12 @@
 
 ## News 
 
+*Aug 2017* | Two papers with simulation results based on *QDYN*, submitted to Tectonophysics - Special Issue on "Physics of Earthquake Rupture Propagation":  
+  M. van den Ende, J. Chen, J. P. Ampuero and A. Niemeijer  
+  *A direct comparison between rate-and-state friction and microphysical models, based on earthquake cycle simulations*   
+  Y. Luo and J. P. Ampuero  
+  *Stability and effective friction of faults with heterogeneous friction properties and fluid pressure*
+
 *Apr 2017* | Earthquake cycle simulations with a micro-physics model of granular flow and ductile creep of fault gouges based on *QDYN* presented at the EGU General Assembly 2017, session on *Earthquakes: from slow to fast, from the field to the laboratory*:    
   M. van den Ende, J. Chen, J. P. Ampuero and A. Niemeijer (2017)  
   *Earthquake and slow-slip nucleation investigated with a micro-physics based seismic cycle simulator*  
