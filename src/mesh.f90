@@ -6,10 +6,9 @@ module mesh
   type mesh_type
     integer :: dim = 0  ! dim = 1, 2 ,3 ~xD
     integer :: nx, nw, nn, nnglob, nwglob ! along-strike, along-dip, total grid number
-    double precision :: dx !along-strike grid size(constant)
     double precision :: Lfault, W, Z_CORNER ! fault length, width, lower-left corner z (follow Okada's convention)
     double precision, allocatable :: DIP_W(:) !along-dip grid size and dip (adjustable), nw count
-    double precision, pointer :: x(:), y(:), z(:), dip(:), dw(:) !coordinates, dip and along-dip size of every grid (nx*nw count)
+    double precision, pointer :: x(:), y(:), z(:), dip(:), dx(:), dw(:) !coordinates, dip, along-strike and along-dip size of every grid (nx*nw count)
     double precision, pointer :: xglob(:), yglob(:), zglob(:), dipglob(:), dwglob(:) ! same on global grid (nx*nwglobal count)
   end type mesh_type
 
@@ -110,6 +109,7 @@ subroutine init_mesh_0D(m)
 
   write(6,*) 'Spring-block System'
   allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn))
+  allocate(m%dx(1))
   m%dx = m%Lfault
   m%x = 0d0
   m%y = 0d0
@@ -126,10 +126,11 @@ subroutine init_mesh_1D(m)
   integer :: i
 
   write(6,*) '1D fault, uniform grid'
+  allocate(m%dx(1))
   m%dx = m%Lfault/m%nn
   allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn))
   do i=1,m%nn
-    m%x(i) = (i-m%nn*0.5d0-0.5d0)*m%dx
+    m%x(i) = (i-m%nn*0.5d0-0.5d0)*m%dx(1)
     ! Assuming nn is even (usually a power of 2),
     ! the center of the two middle elements (i=nn/2 and nn/2+1)
     ! are located at x=-dx/2 and x=dx/2, respectively
@@ -160,6 +161,8 @@ subroutine init_mesh_2D(m)
 
   write(6,*) '2D fault, uniform grid along-strike'
 
+  allocate(m%dx(1))
+
 if (.not.is_MPI_parallel()) then
 
   m%dx = m%Lfault/m%nx
@@ -169,7 +172,7 @@ if (.not.is_MPI_parallel()) then
   cd = cos(m%DIP_W(1)/180d0*PI)
   sd = sin(m%DIP_W(1)/180d0*PI)
   do j = 1,m%nx
-    m%x(j) = 0d0+(0.5d0+dble(j-1))*m%dx
+    m%x(j) = 0d0+(0.5d0+dble(j-1))*m%dx(1)
   end do
   m%y(1:m%nx) = 0d0+0.5d0*m%dw(1)*cd
   m%z(1:m%nx) = m%Z_CORNER+0.5d0*m%dw(1)*sd
