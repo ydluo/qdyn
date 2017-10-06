@@ -25,9 +25,7 @@ import numpy as np
 from subprocess import call
 from pandas import read_csv
 import pandas as pd
-import os
-import cPickle as pickle
-import gzip
+import os, pickle, gzip
 #import antigravity	# xkcd.com/353/
 
 
