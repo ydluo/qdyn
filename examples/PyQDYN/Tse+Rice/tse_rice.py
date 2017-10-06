@@ -5,6 +5,8 @@
 # re-running the simulation (e.g. for plotting data)
 
 # Path where QDYN executable and wrapper are located
+from __future__ import print_function
+
 qdyn_path = "/home/martijn/QDyn/src"
 
 # Importing some required modules
@@ -83,7 +85,7 @@ b = -(a_min_b - a)
 # Effective normal stress
 sigma = 18e3*z + 1e7
 
-print "Number of fault elements: %i \t Element size: %.2f m" % (N, np.max(z)/N)
+print("Number of fault elements: %i \t Element size: %.2f m" % (N, np.max(z)/N))
 
 # Set-up simulation
 def setup():
