@@ -116,7 +116,7 @@ subroutine do_bsstep(pb)
     pb%t_prev = pb%time
 
     ! Call Runge-Kutta solver routine
-    call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, pb%tmax, &
+    call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, 2*pb%tmax, &
                   pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
 
     ! Set time step
@@ -246,6 +246,7 @@ subroutine update_field(pb)
   endif
 
   ! update potency and potency rate
+
   if (pb%mesh%dim == 0 .or. pb%mesh%dim == 1) then
     pb%ot%pot = sum(pb%slip * pb%mesh%dx)
     pb%ot%pot_rate = sum(pb%v * pb%mesh%dx)
