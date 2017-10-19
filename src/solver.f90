@@ -248,8 +248,8 @@ subroutine update_field(pb)
   ! update potency and potency rate
 
   if (pb%mesh%dim == 0 .or. pb%mesh%dim == 1) then
-    pb%ot%pot = sum(pb%slip * pb%mesh%dx)
-    pb%ot%pot_rate = sum(pb%v * pb%mesh%dx)
+    pb%ot%pot = sum(pb%slip*pb%mesh%dx(1))
+    pb%ot%pot_rate = sum(pb%v*pb%mesh%dx(1))
   else
     pb%ot%pot=0d0;
     pb%ot%pot_rate=0d0;
