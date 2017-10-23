@@ -26,6 +26,7 @@ from subprocess import call
 from pandas import read_csv
 import pandas as pd
 import os, pickle, gzip
+import re
 #import antigravity	# xkcd.com/353/
 
 
@@ -39,6 +40,8 @@ class qdyn:
 	qdyn_path = "/home/martijn/QDyn/src"
 	# Working directory can be kept empty, except for special cases
 	work_dir = ""
+	# Flag for using the bash environment in Windows 10
+	W10_bash = False
 
 	# Initialise qdyn wrapper	
 	def __init__(self):
@@ -396,17 +399,35 @@ class qdyn:
 		# Executable file (including path)
 		qdyn_exec = os.path.join(self.qdyn_path, "qdyn")
 
+		# If we're on a Windows 10 + Unix subsystem, we need to adjust executable path
+		if self.W10_bash is True:
+			# Replace Win-style backward slashes with Unix forward slashes
+			qdyn_exec_bash = qdyn_exec.replace("\\", "/")
+			# Find drive letter (usually C:, but not always)
+			drive = re.match(r"([A-Z](?=:))", qdyn_exec_bash).group()
+			# Replace drive with mounted partition
+			qdyn_exec_bash = qdyn_exec_bash.replace("%s:" % (drive), "/mnt/%s" % (drive.lower()))
+
 		# If serial (NPROC = 1)
 		if self.set_dict["NPROC"] == 1:
-			call([qdyn_exec])
+
+			# If we're on a Windows 10 + Unix subsystem, call bash
+			if self.W10_bash is True: cmd = ["bash", "-c", "\"%s\"" % (qdyn_exec_bash)]
+			# If we're on Unix, simply call the qdyn executable directly
+			else: cmd = [qdyn_exec]
+			# Run command
+			call(cmd)
+
 		else: # MPI parallel
-			cmd = [
-				"/usr/local/bin/mpirun",
-				"-np",
-				"%i" % (self.set_dict["NPROC"]),
-				qdyn_exec
-				]
-			print(cmd)
+
+			# If we're on a Windows 10 + Unix subsystem, call bash
+			if self.W10_bash is True:
+				cmd = ["bash", "-c", 
+				"\"/usr/local/bin/mpirun -np %i %s\"" % (self.set_dict["NPROC"], qdyn_exec_bash)]
+			# If we're on Unix, simply call the mpi executable directly
+			else:
+				cmd = ["/usr/local/bin/mpirun", "-np", "%i" % (self.set_dict["NPROC"]), qdyn_exec]
+			# Run command
 			call(cmd)
 
 		# If a suffix is requested, rename output files
