@@ -256,8 +256,8 @@ subroutine update_field(pb)
     do iw=1,pb%mesh%nw
       do ix=1,pb%mesh%nx
         i=(iw-1)*pb%mesh%nx+ix
-        pb%ot%pot = pb%ot%pot + pb%slip(i) * pb%mesh%dx(i) * pb%mesh%dw(iw)
-        pb%ot%pot_rate = pb%ot%pot_rate + pb%v(i) * pb%mesh%dx(i) * pb%mesh%dw(iw)
+        pb%ot%pot = pb%ot%pot + pb%slip(i) * pb%mesh%dx(1) * pb%mesh%dw(iw)
+        pb%ot%pot_rate = pb%ot%pot_rate + pb%v(i) * pb%mesh%dx(1) * pb%mesh%dw(iw)
       end do
     end do
   endif
