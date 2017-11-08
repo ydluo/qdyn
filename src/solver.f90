@@ -41,19 +41,18 @@ subroutine solve(pb)
 !                         or (cleanest version) iterate tiemstep adjustment and
 !                         bsstep until stress is exactly equal to yield
     call update_field(pb)
-    ! SEISMIC: shouldn't there be a specific output time step for ot_write
-    ! as well? I.e. to have something like ntout for screen_write and one
-    ! for ot_write
-    call ot_write(pb)
     call check_stop(pb)   ! here itstop will change
 !--------Output onestep to screen and ox file(snap_shot)
 ! if(mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
-    if(mod(pb%it,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
+    if(mod(pb%it,pb%ox%ntout) == 0 .or. pb%it == pb%itstop) then
 !      if (is_mpi_master()) write(6,*) 'it:',pb%it,'iktotal=',iktotal,'pb%time=',pb%time
       call screen_write(pb)
+      call ox_write(pb)
     endif
 ! if (is_mpi_master()) call ox_write(pb)
-    call ox_write(pb)
+    if (mod(pb%it, pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
+      call ot_write(pb)
+    endif
   enddo
 
   if (is_MPI_parallel()) call finalize_mpi()
@@ -217,7 +216,7 @@ subroutine update_field(pb)
 
   type(problem_type), intent(inout) :: pb
 
-  double precision, dimension(pb%mesh%nn) :: P_prev
+  double precision, dimension(pb%mesh%nn) :: P_prev, test
   integer :: i,ix,iw
 
   ! SEISMIC: obtain P at the previous time step
@@ -250,6 +249,7 @@ subroutine update_field(pb)
   if (pb%mesh%dim == 0 .or. pb%mesh%dim == 1) then
     pb%ot%pot = sum(pb%slip*pb%mesh%dx(1))
     pb%ot%pot_rate = sum(pb%v*pb%mesh%dx(1))
+
   else
     pb%ot%pot=0d0;
     pb%ot%pot_rate=0d0;
@@ -304,12 +304,12 @@ subroutine check_stop(pb)
         print *, 'Stop criterion 1 not implemented yet for MPI'
         call finalize_mpi()
       endif
-      if (pb%ot%llocnew > pb%ot%llocold) pb%itstop=pb%it+2*pb%ot%ntout
+      if (pb%ot%llocnew > pb%ot%llocold) pb%itstop=pb%it+2*pb%ox%ntout
 
    ! STOP soon after maximum slip rate
     case (2)
       if (pb%it > 2 .and. vmax_old > vmax_older .and. pb%vmaxglob < vmax_old)  &
-        pb%itstop = pb%it+10*pb%ot%ntout
+        pb%itstop = pb%it+10*pb%ox%ntout
       vmax_older = vmax_old
       vmax_old = pb%vmaxglob
 

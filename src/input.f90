@@ -36,7 +36,7 @@ subroutine read_main(pb)
   read(15,*) pb%i_sigma_cpl
   ! SEISMIC: various simulation features can be turned on (1) or off (0)
   read(15,*)  pb%features%stress_coupling, pb%features%tp, pb%features%localisation
-  read(15,*)pb%ot%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nxout_dyn,    &
+  read(15,*)pb%ot%ntout, pb%ox%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nxout_dyn, &
             pb%ox%i_ox_seq, pb%ox%i_ox_dyn
   read(15,*) pb%beta, pb%smu, pb%lam, pb%D, pb%H, pb%ot%v_th
   read(15,*)pb%Tper, pb%Aper

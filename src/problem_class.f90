@@ -20,6 +20,7 @@ module problem_class
 
  ! snapshot outputs: at every fault point, but only at few selected times
   type ox_type
+    integer :: ntout=0
     integer :: count,dyn_count2,unit,nxout,nxout_dyn,countglob,&
                 i_ox_seq, i_ox_dyn, dyn_stat, dyn_stat2, dyn_count
     double precision :: pot_pre

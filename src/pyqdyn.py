@@ -154,9 +154,10 @@ class qdyn:
 
 		# Output control parameters
 		set_dict["V_TH"] = 1e-2				# Threshold velocity for seismic event
+		set_dict["NTOUT_OT"] = 1			# Temporal interval (number of time steps) for time series output
+		set_dict["NTOUT"] = 1				# Temporal interval (number of time steps) for snapshout output
+		set_dict["NXOUT"] = 1				# Spatial interval (number of elements) for snapshot output
 		set_dict["OX_SEQ"] = 0				# Type of snapshot outputs (0: all snapshots in single file, 1: one file per snapshot)
-		set_dict["NXOUT"] = 1				# Spatial interval (number of elements) for snapshot outputs
-		set_dict["NTOUT"] = 1				# Temporal interval (number of time steps) for snapshout outputs
 		set_dict["OX_DYN"] = 0				# Output specific snapshots of dynamic events defined by thresholds on peak slip velocity DYN_TH_ON and DYN_TH_OFF
 		set_dict["NXOUT_DYN"] = 1			# Spatial interval (number of elements) for dynamic snapshot outputs
 		set_dict["DYN_TH_ON"] = 1e-3		# peak slip rate threshold defining beginning of dynamic event
@@ -335,7 +336,7 @@ class qdyn:
 			# Note that i_sigma_law is replaced by the feature stress_coupling, but is kept for compatibility
 			input_str += "%u%s i_sigma_law\n" % (settings["SIGMA_CPL"], delimiter)
 			input_str += "%u %u %u%s stress_coupling, thermal press., localisation\n" % (settings["FEAT_STRESS_COUPL"], settings["FEAT_TP"], settings["FEAT_LOCALISATION"], delimiter)
-			input_str += "%u %u %u %u %u %u%s ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n" % (settings["NTOUT"], settings["IC"]+1, settings["NXOUT"], settings["NXOUT_DYN"], settings["OX_SEQ"], settings["OX_DYN"], delimiter)
+			input_str += "%u %u %u %u %u %u %u%s ntout_ot, ntout_ox, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n" % (settings["NTOUT_OT"], settings["NTOUT"], settings["IC"]+1, settings["NXOUT"], settings["NXOUT_DYN"], settings["OX_SEQ"], settings["OX_DYN"], delimiter)
 			input_str += "%.15g %.15g %.15g %.15g %.15g %.15g%s beta, smu, lambda, v_th\n" % (settings["VS"], settings["MU"], settings["LAM"], settings["D"], settings["HD"], settings["V_TH"], delimiter)
 			input_str += "%.15g %.15g%s Tper, Aper\n" % (settings["TPER"], settings["APER"], delimiter)
 			input_str += "%.15g %.15g %.15g %.15g%s dt_try, dtmax, tmax, accuracy\n" % (settings["DTTRY"] ,settings["DTMAX"] ,settings["TMAX"] ,settings["ACC"] , delimiter)
