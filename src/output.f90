@@ -420,8 +420,8 @@ subroutine ox_write(pb)
 
 if (is_MPI_parallel()) then
 ! In progress
-! if (mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
- if (mod(pb%it,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
+! if (mod(pb%it-1,pb%ox%ntout) == 0 .or. pb%it == pb%itstop) then
+ if (mod(pb%it,pb%ox%ntout) == 0 .or. pb%it == pb%itstop) then
   if (OUT_MASTER) then
   ! Collecting global nodes
     call pb_global(pb)
@@ -535,7 +535,7 @@ if (is_MPI_parallel()) then
  endif
 
 else
- if (mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
+ if (mod(pb%it-1,pb%ox%ntout) == 0 .or. pb%it == pb%itstop) then
   if (pb%ox%i_ox_seq == 0) then
 
     ! <begin TP output conditional>

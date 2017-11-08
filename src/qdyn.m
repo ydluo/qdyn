@@ -120,6 +120,7 @@
 %			1 = one output file per snapshot (fort.1001, ...)
 %		NXOUT 	spatial interval (in number of elements) for snapshot outputs
 %		NTOUT 	temporal interval (number of time steps) for snapshot outputs
+%		NTOUT_OT 	temporal interval (number of time steps) for time series outputs
 %		OX_DYN	output specific snapshots of dynamic events defined by thresholds
 %			on peak slip velocity DYN_TH_ON and DYN_TH_OFF (see below)
 %			0 = disable
@@ -245,6 +246,7 @@ ACC = 1e-7;     % solver accuracy
 NXOUT = 8;	% space stride (cells) for snapshot outputs
 NXOUT_DYN = 1;	% space stride (cells) for dynamic snapshot outputs
 NTOUT = 100; 	% time stride (iterations) for snapshot outputs
+NTOUT_OT = 1;   % time stride (iterations) for time series outputs
 OX_SEQ = 0; 	% = 1 ; enable sequential ox output , from fort.1000 ...
 OX_DYN = 0; % = 1 ; enable sequential snapshot of dynamic events
 IOT = 0;    % = 1 to output ot of indicated nodes
@@ -491,8 +493,8 @@ function export_main_input()
     fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
     fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);
     fprintf(fid,'0 0 0     stress_coupling, thermal press., localisation\n');
-    fprintf(fid,'%u %u %u %u %u %u  ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', ...
-                NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);
+    fprintf(fid,'%u %u %u %u %u %u %u  ntout_ot, ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', ...
+                NTOUT_OT, NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);
     fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g   beta, smu, lambda, D, H, v_th\n', ...
                 VS, MU, LAM, D, H, V_TH);
     fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
@@ -572,7 +574,7 @@ THETA_LAW = sscanf(fgetl(fid), '%u');
 RNS_LAW = sscanf(fgetl(fid), '%u');
 SIGMA_CPL = sscanf(fgetl(fid), '%u');
 rdat = sscanf(fgetl(fid), '%u %u %u %u');
-rdat = sscanf(fgetl(fid), '%u %u %u %u %u %u'); NTOUT = rdat(1); IC = rdat(2); NXOUT = rdat(3); NXOUT_DYN = rdat(4); OX_SEQ  = rdat(5); OX_DYN = rdat(6);
+rdat = sscanf(fgetl(fid), '%u %u %u %u %u %u %u'); NTOUT_OT = rdat(1); NTOUT = rdat(2); IC = rdat(3); NXOUT = rdat(4); NXOUT_DYN = rdat(5); OX_SEQ  = rdat(6); OX_DYN = rdat(7);
 rdat = sscanf(fgetl(fid), '%f %f %f %f %f %f'); VS = rdat(1); MU = rdat(2); LAM = rdat(3); D = rdat(4); H = rdat(5); V_TH = rdat(6);
 rdat = sscanf(fgetl(fid), '%f %f'); TPER = rdat(1); APER = rdat(2);
 rdat = sscanf(fgetl(fid), '%f %f %f %f'); DTTRY = rdat(1); DTMAX = rdat(2); TMAX = rdat(3); ACC = rdat(4);
