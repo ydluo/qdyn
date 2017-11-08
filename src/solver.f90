@@ -47,8 +47,9 @@ subroutine solve(pb)
     if(mod(pb%it,pb%ox%ntout) == 0 .or. pb%it == pb%itstop) then
 !      if (is_mpi_master()) write(6,*) 'it:',pb%it,'iktotal=',iktotal,'pb%time=',pb%time
       call screen_write(pb)
-      call ox_write(pb)
     endif
+
+    call ox_write(pb)
 ! if (is_mpi_master()) call ox_write(pb)
     if (mod(pb%it, pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
       call ot_write(pb)
