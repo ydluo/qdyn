@@ -510,7 +510,7 @@ subroutine compute_stress_3d(tau,sigma_n,k3,v)
   double precision :: tsum
 
 ! unstructured fault mesh
-if ( size(k3%kernel,1) == size(k3%kernel,1) ) then
+if ( size(k3%kernel,1) == size(k3%kernel,2) ) then
   nn = size(k3%kernel,1)
   tau = - matmul(k3%kernel,v)
   if (allocated(k3%kernel_n)) sigma_n = - matmul(k3%kernel_n,v)
