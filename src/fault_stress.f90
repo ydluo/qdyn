@@ -506,12 +506,11 @@ subroutine compute_stress_3d(tau,sigma_n,k3,v)
   double precision, intent(inout) :: tau(:), sigma_n(:)
   double precision, intent(in) :: v(:)
 
-  integer :: nn,nnLocal,nnGlobal,nw,nxLocal,nxGlobal,k,iw,ix,j,jw,jx,idx,jj,ix0_proc
+  integer :: nnLocal,nnGlobal,nw,nxLocal,nxGlobal,k,iw,ix,j,jw,jx,idx,jj,ix0_proc
   double precision :: tsum
 
 ! unstructured fault mesh
 if ( size(k3%kernel,1) == size(k3%kernel,2) ) then
-  nn = size(k3%kernel,1)
   tau = - matmul(k3%kernel,v)
   if (allocated(k3%kernel_n)) sigma_n = - matmul(k3%kernel_n,v)
 
