@@ -40,21 +40,23 @@
 
 *QDYN* is a boundary element software to simulate earthquake cycles (tectonic fault slip) under the quasi-dynamic approximation (quasi-static elasticity with radiation damping).  
 
-*QDYN* has adaptive time stepping to simulate earthquake cycles including seismic and aseismic slip, on non-planar faults in 3D and 2D elastic media and on spring-block systems. It includes various forms of rate-and-state friction and state evolution laws, parallelization for shared and distributed memory systems, and a user-friendly matlab interface for setting inputs and visualizing outputs.
+*QDYN* has adaptive time stepping to simulate earthquake cycles including seismic and aseismic slip, on non-planar faults in 3D and 2D elastic media and on spring-block systems. It includes various forms of rate-and-state friction and state evolution laws, a microphysical model implementation, dynamic weakening (thermal pressurization), parallelization for shared and distributed memory systems, and a user-friendly matlab or python interface for setting inputs and visualizing outputs.
 
 --------------------------------
 
 ## Features
 
   * rate-and-state friction, with velocity cut-offs, aging and slip laws
+  * microphysically based frictional model (Chen-Niemeijer-Spiers model)
   * heterogeneous frictional properties
   * slow and fast, aseismic and seismic slip transients
+  * dynamic weakening (thermal pressurization)
   * non-planar faults (currently limited to variable dip, rectangular elements)
   * 3D, 2D and 1D (spring-block)
   * tectonic and transient loads
   * normal stress coupling
   * faults surrounded by damaged zones
-  * matlab wrapper and graphic output display utilities
+  * matlab and python wrappers, and graphic output display utilities
   * parallelized for shared memory systems (OpenMP)
   * parallelized for distributed memory systems (MPI)
   * fully coupled with SPECFEM3D via QSB (QDYN-SPECFEM Bridge)
