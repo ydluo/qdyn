@@ -465,8 +465,8 @@ function export_main_input()
       filename = ['qdyn' sprintf('%06i',iproc-1) '.in'];
      % MPI domain partitioning is done here:
       nw = floor(NW/NPROCS);
-      i0 = iproc*NX*nw;
-      iw0 = iproc*nw;
+      i0 = (iproc-1)*NX*nw;
+      iw0 = (iproc-1)*nw;
       % If NW/NPROCS is not integer, leave the rest to the last processor
       if iproc==NPROCS, nw = nw + mod(NW,NPROCS); end
       iloc = i0 + [1:NX*nw];
