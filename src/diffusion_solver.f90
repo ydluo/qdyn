@@ -12,6 +12,8 @@
 ! This module is compatible with both the rate-and-state friction and the
 ! Chen-Niemeijer-Spiers frameworks
 !
+! TODO: add a coefficient that regulates the dilatancy hardening component
+!
 ! References:
 !
 ! [N&L]
