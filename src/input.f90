@@ -70,7 +70,7 @@ subroutine read_main(pb)
   !                     for dissolution controlled pressure solution creep
   !   IPS_const_diss2:  pressure solution (temperature-dependent) constant
   !                     for dissolution controlled pressure solution creep
-  !   w:                total thickness of the fault zone
+  !   L:                total thickness of the fault zone
   !
   ! Note that these parameters are material (gouge) properties, and are
   ! generally not spatically uniform, and hence are allocatable

@@ -20,7 +20,7 @@
 !
 !   [NS]  Niemeijer & Spiers (2007), J. Geophys. Res., doi:10.1029/2007JB00500
 !   [CS]  Chen & Spiers (2016), JGR: Solid Earth, doi:10.1002/2016JB013470
-!   [VdE] Van den Ende et al. (subm.), Tectonophysics
+!   [VdE] van den Ende et al. (2018), Tecto, doi:10.1016/j.tecto.2017.11.040
 !
 ! In the view of rate-and-state friction, we take the porosity as the
 ! (microstructural) state, and the constitutive relations are solved for the
@@ -281,7 +281,7 @@ function calc_e_ps(sigma,phi,truncate,bulk,pb) result(e_ps_dot)
 
   ! The porosity cut-off should only apply to volumetric strain rates (i.e.
   ! compaction, not for shear). Phi0 can be taken as the percolation threshold
-  ! See [VdE], Eqn. 6 (NOTE: update this when paper is accepted)
+  ! See [VdE], Eqn. 6
   if (truncate .eqv. .true.) then
     e_ps_dot = e_ps_dot * (phi - pb%cns_params%phi0)/pb%cns_params%phi_c
   endif
