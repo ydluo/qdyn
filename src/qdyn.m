@@ -234,7 +234,7 @@ N=1024/2; 	% number of grid cells
 NX=100/2;
 NW=10;
 DW=1e3;
-DIP_W=30.0;
+DIP_W=90.0;
 
 Z_CORNER=-50e3;
 IC=1;         % index of nodes for output ot
@@ -376,9 +376,9 @@ case {'run', 'write'},
 
  % output
   if NPROCS>1 % MPI parallel
-    [ot,ox]= read_qdyn_out_mpi(NAME);
+    [ot,ox]= read_qdyn_out_mpi(NAME,OX_SEQ);
   else
-    [ot,ox]= read_qdyn_out(NAME);
+    [ot,ox]= read_qdyn_out(NAME,OX_SEQ);
   end
 
 otherwise,
@@ -605,7 +605,7 @@ end
 end % of function read_qdyn_in
 
 % read outputs from qdyn.f
-function [ot,ox] = read_qdyn_out_mpi(name)
+function [ot,ox] = read_qdyn_out_mpi(name,OX_SEQv)
 
 if exist('name','var') && ~isempty(name)
   namet = [name '.ot'];
@@ -620,6 +620,7 @@ end
     textread(namet,'','headerlines',4);
 
   % snapshots
+ if (OX_SEQv==0) 
   fid=fopen(namex);
   NSX=fscanf(fid,'# nx=%u');
   fclose(fid);
@@ -638,11 +639,14 @@ end
   ox.dtaud = cosa(:,:,8);
   ox.d = cosa(:,:,9);
   ox.sigma = cosa(:,:,10);
+ else 
+     ox=[];
+ end;
 end % of function read_qdyn_out_mpi
 
 %-----------
 % read outputs from qdyn.f
-function [ot,ox] = read_qdyn_out(name)
+function [ot,ox] = read_qdyn_out(name,OX_SEQv)
     if exist('name','var') && ~isempty(name)
         namet = [name '.ot'];
         namex = [name '.ox'];
@@ -686,6 +690,9 @@ function [ot,ox] = read_qdyn_out(name)
         end
 
         %snapshots
+      %PG, Temporal. 
+      ox=[];
+      if (OX_SEQv==0) 
         [~, file_sys] = system(['file ',namex]);
         isasc = textscan(file_sys, '%s', 2);
         if strcmp('ASCII', isasc{1}(2))
@@ -727,6 +734,7 @@ function [ot,ox] = read_qdyn_out(name)
                 end
             end
         end
+      end	
     else
         [ot,ox] = read_qdyn_out_Octave(namet,namex)
     end

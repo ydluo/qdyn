@@ -123,6 +123,8 @@ subroutine ot_init(pb)
   if (is_MPI_parallel()) then
 
    ! find stations
+   !PG, temporal fix, only works for one station.
+    pb%ot%ic=0 !Setting all to zero 
     dmin2 = 0.01d0*minval(pb%mesh%dx) ! distance tolerance = 1% grid size
     dmin2 = dmin2*dmin2
     nsta = 1 !NOTE: currently only one station implemented
@@ -267,7 +269,7 @@ subroutine ot_write(pb)
 
   use problem_class
   use constants, only : OCTAVE_OUTPUT, BIN_OUTPUT
-  use my_mpi, only : is_MPI_parallel
+  use my_mpi, only : is_MPI_parallel, my_mpi_tag
 
   type (problem_type), intent(inout) :: pb
   integer :: i,ios

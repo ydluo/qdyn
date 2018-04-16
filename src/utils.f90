@@ -8,6 +8,30 @@ contains
 !
 !=====================================================================
 !
+subroutine save_array(x,y,z,V,iproc,typ,nw,nx)
+
+  double precision, dimension(nw*nx), intent(in) :: V
+  double precision, dimension(nw*nx), intent(in) :: x,y,z
+  character(len=256) :: fileproc
+  character(len=16)   :: typ !PG, 'loc' or 'glo'
+
+  integer :: i,j,iproc,nx,nw
+
+  write(fileproc,'(a,i6.6,a)') 'snap_v_',iproc,typ
+ 
+  open(101,file=fileproc(1:len_trim(fileproc)),status='replace',form='formatted',action='write')
+  
+  do i=1,nw*nx
+      write(101,'(4(D15.7))') x(i),y(i),z(i),V(i)  
+  enddo
+
+  close(101)
+
+end subroutine save_array
+
+!------------------------------------------------
+
+
 subroutine save_vectorV(x,y,z,V,iproc,typ,nw,nx)
 
   double precision, dimension(nw,nx), intent(in) :: V

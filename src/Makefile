@@ -46,6 +46,9 @@ OPT = -O3 -Wall
 #PREPROC = -fpp
 # gfortran
 PREPROC = -cpp
+#PG, KAUST server
+CFLAGS = -B/usr/lib/x86_64-linux-gnu
+#CFLAGS = '' 
 
 #== END USER SETTINGS =============================================
 
@@ -57,7 +60,8 @@ OBJS := $(patsubst %.f90,%.o,$(wildcard *.f90))
 all: $(EXEC)
 
 $(EXEC): $(OBJS)
-	$(F90) $(OPT) -o $@ $(OBJS) $(LIBS)
+	$(F90) $(OPT) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+#	$(F90) $(OPT) -o $@ $(OBJS) $(LIBS)
 
 clean:
 	rm -f $(EXEC) $(OBJS) *.M *.mod

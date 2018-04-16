@@ -35,15 +35,15 @@ subroutine read_main(pb)
   read(15,*) pb%i_rns_law
   read(15,*) pb%i_sigma_cpl
   ! SEISMIC: various simulation features can be turned on (1) or off (0)
-  read(15,*)  pb%features%stress_coupling, pb%features%tp, pb%features%localisation
-  read(15,*)pb%ot%ntout, pb%ox%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nxout_dyn, &
-            pb%ox%i_ox_seq, pb%ox%i_ox_dyn
+  read(15,*) pb%features%stress_coupling, pb%features%tp, pb%features%localisation
+  read(15,*) pb%ot%ntout, pb%ox%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nxout_dyn, &
+             pb%ox%i_ox_seq, pb%ox%i_ox_dyn
   read(15,*) pb%beta, pb%smu, pb%lam, pb%D, pb%H, pb%ot%v_th
-  read(15,*)pb%Tper, pb%Aper
-  read(15,*)pb%dt_try, pb%dt_max,pb%tmax, pb%acc
-  read(15,*)pb%NSTOP
-  read(15,*)pb%DYN_FLAG,pb%DYN_SKIP
-  read(15,*)pb%DYN_M,pb%DYN_th_on,pb%DYN_th_off
+  read(15,*) pb%Tper, pb%Aper
+  read(15,*) pb%dt_try, pb%dt_max,pb%tmax, pb%acc
+  read(15,*) pb%NSTOP
+  read(15,*) pb%DYN_FLAG,pb%DYN_SKIP
+  read(15,*) pb%DYN_M,pb%DYN_th_on,pb%DYN_th_off
   write(6,*) '  Flags input complete'
 
   n = mesh_get_size(pb%mesh) ! number of nodes in this processor

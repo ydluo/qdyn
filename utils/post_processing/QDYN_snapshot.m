@@ -1,7 +1,7 @@
 function d = QDYN_snapshot(isnap)
 
 qdfile=sprintf('fort.%u',isnap);
-dd = importdata(qdfile, ' ', 2);
+dd = importdata(qdfile,' ', 2);
 
 
 d.X=dd.data(:,1);

@@ -17,7 +17,6 @@ p.V_SS=1e-9;
 p.A=0.003;
 p.B=0.01;
 p.SIGMA_CPL=1;
-
 p.V2=0.01;
 
 p.L=80e3;
@@ -28,7 +27,7 @@ p.Z_CORNER=-100e3;
 p.N=p.NX*p.NW;
 p.DW(1:p.NW)=p.W/p.NW;
 p.DIP_W(1:p.NW)=30.0;
-twm=0.5;
+twm=3.0;
 %ts=0.5;
 p.ACC = 1e-14;
 
@@ -37,10 +36,10 @@ Lb = p.MU*p.DC/p.SIGMA/p.B;
 Lnuc = 1.3774*Lb;
 %------------------------------
 
-filename = ['test_2d_fft_ab',num2str(p.A/p.B),'L',num2str(p.L/1000),'nx',num2str(p.NX),'W',num2str(p.W/1000),'nw',num2str(p.NW),'z',num2str(p.Z_CORNER/1000),'.mat']
+filename = ['test_2d_fft_ab',num2str(p.A/p.B),'L',num2str(p.L/1000),'nx',num2str(p.NX),'W',num2str(p.W/1000),'nw',num2str(p.NW),'z',num2str(p.Z_CORNER/1000),'.mat'];
 p.IC=ceil(p.N/2);
 dx=p.L/p.NX;
-Lb_over_dx = Lb/dx
+Lb_over_dx = Lb/dx;
 
 
 p = qdyn('set',p);
@@ -52,41 +51,17 @@ disp(['  Linf=',num2str(Linf),'  L/Linf=',num2str(p.L/Linf),'  W/Linf=',num2str(
 
 p.TMAX=twm*year;
 
-%for i=1:1:floor(p.N*0.05)
-%    p.V_0(i) = 1.01 *p.V_SS ;
-%end
-%for i=floor(p.N*0.05)+1:1:p.N
-%    p.V_0(i)=p.V_SS;
-%end
- p.V_0 = 1.01*p.V_SS ;
-% p.V_0 = p.V_0/mean(p.V_0)*p.V_SS;
- p.V_00=p.V_0;
-%   for i=1:1:p.N
-%       p.V_0(i) = p.V_00(mod((i+1024),p.N)+1);
-%   end
-% p.V_0(1:p.N) = p.V_SS*1e-80;
-% p.V_0(2) = 1;
-
-
-p.NTOUT=10;
+p.V_0 = 1.01*p.V_SS ;
+p.NTOUT=100;
 p.NXOUT=1;
 p.NSTOP=0;
+p.OX_DYN = 1;
+p.OX_SEQ = 0;
 % For MPI, parallel run
-p.NPROCS = 4;
-[p,ot1,ox1]  = qdyn('run',p);
-semilogy(ot1.t/year,ot1.vc) % slip velocity plot for the p.IC point!.
-xlabel('Time (years)');
-ylabel('Vmax');
-% 
-%   p.TMAX = ts*year;  
-%   p.NTOUT=10;
-% 
-%   p.V_0 = ox0.v(:,end);
-%   p.TH_0= ox0.th(:,end);
-%   %p.V_0 =  (ox1.v(:,end)+ox1.v(end:-1:1,end))/2;
-%   %p.TH_0=  (ox1.th(:,end)+ox1.th(end:-1:1,end))/2;
-%   [p,ot1,ox1]=qdyn('run',p);
+p.NPROCS = 32;
+[p,otmpi,oxmpi]  = qdyn('run',p);
+save 3d_fftmpi.mat 
 
-save(filename)  
+
 
 

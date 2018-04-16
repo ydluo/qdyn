@@ -18,7 +18,7 @@ module constants
 !  -1 : strike-slip (left-lateral)
 !   2 : thrust
 !  -2 : Normal
-  integer, parameter :: FAULT_TYPE = 2
+  integer, parameter :: FAULT_TYPE = 1
 !JPA this should be an input in qdyn.in, not a parameter here
 
 ! set usage of FFT in 3D
@@ -37,7 +37,7 @@ module constants
 
 ! Which ODE solver to use: Bulirsch-Stoer, or Runge-Kutta-Fehlberg. Set the
 ! below logical to .true. to use Runge-Kutta, else Bulirsch-Stoer is used.
-   logical, parameter :: USE_RK_SOLVER = .true.
+   logical, parameter :: USE_RK_SOLVER = .false.
 
 !--- END of User Settings ---
 
