@@ -228,9 +228,9 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   use mesh, only : mesh_type
   use okada, only : compute_kernel
   use fftsg, only : my_rdft
-  use utils, only : save_vector3
+  use utils, only : save_vectorV, save_array
   use constants, only : FAULT_TYPE
-  use my_mpi, only : is_mpi_parallel, is_mpi_master, gather_alli, my_mpi_NPROCS
+  use my_mpi, only : is_mpi_parallel, is_mpi_master, gather_alli, my_mpi_NPROCS, my_mpi_rank
 
   type(kernel_3d_fft), intent(inout) :: k
   double precision, intent(in) :: lambda,mu
@@ -300,6 +300,20 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
       nnoffset_perproc(iproc)=sum(nnLocalfft_perproc(0:iproc))-nnLocalfft_perproc(iproc)
     enddo
   endif
+
+!PG, Testing MPI version, only for debugging purpose.
+  write(6,*) 'Here, iproc: ',my_mpi_rank()
+  write(6,*) 'is_mpi_paralle()',is_mpi_parallel()
+   if (is_mpi_parallel()) then 
+     write(6,*) 'Writting x,y,z fault coordinates, iproc:',my_mpi_rank()
+     write(6,*) 'iproc, nwLocal,nwGlobal ,nx: :',my_mpi_rank(),k%nwLocal,k%nwGlobal,k%nx
+     call save_array(m%xglob,m%yglob,m%zglob,m%zglob,my_mpi_rank(),'glo',k%nwGlobal,k%nx)
+   else
+     write(6,*) 'Writting x,y,z fault coordinates, iproc:',my_mpi_rank()
+     write(6,*) 'iproc, nwLocal,nwGlobal ,nx: :',my_mpi_rank(),k%nwLocal,k%nwGlobal,k%nx
+     call save_array(m%xglob,m%yglob,m%zglob,m%zglob,my_mpi_rank(),'glo',k%nwGlobal,k%nx)
+  endif
+
 
 end subroutine init_kernel_3D_fft
 

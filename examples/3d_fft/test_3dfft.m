@@ -29,9 +29,8 @@ p.Z_CORNER=-100e3;
 p.N=p.NX*p.NW;
 p.DW(1:p.NW)=p.W/p.NW;
 p.DIP_W(1:p.NW)=30.0;
-twm=0.5;
-%ts=0.5;
-p.ACC = 1e-10;
+twm=3.0;
+p.ACC = 1e-14;
 
 %------------------------------
 Lb = p.MU*p.DC/p.SIGMA/p.B;
@@ -53,41 +52,14 @@ disp(['  Linf=',num2str(Linf),'  L/Linf=',num2str(p.L/Linf),'  W/Linf=',num2str(
 
 p.TMAX=twm*year;
 
-%for i=1:1:floor(p.N*0.05)
-%    p.V_0(i) = 1.01 *p.V_SS ;
-%end
-%for i=floor(p.N*0.05)+1:1:p.N
-%    p.V_0(i)=p.V_SS;
-%end
- p.V_0 = 1.01*p.V_SS ;
-% p.V_0 = p.V_0/mean(p.V_0)*p.V_SS;
-% p.V_00=p.V_0;
-%   for i=1:1:p.N
-%       p.V_0(i) = p.V_00(mod((i+1024),p.N)+1);
-%   end
-% p.V_0(1:p.N) = p.V_SS*1e-80;
-% p.V_0(2) = 1;
+p.V_0 = 1.01*p.V_SS ;
 
-
-p.NTOUT=10;
+p.NTOUT=100;
 p.NXOUT=1;
 p.NSTOP=0;
+p.OX_DYN = 1;
+p.OX_SEQ = 1;
 
-[p,ot1,ox1]  = qdyn('run',p);
-%semilogy(ot1.t/year,ot1.v)
-semilogy(ot1.t/year,ot1.vc)
-xlabel('Time (years)');
-ylabel('Vmax');
-% 
-%   p.TMAX = ts*year;  
-%   p.NTOUT=10;
-% 
-%   p.V_0 = ox0.v(:,end);
-%   p.TH_0= ox0.th(:,end);
-%   %p.V_0 =  (ox1.v(:,end)+ox1.v(end:-1:1,end))/2;
-%   %p.TH_0=  (ox1.th(:,end)+ox1.th(end:-1:1,end))/2;
-%   [p,ot1,ox1]=qdyn('run',p);
-
-save(filename)  
-
+[p,ots,oxs]  = qdyn('run',p);
+save 3d_fftserial
 

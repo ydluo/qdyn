@@ -150,7 +150,7 @@ end subroutine init_mesh_1D
 subroutine init_mesh_2D(m)
 
   use constants, only : PI
-  use my_mpi, only: is_MPI_parallel, my_mpi_NPROCS, gather_alli, gather_allvdouble
+  use my_mpi, only: is_MPI_parallel, my_mpi_NPROCS, gather_alli, gather_allvdouble, my_mpi_tag
 
   type(mesh_type), intent(inout) :: m
 
@@ -197,15 +197,17 @@ if (.not.is_MPI_parallel()) then
     m%zglob => m%z
     m%dipglob => m%dip
     m%dwglob => m%dw
+    m%nwglob = m%nw
 
 else
 ! If MPI parallel, the mesh for each processor has been already read
 ! from qdynxxx.in and initialized in input.f90
 ! Here we gather the whole fault to compute the kernel
-  m%dx = m%Lfault/m%nx
+    m%dx = m%Lfault/m%nx
     NPROCS = my_mpi_NPROCS()
-
+!PG, for debugging:
     nwLocal = m%nw
+    write(6,*) 'iproc,nwLocal:',my_mpi_tag(),nwLocal
     allocate(nwLocal_perproc(0:NPROCS-1))
     call gather_alli(nwLocal,nwLocal_perproc)
     allocate(nwoffset_glob_perproc(0:NPROCS-1))
@@ -213,6 +215,8 @@ else
       nwoffset_glob_perproc(iproc)=sum(nwLocal_perproc(0:iproc))-nwLocal_perproc(iproc)
     enddo
     nwGlobal=sum(nwLocal_perproc)
+    m%nwglob = nwGlobal
+    write(6,*) 'iproc,nwGlobal:',my_mpi_tag(),nwGlobal
 
     nnLocal= m%nx*nwLocal
     allocate(nnLocal_perproc(0:NPROCS-1))
