@@ -130,7 +130,7 @@ subroutine derivs(time,yt,dydt,pb)
 
   ! compute shear stress rate from elastic interactions, for 0D, 1D & 2D
   ! SEISMIC: note the use of v instead of yt(2::pb%neqs)
-  call compute_stress(dtau_dt,dsigma_dt,pb%kernel,v-pb%v_star)
+  call compute_stress(dtau_dt, dsigma_dt, pb%kernel, v - pb%v_pl)
 
   !YD we may want to modify this part later to be able to
   !impose more complicated loading/pertubation
