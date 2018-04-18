@@ -81,6 +81,7 @@
 %		MU_SS	reference steady-state friction coefficient
 %		V_SS	reference steady-state slip velocity (m/s)
 %		TH_SS	reference steady-state state (default: TH_SS=DC/V_SS)
+%               V_PL    slip rate loading (m/s)
 %		RNS_LAW	type of rate-and-state friction law:
 %			0 = original
 %			1 = with cut-off velocities
@@ -258,6 +259,7 @@ DC = 4e-4;
 MU_SS = 0.6;
 V_SS = 1e-9;
 TH_SS = DC/V_SS;
+V_PL = V_SS;
 THETA_LAW = 1;
 RNS_LAW = 0;
 SIGMA_CPL = 0;
@@ -335,6 +337,7 @@ case {'run', 'write'},
    SIGMA(1:N) = SIGMA;
    MU_SS(1:N) = MU_SS;
    V_SS(1:N) = V_SS;
+   V_PL(1:N) = V_PL;
    IOT(1:N) = IOT;
    IASP(1:N) = IASP;
    CO(1:N) = CO;
@@ -437,8 +440,8 @@ function export_branch_input()
   fprintf(fid,'%d\n',N);
   fprintf(fid,'%15.6f\n',DIP_W(1));
   fprintf(fid,'%20.6f %20.6f\n',LAM,MU);
-  fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
-    [X;Y;Z;SIGMA;V_0;TH_0;A;B;DC;V1;V2;MU_SS;V_SS;CO]);
+  fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n',...
+    [X;Y;Z;SIGMA;V_0;TH_0;A;B;DC;V1;V2;MU_SS;V_SS;CO;V_PL]);
   fclose(fid);
 
 end
@@ -503,9 +506,9 @@ function export_main_input()
     fprintf(fid,'%u %u  DYN_FLAG, DYN_SKIP\n',DYN_FLAG,DYN_SKIP);
     fprintf(fid,'%.15g %.15g %.15g    M0, DYN_th_on, DYN_th_off\n', DYN_M,DYN_TH_ON,DYN_TH_OFF);
 
-    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %u %u %.15g\n',...
+    fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %u %u %.15g %.15g\n',...
       [SIGMA(iloc);V_0(iloc);TH_0(iloc);A(iloc);B(iloc);DC(iloc);V1(iloc);V2(iloc); ...
-       MU_SS(iloc);V_SS(iloc);IOT(iloc);IASP(iloc);CO(iloc)]);
+       MU_SS(iloc);V_SS(iloc);IOT(iloc);IASP(iloc);CO(iloc);V_PL(iloc)]);
 
     if NPROCS>1
       fprintf(fid,'%.15g %.15g %.15g %.15g\n', ...
@@ -595,6 +598,7 @@ V_SS = rdat{10};
 IOT = rdat{11};
 IASP = rdat{12};
 CO = rdat{13};
+V_PL = rdat{14};
 fclose(fid);
 
 % wrap UPPER CASE variables in parameter structure fields with the same name

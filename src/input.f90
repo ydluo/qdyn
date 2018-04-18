@@ -49,7 +49,7 @@ subroutine read_main(pb)
   n = mesh_get_size(pb%mesh) ! number of nodes in this processor
   allocate ( pb%tau(n), pb%sigma(n), pb%v(n), pb%theta(n),  &
              pb%v_star(n), pb%ot%iot(n), pb%ot%iasp(n), &
-             pb%dc(n), pb%coh(n))
+             pb%dc(n), pb%coh(n), pb%v_pl(n) )
 
   !JPA if MPI, read only the nodes of this processor
   ! <SEISMIC>
@@ -104,7 +104,7 @@ subroutine read_main(pb)
       read(15,*)pb%sigma(i), pb%v(i), pb%theta(i),  &
                 pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
                 pb%v2(i), pb%mu_star(i), pb%v_star(i), &
-                pb%ot%iot(i), pb%ot%iasp(i), pb%coh(i)
+                pb%ot%iot(i), pb%ot%iasp(i), pb%coh(i), pb%v_pl(i)
     end do
   endif
 
