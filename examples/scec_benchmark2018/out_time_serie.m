@@ -1,5 +1,5 @@
 label = {'000', '025', '050', '075', '100', '125', '150', '175', '200', '250', '300', '350'};
-for h = 1:9
+for h = 1:length(label)
     fid = fopen([ 'fltst_dp', label{h} ], 'w');
     fprintf(fid, '# problem=SEAS Benchmark No.1\n');
     fprintf(fid, '# author=Y.Luo, B.Idini, J.-P.Ampuero\n');
@@ -10,7 +10,7 @@ for h = 1:9
     fprintf(fid, ['# minimum_time_step=\n', num2str(min(diff(ot.t))] );
     fprintf(fid, ['# maximum_time_step=\n', num2str(max(diff(ot.t))] );
     fprintf(fid, ['# num_time_steps=\n', num2str(length(ot.t))] );
-    fprintf(fid, ['# location= on fault, ', num2str(depth(t)), 'km depth\n']);
+    fprintf(fid, ['# location= on fault, ', num2str(depth(h)), 'km depth\n']);
     fprintf(fid, 'Column #1 = Time (s)\n');
     fprintf(fid, 'Column #2 = Slip (m)\n');
     fprintf(fid, 'Column #3 = Slip rate (log10 m/s)\n');
