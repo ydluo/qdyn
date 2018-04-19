@@ -12,7 +12,7 @@ p = qdyn('set');
 
 % MODELING PARAMETERS
 p.MESHDIM = 1;
-p.FINITE = 1;
+p.FINITE = 3;
 p.ACC = 1e-10;
 %p.MODE = 1;
 p.RNS_LAW = 2;
@@ -26,7 +26,7 @@ a0 = 0.01;
 amax = 0.025;
 p.B = 0.015;
 p.DC = 8e-3;
-V_PL = 1e-9; 
+V_PL = 1e-9; % this will need a modification in Qdyn's source. (V_PL != V_SS)
 p.V_0 = 1e-9;
 p.V_SS = 1e-6;
 p.V_PL = 1e-9;
@@ -38,9 +38,9 @@ dz = 25;
 p.TMAX = 3000*year;
 
 % REQUIRED COMPUTATIONS
-p.N = 2^nextpow2(p.L/dz)*2;
+p.N = 2^nextpow2(p.L/dz);
 p = qdyn('set', p);
-p.N = p.N/2;
+%p.N = p.N/2;
 n1 = H/p.L*p.N;
 n2 = round( (H + h)/p.L*p.N );
 z = (n1:(n2-1))/p.N*p.L;
@@ -54,18 +54,18 @@ tau0 = p.SIGMA*amax*asinh(p.V_0/2/p.V_SS*exp( (p.MU_SS + p.B*log(p.V_SS/p.V_0))/
 p.TH_0 = p.DC/p.V_SS*exp(p.A/p.B.*log( 2*p.V_SS/p.V_0*sinh( (tau0 - nu*p.V_0)./(p.A*p.SIGMA) ) ) - p.MU_SS/p.B);
 
 % Mirror image
-p.A = cat(2, p.A(end:-1:1), p.A);
-p.TH_0 = cat(2, p.TH_0(end:-1:1), p.TH_0);
-p.N = p.N*2;
-p.L = p.L*2;
+%p.A = cat(2, p.A(end:-1:1), p.A);
+%p.TH_0 = cat(2, p.TH_0(end:-1:1), p.TH_0);
+%p.N = p.N*2;
+%p.L = p.L*2;
 
 % OUTPUT PARAMETERS
-p.NXOUT = 24;
+p.NXOUT = 16;
 p.IOT = zeros(1, p.N);
 depth = [0, 2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 25, 30, 35];
 index = [];
 for h = 1:length(depth)  
-    [~, index(h)] = min(abs(p.X - depth(h)*1000));
+    [~, index(h)] = min(abs(p.X+20000 - depth(h)*1000));
 end
 p.IOT(index) = 1;
 
