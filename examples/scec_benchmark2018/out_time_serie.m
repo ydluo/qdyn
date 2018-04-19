@@ -21,16 +21,14 @@ for h = 1:length(label)
     fprintf(fid, 't slip slip_rate shear_stress state\n');
  
     fid0 = fopen(['fort.10', num2str(h,'%03d')], 'r');
-    fgetl(fid0);
-    fgetl(fid0);
-    rdat = textscan(fid0, '%f %f %f %f %f %f');
+    rdat = textscan(fid0, '%f %f %f %f %f %f', 'headerlines', 2);
     fclose(fid0);
     t = rdat{1};
     V = log10(rdat{2});
     s = log10(rdat{3});
     tau = rdat{4}/1e6;
     D = rdat{5};
-    fprintf(fid, '%.15e %.15e %.15e %.15e %.15e %.15e\n', [t(1:NT:end); D(1:NT:end); V(1:NT:end); tau(1:NT:end); s(1:NT:end)]); 
-    figure; plot(t(1:NT:end), tau(1:NT:end))
+    fprintf(fid, '%.15e %.15e %.15e %.15e %.15e \n', [t(1:NT:end)'; D(1:NT:end)'; V(1:NT:end)'; tau(1:NT:end)'; s(1:NT:end)']); 
+    %figure; plot(t(1:NT:end), tau(1:NT:end))
     fclose(fid);
 end
