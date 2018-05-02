@@ -113,6 +113,10 @@ Benjamin Idini (University of Chile)
 -------------------------
 
 ## Suggested References
+Luo, Y., & Ampuero, J. P. (2018). 
+Stability of faults with heterogeneous friction properties and effective normal stress. 
+Tectonophysics, 733, 257-272
+
 Luo, Y., Ampuero, J. P., Galvez,  P., van den Ende, M. & Idini, B. (2017). 
 *QDYN: a Quasi-DYNamic earthquake simulator (v1.1) [Data set]*. Zenodo. doi:10.5281/zenodo.322459  
  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.322459.svg)](https://doi.org/10.5281/zenodo.322459)
