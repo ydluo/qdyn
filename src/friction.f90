@@ -142,7 +142,7 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
     dmu_dv = pb%a * pb%v1 / v / ( pb%v1 + v )
 
   case(2) ! 2018 SCEC Benchmark
-    z = exp(pb%mu_star + pb%b * log(theta/pb%theta_star) / pb%a) / (2*pb%v_star)
+    z = exp((pb%mu_star + pb%b * log(theta/pb%theta_star)) / pb%a) / (2*pb%v_star)
     dmu_dv = pb%a / sqrt(1.0/z**2 + v**2)
     dmu_dtheta = dmu_dv * (pb%b*v) / (pb%a*theta)
 
