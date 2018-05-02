@@ -5,11 +5,11 @@
 
 ## News 
 
-*Aug 2017* | Two papers with simulation results based on *QDYN*, submitted to Tectonophysics - Special Issue on "Physics of Earthquake Rupture Propagation":  
-  M. van den Ende, J. Chen, J. P. Ampuero and A. Niemeijer  
-  *A direct comparison between rate-and-state friction and microphysical models, based on earthquake cycle simulations*   
+*May 2018* | Two papers with simulation results based on *QDYN*, published in Tectonophysics - Special Issue on "[Physics of Earthquake Rupture Propagation](https://www.sciencedirect.com/journal/tectonophysics/vol/733/suppl/C)":  
+  M. van den Ende, J. Chen, J. P. Ampuero and A. Niemeijer
+  *A comparison between rate-and-state friction and microphysical models, based on numerical simulations of fault slip*   (doi:[10.1016/j.tecto.2017.11.040](https://doi.org/10.1016/j.tecto.2017.11.040))  
   Y. Luo and J. P. Ampuero  
-  *Stability and effective friction of faults with heterogeneous friction properties and fluid pressure*
+  *Stability and effective friction of faults with heterogeneous friction properties and fluid pressure* (doi:[10.1016/j.tecto.2017.11.006](https://doi.org/10.1016/j.tecto.2017.11.006))
 
 *Apr 2017* | Earthquake cycle simulations with a micro-physics model of granular flow and ductile creep of fault gouges based on *QDYN* presented at the EGU General Assembly 2017, session on *Earthquakes: from slow to fast, from the field to the laboratory*:    
   M. van den Ende, J. Chen, J. P. Ampuero and A. Niemeijer (2017)  
@@ -115,9 +115,9 @@ Benjamin Idini (University of Chile)
 ## Suggested References
 Luo, Y., & Ampuero, J. P. (2018). 
 Stability of faults with heterogeneous friction properties and effective normal stress. 
-Tectonophysics, 733, 257-272
+Tectonophysics, 733, 257-272 pp. (doi:[10.1016/j.tecto.2017.11.006](https://doi.org/10.1016/j.tecto.2017.11.006))
 
-Luo, Y., Ampuero, J. P., Galvez,  P., van den Ende, M. & Idini, B. (2017). 
+Luo, Y., Ampuero, J. P., Galvez,  P., van den Ende, M., & Idini, B. (2017). 
 *QDYN: a Quasi-DYNamic earthquake simulator (v1.1) [Data set]*. Zenodo. doi:10.5281/zenodo.322459  
  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.322459.svg)](https://doi.org/10.5281/zenodo.322459)
 
@@ -126,8 +126,14 @@ Topical Volume on *"Best Practices in Physics-based Fault Rupture Models for Sei
   [doi:10.1007/s00024-017-1467-4](https://link.springer.com/article/10.1007/s00024-017-1467-4)  
   [PDF](https://rdcu.be/oOL9)
 
-Luo, Y., Ampuero, J. P. (2012), Simulation of Complex Tremor Migration Patterns, AGU Fall Meeting 2012 Abstract S44B-02
+Luo, Y., & Ampuero, J. P. (2012), Simulation of Complex Tremor Migration Patterns, AGU Fall Meeting 2012 Abstract S44B-02
 
-Luo, Y., Ampuero, J. P. (2011), Numerical Simulation of Tremor Migration Triggered by Slow Slip and Rapid Tremor Reversals, AGU Fall Meeting 2011 Abstract S33C-02
+Luo, Y., & Ampuero, J. P. (2011), Numerical Simulation of Tremor Migration Triggered by Slow Slip and Rapid Tremor Reversals, AGU Fall Meeting 2011 Abstract S33C-02
+
+#### For the microphysically based (CNS) simulations
+
+van den Ende, M. P. A., Chen, J., Ampuero, J. P., & Niemeijer, A. R. (2018).
+A comparison between rate-and-state friction and microphysical models, based on numerical simulations of fault slip   
+Tectonophysics, 733, 273-295 pp. (doi:[10.1016/j.tecto.2017.11.040](https://doi.org/10.1016/j.tecto.2017.11.040))  
  
 
