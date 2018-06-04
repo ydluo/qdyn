@@ -5,6 +5,8 @@
 
 ## News 
 
+*28 May 2018* In order to address a problem in the QDYN history tree, the version history of the QDYN repository was rewritten. All developers that have cloned the QDYN repository before this date should follow the steps described in [this manual](doc/git_fix_2018-05-28.pdf). Users of QDYN that did not make any code changes can simply delete the old repository and clone the latest version to get a clean QDYN repository.
+
 *May 2018* | Two papers with simulation results based on *QDYN*, published in Tectonophysics - Special Issue on "[Physics of Earthquake Rupture Propagation](https://www.sciencedirect.com/journal/tectonophysics/vol/733/suppl/C)":  
   M. van den Ende, J. Chen, J. P. Ampuero and A. Niemeijer
   *A comparison between rate-and-state friction and microphysical models, based on numerical simulations of fault slip*   (doi:[10.1016/j.tecto.2017.11.040](https://doi.org/10.1016/j.tecto.2017.11.040))  
