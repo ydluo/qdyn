@@ -42,6 +42,11 @@
 %			pars = qdyn('set')
 %
 %		Parameters defining the geometry of the problem and loading:
+%   FAULT_TYPE loading geometry of the fault
+%     1 = strike-slip (right-lateral)
+%    -1 = strike-slip (left-lateral)
+%     2 = thrust
+%    -2 = normal
 %		MESHDIM	dimension of the problem:
 %			0 = spring-block system
 %			1 = 1D fault in a 2D elastic medium
@@ -101,6 +106,9 @@
 %		TH_0 = initial state (m/s)
 %
 %		Discretization and accuracy parameters:
+%   SOLVER   ODE solver mode
+%     1 = Bulirsch-Stoer
+%     2 = Runge-Kutta-Fehlberg
 %		N	number of fault elements if MESHDIM=1
 %		NX	number of fault elements along-strike in 3D
 %		NW 	number of fault elements along-dip in 3D
@@ -218,6 +226,10 @@ NAME ='';	% title for the simulation
 
 scriptName = mfilename('fullpath');
 EXEC_PATH = fileparts(scriptName);	% default is same directory as qdyn.m
+
+%-- fault and solver type
+FAULT_TYPE = 1
+SOLVER = 1
 
 %-- medium
 L= 2e3; 	% fault length (L scales the stiffness for the spring-block case)
@@ -505,6 +517,7 @@ function export_main_input()
     fprintf(fid,'%u   nstop\n',NSTOP);
     fprintf(fid,'%u %u  DYN_FLAG, DYN_SKIP\n',DYN_FLAG,DYN_SKIP);
     fprintf(fid,'%.15g %.15g %.15g    M0, DYN_th_on, DYN_th_off\n', DYN_M,DYN_TH_ON,DYN_TH_OFF);
+    fprintf(fid,'%u %u    FAULT_TYPE, SOLVER\n', FAULT_TYPE, SOLVER);
 
     fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %u %u %.15g %.15g\n',...
       [SIGMA(iloc);V_0(iloc);TH_0(iloc);A(iloc);B(iloc);DC(iloc);V1(iloc);V2(iloc); ...

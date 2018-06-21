@@ -304,7 +304,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
 !PG, Testing MPI version, only for debugging purpose.
   write(6,*) 'Here, iproc: ',my_mpi_rank()
   write(6,*) 'is_mpi_paralle()',is_mpi_parallel()
-   if (is_mpi_parallel()) then 
+   if (is_mpi_parallel()) then
      write(6,*) 'Writting x,y,z fault coordinates, iproc:',my_mpi_rank()
      write(6,*) 'iproc, nwLocal,nwGlobal ,nx: :',my_mpi_rank(),k%nwLocal,k%nwGlobal,k%nx
      call save_array(m%xglob,m%yglob,m%zglob,m%zglob,my_mpi_rank(),'glo',k%nwGlobal,k%nx)

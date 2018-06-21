@@ -232,7 +232,9 @@ subroutine update_PT_final(dt,pb)
   if (pb%i_rns_law == 3) then
     ! CNS model: include porosity
     phi_avg = 0.5*(pb%theta + pb%tp%phi_prev)
-    phi_dot_avg = 0.5*(pb%dtheta_dt + pb%tp%phi_dot_prev)
+    ! Multiply dilatancy rate with an arbitrary constant f >= 0 to control
+    ! the amount of dilatancy hardening
+    phi_dot_avg = 0.5*(pb%dtheta_dt + pb%tp%phi_dot_prev) * pb%tp%dilat_factor
   else
     ! RSF: ignore state
     phi_avg = 1d0

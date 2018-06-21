@@ -46,7 +46,7 @@ module problem_class
       rhoc, inv_rhoc, beta, eta, k_t, k_p, l, w, inv_w, P, T, P_a, T_a, &
       Pi, Theta, PiTheta, Omega, &
       tau_y_prev, phi_dot_prev, phi_prev, P_prev, PiTheta_prev, Theta_prev, &
-      alpha_th, alpha_hy, Lam, Lam_prime, Lam_T, phi_b
+      alpha_th, alpha_hy, Lam, Lam_prime, Lam_T, phi_b, dilat_factor
     double precision :: t_prev=0d0
   end type tp_type
   ! End of the TP model structure
@@ -59,15 +59,6 @@ module problem_class
   type features_type
     integer :: stress_coupling, tp, localisation
   end type features_type
-  ! End of features structure
-
-  ! SEISMIC: LSODA implicit solver parameters
-  type lsoda_type
-    integer :: neq(1), itol, jt, lrw, liw, itask, istate, iopt
-    double precision :: rtol(1), atol(1), tout
-    double precision, dimension(:), allocatable :: rwork
-    integer, dimension(:), allocatable :: iwork
-  end type lsoda_type
   ! End of features structure
 
   ! SEISMIC: Runge-Kutta-Fehlberg solver parameters
@@ -113,7 +104,6 @@ module problem_class
     type (cns_type) :: cns_params
     type (tp_type) :: tp
     type (features_type) :: features
-    type (lsoda_type) :: lsoda
     type (rk45_type) :: rk45
   end type problem_type
 

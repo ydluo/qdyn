@@ -11,7 +11,7 @@ module derivs_all
 
   private
 
-  public :: derivs, derivs_lsoda, derivs_rk45, jac_lsoda
+  public :: derivs, derivs_rk45
   public :: odepb
 
 
@@ -208,29 +208,6 @@ subroutine derivs(time,yt,dydt,pb)
 
 end subroutine derivs
 
-!--------------------------------------------------------------------------------------
-! SEISMIC: the subroutine derivs_lsoda is a wrapper that interfaces between derivs
-! and the LSODA solver routine
-!--------------------------------------------------------------------------------------
-subroutine derivs_lsoda(neq, time, yt, dydt)
-  ! NOTE: neq = pb%neq * pb%mesh%nn
-  integer :: neq, i
-  double precision :: time
-  double precision :: yt(neq)
-  double precision :: dydt(neq)
-
-  call derivs(time,yt,dydt,odepb)
-
-end subroutine derivs_lsoda
-
-!--------------------------------------------------------------------------------------
-! SEISMIC: jacobian for lsoda (TODO)
-!--------------------------------------------------------------------------------------
-subroutine jac_lsoda(neq, time, yt, ml, mu, pd, nrpd)
-integer :: neq, ml, mu, nrpd
-double precision :: time, yt(neq), pd(nrpd,neq)
-
-end subroutine jac_lsoda
 
 !--------------------------------------------------------------------------------------
 ! SEISMIC: the subroutine derivs_rk45 is a wrapper that interfaces between derivs

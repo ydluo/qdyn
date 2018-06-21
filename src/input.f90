@@ -17,9 +17,10 @@ subroutine read_main(pb)
   use problem_class
   use mesh, only : read_mesh_parameters, read_mesh_nodes, mesh_get_size
   use output, only : ot_read_stations
-  use my_mpi, only: my_mpi_tag, is_MPI_parallel
+  use my_mpi, only : my_mpi_tag, is_MPI_parallel
+  use constants, only : FAULT_TYPE, SOLVER
 
-  type(problem_type), intent(inout)  :: pb
+  type(problem_type), intent(inout) :: pb
 
   integer :: i,n
 
@@ -44,6 +45,7 @@ subroutine read_main(pb)
   read(15,*) pb%NSTOP
   read(15,*) pb%DYN_FLAG,pb%DYN_SKIP
   read(15,*) pb%DYN_M,pb%DYN_th_on,pb%DYN_th_off
+  read(15,*) FAULT_TYPE, SOLVER
   write(6,*) '  Flags input complete'
 
   n = mesh_get_size(pb%mesh) ! number of nodes in this processor
@@ -148,11 +150,11 @@ subroutine read_main(pb)
   if (pb%features%tp == 1) then
     allocate (  pb%tp%rhoc(n), pb%tp%beta(n), pb%tp%eta(n), pb%tp%w(n), &
                 pb%tp%k_t(n), pb%tp%k_p(n), pb%tp%l(n), &
-                pb%tp%P_a(n), pb%tp%T_a(n) )
+                pb%tp%P_a(n), pb%tp%T_a(n), pb%tp%dilat_factor(n) )
     do i=1,n
       read(15,*)pb%tp%rhoc(i), pb%tp%beta(i), pb%tp%eta(i), pb%tp%w(i), &
                 pb%tp%k_t(i), pb%tp%k_p(i), pb%tp%l(i), &
-                pb%tp%P_a(i), pb%tp%T_a(i)
+                pb%tp%P_a(i), pb%tp%T_a(i), pb%tp%dilat_factor(i)
     end do
   endif
   ! End reading TP model parameters
