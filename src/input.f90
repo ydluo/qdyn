@@ -88,7 +88,7 @@ subroutine read_main(pb)
               pb%cns_params%IPS_const_diff(n), pb%cns_params%IPS_const_diss1(n), &
               pb%cns_params%IPS_const_diss2(n), pb%cns_params%L(n) )
     do i=1,n
-      read(15,*)pb%sigma(i), pb%tau(i), pb%theta(i), pb%v_star(i),  &
+      read(15,*)pb%sigma(i), pb%tau(i), pb%theta(i), pb%v_pl(i),  &
                 pb%cns_params%a_tilde(i), pb%cns_params%mu_tilde_star(i), &
                 pb%cns_params%y_gr_star(i), pb%cns_params%H(i), &
                 pb%cns_params%phi_c(i), pb%cns_params%phi0(i), &
