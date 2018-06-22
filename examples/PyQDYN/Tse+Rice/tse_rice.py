@@ -34,27 +34,29 @@ V = 35e-3 / t_yr
 
 # Python dictionary with general settings
 set_dict = {
-	"N": N,   					# number of fault segments
-	"NXOUT": np.power(2,1),   	# snapshot output spacing
-	"NTOUT": 100,   			# snapshot output frequency
-	"ACC": 1e-7,   				# Solver accuracy
-	"MU": 30e9,   				# Shear modulus
-	"DTTRY": 1e-8,   			# First time step (needs to be small)
-	"TMAX": 200*t_yr,   		# Run simulation 200 years
-	"MESHDIM": 1,   			# One-dimensional fault
-	"VS": 3000,   				# Shear wave velocity
-	"L": 30.0e3,   				# Fault length (depth)
-	"FINITE": 3,   				# Finite fault with free surface
-	"IC": N//4,					# Location for time-series output (7.5 km depth)
+    "N": N,   					# number of fault segments
+    "NXOUT": np.power(2,1),   	# snapshot output spacing
+    "NTOUT": 100,   			# snapshot output frequency
+    "ACC": 1e-7,   				# Solver accuracy
+    "MU": 30e9,   				# Shear modulus
+    "DTTRY": 1e-8,   			# First time step (needs to be small)
+    "TMAX": 200*t_yr,   		# Run simulation 200 years
+    "MESHDIM": 1,   			# One-dimensional fault
+    "VS": 3000,   				# Shear wave velocity
+    "L": 30.0e3,   				# Fault length (depth)
+    "FINITE": 3,   				# Finite fault with free surface
+    "IC": N//4,					# Location for time-series output (7.5 km depth)
+    "SOLVER": 1,
+    "V_PL": V,
 }
 
 # Python dictionary with rate-and-state friction parameters
 set_dict_RSF = {
-	"RNS_LAW": 0,		# using classical rate-and-state
-	"THETA_LAW": 1,		# using the ageing law
-	"DC": 40e-3,		# Dc = 40 mm
-	"V_0": V,			# Reference velocity
-	"V_SS": V,			# Initial velocity
+    "RNS_LAW": 0,		# using classical rate-and-state
+    "THETA_LAW": 1,		# using the ageing law
+    "DC": 40e-3,		# Dc = 40 mm
+    "V_0": V,			# Initial velocity
+    "V_SS": V,			# Reference velocity
 }
 
 # Set state variable near steady-state value
@@ -90,30 +92,30 @@ print("Number of fault elements: %i \t Element size: %.2f m" % (N, np.max(z)/N))
 # Set-up simulation
 def setup():
 
-	# Feed our settings to QDYN and render mesh
-	p.settings(set_dict)
-	p.render_mesh()
+    # Feed our settings to QDYN and render mesh
+    p.settings(set_dict)
+    p.render_mesh()
 
-	# Populate mesh dict with depth-dependent parameters
-	p.mesh_dict["SIGMA"][:] = sigma[:]
-	p.mesh_dict["A"][:] = a[:]
-	p.mesh_dict["B"][:] = b[:]
+    # Populate mesh dict with depth-dependent parameters
+    p.mesh_dict["SIGMA"][:] = sigma[:]
+    p.mesh_dict["A"][:] = a[:]
+    p.mesh_dict["B"][:] = b[:]
 
-	# Write input file
-	p.write_input()
+    # Write input file
+    p.write_input()
 
-	# Run the simulation when the "run" argument is provided
-	try:
-	 if sys.argv[1] == "run":
-	 	# Export settings dicts (optional, but good practice)
-	 	p.export_dicts()
-	 	# Run simulation
-	 	p.run()
-	except IndexError:
-		pass
-	
-	# Read model output
-	p.read_output()
+    # Run the simulation when the "run" argument is provided
+    try:
+     if sys.argv[1] == "run":
+        # Export settings dicts (optional, but good practice)
+        p.export_dicts()
+        # Run simulation
+        p.run()
+    except IndexError:
+        pass
+
+    # Read model output
+    p.read_output()
 
 
 setup()

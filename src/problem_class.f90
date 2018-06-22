@@ -31,9 +31,9 @@ module problem_class
   ! See input.f90 for a description of the parameters
   type cns_type
     double precision, dimension(:), allocatable :: &
-      a_tilde, mu_tilde_star, IPS_const_diff, IPS_const_diss1, IPS_const_diss2, H, L, &
+      a_tilde, mu_tilde_star, IPS_const_diff, IPS_const_diss, H, L, &
       y_gr_star, phi_c, phi0, lambda, &
-      IPS_const_diff_bulk, IPS_const_diss1_bulk, IPS_const_diss2_bulk
+      IPS_const_diff_bulk, IPS_const_diss_bulk
   end type cns_type
   ! End of the CNS model structure
 

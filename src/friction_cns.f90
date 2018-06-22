@@ -258,7 +258,7 @@ function calc_e_ps(sigma,phi,truncate,bulk,pb) result(e_ps_dot)
   type(problem_type), intent(in) :: pb
   double precision, dimension(pb%mesh%nn), intent(in) :: sigma, phi
   double precision, dimension(pb%mesh%nn) :: e_ps_dot_d, e_ps_dot_s, e_ps_dot
-  double precision, dimension(pb%mesh%nn) :: Z_diff, Z_diss1, Z_diss2
+  double precision, dimension(pb%mesh%nn) :: Z_diff, Z_diss
   logical, intent(in) :: truncate, bulk
 
   ! Check if the pressure soltuion rate is calculated for the localised
@@ -266,16 +266,14 @@ function calc_e_ps(sigma,phi,truncate,bulk,pb) result(e_ps_dot)
   ! zones, different kinetics may be supplied
   if (bulk .eqv. .true.) then
     Z_diff = pb%cns_params%IPS_const_diff_bulk
-    Z_diss1 = pb%cns_params%IPS_const_diss1_bulk
-    Z_diss2 = pb%cns_params%IPS_const_diss2_bulk
+    Z_diss = pb%cns_params%IPS_const_diss_bulk
   else
     Z_diff = pb%cns_params%IPS_const_diff
-    Z_diss1 = pb%cns_params%IPS_const_diss1
-    Z_diss2 = pb%cns_params%IPS_const_diss2
+    Z_diss = pb%cns_params%IPS_const_diss
   endif
 
   e_ps_dot_d = Z_diff*sigma/(2*pb%cns_params%phi_c - 2*phi)**2
-  e_ps_dot_s =  Z_diss1*Z_diss2*sigma*pb%cns_params%phi_c/(pb%cns_params%phi_c - phi)
+  e_ps_dot_s =  Z_diss*sigma*pb%cns_params%phi_c/(pb%cns_params%phi_c - phi)
 
   e_ps_dot = e_ps_dot_d + e_ps_dot_s
 

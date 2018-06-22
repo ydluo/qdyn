@@ -68,11 +68,8 @@ subroutine read_main(pb)
   !   phi0:             lower cut-off porosity
   !   IPS_const_diff:   pressure solution (temperature-dependent) constant
   !                     for diffusion controlled pressure solution creep
-  !   IPS_const_diss1:  pressure solution (temperature-dependent) constant
+  !   IPS_const_diss:   pressure solution (temperature-dependent) constant
   !                     for dissolution controlled pressure solution creep
-  !   IPS_const_diss2:  pressure solution (temperature-dependent) constant
-  !                     for dissolution controlled pressure solution creep
-  !   L:                total thickness of the fault zone
   !
   ! Note that these parameters are material (gouge) properties, and are
   ! generally not spatically uniform, and hence are allocatable
@@ -85,16 +82,15 @@ subroutine read_main(pb)
     allocate( pb%cns_params%a_tilde(n), pb%cns_params%mu_tilde_star(n), &
               pb%cns_params%y_gr_star(n), pb%cns_params%H(n), &
               pb%cns_params%phi_c(n), pb%cns_params%phi0(n), &
-              pb%cns_params%IPS_const_diff(n), pb%cns_params%IPS_const_diss1(n), &
-              pb%cns_params%IPS_const_diss2(n), pb%cns_params%L(n) )
+              pb%cns_params%IPS_const_diff(n), pb%cns_params%IPS_const_diss(n), &
+              pb%cns_params%L(n) )
     do i=1,n
       read(15,*)pb%sigma(i), pb%tau(i), pb%theta(i), pb%v_pl(i),  &
                 pb%cns_params%a_tilde(i), pb%cns_params%mu_tilde_star(i), &
                 pb%cns_params%y_gr_star(i), pb%cns_params%H(i), &
                 pb%cns_params%phi_c(i), pb%cns_params%phi0(i), &
-                pb%cns_params%IPS_const_diff(i), pb%cns_params%IPS_const_diss1(i), &
-                pb%cns_params%IPS_const_diss2(i), pb%cns_params%L(i), &
-                pb%ot%iot(i), pb%ot%iasp(i)
+                pb%cns_params%IPS_const_diff(i), pb%cns_params%IPS_const_diss(i), &
+                pb%cns_params%L(i), pb%ot%iot(i), pb%ot%iasp(i)
       pb%dc(i) = 1.0
       pb%V(i) = 0.0
     end do
@@ -116,12 +112,10 @@ subroutine read_main(pb)
   !
   if (pb%features%localisation == 1) then
     allocate (  pb%cns_params%lambda(n), pb%theta2(n), &
-                pb%cns_params%IPS_const_diff_bulk(n), pb%cns_params%IPS_const_diss1_bulk(n), &
-                pb%cns_params%IPS_const_diss2_bulk(n) )
+                pb%cns_params%IPS_const_diff_bulk(n), pb%cns_params%IPS_const_diss_bulk(n) )
     do i=1,n
       read(15,*)pb%cns_params%lambda(i), pb%theta2(i), &
-                pb%cns_params%IPS_const_diff_bulk(i), pb%cns_params%IPS_const_diss1_bulk(i), &
-                pb%cns_params%IPS_const_diss2_bulk(i)
+                pb%cns_params%IPS_const_diff_bulk(i), pb%cns_params%IPS_const_diss_bulk(i)
     end do
   else
     allocate(pb%cns_params%lambda(n), pb%theta2(n))

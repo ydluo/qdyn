@@ -27,26 +27,27 @@ p.qdyn_path = qdyn_path
 
 # Python dictionary with general settings
 set_dict = {
-	"FRICTION_MODEL": "CNS",
-	"ACC": 1e-10,
-	"MU": 2e10,
-	"TMAX": 20,
-	"DTTRY": 1e-6,
-	"MESHDIM": 0,
-	"NTOUT": 10000,
-	"VS": 0,
+    "FRICTION_MODEL": "CNS",
+    "ACC": 1e-10,
+    "SOLVER": 2,
+    "MU": 2e10,
+    "TMAX": 20,
+    "DTTRY": 1e-6,
+    "MESHDIM": 0,
+    "NTOUT": 10000,
+    "VS": 0,
+    "SIGMA": 5e6,
 }
 
 # Python dictionary with CNS parameters
 set_dict_CNS = {
-	"IPS_CONST_DIFF": Z_ps,
-	"A_TILDE": 0.02,
-	"MU_TILDE_STAR": 0.4,
-	"Y_GR_STAR": 1e-6,
-	"PHI_INI": 0.25,
-	"THICKNESS": 1e-4,
-	"TAU": 3e6,	
-	"SIGMA": 5e6,
+    "IPS_CONST_DIFF": Z_ps,
+    "A_TILDE": 0.02,
+    "MU_TILDE_STAR": 0.4,
+    "Y_GR_STAR": 1e-6,
+    "PHI_INI": 0.25,
+    "THICKNESS": 1e-4,
+    "TAU": 3e6,
 }
 
 # Add CNS dictionary to QDYN dictionary
@@ -65,37 +66,37 @@ x_ss = 500e-6
 
 # Loop over all velocity steps
 for i, V in enumerate(Vs):
-	# Set load-point velocity
-	set_dict["SET_DICT_CNS"]["V_LP"] = V
-	# Set initial values from previous step
-	set_dict["SET_DICT_CNS"]["PHI_INI"] = phi_final
-	set_dict["SET_DICT_CNS"]["TAU"] = tau_final
-	# Set simulated time
-	set_dict["TMAX"] = x_ss/V
+    # Set load-point velocity
+    set_dict["V_PL"] = V
+    # Set initial values from previous step
+    set_dict["SET_DICT_CNS"]["PHI_INI"] = phi_final
+    set_dict["SET_DICT_CNS"]["TAU"] = tau_final
+    # Set simulated time
+    set_dict["TMAX"] = x_ss/V
 
-	# Feed our settings to QDYN and render mesh
-	p.settings(set_dict)
-	p.render_mesh()
+    # Feed our settings to QDYN and render mesh
+    p.settings(set_dict)
+    p.render_mesh()
 
-	# Write input file
-	p.write_input()
+    # Write input file
+    p.write_input()
 
-	# Run simulation
-	p.run()
+    # Run simulation
+    p.run()
 
-	# Get our results
-	p.read_output()
+    # Get our results
+    p.read_output()
 
-	# Plot results
-	plt.subplot(211)
-	plt.plot(p.ot["t"]-p.ot["t"].iloc[0]+t_final, p.ot["tau"]/p.set_dict["SET_DICT_CNS"]["SIGMA"])
-	plt.subplot(212)
-	plt.plot(p.ot["t"]-p.ot["t"].iloc[0]+t_final, p.ot["theta"]*100)
+    # Plot results
+    plt.subplot(211)
+    plt.plot(p.ot["t"]-p.ot["t"].iloc[0]+t_final, p.ot["tau"]/p.set_dict["SIGMA"])
+    plt.subplot(212)
+    plt.plot(p.ot["t"]-p.ot["t"].iloc[0]+t_final, p.ot["theta"]*100)
 
-	# Set starting point for next simulation
-	tau_final = p.ot["tau"].values[-1]
-	phi_final = p.ot["theta"].values[-1]
-	t_final += p.ot["t"].values[-1]
+    # Set starting point for next simulation
+    tau_final = p.ot["tau"].values[-1]
+    phi_final = p.ot["theta"].values[-1]
+    t_final += p.ot["t"].values[-1]
 
 plt.subplot(211)
 plt.ylabel("friction [-]")

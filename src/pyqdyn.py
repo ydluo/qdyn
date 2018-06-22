@@ -71,8 +71,10 @@ class qdyn:
         # -2 = normal
         set_dict["FAULT_TYPE"] = 1
 
+        set_dict["V_PL"] = 1e-9             # Tectonic loading rate [m/s]
         set_dict["L"] = 1					# Length of the fault if MESHDIM = 1. Stiffness is MU/L if MESHDIM = 0
         set_dict["W"] = 1					# Distance between load point and fault if MESHDIM = 1 and FINITE = 0
+        set_dict["SIGMA"] = 50e6            # Normal stress [Pa]
         set_dict["SIGMA_CPL"] = 0			# Normal stress coupling (only for dipping faults)
         set_dict["VS"] = 3000				# Shear wave speed [m/s]. If VS = 0 radiation damping is off
         set_dict["MU"] = 30e9				# Shear modulus [Pa]
@@ -101,13 +103,10 @@ class qdyn:
         "CO": 0,							# Cohesion [Pa]
         "V_0": 1.01e-5,						# Initial slip velocity [m/s]
         "TH_0": 1.0,						# Initial state [s]
-        "SIGMA": 5e7,						# Normal stress [Pa]
-        "V_PL": 1e-9,                       # Tectonic loading rate [m/s]
         }
 
         # CNS microphysical model parameters
         set_dict["SET_DICT_CNS"] = {
-        "V_LP": 1e-9,						# Load-point velocity (far-field deformation rate)
         "THICKNESS": 1e-3,					# Total thickness of gouge zone
         # Granular flow parameters
         "A_TILDE": 0.006,					# Coefficient of logarithmic rate-dependence of grain-boundary friction
@@ -119,11 +118,9 @@ class qdyn:
         "PHI0": 0.03,						# Lower cut-off velocity (e.g. percolation threshold)
         "PHI_INI": 0.25,					# Simulation initial porosity
         # Pressure solution kinetics
-        "IPS_CONST_DIFF": 0.0,				# Kinetic parameter for diffusion controlled pressure solution
-        "IPS_CONST_DISS1": 0.0,				# Kinetic parameter for dissolution controlled pressure solution
-        "IPS_CONST_DISS2": 0.0,				# Kinetic parameter for dissolution controlled pressure solution
+        "IPS_CONST_DIFF": 0.0,				# Kinetic parameter for diffusion controlled pressure solution [Pa/s]
+        "IPS_CONST_DISS": 0.0,				# Kinetic parameter for dissolution controlled pressure solution [Pa/s]
         # State of stress
-        "SIGMA": 5e7,						# (Effective) normal stress [Pa]
         "TAU": 2e7,							# Initial shear stress [Pa]
         }
 
@@ -133,8 +130,7 @@ class qdyn:
         "PHI_INI_BULK": 0.2,				# Initial porosity passive gouge zone
         # Pressure solution kinetic parameters for passive zone
         "IPS_CONST_DIFF_BULK": 0.0,
-        "IPS_CONST_DISS1_BULK": 0.0,
-        "IPS_CONST_DISS2_BULK": 0.0,
+        "IPS_CONST_DISS_BULK": 0.0,
         }
 
         # Thermal pressurisation model
@@ -227,10 +223,10 @@ class qdyn:
             print("Number of mesh elements needs to be set before rendering mesh, unless MESHDIM = 0 (spring-block)")
             exit()
 
-        mesh_params_general = ("IOT", "IASP")
-        mesh_params_RSF = ("SIGMA", "V_0", "TH_0", "A", "B", "DC", "V1", "V2", "MU_SS", "V_SS", "CO", "V_PL")
-        mesh_params_CNS = ("SIGMA", "TAU", "PHI_INI", "V_LP", "A_TILDE", "MU_TILDE_STAR", "Y_GR_STAR", "H", "PHI_C", "PHI0", "IPS_CONST_DIFF", "IPS_CONST_DISS1", "IPS_CONST_DISS2", "THICKNESS")
-        mesh_params_localisation = ("LOCALISATION", "PHI_INI_BULK", "IPS_CONST_DIFF_BULK", "IPS_CONST_DISS1_BULK", "IPS_CONST_DISS2_BULK")
+        mesh_params_general = ("IOT", "IASP", "V_PL", "SIGMA")
+        mesh_params_RSF = ("V_0", "TH_0", "A", "B", "DC", "V1", "V2", "MU_SS", "V_SS", "CO")
+        mesh_params_CNS = ("TAU", "PHI_INI", "A_TILDE", "MU_TILDE_STAR", "Y_GR_STAR", "H", "PHI_C", "PHI0", "IPS_CONST_DIFF", "IPS_CONST_DISS", "THICKNESS")
+        mesh_params_localisation = ("LOCALISATION", "PHI_INI_BULK", "IPS_CONST_DIFF_BULK", "IPS_CONST_DISS_BULK")
         mesh_params_TP = ("RHOC", "BETA", "ETA", "HALFW", "K_T", "K_P", "LAM", "P_A", "T_A", "DILAT_FACTOR")
 
         mesh_dict = {}
@@ -368,15 +364,15 @@ class qdyn:
             # Check for fault rheology model
             if settings["FRICTION_MODEL"] == "CNS":
 
-                if np.sum(mesh["IPS_CONST_DIFF"] * mesh["IPS_CONST_DISS1"]) != 0:
+                if np.sum(mesh["IPS_CONST_DIFF"] * mesh["IPS_CONST_DISS"]) != 0:
                     print("Ambiguous rate-controlling mechanism!")
-                    print("For each fault element, either IPS_CONST_DIFF or IPS_CONST_DISS1 must be zero,")
+                    print("For each fault element, either IPS_CONST_DIFF or IPS_CONST_DISS must be zero,")
                     print("i.e. each element must be either diffusion controlled (IPS_CONST_DIFF > 0)")
                     print("or dissolution controlled (IPS_CONST_DISS > 0), but not both")
                     exit()
 
                 for i in range(nloc):
-                    input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n" % (mesh["SIGMA"][iloc[i]], mesh["TAU"][iloc[i]], mesh["PHI_INI"][iloc[i]], mesh["V_LP"][iloc[i]], mesh["A_TILDE"][iloc[i]], mesh["MU_TILDE_STAR"][iloc[i]], mesh["Y_GR_STAR"][iloc[i]], mesh["H"][iloc[i]], mesh["PHI_C"][iloc[i]], mesh["PHI0"][iloc[i]], mesh["IPS_CONST_DIFF"][iloc[i]], mesh["IPS_CONST_DISS1"][iloc[i]], mesh["IPS_CONST_DISS2"][iloc[i]], mesh["THICKNESS"][iloc[i]], mesh["IOT"][iloc[i]], mesh["IASP"][iloc[i]])
+                    input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n" % (mesh["SIGMA"][iloc[i]], mesh["TAU"][iloc[i]], mesh["PHI_INI"][iloc[i]], mesh["V_PL"][iloc[i]], mesh["A_TILDE"][iloc[i]], mesh["MU_TILDE_STAR"][iloc[i]], mesh["Y_GR_STAR"][iloc[i]], mesh["H"][iloc[i]], mesh["PHI_C"][iloc[i]], mesh["PHI0"][iloc[i]], mesh["IPS_CONST_DIFF"][iloc[i]], mesh["IPS_CONST_DISS"][iloc[i]], mesh["THICKNESS"][iloc[i]], mesh["IOT"][iloc[i]], mesh["IASP"][iloc[i]])
             else: # RSF model
                 for i in range(nloc):
                     input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n" % (mesh["SIGMA"][iloc[i]], mesh["V_0"][iloc[i]], mesh["TH_0"][iloc[i]], mesh["A"][iloc[i]], mesh["B"][iloc[i]], mesh["DC"][iloc[i]], mesh["V1"][iloc[i]], mesh["V2"][iloc[i]], mesh["MU_SS"][iloc[i]], mesh["V_SS"][iloc[i]], mesh["IOT"][iloc[i]], mesh["IASP"][iloc[i]], mesh["CO"][iloc[i]], mesh["V_PL"][iloc[i]])
@@ -384,7 +380,7 @@ class qdyn:
             # Check if localisation is requested
             if settings["FEAT_LOCALISATION"] == 1:
                 for i in range(nloc):
-                    input_str += "%.15g %.15g %.15g %.15g %.15g\n" % (mesh["LOCALISATION"][iloc[i]], mesh["PHI_INI_BULK"][iloc[i]], mesh["IPS_CONST_DIFF_BULK"][iloc[i]], mesh["IPS_CONST_DISS1_BULK"][iloc[i]], mesh["IPS_CONST_DISS2_BULK"][iloc[i]])
+                    input_str += "%.15g %.15g %.15g %.15g\n" % (mesh["LOCALISATION"][iloc[i]], mesh["PHI_INI_BULK"][iloc[i]], mesh["IPS_CONST_DIFF_BULK"][iloc[i]], mesh["IPS_CONST_DISS_BULK"][iloc[i]])
 
             # Check if thermal pressurisation is requested
             if settings["FEAT_TP"] == 1:
