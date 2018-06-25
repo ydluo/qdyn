@@ -118,12 +118,6 @@ subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dv_dP, &
   ! The granular flow strain rate [CS, Eqn. 33b]
   y_gr = pb%cns_params%y_gr_star*exp(dummy_var)
 
-  mu_tilde = calc_mu_tilde(y_gr, pb)           ! Grain-boundary friction
-
-  ! Pre-compute the square root of the porosity function. This will serve as
-  ! a basis for calculating the porosity functions
-  ! f_phi_sqrt = 1.0/(2*(pb%cns_params%phi_c - phi))
-
   ! Shear strain rate [1/s] due to viscous flow (pressure solution)
   e_ps = calc_e_ps(sigma, phi, .true., .false., pb)   ! Compaction rate
   y_ps = calc_e_ps(tau, phi, .false., .false., pb)    ! Shear creep rate
@@ -154,19 +148,16 @@ subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dv_dP, &
   ! mechanism (diffusion, dissolution, or precipitation)
   ! dv/dphi_d = 2 dv/dphi_s, but since pressure solution contributes
   ! negligibly to radiation damping, we ignore this factor 2
-
   dv_dtau_ps = y_ps/tau
   dv_dphi_ps =  2*y_ps/(pb%cns_params%phi_c - phi)
 
   ! The partial derivatives dv_dtau and dv_dphi of the overall slip velocity
   ! are the sum of the partial derivatives of the pressure solution and
   ! granular flow velocities.
-
   dv_dtau = L_sb*(dv_dtau_ps + &
-            y_gr*((1-mu_tilde*tan_psi)*denom - tan_psi*dummy_var*pb%cns_params%a_tilde*denom))
+            y_gr*pb%cns_params%a_tilde*sigma*(1 + tan_psi**2)*denom**2)
   dv_dphi = L_sb*(dv_dphi_ps + &
-              y_gr*(2*pb%cns_params%H*(sigma + mu_tilde*tau)*denom + &
-              2*pb%cns_params%H*tau*dummy_var*pb%cns_params%a_tilde*denom))
+            y_gr*2*pb%cns_params%H*pb%cns_params%a_tilde*(sigma**2 + tau**2)*denom**2)
 
   ! When thermal pressurisation is requested, update dV_dP
   if (pb%features%tp == 1) then

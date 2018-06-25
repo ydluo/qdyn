@@ -93,6 +93,8 @@ subroutine derivs(time,yt,dydt,pb)
       ! SEISMIC: replace porosity for dummies when using RSF
       call update_PT(pb%tau*pb%V/(2*pb%tp%w), dummy1, dummy2, dt, pb)
     endif
+    ! stop
+    ! if (any(isnan(pb%tp%P))) stop
     sigma = sigma - pb%tp%P
   endif
 

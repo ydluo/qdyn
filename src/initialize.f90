@@ -79,6 +79,7 @@ subroutine init_all(pb)
   ! SEISMIC: initialise thermal pressurisation model (diffusion_solver.f90)
   if (pb%features%tp == 1) then
     call init_tp(pb)
+    write(6,*) "Spectral mesh initiated"
   endif
 
   ! SEISMIC: initialise Runge-Kutta ODE solver, if selected

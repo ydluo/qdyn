@@ -40,6 +40,7 @@ subroutine solve(pb)
 !                         timestep then redo bsstep
 !                         or (cleanest version) iterate tiemstep adjustment and
 !                         bsstep until stress is exactly equal to yield
+
     call update_field(pb)
     call check_stop(pb)   ! here itstop will change
 !--------Output onestep to screen and ox file(snap_shot)

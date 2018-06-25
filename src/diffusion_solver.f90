@@ -198,7 +198,7 @@ subroutine calc_params(phi, pb)
   pb%tp%Lam_prime = pb%tp%Lam * pb%tp%alpha_th/(pb%tp%alpha_hy - pb%tp%alpha_th)
   pb%tp%Lam_T = (pb%tp%Lam + pb%tp%Lam_prime)*pb%tp%inv_rhoc
   ! Specific storativity
-  pb%tp%phi_b = 1.0/(phi*pb%tp%beta)
+  pb%tp%phi_b = pb%tp%dilat_factor/(phi*pb%tp%beta)
 
 end subroutine calc_params
 
@@ -234,7 +234,7 @@ subroutine update_PT_final(dt,pb)
     phi_avg = 0.5*(pb%theta + pb%tp%phi_prev)
     ! Multiply dilatancy rate with an arbitrary constant f >= 0 to control
     ! the amount of dilatancy hardening
-    phi_dot_avg = 0.5*(pb%dtheta_dt + pb%tp%phi_dot_prev) * pb%tp%dilat_factor
+    phi_dot_avg = 0.5*(pb%dtheta_dt + pb%tp%phi_dot_prev)
   else
     ! RSF: ignore state
     phi_avg = 1d0
@@ -243,6 +243,7 @@ subroutine update_PT_final(dt,pb)
 
   ! Compute PiTheta and Theta for step t+dt
   call solve_spectral(tau_y_avg, phi_dot_avg, phi_avg, dt, pb)
+  ! SEISMIC: dP_dt is not used? !!!
   call calc_dP_dt(tau_y_avg, phi_dot_avg, phi_avg, dP_dt, pb)
 
   ! Update initial values of tau*y_dot, phi_dot, phi, and P
@@ -274,37 +275,40 @@ subroutine calc_dP_dt(tau_y,phi_dot,phi,dP_dt,pb)
   ! Loop over all fault segments
   do i=1,pb%mesh%nn
     dP_dt(i) = 0d0
-    ! Loop over all spectral elements
-    do j=1,pb%tp%mesh%Nl
-      n = (i-1)*pb%tp%mesh%Nl+j
 
-      ! Calculate dF(t+dt)/dt = -A*F(t) + B [N&L, Eqn. 8]
-      ! NOTE: Theta and PiTheta stored in pb%tp should have retained their
-      ! values evaluated at t+dt from the current solver step. During each
-      ! step, the solver first calls update_PT, which advances Theta and
-      ! PiTheta to t+dt. Then this function should be called to obtain
-      ! dTheta/dt and dPiTheta/dt at t+dt
+    ! if (pb%V(i) > pb%ot%v_th) then
+      ! Loop over all spectral elements
+      do j=1,pb%tp%mesh%Nl
+        n = (i-1)*pb%tp%mesh%Nl+j
 
-      ! Temperature-related parameters in spectral domain
-      A_T = pb%tp%alpha_th(i)*(pb%tp%mesh%lw(j)*pb%tp%inv_w(i))**2
-      B_T = tau_y(i)*pb%tp%Omega(n)*pb%tp%inv_rhoc(i)
-      ! Update Ttheta(t+dt)
-      dTheta = -A_T*pb%tp%Theta(n) + B_T
+        ! Calculate dF(t+dt)/dt = -A*F(t) + B [N&L, Eqn. 8]
+        ! NOTE: Theta and PiTheta stored in pb%tp should have retained their
+        ! values evaluated at t+dt from the current solver step. During each
+        ! step, the solver first calls update_PT, which advances Theta and
+        ! PiTheta to t+dt. Then this function should be called to obtain
+        ! dTheta/dt and dPiTheta/dt at t+dt
 
-      ! Pressure-related parameters in spectral domain
-      A_P = pb%tp%alpha_hy(i)*(pb%tp%mesh%lw(j)*pb%tp%inv_w(i))**2
-      B_P = ( pb%tp%Lam_T(i)*tau_y(i) - pb%tp%phi_b(i)*phi_dot(i) )*pb%tp%Omega(n)
-      ! Update PiTtheta(t+dt)
-      ! Note that PiTheta contains the spectral representation of
-      ! Pi + Lambda_prime*Theta, where Pi is the Fourier transform of P
-      ! and Theta is the Fourier transform of T [see N&L, Eqn. 5 and 7]
-      dPiTheta = -A_P*pb%tp%PiTheta(n) + B_P
-      dPi = dPiTheta - pb%tp%Lam_prime(i)*dTheta
+        ! Temperature-related parameters in spectral domain
+        A_T = pb%tp%alpha_th(i)*(pb%tp%mesh%lw(j)*pb%tp%inv_w(i))**2
+        B_T = tau_y(i)*pb%tp%Omega(n)*pb%tp%inv_rhoc(i)
+        ! Update Ttheta(t+dt)
+        dTheta = -A_T*pb%tp%Theta(n) + B_T
 
-      ! Collect the inverse Fourier transformation
-      dP_dt(i) = dP_dt(i) + pb%tp%mesh%F_inv(j)*dPi*pb%tp%inv_w(i)
+        ! Pressure-related parameters in spectral domain
+        A_P = pb%tp%alpha_hy(i)*(pb%tp%mesh%lw(j)*pb%tp%inv_w(i))**2
+        B_P = ( pb%tp%Lam_T(i)*tau_y(i) - pb%tp%phi_b(i)*phi_dot(i) )*pb%tp%Omega(n)
+        ! Update PiTtheta(t+dt)
+        ! Note that PiTheta contains the spectral representation of
+        ! Pi + Lambda_prime*Theta, where Pi is the Fourier transform of P
+        ! and Theta is the Fourier transform of T [see N&L, Eqn. 5 and 7]
+        dPiTheta = -A_P*pb%tp%PiTheta(n) + B_P
+        dPi = dPiTheta - pb%tp%Lam_prime(i)*dTheta
 
-    enddo
+        ! Collect the inverse Fourier transformation
+        dP_dt(i) = dP_dt(i) + pb%tp%mesh%F_inv(j)*dPi*pb%tp%inv_w(i)
+
+      enddo
+    ! endif
   enddo
 
 end subroutine calc_dP_dt
@@ -359,6 +363,49 @@ subroutine solve_spectral(tau_y,phi_dot,phi,dt,pb)
       pb%tp%P(i) =  pb%tp%P(i) + pb%tp%mesh%F_inv(j)*pb%tp%inv_w(i)* &
                     (pb%tp%PiTheta(n) - pb%tp%Lam_prime(i)*pb%tp%Theta(n))
     enddo
+
+    ! if (pb%V(i) <= pb%ot%v_th) then
+    !   ! write(6,*) "TP not active"
+    !   ! else set P, T, Theta, PiTheta, Theta_prev, PiTheta_prev to zero
+    !   pb%tp%P(i) = 0d0
+    !   pb%tp%T(i) = 0d0
+    !   do j=1,pb%tp%mesh%Nl
+    !     n = (i-1)*pb%tp%mesh%Nl+j
+    !     pb%tp%PiTheta(n) = 0d0
+    !     pb%tp%Theta(n) = 0d0
+    !   enddo
+    ! else
+    !   ! write(6,*) "TP turned on!", pb%V(i), pb%ot%v_th
+    !   pb%tp%P(i) = pb%tp%P_a(i)
+    !   pb%tp%T(i) = pb%tp%T_a(i)
+    !   ! Loop over all spectral elements
+    !   do j=1,pb%tp%mesh%Nl
+    !     n = (i-1)*pb%tp%mesh%Nl+j
+    !
+    !     ! Calculate F(t+dt) = B*(1-exp(-Adt))/A + F(t)*exp(-Adt)
+    !     ! assuming constant A, B over the duration of dt [N&L, Eqn. 10]
+    !
+    !     ! Temperature-related parameters in spectral domain
+    !     A_T = pb%tp%alpha_th(i)*(pb%tp%mesh%lw(j)*pb%tp%inv_w(i))**2
+    !     B_T = tau_y(i)*pb%tp%Omega(n)*pb%tp%inv_rhoc(i)
+    !     exp_T = exp(-A_t*dt)
+    !     ! Update Ttheta(t+dt)
+    !     pb%tp%Theta(n) = B_T*(1.0 - exp_T)/A_T + pb%tp%Theta(n)*exp_T
+    !     pb%tp%T(i) = pb%tp%T(i) + pb%tp%mesh%F_inv(j)*pb%tp%inv_w(i)*pb%tp%Theta(n)
+    !
+    !     ! Pressure-related parameters in spectral domain
+    !     A_P = pb%tp%alpha_hy(i)*(pb%tp%mesh%lw(j)*pb%tp%inv_w(i))**2
+    !     B_P = ( pb%tp%Lam_T(i)*tau_y(i) - pb%tp%phi_b(i)*phi_dot(i) )*pb%tp%Omega(n)
+    !     exp_P = exp(-A_P*dt)
+    !     ! Update PiTtheta(t+dt)
+    !     ! Note that PiTheta contains the spectral representation of
+    !     ! Pi + Lambda_prime*Theta, where Pi is the Fourier transform of P
+    !     ! and Theta is the Fourier transform of T [see N&L, Eqn. 5 and 7]
+    !     pb%tp%PiTheta(n) = B_P*(1.0 - exp_P)/A_P + pb%tp%PiTheta(n)*exp_P
+    !     pb%tp%P(i) =  pb%tp%P(i) + pb%tp%mesh%F_inv(j)*pb%tp%inv_w(i)* &
+    !                   (pb%tp%PiTheta(n) - pb%tp%Lam_prime(i)*pb%tp%Theta(n))
+    !   enddo
+    ! endif
   enddo
 
 end subroutine solve_spectral
