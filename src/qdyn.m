@@ -318,23 +318,23 @@ TH_SS = DC./V_SS;
 
 % wrap UPPER CASE VARIABLES in parameter structure fields with the same name
 fpars = who;
-for k= find( strcmp(fpars,upper(fpars)) )' ,
+for k= find( strcmp(fpars,upper(fpars)) )'
   pars.(fpars{k}) = eval(fpars{k}) ;
 end
 
 switch mode
 
-case 'set',
+case 'set'
   ot=[];
   ox=[];
   return % pars = qdyn('set',...)  --> do not compute, exit here
 
-case 'read',
+case 'read'
   pars = read_qdyn_in(NAME);
   pars.NAME = NAME;
-  [ot,ox] = read_qdyn_out(NAME);
+  [ot,ox] = read_qdyn_out(NAME, pars.OX_SEQ);
 
-case {'run', 'write'},
+case {'run', 'write'}
 
   % make vectors if constants
    DW(1:NW) = DW;
@@ -396,7 +396,7 @@ case {'run', 'write'},
     [ot,ox]= read_qdyn_out(NAME,OX_SEQ);
   end
 
-otherwise,
+otherwise
   error('mode must be: set, read or run')
 
 end
@@ -597,7 +597,7 @@ rdat = sscanf(fgetl(fid), '%f %f %f %f'); DTTRY = rdat(1); DTMAX = rdat(2); TMAX
 NSTOP = sscanf(fgetl(fid), '%u');
 rdat = sscanf(fgetl(fid), '%u %u'); DYN_FLAG = rdat(1); DYN_SKIP = rdat(2);
 rdat = sscanf(fgetl(fid), '%f %f %f'); DYN_M = rdat(1); DYN_TH_ON = rdat(2); DYN_TH_OFF = rdat(3);
-rdat = textscan(fid, '%f %f %f %f %f %f %f %f %f %f %u %u %f');
+rdat = textscan(fid, '%f %f %f %f %f %f %f %f %f %f %u %u %f %f');
 SIGMA = rdat{1};
 V_0 = rdat{2};
 TH_0 = rdat{3};
@@ -709,7 +709,7 @@ function [ot,ox] = read_qdyn_out(name,OX_SEQv)
         %snapshots
       %PG, Temporal. 
       ox=[];
-      if (OX_SEQv==0) 
+      if ~OX_SEQv 
         [~, file_sys] = system(['file ',namex]);
         isasc = textscan(file_sys, '%s', 2);
         if strcmp('ASCII', isasc{1}(2))
