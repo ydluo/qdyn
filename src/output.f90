@@ -352,7 +352,7 @@ subroutine ot_write(pb)
       ! If thermal pressurisation: 18=P, 19=T, 20=P_max, 21=T_max
 
       if (pb%features%tp == 1) then
-        write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx(1),  &
+        write(pb%ot%unit) pb%time, pb%ot%llocnew*pb%mesh%dx(1),  &
           pb%ot%lcnew*pb%mesh%dx(1), pb%ot%pot, pb%ot%pot_rate,    &
           pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
           pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
@@ -365,7 +365,7 @@ subroutine ot_write(pb)
           ! write P, T
           pb%tp%P(pb%ot%ic), pb%tp%T(pb%ot%ic), pb%tp%P(pb%ot%ivmax), pb%tp%T(pb%ot%ivmax)
       else
-        write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx(1),  &
+        write(pb%ot%unit) pb%time, pb%ot%llocnew*pb%mesh%dx(1),  &
           pb%ot%lcnew*pb%mesh%dx(1), pb%ot%pot, pb%ot%pot_rate,    &
           pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
           pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
