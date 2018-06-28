@@ -228,8 +228,8 @@ scriptName = mfilename('fullpath');
 EXEC_PATH = fileparts(scriptName);	% default is same directory as qdyn.m
 
 %-- fault and solver type
-FAULT_TYPE = 1
-SOLVER = 1
+FAULT_TYPE = 1;
+SOLVER = 1;
 
 %-- medium
 L= 2e3; 	% fault length (L scales the stiffness for the spring-block case)
@@ -597,6 +597,7 @@ rdat = sscanf(fgetl(fid), '%f %f %f %f'); DTTRY = rdat(1); DTMAX = rdat(2); TMAX
 NSTOP = sscanf(fgetl(fid), '%u');
 rdat = sscanf(fgetl(fid), '%u %u'); DYN_FLAG = rdat(1); DYN_SKIP = rdat(2);
 rdat = sscanf(fgetl(fid), '%f %f %f'); DYN_M = rdat(1); DYN_TH_ON = rdat(2); DYN_TH_OFF = rdat(3);
+rdat = sscanf(fgetl(fid), '%u %u'); FAULT_TYPE = rdat(1); SOLVER = rdat(2);
 rdat = textscan(fid, '%f %f %f %f %f %f %f %f %f %f %u %u %f %f');
 SIGMA = rdat{1};
 V_0 = rdat{2};
@@ -637,7 +638,7 @@ end
     textread(namet,'','headerlines',4);
 
   % snapshots
- if (OX_SEQv==0) 
+ if ~OX_SEQv 
   fid=fopen(namex);
   NSX=fscanf(fid,'# nx=%u');
   fclose(fid);
@@ -658,7 +659,7 @@ end
   ox.sigma = cosa(:,:,10);
  else 
      ox=[];
- end;
+ end
 end % of function read_qdyn_out_mpi
 
 %-----------
