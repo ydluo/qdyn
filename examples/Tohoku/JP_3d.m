@@ -2,6 +2,7 @@
 year = 3600*24*365;
 load('warmup_jp');
 
+p.FAULT_TYPE = 2;
 p.L = 1000e3; % along-strike rupture length
 p.NX=512; % must be a power of 2 such that dx=L/NX is smaller than Lb
 p.TMAX=2000*year;         %warmup time in years
