@@ -12,6 +12,7 @@ load('JP_3D_dc03_tltL300nx256W206.6783nw207.mat');
 
 p.V_0=ox1.v(:,isp);
 p.TH_0=ox1.th(:,isp);
+p.FAULT_TYPE = 2;
 
 
 twm=ox1.t(isp2)-ox1.t(isp);
