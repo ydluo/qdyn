@@ -8,6 +8,8 @@ rand(1,floor(sum(100*clock)));
 
 year = 3600*24*365;
 load('warmup_jp');
+p.FAULT_TYPE = 2;
+
 p.OX_DYN = 1;
 p.OX_SEQ = 1;
 p.NX=512;
