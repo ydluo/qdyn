@@ -8,6 +8,7 @@ clc;
 
 year = 3600*24*365;
 load('warmup_jp');
+p.FAULT_TYPE = 2;
 
 p.NX=256;
 
