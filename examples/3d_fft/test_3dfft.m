@@ -11,7 +11,7 @@ p = qdyn('set');
 
 p.MESHDIM=2;
 p.THETA_LAW=2;
-
+p.FAULT_TYPE = 2;
 p.SIGMA=0.5e6;
 p.V_SS=1e-9;
 
