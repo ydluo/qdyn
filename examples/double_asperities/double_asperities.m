@@ -8,7 +8,7 @@ RUN_OR_READ = 1; % 1 = run the simulation, 0 = read a pre-computed simulation
 RESOLUTION = 7;	% minimum number of nodes per Lb-length, dx/Lb>RESOLUTION, usually 9. 
   		% For large a/b and L/Lc, RESOLUTION=7 might be ok
 THETA_LAW=1;
-
+FAULT_TYPE=2; %thrust fault
 %-----------
 
 filename = 'example_1.mat';
@@ -17,6 +17,7 @@ year = 3600*24*365;
 %if exist('qdyn')~=2, addpath ~/2D_RUPTURE/RATE_AND_STATE/qdyn/ ; end
 p = qdyn('set');
 p.THETA_LAW=THETA_LAW;
+p.FAULT_TYPE = FAULT_TYPE;
 % characteristic half-lengths
 Lb = p.MU.*p.DC./p.SIGMA./p.B;
 Lnuc = 1.3774*Lb;
@@ -32,7 +33,7 @@ if RUN_OR_READ
 
   p.L = L;
   %p.W = 1000*p.L;
-  p.FINITE=0;
+  p.FINITE=1;
   p.N = 2^nextpow2(RESOLUTION*p.L/Lb); 
   dx=p.L/p.N;
   Lb_over_dx = Lb/dx
@@ -50,7 +51,7 @@ if RUN_OR_READ
   p.A = p.A - b*AB_RATIO*exp(-((p.X+(Lasp+Lasp_2)*0.6)/Lasp_2*2).^6); 
   
   p.TMAX = 8 * year; % 60?
-  p.NTOUT=1000;
+  p.NTOUT=200;
   p.NXOUT=1;
   p.NSTOP=0;
   %p.V_0 = 1.01*p.V_SS ;
