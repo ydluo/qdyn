@@ -8,6 +8,7 @@ clc;
 
 year = 3600*24*365;
 p = qdyn('set');
+p.FAULT_TYPE = 2;
 
 p.MESHDIM=2;      %FFT enabled
 p.THETA_LAW=1;
