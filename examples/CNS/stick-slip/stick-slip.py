@@ -5,8 +5,11 @@ qdyn_path = "/home/martijn/QDyn/src"
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
+import pickle
+import gzip
 sys.path.append(qdyn_path)
 from pyqdyn import qdyn
+from numpy.testing import assert_allclose
 
 # QDYN class object
 p = qdyn()
@@ -31,7 +34,9 @@ set_dict = {
 
 # Python dictionary with CNS parameters
 set_dict_CNS = {
-    "IPS_CONST_DISS": 1e-10,
+    "A": [1e-10],
+    "N": [1],
+    "M": [1],
     "A_TILDE": 0.02,
     "MU_TILDE_STAR": 0.4,
     "Y_GR_STAR": 1e-6,
@@ -61,6 +66,26 @@ plt.plot(p.ot["t"], p.ot["tau"] / p.set_dict["SIGMA"])
 plt.ylabel("friction [-]")
 plt.subplot(212)
 plt.plot(p.ot["t"], p.ot["theta"] * 100)
+plt.ylabel("porosity [%]")
 plt.xlabel("time [s]")
 plt.tight_layout()
 plt.show()
+
+with gzip.GzipFile("benchmark.tar.gz", "r") as f:
+    benchmark = pickle.load(f)
+
+print("Performing benchmark comparison")
+
+plt.figure(2)
+plt.plot(p.ot["t"], p.ot["tau"]*1e-6, label="Current")
+plt.plot(benchmark["t"], benchmark["tau"]*1e-6, "k--", label="Benchmark")
+plt.xlabel("time [s]")
+plt.ylabel("shear stress [MPa]")
+plt.legend(loc=4, ncol=2)
+plt.tight_layout()
+plt.show()
+
+assert_allclose(benchmark["t"], p.ot["t"], rtol=1e-4)
+assert_allclose(benchmark["tau"], p.ot["tau"], rtol=1e-4)
+assert_allclose(benchmark["phi"], p.ot["theta"], rtol=1e-4)
+print("Benchmark comparison OK")

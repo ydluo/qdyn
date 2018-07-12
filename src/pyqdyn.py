@@ -139,9 +139,9 @@ class qdyn:
             "LOCALISATION": 1.0,				# Degree of localisation: 1.0 = entire gouge layer is active, 0.0 = entire gouge zone is passive
             "PHI_INI_BULK": 0.2,				# Initial porosity passive gouge zone
             # Creep mechanism parameters for passive/bulk zone (grouped in list)
-            "A_BULK": [0.0],				    # (T-dependent) kinetic parameters for creep mechanisms
-            "N_BULK": [1.0],                    # Stress exponents for creep mechanisms
-            "M_BULK": [2.0],				    # Porosity exponents for creep mechanisms
+            "A": [0.0],				            # (T-dependent) kinetic parameters for creep mechanisms
+            "N": [1.0],                         # Stress exponents for creep mechanisms
+            "M": [2.0],				            # Porosity exponents for creep mechanisms
         }
 
         # Thermal pressurisation model
@@ -222,7 +222,7 @@ class qdyn:
         self.set_dict["NW"] = N
 
         # Determine number of creep mechanisms
-        A = settings["SET_DICT_CNS"]["A"]
+        A = np.array(settings["SET_DICT_CNS"]["A"])
         N_creep = (A > 0).sum()
         self.set_dict["SET_DICT_CNS"]["N_CREEP"] = N_creep
 
@@ -261,7 +261,8 @@ class qdyn:
                 mesh_dict[param] = np.ones(N)*settings["SET_DICT_CNS"][param]
             for i in range(N_creep):
                 for param in mesh_params_creep:
-                    mesh_dict[param] = np.ones(N)*settings["SET_DICT_CNS"][param][i]
+                    param_no = "%s%i" % (param, i)
+                    mesh_dict[param_no] = np.ones(N)*settings["SET_DICT_CNS"][param][i]
         else:
             print("FRICTION_MODEL '%s' not recognised. Supported models: RSF, CNS" % (settings["FRICTION_MODEL"]))
             exit()
@@ -272,8 +273,8 @@ class qdyn:
                 mesh_dict[param] = np.ones(N)*settings["SET_DICT_LOCALISATION"][param]
             for i in range(N_creep):
                 for param in mesh_params_creep:
-                    param_bulk = "%s_bulk" % param
-                    mesh_dict[param_bulk] = np.ones(N)*settings["SET_DICT_LOCALISATION"][param_bulk][i]
+                    param_bulk = "%s%i_bulk" % (param, i)
+                    mesh_dict[param_bulk] = np.ones(N)*settings["SET_DICT_LOCALISATION"][param][i]
 
         # Populate mesh with thermal pressurisation parameters
         if settings["FEAT_TP"] == 1:
@@ -403,7 +404,7 @@ class qdyn:
                     input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g " % (mesh["SIGMA"][iloc[i]], mesh["TAU"][iloc[i]], mesh["PHI_INI"][iloc[i]], mesh["V_PL"][iloc[i]], mesh["A_TILDE"][iloc[i]], mesh["MU_TILDE_STAR"][iloc[i]], mesh["Y_GR_STAR"][iloc[i]], mesh["H"][iloc[i]], mesh["PHI_C"][iloc[i]], mesh["PHI0"][iloc[i]])
                     # Creep parameters (3 for each creep mechanism)
                     for j in range(N_creep):
-                        input_str += "%.15g %.15g %.15g " % (mesh["A"][iloc[i]], mesh["N"][iloc[i]], mesh["M"][iloc[i]])
+                        input_str += "%.15g %.15g %.15g " % (mesh["A%i" % j][iloc[i]], mesh["N%i" % j][iloc[i]], mesh["M%i" % j][iloc[i]])
                     # Last couple of parameters
                     input_str += "%.15g %.15g %.15g\n" % (mesh["THICKNESS"][iloc[i]], mesh["IOT"][iloc[i]], mesh["IASP"][iloc[i]])
             else: # RSF model
@@ -420,7 +421,7 @@ class qdyn:
                     input_str += "%.15g %.15g " % (mesh["LOCALISATION"][iloc[i]], mesh["PHI_INI_BULK"][iloc[i]])
                     # Creep parameters (3 for each creep mechanism)
                     for j in range(N_creep):
-                        input_str += "%.15g %.15g %.15g " % (mesh["A_bulk"][iloc[i]], mesh["N_bulk"][iloc[i]], mesh["M_bulk"][iloc[i]])
+                        input_str += "%.15g %.15g %.15g " % (mesh["A%i_bulk" % j][iloc[i]], mesh["N%i_bulk" % j][iloc[i]], mesh["M%i_bulk" % j][iloc[i]])
                     # End the line
                     input_str += "\n"
 
