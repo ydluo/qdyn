@@ -8,17 +8,6 @@ import sys
 sys.path.append(qdyn_path)
 from pyqdyn import qdyn
 
-# CNS kinetic parameters
-
-d = 10e-6			# Nominal grain size
-O = 2.69e-5			# Molar volume
-R = 8.3144			# Universal gas constant
-T = 293				# Absolute temperature
-DCS0 = 2.79e-15		# Kinetic pre-factor
-dH = 2.45e4			# Activation energy
-DCS = DCS0*np.exp(-dH/(R*T))			# Kinetic parameter at T
-Z_ps = (24/np.pi)*DCS*O/(R*T*d**3)		# Combined (lumped) kinetic constant
-
 # QDYN class object
 p = qdyn()
 
@@ -41,7 +30,7 @@ set_dict = {
 
 # Python dictionary with CNS parameters
 set_dict_CNS = {
-    "IPS_CONST_DIFF": Z_ps,
+    "IPS_CONST_DISS": 1e-10,
     "A_TILDE": 0.02,
     "MU_TILDE_STAR": 0.4,
     "Y_GR_STAR": 1e-6,

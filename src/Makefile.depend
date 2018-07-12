@@ -1,3 +1,4 @@
+aux.o: problem_class.o
 derivs_all.o: diffusion_solver.o fault_stress.o friction.o friction_cns.o \
 	problem_class.o
 diffusion_solver.o: constants.o mesh.o problem_class.o
