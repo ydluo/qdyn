@@ -190,6 +190,8 @@ subroutine calc_creep_rates_derivs( sigma, tau, phi, e_dot_creep_all, &
   N_creep = pb%cns_params%N_creep
   y_dot_creep_all = 0d0
   e_dot_creep_all = 0d0
+  dv_dtau_creep_all = 0d0
+  dv_dphi_creep_all = 0d0
 
   ! Precompute expensive variables
   inv_phi = 1d0 / (pb%cns_params%phi_c - phi)
