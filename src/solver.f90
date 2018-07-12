@@ -79,7 +79,6 @@ subroutine do_bsstep(pb)
 
   type(problem_type), intent(inout) :: pb
 
-  double precision :: t0
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
   integer :: ik, ind_stress_coupling, ind_localisation
 
@@ -213,7 +212,7 @@ subroutine update_field(pb)
 
   type(problem_type), intent(inout) :: pb
 
-  double precision, dimension(pb%mesh%nn) :: P_prev, test
+  double precision, dimension(pb%mesh%nn) :: P_prev
   integer :: i,ix,iw
 
   ! SEISMIC: obtain P at the previous time step
@@ -330,7 +329,7 @@ subroutine init_rk45(pb)
   use ode_rk45, only: rkf45_d
 
   type(problem_type), intent(inout) :: pb
-  double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt
+  double precision, dimension(pb%neqs*pb%mesh%nn) :: yt
   integer :: nwork
   integer :: ind_stress_coupling, ind_localisation
 

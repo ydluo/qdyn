@@ -10,7 +10,7 @@ contains
 
       SUBROUTINE bsstep(y,dydx,nv,x,htry,eps,yscal,hdid,hnext,pb,ik)
 
-      use problem_class, only : problem_type 
+      use problem_class, only : problem_type
       use my_mpi, only: is_MPI_parallel, max_allproc
 
       integer, intent(in) :: nv
@@ -36,6 +36,8 @@ contains
                 yerr(nv),ysav(nv),yseq(nv),errmaxglob
       logical, save :: first = .true.
       logical :: reduct
+
+      red = 0d0 ! SEISMIC: initialise red to be safe
 
       if (eps /= epsold) then
         hnext=-1.d29
