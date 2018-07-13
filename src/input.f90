@@ -63,22 +63,28 @@ subroutine read_main(pb)
   !   sigma:            applied normal stress (effective if no TP)
   !   tau:              initial shear stress
   !   theta:            initial porosity (phi in CNS formulation)
-  !   v_star:           load-point velocity
+  !   v_pl:             load-point velocity
   !   a_tilde:          coefficient of logarithmic rate dependence
   !   mu_tilde_star:    reference friction coefficient at y_gr_star
   !   y_gr_star:        reference granular fow strain rate
   !   H:                dilatancy geometric factor
   !   phi_c:            critical state porosity
   !   phi0:             lower cut-off porosity
-  !   IPS_const_diff:   pressure solution (temperature-dependent) constant
-  !                     for diffusion controlled pressure solution creep
-  !   IPS_const_diss:   pressure solution (temperature-dependent) constant
-  !                     for dissolution controlled pressure solution creep
+  !
+  !   (for each out of N creep mechanisms)
+  !   A:                creep law kinetic constant
+  !   n:                stress exponent
+  !   m:                porosity exponent
+  !
+  !   L:                total thickness of the fault zone
+  !   iot:              flag for other time series output
+  !   iasp:             flag for identification purposes
   !
   ! Note that these parameters are material (gouge) properties, and are
   ! generally not spatically uniform, and hence are allocatable
   ! See friction.f90 for a description of and references to the CNS model
-  ! See user manual for detailed definitions of the above parameters (TODO)
+  ! See user manual for detailed definitions of the above parameters
+  ! (this is a permanent TODO)
   ! </SEISMIC>
 
   ! If the CNS model is selected

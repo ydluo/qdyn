@@ -3,18 +3,18 @@
 ! SEISMIC: CNS microphysical model
 !
 ! Rate-and-state friction law i_rns_law = 3 refers to the CNS (Chen-Niemeijer-
-! Spiers) microphysical model, with itheta_law = 3 to diffusion controlled
-! pressure solution, and itheta_law = 4 to dissolution controlled pressure
-! solution creep. In this interpretation, rate-and-state friction results from
-! the interplay between compaction by pressure solution creep and dilation by
-! granular flow. At low sliding velocities, pressure solution creep is
-! relatively fast compared to granular dilatation, so that the gouge densifies
-! (porosity reduces). By contrast, at high sliding velocities, the gouge dilates
-! and 'softens', i.e. supports lower shear stress. At a given velocity, a
-! steady-state porosity can be attained that corresponds to the porosity at
-! which compaction balances dilatation, and hence results in a steady-state
-! shear strength. Velocity-weakening behaviour emerges naturally from this
-! model. This model is compatible with the thermal pressurisation model
+! Spiers) microphysical model.  In this interpretation, rate-and-state friction
+! results from the interplay between compaction by one or more creep mechanisms
+! (such as pressure solution) and dilation by granular flow. At low sliding
+! velocities, the contribution from the creep mechanism(s) to the volumetric
+! strain is relatively fast compared to granular dilatation, so that the gouge
+! densifies (porosity reduces). By contrast, at high sliding velocities, the
+! gouge dilates and 'softens', i.e. supports lower shear stress. At a given 
+! velocity, a steady-state porosity can be attained that corresponds to the
+! porosity at which compaction balances dilatation, and hence results in a
+! steady-state shear strength. Velocity-weakening behaviour emerges naturally
+! from this model. This model is compatible with the thermal pressurisation
+! model, and with localisation
 !
 ! References:
 !
@@ -74,7 +74,7 @@ subroutine dphi_dt(v,tau,sigma,phi,phi2,dth_dt,dth2_dt,pb)
 
   ! The nett rate of change of porosity is given by the relation
   ! phi_dot = -(1 - phi)*strain_rate [CS], where the strain rate equals
-  ! the compaction rate by pressure solution (e_dot_creep) minus the dilatation
+  ! the compaction rate by creep (e_dot_creep) minus the dilatation
   ! rate by granular flow (tan_psi*y_dot_gr). Note that compaction is measured
   ! positive, dilatation negative
   dth_dt = (1 - phi)*(tan_psi*y_dot_gr - e_dot_creep)
@@ -126,7 +126,7 @@ subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dv_dP, &
   call calc_creep_rates_derivs( sigma, tau, phi, e_dot_creep, y_dot_creep, &
                                 dv_dtau_creep, dv_dphi_creep, pb)
 
-  ! If localisation is requested, calculate pressure solution rates
+  ! If localisation is requested, calculate the creep rates
   ! in the bulk zone, otherwise set to zero
   e_dot_creep_bulk = 0d0
   y_dot_creep_bulk = 0d0
@@ -136,13 +136,13 @@ subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dv_dP, &
   endif
 
   ! The total slip velocity is the combined contribution of granular flow
-  ! and pressure solution (parallel processes)
+  ! and shear creep (parallel processes)
   v = pb%cns_params%L*(pb%cns_params%lambda*(y_dot_gr + y_dot_creep) + &
       (1-pb%cns_params%lambda)*y_dot_creep_bulk)
 
   ! The nett rate of change of porosity is given by the relation
   ! phi_dot = -(1 - phi)*strain_rate, where the strain rate equals
-  ! the compaction rate by pressure solution (e_dot_creep) minus the dilatation
+  ! the compaction rate by creep (e_dot_creep) minus the dilatation
   ! rate by granular flow (tan_psi*v/w). Note that compaction is measured
   ! positive, dilatation negative
   dth_dt = (1 - phi)*(tan_psi*y_dot_gr - e_dot_creep)
@@ -254,7 +254,7 @@ function compute_velocity(tau,sigma,phi,phi2,pb) result(v)
   y_dot_gr = pb%cns_params%y_gr_star*exp((tau*(1 - mu_star*tan_psi) - &
             sigma*(mu_star + tan_psi))*denom)
 
-  ! Shear strain rate [1/s] due to viscous flow (pressure solution)
+  ! Shear strain rate [1/s] due to shear creep
   y_dot_creep = calc_creep_rate(tau, phi, .false., .false., pb)
   y_dot_creep_bulk = 0d0
   if (pb%features%localisation == 1) then
@@ -262,7 +262,7 @@ function compute_velocity(tau,sigma,phi,phi2,pb) result(v)
   endif
 
   ! The total slip velocity is the combined contribution of granular flow
-  ! and pressure solution (parallel processes)
+  ! and creep (parallel processes)
   v = pb%cns_params%L*(pb%cns_params%lambda*(y_dot_gr + y_dot_creep) + &
       (1-pb%cns_params%lambda)*y_dot_creep_bulk)
 
@@ -302,7 +302,7 @@ end function calc_tan_psi
 ! end function calc_mu_tilde
 
 !===============================================================================
-! SEISMIC: calculate the rate of pressure solution as a function of effective
+! SEISMIC: calculate the rate of shear/normal creep as a function of effective
 ! normal or shear stress, and porosity. To prevent porosities from going
 ! negative compaction rates can be truncated by a cut-off porosity. The logical
 ! 'truncate' indicates if truncation is needed. This only applies to compaction
