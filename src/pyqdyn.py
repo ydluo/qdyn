@@ -223,7 +223,7 @@ class qdyn:
 
         # Determine number of creep mechanisms
         A = np.array(settings["SET_DICT_CNS"]["A"])
-        N_creep = (A > 0).sum()
+        N_creep = len(A)
         self.set_dict["SET_DICT_CNS"]["N_CREEP"] = N_creep
 
         if dim == 0:
