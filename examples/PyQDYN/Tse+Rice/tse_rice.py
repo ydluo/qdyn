@@ -4,24 +4,28 @@
 # Omit the run argument to execute script file without
 # re-running the simulation (e.g. for plotting data)
 
-# Path where QDYN executable and wrapper are located
-from __future__ import print_function
-
-qdyn_path = "/home/martijn/QDyn/src"
-
 # Importing some required modules
+import os
 import sys
-import numpy as np
-sys.path.append(qdyn_path)
-from pyqdyn import qdyn
-import matplotlib.pyplot as plt
 
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Go up in the directory tree
+upup = [os.pardir]*4
+qdyn_dir = os.path.join(*upup)
+# Get QDYN src directory
+src_dir = os.path.abspath(
+    os.path.join(
+        os.path.join(__file__, qdyn_dir), "src")
+)
+# Append src directory to Python path
+sys.path.append(src_dir)
+# Import QDYN wrapper
+from pyqdyn import qdyn
 
 # QDYN class object
 p = qdyn()
-
-# Define where the QDYN executable is located
-p.qdyn_path = qdyn_path
 
 # Number of fault segments
 N = np.power(2, 11)

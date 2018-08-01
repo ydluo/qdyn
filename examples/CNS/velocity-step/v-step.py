@@ -1,21 +1,28 @@
-# Path where QDYN executable and wrapper are located
-qdyn_path = "/home/martijn/QDyn/src"
-
 # Importing some required modules
-import numpy as np
-import matplotlib.pyplot as plt
-import sys
-import pickle
 import gzip
-sys.path.append(qdyn_path)
+import os
+import pickle
+import sys
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Go up in the directory tree
+upup = [os.pardir]*4
+qdyn_dir = os.path.join(*upup)
+# Get QDYN src directory
+src_dir = os.path.abspath(
+    os.path.join(
+        os.path.join(__file__, qdyn_dir), "src")
+)
+# Append src directory to Python path
+sys.path.append(src_dir)
+# Import QDYN wrapper
 from pyqdyn import qdyn
 from numpy.testing import assert_allclose
 
 # QDYN class object
 p = qdyn()
-
-# Define where the QDYN executable is located
-p.qdyn_path = qdyn_path
 
 Z_ps = 1e-10
 
