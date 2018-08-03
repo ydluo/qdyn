@@ -405,11 +405,16 @@ class qdyn:
         return True
 
     # Run QDYN
-    def run(self):
+    def run(self, test=False):
 
         if not self.qdyn_input_written:
             print("Input file has not yet been written. First call write_input() to render QDyn input file")
             exit()
+
+        if not test:
+            output = None
+        else:
+            output = 0
 
         # Executable file (including path)
         qdyn_exec = os.path.join(self.qdyn_path, "qdyn")
@@ -431,7 +436,7 @@ class qdyn:
             # If we're on Unix, simply call the qdyn executable directly
             else: cmd = [qdyn_exec]
             # Run command
-            call(cmd)
+            call(cmd, stdout=output)
 
         else: # MPI parallel
 
@@ -443,7 +448,7 @@ class qdyn:
             else:
                 cmd = ["/usr/local/bin/mpirun", "-np", "%i" % (self.set_dict["NPROC"]), qdyn_exec]
             # Run command
-            call(cmd)
+            call(cmd, stdout=output)
 
         # If a suffix is requested, rename output files
         suffix = self.set_dict["SUFFIX"]
