@@ -1,6 +1,8 @@
 # Importing some required modules
 import os
 import sys
+import warnings
+warnings.filterwarnings("ignore")
 # Go up in the directory tree
 upup = [os.pardir]*2
 qdyn_dir = os.path.join(*upup)
@@ -16,6 +18,9 @@ from pyqdyn import qdyn
 from vstep import TestVstep
 from stickslip import TestStickSlip
 from singleasperity import TestSingleAsperity
+
+# Width of output
+msg_width = 66
 
 # General simulation parameters
 set_dict = {
@@ -78,9 +83,18 @@ qdyn_files = ["qdyn.in", "fort.18", "fort.19", "fort.22", "fort.121"]
 # QDYN class object
 p = qdyn()
 
-print("".join(["="]*50))
-print("".join([" "]*12) + "Initiated QDYN Test Suite\n")
+# Test report header
+print("".join(["="]*msg_width))
+print("".join([" "]*((msg_width-25)//2)) + "Initiated QDYN Test Suite\n")
 
+# Unit tests (hard coded in FORTRAN)
+print(" Running unit tests...")
+p.run(test=False, unit=True)
+
+# Integration tests (executed from Python)
+print(" Running integration tests...")
+
+# Spring-block velocity-step simulation (RSF and CNS)
 print(" - Testing spring-block (velocity-step)..")
 p.settings(set_dict)
 vstep = TestVstep(p)
@@ -88,6 +102,7 @@ vstep.import_results()
 vstep.run_test("RSF")
 vstep.run_test("CNS")
 
+# Spring-block stick-slip simulation (RSF and CNS)
 print(" - Testing spring-block (stick-slip)..")
 p.settings(set_dict)
 stickslip = TestStickSlip(p)
@@ -95,14 +110,16 @@ stickslip.import_results()
 stickslip.run_test("RSF")
 stickslip.run_test("CNS")
 
-print(" - Testing single asperity...")
+# 2D fault single asperity simulation (RSF)
+print(" - Testing single asperity (will take a few minutes)...")
 p.settings(set_dict)
 single_asperity = TestSingleAsperity(p)
 single_asperity.import_results()
 single_asperity.run_test("RSF")
 
-print("".join(["-"]*50))
-print("Test results:\n")
+# Print out integration test report
+print("".join(["-"]*msg_width))
+print("Integration test results:\n")
 print(" - Spring-block (velocity-step)")
 print("     %s" % vstep.test_results["RSF"]["success_msg"])
 print("     %s" % vstep.test_results["CNS"]["success_msg"])
@@ -111,7 +128,7 @@ print("     %s" % stickslip.test_results["RSF"]["success_msg"])
 print("     %s" % stickslip.test_results["CNS"]["success_msg"])
 print(" - Single asperity")
 print("     %s" % single_asperity.test_results["RSF"]["success_msg"])
-print("".join(["="]*50))
+print("".join(["="]*msg_width))
 
 # Clean-up
 for file in qdyn_files:
