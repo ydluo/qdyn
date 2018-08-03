@@ -414,7 +414,7 @@ class qdyn:
         if not test:
             output = None
         else:
-            output = 0
+            output = open(os.devnull, "w")
 
         # Executable file (including path)
         qdyn_exec = os.path.join(self.qdyn_path, "qdyn")
@@ -436,7 +436,8 @@ class qdyn:
             # If we're on Unix, simply call the qdyn executable directly
             else: cmd = [qdyn_exec]
             # Run command
-            call(cmd, stdout=output)
+            with output:
+                call(cmd, stdout=output)
 
         else: # MPI parallel
 
@@ -448,7 +449,8 @@ class qdyn:
             else:
                 cmd = ["/usr/local/bin/mpirun", "-np", "%i" % (self.set_dict["NPROC"]), qdyn_exec]
             # Run command
-            call(cmd, stdout=output)
+            with output:
+                call(cmd, stdout=output)
 
         # If a suffix is requested, rename output files
         suffix = self.set_dict["SUFFIX"]
