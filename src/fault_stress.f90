@@ -228,7 +228,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   use mesh, only : mesh_type
   use okada, only : compute_kernel
   use fftsg, only : my_rdft
-  use utils, only : save_vectorV, save_array
+  ! use utils, only : save_vectorV, save_array
   use constants, only : FAULT_TYPE
   use my_mpi, only : is_mpi_parallel, is_mpi_master, gather_alli, my_mpi_NPROCS, my_mpi_rank
 
@@ -302,17 +302,18 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   endif
 
 !PG, Testing MPI version, only for debugging purpose.
-  write(6,*) 'Here, iproc: ',my_mpi_rank()
-  write(6,*) 'is_mpi_paralle()',is_mpi_parallel()
-   if (is_mpi_parallel()) then
-     write(6,*) 'Writting x,y,z fault coordinates, iproc:',my_mpi_rank()
-     write(6,*) 'iproc, nwLocal,nwGlobal ,nx: :',my_mpi_rank(),k%nwLocal,k%nwGlobal,k%nx
-     call save_array(m%xglob,m%yglob,m%zglob,m%zglob,my_mpi_rank(),'glo',k%nwGlobal,k%nx)
-   else
-     write(6,*) 'Writting x,y,z fault coordinates, iproc:',my_mpi_rank()
-     write(6,*) 'iproc, nwLocal,nwGlobal ,nx: :',my_mpi_rank(),k%nwLocal,k%nwGlobal,k%nx
-     call save_array(m%xglob,m%yglob,m%zglob,m%zglob,my_mpi_rank(),'glo',k%nwGlobal,k%nx)
-  endif
+! MPA: this should not be active in production code
+  ! write(6,*) 'Here, iproc: ',my_mpi_rank()
+  ! write(6,*) 'is_mpi_paralle()',is_mpi_parallel()
+  !  if (is_mpi_parallel()) then
+  !    write(6,*) 'Writting x,y,z fault coordinates, iproc:',my_mpi_rank()
+  !    write(6,*) 'iproc, nwLocal,nwGlobal ,nx: :',my_mpi_rank(),k%nwLocal,k%nwGlobal,k%nx
+  !    call save_array(m%xglob,m%yglob,m%zglob,m%zglob,my_mpi_rank(),'glo',k%nwGlobal,k%nx)
+  !  else
+  !    write(6,*) 'Writting x,y,z fault coordinates, iproc:',my_mpi_rank()
+  !    write(6,*) 'iproc, nwLocal,nwGlobal ,nx: :',my_mpi_rank(),k%nwLocal,k%nwGlobal,k%nx
+  !    call save_array(m%xglob,m%yglob,m%zglob,m%zglob,my_mpi_rank(),'glo',k%nwGlobal,k%nx)
+  ! endif
 
 
 end subroutine init_kernel_3D_fft
@@ -601,7 +602,6 @@ end subroutine compute_stress_3d
 subroutine compute_stress_3d_fft(tau,sigma_n,k3f,v)
 
   use fftsg, only : my_rdft
-  use utils, only : save_vector
   use my_mpi, only : is_MPI_parallel, gather_allvdouble
 
   type(kernel_3D_fft), intent(inout)  :: k3f

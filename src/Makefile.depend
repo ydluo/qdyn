@@ -1,7 +1,7 @@
 derivs_all.o: diffusion_solver.o fault_stress.o friction.o friction_cns.o \
-	problem_class.o
+	problem_class.o utils.o
 diffusion_solver.o: constants.o mesh.o problem_class.o
-fault_stress.o: constants.o fftsg.o mesh.o okada.o parallel.o utils.o
+fault_stress.o: constants.o fftsg.o mesh.o okada.o parallel.o
 friction.o: friction_cns.o problem_class.o
 friction_cns.o: constants.o problem_class.o
 initialize.o: constants.o diffusion_solver.o fault_stress.o friction.o mesh.o \
@@ -17,4 +17,5 @@ parallel.o: constants.o
 problem_class.o: fault_stress.o mesh.o
 solver.o: constants.o derivs_all.o diffusion_solver.o friction.o \
 	friction_cns.o ode_bs.o ode_rk45.o output.o parallel.o \
-	problem_class.o
+	problem_class.o utils.o
+utils.o: problem_class.o
