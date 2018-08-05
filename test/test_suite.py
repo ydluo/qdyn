@@ -18,6 +18,7 @@ from pyqdyn import qdyn
 from vstep import TestVstep
 from stickslip import TestStickSlip
 from singleasperity import TestSingleAsperity
+from tserice import TestTseRice
 
 # Width of output
 msg_width = 66
@@ -117,6 +118,14 @@ single_asperity = TestSingleAsperity(p)
 single_asperity.import_results()
 single_asperity.run_test("RSF")
 
+# Tse & Rice (1986) example test (RSF)
+# see https://doi.org/10.1029/JB091iB09p09452
+print(" - Testing Tse & Rice (1986) example (will take a few minutes)...")
+p.settings(set_dict)
+tse_rice = TestTseRice(p)
+tse_rice.import_results()
+tse_rice.run_test()
+
 # Print out integration test report
 print("".join(["-"]*msg_width))
 print("Integration test results:\n")
@@ -128,6 +137,8 @@ print("     %s" % stickslip.test_results["RSF"]["success_msg"])
 print("     %s" % stickslip.test_results["CNS"]["success_msg"])
 print(" - Single asperity")
 print("     %s" % single_asperity.test_results["RSF"]["success_msg"])
+print(" - Tse & Rice (1986) example")
+print("     %s" % tse_rice.test_results["RSF"]["success_msg"])
 print("".join(["="]*msg_width))
 
 # Clean-up
