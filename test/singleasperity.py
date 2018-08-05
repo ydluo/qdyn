@@ -70,7 +70,7 @@ class TestSingleAsperity(AuxiliaryFunctions):
         set_dict["MESHDIM"] = 1
         set_dict["FINITE"] = 0
         set_dict["TMAX"] = 10*t_yr
-        set_dict["NTOUT"] = 100
+        set_dict["NTOUT"] = 1000
         set_dict["NXOUT"] = 1
         set_dict["V_PL"] = 1e-9
         set_dict["MU"] = 3e10
@@ -89,6 +89,10 @@ class TestSingleAsperity(AuxiliaryFunctions):
         set_dict["SET_DICT_RSF"]["TH_0"] = \
             set_dict["SET_DICT_RSF"]["DC"] / set_dict["V_PL"]
 
+        # Setting some CNS parameters
+        set_dict["SET_DICT_CNS"]["IPS_CONST_DISS"] = 1e-15
+        set_dict["SET_DICT_CNS"]["A"] = [1e-15]
+
         result = self.render_RSF_mesh(set_dict)
         set_dict["N"] = result["N"]
         set_dict["L"] = result["L"]
@@ -105,6 +109,22 @@ class TestSingleAsperity(AuxiliaryFunctions):
 
             p.mesh_dict["A"] = result["a"]
             p.mesh_dict["V_0"] = result["V0"]
+
+        if mode == "CNS":
+            set_dict["FRICTION_MODEL"] = "CNS"
+            set_dict["SOLVER"] = 2
+
+            p.settings(set_dict)
+            p.render_mesh()
+
+            if "IPS_CONST_DISS" in p.mesh_dict:
+                p.mesh_dict["IPS_CONST_DISS"][1500:2500] = 1e-12
+            elif "A0" in p.mesh_dict:
+                p.mesh_dict["A0"][1500:2500] = 1e-12
+            else:
+                print("Unable to set CNS creep kinetics")
+                exit()
+
 
         # Write input file
         p.write_input()
