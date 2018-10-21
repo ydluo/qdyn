@@ -85,8 +85,7 @@
 %		DC 	characteristic slip distance (m)
 %		MU_SS	reference steady-state friction coefficient
 %		V_SS	reference steady-state slip velocity (m/s)
-%		TH_SS	reference steady-state state (default: TH_SS=DC/V_SS)
-%               V_PL    slip rate loading (m/s)
+%       V_PL    slip rate loading (m/s)
 %		RNS_LAW	type of rate-and-state friction law:
 %			0 = original
 %			1 = with cut-off velocities
@@ -270,7 +269,6 @@ B = 1e-2;
 DC = 4e-4;
 MU_SS = 0.6;
 V_SS = 1e-9;
-TH_SS = DC/V_SS;
 V_PL = V_SS;
 THETA_LAW = 1;
 RNS_LAW = 0;
@@ -279,7 +277,7 @@ CO = 0;
 %-- initial conditions
 SIGMA=1e8;
 V_0=V_SS ;
-TH_0=TH_SS;
+TH_0=DC/V_SS;
 V1=0.01;
 V2=1e-7;
 %-- branching fault
@@ -312,9 +310,6 @@ if MESHDIM<2 && NPROCS>1
   disp('MPI parallelization is only implemented for MESHDIM=2. Resetting NPROCS=1.')
   NPROCS = 1;
 end
-
-% set steady state theta
-TH_SS = DC./V_SS;
 
 % wrap UPPER CASE VARIABLES in parameter structure fields with the same name
 fpars = who;
