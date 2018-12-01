@@ -38,7 +38,10 @@ dz = 25;
 p.TMAX = 3000*year;
 
 % REQUIRED COMPUTATIONS
+sprintf('Desired dz = %f', dz);
 p.N = 2^nextpow2(p.L/dz);
+dz = p.L / p.N;
+sprintf('Used dz = %f', dz);
 p = qdyn('set', p);
 %p.N = p.N/2;
 n1 = H/p.L*p.N;
