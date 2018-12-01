@@ -299,6 +299,7 @@ subroutine my_rdft(isgn, a, m_fft)
   integer :: n
 
   n = size(a)
+  if (n < 2**nextpow2(n)) stop 'FATAL ERROR in my_rdft: length must be a power of 2'
 
   ! Initialize or re-initialize working arrays if needed
   ! Handle 2 possible states:
@@ -335,6 +336,8 @@ subroutine my_rdft2(isgn, a, m_fft)
   shp = shape(a)
   n1 = shp(1)
   n2 = shp(2)
+  if (n1 < 2**nextpow2(n1)) stop 'FATAL ERROR in my_rdft2: 1st size must be a power of 2'
+  if (n2 < 2**nextpow2(n2)) stop 'FATAL ERROR in my_rdft2: 2nd size must be a power of 2'
   if (m_fft%n1 /= n1 .or. m_fft%n2 /= n2) then
     if (m_fft%n1 > 0) deallocate(m_fft%iw, m_fft%rw, m_fft%tw)
     m_fft%n1 = n1
@@ -352,6 +355,23 @@ subroutine my_rdft2(isgn, a, m_fft)
 
 end subroutine my_rdft2
 
+! same as matlab's nextpow2
+integer function nextpow2(n)
+  
+  integer, intent(in) :: n
+  
+  integer :: n2
+  
+  n = abs(n)
+  nextpow2 = 1
+  n2 = 2
+  do while( n > n2 )
+    nextpow2 = nextpow2 + 1
+    n2 = 2*n2
+  end do 
+  
+end function nextpow2
+    
 ! Complex conjugate of 2D real FFT array
 ! Output array MUST already have the correct shape
 subroutine conj2d(a, b)
