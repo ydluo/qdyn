@@ -109,9 +109,9 @@
 %   SOLVER   ODE solver mode
 %     1 = Bulirsch-Stoer
 %     2 = Runge-Kutta-Fehlberg
-%		N	number of fault elements if MESHDIM=1
-%		NX	number of fault elements along-strike in 3D
-%		NW 	number of fault elements along-dip in 3D
+%		N	number of fault elements if MESHDIM=1. Must be a power of 2.
+%		NX	number of fault elements along-strike in 3D. Must be a power of 2 if FFT used along-strike.
+%		NW 	number of fault elements along-dip in 3D. Must be a power of 2 if FFT used along-dip.
 %		DW 	along-dip length (m) of each element along-dip, from deeper to shallower
 %		TMAX 	total simulation time (s)
 %		NSTOP 	stopping criterion:
@@ -311,6 +311,10 @@ Parse_Inputs(varargin{:});
 if MESHDIM<2 && NPROCS>1 
   disp('MPI parallelization is only implemented for MESHDIM=2. Resetting NPROCS=1.')
   NPROCS = 1;
+end
+
+if MESHDIM==1 & N < 2^nextpow2(N)
+  error('N must be a power of 2')
 end
 
 % set steady state theta
