@@ -299,7 +299,6 @@ subroutine my_rdft(isgn, a, m_fft)
   integer :: n
 
   n = size(a)
-  if (n < 2**nextpow2(n)) stop 'FATAL ERROR in my_rdft: length must be a power of 2'
 
   ! Initialize or re-initialize working arrays if needed
   ! Handle 2 possible states:
@@ -307,6 +306,7 @@ subroutine my_rdft(isgn, a, m_fft)
   !      (by default m_fft%n= -1, see the definition of OouraFFT_type)
   !   2. m_fft has been initialized before but for a different length n.
   if (m_fft%n /= n) then
+    if (n < 2**nextpow2(n)) stop 'FATAL ERROR in my_rdft: length must be a power of 2'
     if (m_fft%n >0) deallocate(m_fft%iw, m_fft%rw)
     m_fft%n = n 
     m_fft%nw = 2+ceiling(dsqrt(dble(m_fft%n/2.d0)))
@@ -336,10 +336,10 @@ subroutine my_rdft2(isgn, a, m_fft)
   shp = shape(a)
   n1 = shp(1)
   n2 = shp(2)
-  if (n1 < 2**nextpow2(n1)) stop 'FATAL ERROR in my_rdft2: 1st size must be a power of 2'
-  if (n2 < 2**nextpow2(n2)) stop 'FATAL ERROR in my_rdft2: 2nd size must be a power of 2'
   if (m_fft%n1 /= n1 .or. m_fft%n2 /= n2) then
     if (m_fft%n1 > 0) deallocate(m_fft%iw, m_fft%rw, m_fft%tw)
+    if (n1 < 2**nextpow2(n1)) stop 'FATAL ERROR in my_rdft2: 1st size must be a power of 2'
+    if (n2 < 2**nextpow2(n2)) stop 'FATAL ERROR in my_rdft2: 2nd size must be a power of 2'
     m_fft%n1 = n1
     m_fft%n2 = n2
     n = max(n1/2, n2)
