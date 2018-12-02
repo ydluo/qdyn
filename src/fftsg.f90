@@ -355,6 +355,7 @@ subroutine my_rdft2(isgn, a, m_fft)
 
 end subroutine my_rdft2
 
+! test if integer n is a power of 2
 logical function ispow2(n)
   
   integer, intent(in) :: n
@@ -375,7 +376,7 @@ logical function ispow2(n)
 ! version 2, using a bit manipulation trick with intrinsic functions in Fortran 2008:
 !  ispow2 = (n>1 .and. popcnt(n)==1)
 
-end function nextpow2
+end function ispow2
     
 ! Complex conjugate of 2D real FFT array
 ! Output array MUST already have the correct shape
