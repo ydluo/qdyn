@@ -100,6 +100,8 @@ module problem_class
    ! QSB
     double precision :: DYN_M,DYN_th_on,DYN_th_off
     integer :: DYN_FLAG,DYN_SKIP
+    ! Flag for unit testing
+    logical :: test_mode = .false.
 
     ! SEISMIC: added structures
     type (cns_type) :: cns_params

@@ -1,14 +1,15 @@
 aux.o: problem_class.o
 derivs_all.o: diffusion_solver.o fault_stress.o friction.o friction_cns.o \
-	problem_class.o
+	problem_class.o utils.o
 diffusion_solver.o: constants.o mesh.o problem_class.o
-fault_stress.o: constants.o fftsg.o mesh.o okada.o parallel.o utils.o
+fault_stress.o: constants.o fftsg.o mesh.o okada.o parallel.o
 friction.o: friction_cns.o problem_class.o
 friction_cns.o: constants.o problem_class.o
 initialize.o: constants.o diffusion_solver.o fault_stress.o friction.o mesh.o \
 	output.o parallel.o problem_class.o solver.o
 input.o: constants.o mesh.o output.o parallel.o problem_class.o
-main.o: derivs_all.o initialize.o input.o parallel.o problem_class.o solver.o
+main.o: derivs_all.o initialize.o input.o parallel.o problem_class.o solver.o \
+	unittests.o
 mesh.o: constants.o parallel.o
 ode_bs.o: derivs_all.o parallel.o problem_class.o
 ode_rk45.o: derivs_all.o
@@ -19,3 +20,8 @@ problem_class.o: fault_stress.o mesh.o
 solver.o: constants.o derivs_all.o diffusion_solver.o friction.o \
 	friction_cns.o ode_bs.o ode_rk45.o output.o parallel.o \
 	problem_class.o
+unittests.o: constants.o fault_stress.o friction.o mesh.o problem_class.o \
+	solver.o unittests_rsf.o
+unittests_aux.o: constants.o problem_class.o solver.o
+unittests_rsf.o: constants.o fault_stress.o friction.o mesh.o problem_class.o \
+	solver.o unittests_aux.o

@@ -80,6 +80,9 @@ subroutine init_all(pb)
   if (pb%features%tp == 1) then
     call init_tp(pb)
     write(6,*) "Spectral mesh initiated"
+  else
+    allocate(pb%tp%P(pb%mesh%nn))
+    pb%tp%P = 0d0
   endif
 
   ! SEISMIC: initialise Runge-Kutta ODE solver, if selected

@@ -445,9 +445,9 @@ class qdyn:
         return True
 
     # Run QDYN
-    def run(self):
+    def run(self, test=False, unit=False):
 
-        if not self.qdyn_input_written:
+        if not self.qdyn_input_written and unit is False:
             print("Input file has not yet been written. First call write_input() to render QDyn input file")
             exit()
 
@@ -470,8 +470,17 @@ class qdyn:
             if self.W10_bash is True: cmd = ["bash", "-c", "\"%s\"" % (qdyn_exec_bash)]
             # If we're on Unix, simply call the qdyn executable directly
             else: cmd = [qdyn_exec]
-            # Run command
-            call(cmd)
+
+            # If unit testing is requested, append test argument
+            if unit:
+                cmd.append("test")
+            if not test:
+                # Run command
+                call(cmd)
+            else:
+                # Run and suppress stdout
+                with open(os.devnull, "w") as output:
+                    call(cmd, stdout=output)
 
         else: # MPI parallel
 
@@ -482,8 +491,18 @@ class qdyn:
             # If we're on Unix, simply call the mpi executable directly
             else:
                 cmd = ["/usr/local/bin/mpirun", "-np", "%i" % (self.set_dict["NPROC"]), qdyn_exec]
+
+            # If unit testing is requested, append test argument
+            if unit:
+                cmd.append("test")
             # Run command
-            call(cmd)
+            if not test:
+                # Run command
+                call(cmd)
+            else:
+                # Run and suppress stdout
+                with open(os.devnull, "w") as output:
+                    call(cmd, stdout=output)
 
         # If a suffix is requested, rename output files
         suffix = self.set_dict["SUFFIX"]

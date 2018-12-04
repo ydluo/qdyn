@@ -45,6 +45,7 @@ if RUN_OR_READ
   %p.V_0 = 1.01*p.V_SS ;
   p.V_0 = ( 1.+0.01*exp( -(p.X/Lasp*2).^6 ) )*p.V_SS ;
   p.V_0 = p.V_0/mean(p.V_0)*p.V_SS;
+  
   [p,ot1,ox1] = qdyn('run',p) ;
   
   

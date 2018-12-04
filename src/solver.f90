@@ -3,6 +3,7 @@
 module solver
 
   use problem_class, only : problem_type
+  use utils, only : pack, unpack
 
   implicit none
   private
@@ -80,31 +81,17 @@ subroutine do_bsstep(pb)
   type(problem_type), intent(inout) :: pb
 
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
-  integer :: ik, ind_stress_coupling, ind_localisation
-
-  ! Pack v, theta into yt
-  ! yt(2::pb%neqs) = pb%v(pb%rs_nodes) ! JPA Coulomb
-
-  ! SEISMIC: define the indices of yt and dydt based on which
-  ! features are requested (defined in input file)
-  ind_stress_coupling = 2 + pb%features%stress_coupling
-  ind_localisation = ind_stress_coupling + pb%features%localisation
+  double precision, dimension(pb%mesh%nn) :: main_var
+  integer :: ik
 
   ! SEISMIC: in the case of the CNS model, solve for tau and not v
   if (pb%i_rns_law == 3) then   ! SEISMIC: CNS model
-    yt(2::pb%neqs) = pb%tau
+    main_var = pb%tau
   else  ! SEISMIC: not CNS model (i.e. rate-and-state)
-    yt(2::pb%neqs) = pb%v
+    main_var = pb%v
   endif
-  yt(1::pb%neqs) = pb%theta
-  ! SEISMIC NOTE/WARNING: I don't know how permanent this temporary solution is,
-  ! but in case it gets fixed more permanently, derivs_all.f90 needs adjustment
-  if (pb%features%stress_coupling == 1) then           ! Temp solution for normal stress coupling
-    yt(ind_stress_coupling::pb%neqs) = pb%sigma
-  endif
-  if (pb%features%localisation == 1) then
-    yt(ind_localisation::pb%neqs) = pb%theta2
-  endif
+
+  call pack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%tp%P, pb)
 
   ! SEISMIC: user-defined switch to use either (1) the Bulirsch-Stoer method, or
   ! the (2) Runge-Kutta-Fehlberg method
@@ -171,29 +158,15 @@ subroutine do_bsstep(pb)
   endif
 
   iktotal=ik+iktotal
-  !  if (MY_RANK==0) write(6,*) 'iktotal=',iktotal,'pb%time=',pb%time
-  ! Unpack yt into v, theta
-  !  pb%v(pb%rs_nodes) = yt(2::pb%neqs) ! JPA Coulomb
+
+  call unpack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%tp%P, pb)
 
   ! SEISMIC: retrieve the solution for tau in the case of the CNS model, else
   ! retreive the solution for slip velocity
   if (pb%i_rns_law == 3) then
-    pb%tau = yt(2::pb%neqs)
-    pb%dtau_dt = yt(2::pb%neqs)
+    pb%tau = main_var
   else
-    pb%v = yt(2::pb%neqs)
-    pb%dtau_dt = 0d0
-  endif
-
-  pb%theta = yt(1::pb%neqs)
-  ! SEISMIC NOTE/WARNING: I don't know how permanent this temporary solution is,
-  ! but in case it gets fixed more permanently, derivs_all.f90 needs adjustment
-  if (pb%features%stress_coupling == 1) then           ! Temp solution for normal stress coupling
-    pb%sigma = yt(ind_stress_coupling::pb%neqs)
-  endif
-
-  if (pb%features%localisation == 1) then
-    pb%theta2 = yt(ind_localisation::pb%neqs)
+    pb%v = main_var
   endif
 
 end subroutine do_bsstep
@@ -329,9 +302,9 @@ subroutine init_rk45(pb)
   use ode_rk45, only: rkf45_d
 
   type(problem_type), intent(inout) :: pb
-  double precision, dimension(pb%neqs*pb%mesh%nn) :: yt
+  double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt
+  double precision, dimension(pb%mesh%nn) :: main_var
   integer :: nwork
-  integer :: ind_stress_coupling, ind_localisation
 
   write (6,*) "Initialising RK45 solver"
 
@@ -340,25 +313,13 @@ subroutine init_rk45(pb)
   allocate(pb%rk45%work(nwork))
   allocate(pb%rk45%iwork(5))
 
-  ! Prepare yt for first call
-  ind_stress_coupling = 2 + pb%features%stress_coupling
-  ind_localisation = ind_stress_coupling + pb%features%localisation
-
-  ! SEISMIC: in the case of the CNS model, solve for tau and not v
   if (pb%i_rns_law == 3) then   ! SEISMIC: CNS model
-    yt(2::pb%neqs) = pb%tau
+    main_var = pb%tau
   else  ! SEISMIC: not CNS model (i.e. rate-and-state)
-    yt(2::pb%neqs) = pb%v
+    main_var = pb%v
   endif
-  yt(1::pb%neqs) = pb%theta
-  ! SEISMIC NOTE/WARNING: I don't know how permanent this temporary solution is,
-  ! but in case it gets fixed more permanently, derivs_all.f90 needs adjustment
-  if (pb%features%stress_coupling == 1) then           ! Temp solution for normal stress coupling
-    yt(ind_stress_coupling::pb%neqs) = pb%sigma
-  endif
-  if (pb%features%localisation == 1) then
-    yt(ind_localisation::pb%neqs) = pb%theta2
-  endif
+
+  call pack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%tp%P_a, pb)
 
   call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, pb%time, &
                 pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
