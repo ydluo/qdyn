@@ -1,12 +1,12 @@
 module fftsg
 
-! This module is a f90 wrapper for Takuya Ooura's FFT routines 
+! This module is a f90 wrapper for Takuya Ooura's FFT routines
 ! General Purpose FFT (Fast Fourier/Cosine/Sine Transform) Package
 ! Copyright(C) 1996-2001 Takuya OOURA
 ! email: ooura@kurims.kyoto-u.ac.jp
 ! download: http://www.kurims.kyoto-u.ac.jp/~ooura/fft.html
 
-  private 
+  private
 
  ! working arrays for Ooura's fft
   type OouraFFT_type
@@ -55,23 +55,23 @@ contains
 !                       n >= 1, n = power of 2
 !         a(0:2*n-1)   :input/output data (real*8)
 !                       input data
-!                           a(2*j) = Re(x(j)), 
+!                           a(2*j) = Re(x(j)),
 !                           a(2*j+1) = Im(x(j)), 0<=j<n
 !                       output data
-!                           a(2*k) = Re(X(k)), 
+!                           a(2*k) = Re(X(k)),
 !                           a(2*k+1) = Im(X(k)), 0<=k<n
 !         ip(0:*)      :work area for bit reversal (integer)
 !                       length of ip >= 2+sqrt(n)
-!                       strictly, 
-!                       length of ip >= 
+!                       strictly,
+!                       length of ip >=
 !                           2+2**(int(log(n+0.5)/log(2.0))/2).
 !                       ip(0),ip(1) are pointers of the cos/sin table.
 !         w(0:n/2-1)   :cos/sin table (real*8)
 !                       w(),ip() are initialized if ip(0) = 0.
 !     [remark]
-!         Inverse of 
+!         Inverse of
 !             call cdft(2*n, -1, a, ip, w)
-!         is 
+!         is
 !             call cdft(2*n, 1, a, ip, w)
 !             do j = 0, 2 * n - 1
 !                 a(j) = a(j) / n
@@ -85,8 +85,8 @@ contains
 !             R(k) = sum_j=0^n-1 a(j)*cos(2*pi*j*k/n), 0<=k<=n/2
 !             I(k) = sum_j=0^n-1 a(j)*sin(2*pi*j*k/n), 0<k<n/2
 !         <case2> IRDFT (excluding scale)
-!             a(k) = (R(0) + R(n/2)*cos(pi*k))/2 + 
-!                    sum_j=1^n/2-1 R(j)*cos(2*pi*j*k/n) + 
+!             a(k) = (R(0) + R(n/2)*cos(pi*k))/2 +
+!                    sum_j=1^n/2-1 R(j)*cos(2*pi*j*k/n) +
 !                    sum_j=1^n/2-1 I(j)*sin(2*pi*j*k/n), 0<=k<n
 !     [usage]
 !         <case1>
@@ -111,16 +111,16 @@ contains
 !                               a(1) = R(n/2)
 !         ip(0:*)      :work area for bit reversal (integer)
 !                       length of ip >= 2+sqrt(n/2)
-!                       strictly, 
-!                       length of ip >= 
+!                       strictly,
+!                       length of ip >=
 !                           2+2**(int(log(n/2+0.5)/log(2.0))/2).
 !                       ip(0),ip(1) are pointers of the cos/sin table.
 !         w(0:n/2-1)   :cos/sin table (real*8)
 !                       w(),ip() are initialized if ip(0) = 0.
 !     [remark]
-!         Inverse of 
+!         Inverse of
 !             call rdft(n, 1, a, ip, w)
-!         is 
+!         is
 !             call rdft(n, -1, a, ip, w)
 !             do j = 0, n - 1
 !                 a(j) = a(j) * 2 / n
@@ -149,16 +149,16 @@ contains
 !                           a(k) = C(k), 0<=k<n
 !         ip(0:*)      :work area for bit reversal (integer)
 !                       length of ip >= 2+sqrt(n/2)
-!                       strictly, 
-!                       length of ip >= 
+!                       strictly,
+!                       length of ip >=
 !                           2+2**(int(log(n/2+0.5)/log(2.0))/2).
 !                       ip(0),ip(1) are pointers of the cos/sin table.
 !         w(0:n*5/4-1) :cos/sin table (real*8)
 !                       w(),ip() are initialized if ip(0) = 0.
 !     [remark]
-!         Inverse of 
+!         Inverse of
 !             call ddct(n, -1, a, ip, w)
-!         is 
+!         is
 !             a(0) = a(0) / 2
 !             call ddct(n, 1, a, ip, w)
 !             do j = 0, n - 1
@@ -196,16 +196,16 @@ contains
 !                               a(0) = S(n)
 !         ip(0:*)      :work area for bit reversal (integer)
 !                       length of ip >= 2+sqrt(n/2)
-!                       strictly, 
-!                       length of ip >= 
+!                       strictly,
+!                       length of ip >=
 !                           2+2**(int(log(n/2+0.5)/log(2.0))/2).
 !                       ip(0),ip(1) are pointers of the cos/sin table.
 !         w(0:n*5/4-1) :cos/sin table (real*8)
 !                       w(),ip() are initialized if ip(0) = 0.
 !     [remark]
-!         Inverse of 
+!         Inverse of
 !             call ddst(n, -1, a, ip, w)
-!         is 
+!         is
 !             a(0) = a(0) / 2
 !             call ddst(n, 1, a, ip, w)
 !             do j = 0, n - 1
@@ -229,18 +229,18 @@ contains
 !         t(0:n/2)     :work area (real*8)
 !         ip(0:*)      :work area for bit reversal (integer)
 !                       length of ip >= 2+sqrt(n/4)
-!                       strictly, 
-!                       length of ip >= 
+!                       strictly,
+!                       length of ip >=
 !                           2+2**(int(log(n/4+0.5)/log(2.0))/2).
 !                       ip(0),ip(1) are pointers of the cos/sin table.
 !         w(0:n*5/8-1) :cos/sin table (real*8)
 !                       w(),ip() are initialized if ip(0) = 0.
 !     [remark]
-!         Inverse of 
+!         Inverse of
 !             a(0) = a(0) / 2
 !             a(n) = a(n) / 2
 !             call dfct(n, a, t, ip, w)
-!         is 
+!         is
 !             a(0) = a(0) / 2
 !             a(n) = a(n) / 2
 !             call dfct(n, a, t, ip, w)
@@ -266,16 +266,16 @@ contains
 !         t(0:n/2-1)   :work area (real*8)
 !         ip(0:*)      :work area for bit reversal (integer)
 !                       length of ip >= 2+sqrt(n/4)
-!                       strictly, 
-!                       length of ip >= 
+!                       strictly,
+!                       length of ip >=
 !                           2+2**(int(log(n/4+0.5)/log(2.0))/2).
 !                       ip(0),ip(1) are pointers of the cos/sin table.
 !         w(0:n*5/8-1) :cos/sin table (real*8)
 !                       w(),ip() are initialized if ip(0) = 0.
 !     [remark]
-!         Inverse of 
+!         Inverse of
 !             call dfst(n, a, t, ip, w)
-!         is 
+!         is
 !             call dfst(n, a, t, ip, w)
 !             do j = 1, n - 1
 !                 a(j) = a(j) * 2 / n
@@ -302,20 +302,20 @@ subroutine my_rdft(isgn, a, m_fft)
 
   ! Initialize or re-initialize working arrays if needed
   ! Handle 2 possible states:
-  !   1. m_fft has never been intialized yet. This is indicated by m_fft%n<0 
+  !   1. m_fft has never been intialized yet. This is indicated by m_fft%n<0
   !      (by default m_fft%n= -1, see the definition of OouraFFT_type)
   !   2. m_fft has been initialized before but for a different length n.
   if (m_fft%n /= n) then
     if (.not. ispow2(n)) stop 'FATAL ERROR in my_rdft: length must be a power of 2'
     if (m_fft%n >0) deallocate(m_fft%iw, m_fft%rw)
-    m_fft%n = n 
+    m_fft%n = n
     m_fft%nw = 2+ceiling(dsqrt(dble(m_fft%n/2.d0)))
     allocate (m_fft%iw(0:m_fft%nw-1))
     allocate (m_fft%rw(0:m_fft%n/2-1))
     m_fft%iw = 0
     m_fft%rw = 0d0
   endif
-  
+
   ! compute fft
   call rdft(n,isgn,a,m_fft%iw,m_fft%rw)
 
@@ -357,10 +357,8 @@ end subroutine my_rdft2
 
 ! test if integer n is a power of 2
 logical function ispow2(n)
-  
-  integer, intent(in) :: n
-  
-  integer :: n2,p
+
+  integer :: n, n2, p
 
   n = abs(n)
 
@@ -370,14 +368,14 @@ logical function ispow2(n)
   do while( n > n2 )
     p = p + 1
     n2 = 2*n2
-  end do 
+  end do
   ispow2 = (n==n2)
-  
+
 ! version 2, using a bit manipulation trick with intrinsic functions in Fortran 2008:
 !  ispow2 = (n>1 .and. popcnt(n)==1)
 
 end function ispow2
-    
+
 ! Complex conjugate of 2D real FFT array
 ! Output array MUST already have the correct shape
 subroutine conj2d(a, b)
@@ -399,7 +397,7 @@ subroutine conj2d(a, b)
   b(4::2,:)    = -1.0d0 * b(4::2,:)
 
 end subroutine conj2d
-  
+
 
 !_________________________________________________________
 
@@ -3349,5 +3347,4 @@ end subroutine conj2d
       a(m) = c(0) * a(m)
       end subroutine dstsub
 !
-end module fftsg 
-
+end module fftsg
