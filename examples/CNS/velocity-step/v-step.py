@@ -1,29 +1,30 @@
-# Path where QDYN executable and wrapper are located
-qdyn_path = "/home/martijn/QDyn/src"
-
 # Importing some required modules
-import numpy as np
-import matplotlib.pyplot as plt
+import gzip
+import os
+import pickle
 import sys
-sys.path.append(qdyn_path)
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Go up in the directory tree
+upup = [os.pardir]*4
+qdyn_dir = os.path.join(*upup)
+# Get QDYN src directory
+src_dir = os.path.abspath(
+    os.path.join(
+        os.path.join(__file__, qdyn_dir), "src")
+)
+# Append src directory to Python path
+sys.path.append(src_dir)
+# Import QDYN wrapper
 from pyqdyn import qdyn
-
-# CNS kinetic parameters
-
-d = 10e-6			# Nominal grain size
-O = 2.69e-5			# Molar volume
-R = 8.3144			# Universal gas constant
-T = 293				# Absolute temperature
-DCS0 = 2.79e-15		# Kinetic pre-factor
-dH = 2.45e4			# Activation energy
-DCS = DCS0*np.exp(-dH/(R*T))			# Kinetic parameter at T
-Z_ps = (24/np.pi)*DCS*O/(R*T*d**3)		# Combined (lumped) kinetic constant
+from numpy.testing import assert_allclose
 
 # QDYN class object
 p = qdyn()
 
-# Define where the QDYN executable is located
-p.qdyn_path = qdyn_path
+Z_ps = 1e-10
 
 # Python dictionary with general settings
 set_dict = {
@@ -41,7 +42,9 @@ set_dict = {
 
 # Python dictionary with CNS parameters
 set_dict_CNS = {
-    "IPS_CONST_DIFF": Z_ps,
+    "A": [0.5*Z_ps, 0.5*Z_ps, 0.0*Z_ps],
+    "N": [1, 1, 1],
+    "M": [1, 1, 1],
     "A_TILDE": 0.02,
     "MU_TILDE_STAR": 0.4,
     "Y_GR_STAR": 1e-6,
@@ -63,6 +66,10 @@ t_final = 0
 
 # Total slip distance per simulation
 x_ss = 500e-6
+
+t_all = np.array([])
+tau_all = np.array([])
+phi_all = np.array([])
 
 # Loop over all velocity steps
 for i, V in enumerate(Vs):
@@ -93,6 +100,10 @@ for i, V in enumerate(Vs):
     plt.subplot(212)
     plt.plot(p.ot["t"]-p.ot["t"].iloc[0]+t_final, p.ot["theta"]*100)
 
+    t_all = np.hstack([t_all, p.ot["t"]-p.ot["t"].iloc[0]+t_final])
+    tau_all = np.hstack([tau_all, p.ot["tau"]])
+    phi_all = np.hstack([phi_all, p.ot["theta"]])
+
     # Set starting point for next simulation
     tau_final = p.ot["tau"].values[-1]
     phi_final = p.ot["theta"].values[-1]
@@ -106,3 +117,20 @@ plt.xlabel("time [s]")
 plt.tight_layout()
 plt.show()
 
+with gzip.GzipFile("benchmark.tar.gz", "r") as f:
+    benchmark = pickle.load(f)
+
+plt.figure(2)
+plt.plot(t_all, tau_all*1e-6, label="Current")
+plt.plot(benchmark["t"], benchmark["tau"]*1e-6, "k--", label="Benchmark")
+plt.xlabel("time [s]")
+plt.ylabel("shear stress [MPa]")
+plt.legend(loc=4, ncol=2)
+plt.tight_layout()
+plt.show()
+
+print("Performing benchmark comparison")
+assert_allclose(benchmark["t"], t_all, rtol=1e-6)
+assert_allclose(benchmark["tau"], tau_all, rtol=1e-6)
+assert_allclose(benchmark["phi"], phi_all, rtol=1e-6)
+print("Benchmark comparison OK")

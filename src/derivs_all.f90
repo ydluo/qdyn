@@ -147,7 +147,7 @@ subroutine derivs(time,yt,dydt,pb)
     ! SEISMIC: the rate-and-state formulation computes the the time-derivative
     ! of velocity, rather than stress, so the partial derivatives of friction
     ! to velocity and theta are required
-    call dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
+    call dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
 
     ! For thermal pressurisation, the partial derivative of tau to P is -mu
     if (pb%features%tp == 1) then

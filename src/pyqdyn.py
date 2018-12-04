@@ -21,13 +21,18 @@ TODO:
 
 from __future__ import print_function
 
-import numpy as np
-from subprocess import call
-from pandas import read_csv
-import pandas as pd
-import os, pickle, gzip
+import gzip
+import os
+import pickle
 import re
-#import antigravity	# xkcd.com/353/
+from subprocess import call
+
+import numpy as np
+import pandas as pd
+from pandas import read_csv
+
+
+# import antigravity	# xkcd.com/353/
 
 
 class qdyn:
@@ -94,60 +99,63 @@ class qdyn:
 
         # Rate-and-state friction parameters
         set_dict["SET_DICT_RSF"] = {
-        "RNS_LAW": 0,						# Type of rate-and-state friction law (0: original, 1: with cut-off velocities)
-        "THETA_LAW": 1,						# State evolution law (0: aging in no-healin approximation, 1: ageing law, 2: slip law)
-        "A": 0.0010,						# Direct effect parameter
-        "B": 0.0011,						# Evolution effect parameter
-        "DC": 1e-5,							# Characteristic slip distance
-        "V1": 0.01,							# Cut-off velocity of direct effect (when RNS_LAW = 1) [m/s]
-        "V2": 1e-7,							# Cut-off velocity of evolution effect (when RNS_LAW = 1) [m/s], Controls transition from weakening to strengthening. V2 should be <= V1
-        "MU_SS": 0.6,						# Reference steady-state friction
-        "V_SS": 1e-6,						# Reference steady-state slip velocity [m/s]
-        "CO": 0,							# Cohesion [Pa]
-        "V_0": 1.01e-5,						# Initial slip velocity [m/s]
-        "TH_0": 1.0,						# Initial state [s]
+            "RNS_LAW": 0,						# Type of rate-and-state friction law (0: original, 1: with cut-off velocities)
+            "THETA_LAW": 1,						# State evolution law (0: aging in no-healin approximation, 1: ageing law, 2: slip law)
+            "A": 0.0010,						# Direct effect parameter
+            "B": 0.0011,						# Evolution effect parameter
+            "DC": 1e-5,							# Characteristic slip distance
+            "V1": 0.01,							# Cut-off velocity of direct effect (when RNS_LAW = 1) [m/s]
+            "V2": 1e-7,							# Cut-off velocity of evolution effect (when RNS_LAW = 1) [m/s], Controls transition from weakening to strengthening. V2 should be <= V1
+            "MU_SS": 0.6,						# Reference steady-state friction
+            "V_SS": 1e-6,						# Reference steady-state slip velocity [m/s]
+            "CO": 0,							# Cohesion [Pa]
+            "V_0": 1.01e-5,						# Initial slip velocity [m/s]
+            "TH_0": 1.0,						# Initial state [s]
         }
 
         # CNS microphysical model parameters
         set_dict["SET_DICT_CNS"] = {
-        "THICKNESS": 1e-3,					# Total thickness of gouge zone
-        # Granular flow parameters
-        "A_TILDE": 0.006,					# Coefficient of logarithmic rate-dependence of grain-boundary friction
-        "MU_TILDE_STAR": 0.4,				# Reference grain-boundary friction at Y_GR_STAR
-        "Y_GR_STAR": 30e-10,				# Reference strain rate corresponding with MU_TILDE_STAR
-        "H": 0.577,							# Dilatancy geometric factor
-        # Porosity parameters
-        "PHI_C": 0.32,						# Critical state porosity
-        "PHI0": 0.03,						# Lower cut-off velocity (e.g. percolation threshold)
-        "PHI_INI": 0.25,					# Simulation initial porosity
-        # Pressure solution kinetics
-        "IPS_CONST_DIFF": 0.0,				# Kinetic parameter for diffusion controlled pressure solution [Pa/s]
-        "IPS_CONST_DISS": 0.0,				# Kinetic parameter for dissolution controlled pressure solution [Pa/s]
-        # State of stress
-        "TAU": 2e7,							# Initial shear stress [Pa]
+            "THICKNESS": 1e-3,					# Total thickness of gouge zone
+            # Granular flow parameters
+            "A_TILDE": 0.006,					# Coefficient of logarithmic rate-dependence of grain-boundary friction
+            "MU_TILDE_STAR": 0.4,				# Reference grain-boundary friction at Y_GR_STAR
+            "Y_GR_STAR": 30e-10,				# Reference strain rate corresponding with MU_TILDE_STAR
+            "H": 0.577,							# Dilatancy geometric factor
+            # Porosity parameters
+            "PHI_C": 0.32,						# Critical state porosity
+            "PHI0": 0.03,						# Lower cut-off velocity (e.g. percolation threshold)
+            "PHI_INI": 0.25,					# Simulation initial porosity
+            # Creep mechanism parameters (grouped in list)
+            "N_CREEP": -1,                      # Number of creep mechanisms (must be set by render_mesh() )
+            "A": [0.0],				            # (T-dependent) kinetic parameters for creep mechanisms
+            "N": [1.0],                         # Stress exponents for creep mechanisms
+            "M": [2.0],				            # Porosity exponents for creep mechanisms
+            # State of stress
+            "TAU": 2e7,							# Initial shear stress [Pa]
         }
 
         # Localisation settings
         set_dict["SET_DICT_LOCALISATION"] = {
-        "LOCALISATION": 1.0,				# Degree of localisation: 1.0 = entire gouge layer is active, 0.0 = entire gouge zone is passive
-        "PHI_INI_BULK": 0.2,				# Initial porosity passive gouge zone
-        # Pressure solution kinetic parameters for passive zone
-        "IPS_CONST_DIFF_BULK": 0.0,
-        "IPS_CONST_DISS_BULK": 0.0,
+            "LOCALISATION": 1.0,				# Degree of localisation: 1.0 = entire gouge layer is active, 0.0 = entire gouge zone is passive
+            "PHI_INI_BULK": 0.2,				# Initial porosity passive gouge zone
+            # Creep mechanism parameters for passive/bulk zone (grouped in list)
+            "A": [0.0],				            # (T-dependent) kinetic parameters for creep mechanisms
+            "N": [1.0],                         # Stress exponents for creep mechanisms
+            "M": [2.0],				            # Porosity exponents for creep mechanisms
         }
 
         # Thermal pressurisation model
         set_dict["SET_DICT_TP"] = {
-        "RHOC": 2.16e6,						# Density times specific heat capacity (rho*cp) [J/k/m3]
-        "HALFW": 0.5e-3,					# Half-width of the fault zone [m]
-        "BETA": 2e-9,						# Bulk compressibility (fluid + pore) [1/Pa]
-        "ETA": 2e-4,						# Fluid dynamic viscosity [Pa s]
-        "LAM": 2.78e-4,						# Nett thermal expansion coefficient (fluid - solid) [1/K]
-        "K_T": 2.0,							# Thermal conductivity [J/s/K/m]
-        "K_P": 1e-16,						# Intrinsic hydraulic permeability [m2]
-        "P_A": 0.0,							# Ambient fluid pressure [Pa]
-        "T_A": 293.0,						# Ambient temperature [K]
-        "DILAT_FACTOR": 0.0,                # Factor > 0 to control amount of dilatancy hardening
+            "RHOC": 2.16e6,						# Density times specific heat capacity (rho*cp) [J/k/m3]
+            "HALFW": 0.5e-3,					# Half-width of the fault zone [m]
+            "BETA": 2e-9,						# Bulk compressibility (fluid + pore) [1/Pa]
+            "ETA": 2e-4,						# Fluid dynamic viscosity [Pa s]
+            "LAM": 2.78e-4,						# Nett thermal expansion coefficient (fluid - solid) [1/K]
+            "K_T": 2.0,							# Thermal conductivity [J/s/K/m]
+            "K_P": 1e-16,						# Intrinsic hydraulic permeability [m2]
+            "P_A": 0.0,							# Ambient fluid pressure [Pa]
+            "T_A": 293.0,						# Ambient temperature [K]
+            "DILAT_FACTOR": 0.0,                # Factor > 0 to control amount of dilatancy hardening
         }
 
         # Benjamin Idini's damage model
@@ -210,8 +218,13 @@ class qdyn:
 
         settings = self.set_dict
         dim = settings["MESHDIM"]
-        N = self.set_dict["N"]
+        N = settings["N"]
         self.set_dict["NW"] = N
+
+        # Determine number of creep mechanisms
+        A = np.array(settings["SET_DICT_CNS"]["A"])
+        N_creep = len(A)
+        self.set_dict["SET_DICT_CNS"]["N_CREEP"] = N_creep
 
         if dim == 0:
             N = 1
@@ -228,8 +241,9 @@ class qdyn:
 
         mesh_params_general = ("IOT", "IASP", "V_PL", "SIGMA")
         mesh_params_RSF = ("V_0", "TH_0", "A", "B", "DC", "V1", "V2", "MU_SS", "V_SS", "CO")
-        mesh_params_CNS = ("TAU", "PHI_INI", "A_TILDE", "MU_TILDE_STAR", "Y_GR_STAR", "H", "PHI_C", "PHI0", "IPS_CONST_DIFF", "IPS_CONST_DISS", "THICKNESS")
-        mesh_params_localisation = ("LOCALISATION", "PHI_INI_BULK", "IPS_CONST_DIFF_BULK", "IPS_CONST_DISS_BULK")
+        mesh_params_CNS = ("TAU", "PHI_INI", "A_TILDE", "MU_TILDE_STAR", "Y_GR_STAR", "H", "PHI_C", "PHI0", "THICKNESS")
+        mesh_params_creep = ("A", "N", "M")
+        mesh_params_localisation = ("LOCALISATION", "PHI_INI_BULK")
         mesh_params_TP = ("RHOC", "BETA", "ETA", "HALFW", "K_T", "K_P", "LAM", "P_A", "T_A", "DILAT_FACTOR")
 
         mesh_dict = {}
@@ -245,6 +259,10 @@ class qdyn:
         elif settings["FRICTION_MODEL"] == "CNS":
             for param in mesh_params_CNS:
                 mesh_dict[param] = np.ones(N)*settings["SET_DICT_CNS"][param]
+            for i in range(N_creep):
+                for param in mesh_params_creep:
+                    param_no = "%s%i" % (param, i)
+                    mesh_dict[param_no] = np.ones(N)*settings["SET_DICT_CNS"][param][i]
         else:
             print("FRICTION_MODEL '%s' not recognised. Supported models: RSF, CNS" % (settings["FRICTION_MODEL"]))
             exit()
@@ -252,7 +270,11 @@ class qdyn:
         # Populate mesh with localisation parameters
         if settings["FEAT_LOCALISATION"] == 1:
             for param in mesh_params_localisation:
-                mesh_dict[param] = np.ones(N)*settings["SET_DICT_CNS"][param]
+                mesh_dict[param] = np.ones(N)*settings["SET_DICT_LOCALISATION"][param]
+            for i in range(N_creep):
+                for param in mesh_params_creep:
+                    param_bulk = "%s%i_bulk" % (param, i)
+                    mesh_dict[param_bulk] = np.ones(N)*settings["SET_DICT_LOCALISATION"][param][i]
 
         # Populate mesh with thermal pressurisation parameters
         if settings["FEAT_TP"] == 1:
@@ -309,6 +331,9 @@ class qdyn:
         nwLocal[Nprocs-1] += settings["NW"] % Nprocs
         nnLocal = 0
 
+        # Number of creep mechanisms
+        N_creep = settings["SET_DICT_CNS"]["N_CREEP"]
+
         # Loop over processor nodes
         for iproc in range(Nprocs):
 
@@ -348,6 +373,14 @@ class qdyn:
             # Some more general settings
             # Note that i_sigma_law is replaced by the feature stress_coupling, but is kept for compatibility
             input_str += "%u%s i_sigma_law\n" % (settings["SIGMA_CPL"], delimiter)
+            # If the CNS model is used, define the number of creep mechanisms
+            if settings["FRICTION_MODEL"] == "CNS":
+                # Raise an error when the default value has not been overwritten
+                if N_creep == -1:
+                    print("The number of creep mechanisms was not set properly!")
+                    print("This value should be determined in render_mesh()")
+                    exit()
+                input_str += "%u%s N_creep\n" % (N_creep, delimiter)
             input_str += "%u %u %u%s stress_coupling, thermal press., localisation\n" % (settings["FEAT_STRESS_COUPL"], settings["FEAT_TP"], settings["FEAT_LOCALISATION"], delimiter)
             input_str += "%u %u %u %u %u %u %u%s ntout_ot, ntout_ox, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n" % (settings["NTOUT_OT"], settings["NTOUT"], settings["IC"]+1, settings["NXOUT"], settings["NXOUT_DYN"], settings["OX_SEQ"], settings["OX_DYN"], delimiter)
             input_str += "%.15g %.15g %.15g %.15g %.15g %.15g%s beta, smu, lambda, v_th\n" % (settings["VS"], settings["MU"], settings["LAM"], settings["D"], settings["HD"], settings["V_TH"], delimiter)
@@ -366,24 +399,31 @@ class qdyn:
 
             # Check for fault rheology model
             if settings["FRICTION_MODEL"] == "CNS":
-
-                if np.sum(mesh["IPS_CONST_DIFF"] * mesh["IPS_CONST_DISS"]) != 0:
-                    print("Ambiguous rate-controlling mechanism!")
-                    print("For each fault element, either IPS_CONST_DIFF or IPS_CONST_DISS must be zero,")
-                    print("i.e. each element must be either diffusion controlled (IPS_CONST_DIFF > 0)")
-                    print("or dissolution controlled (IPS_CONST_DISS > 0), but not both")
-                    exit()
-
                 for i in range(nloc):
-                    input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n" % (mesh["SIGMA"][iloc[i]], mesh["TAU"][iloc[i]], mesh["PHI_INI"][iloc[i]], mesh["V_PL"][iloc[i]], mesh["A_TILDE"][iloc[i]], mesh["MU_TILDE_STAR"][iloc[i]], mesh["Y_GR_STAR"][iloc[i]], mesh["H"][iloc[i]], mesh["PHI_C"][iloc[i]], mesh["PHI0"][iloc[i]], mesh["IPS_CONST_DIFF"][iloc[i]], mesh["IPS_CONST_DISS"][iloc[i]], mesh["THICKNESS"][iloc[i]], mesh["IOT"][iloc[i]], mesh["IASP"][iloc[i]])
+                    # Basic parameters (initial conditions, granular flow, porosity)
+                    input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g " % (mesh["SIGMA"][iloc[i]], mesh["TAU"][iloc[i]], mesh["PHI_INI"][iloc[i]], mesh["V_PL"][iloc[i]], mesh["A_TILDE"][iloc[i]], mesh["MU_TILDE_STAR"][iloc[i]], mesh["Y_GR_STAR"][iloc[i]], mesh["H"][iloc[i]], mesh["PHI_C"][iloc[i]], mesh["PHI0"][iloc[i]])
+                    # Creep parameters (3 for each creep mechanism)
+                    for j in range(N_creep):
+                        input_str += "%.15g %.15g %.15g " % (mesh["A%i" % j][iloc[i]], mesh["N%i" % j][iloc[i]], mesh["M%i" % j][iloc[i]])
+                    # Last couple of parameters
+                    input_str += "%.15g %.15g %.15g\n" % (mesh["THICKNESS"][iloc[i]], mesh["IOT"][iloc[i]], mesh["IASP"][iloc[i]])
             else: # RSF model
                 for i in range(nloc):
                     input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n" % (mesh["SIGMA"][iloc[i]], mesh["V_0"][iloc[i]], mesh["TH_0"][iloc[i]], mesh["A"][iloc[i]], mesh["B"][iloc[i]], mesh["DC"][iloc[i]], mesh["V1"][iloc[i]], mesh["V2"][iloc[i]], mesh["MU_SS"][iloc[i]], mesh["V_SS"][iloc[i]], mesh["IOT"][iloc[i]], mesh["IASP"][iloc[i]], mesh["CO"][iloc[i]], mesh["V_PL"][iloc[i]])
 
             # Check if localisation is requested
             if settings["FEAT_LOCALISATION"] == 1:
+                if settings["FRICTION_MODEL"] != "CNS":
+                    print("Localisation is compatible only with the CNS friction model")
+                    exit()
                 for i in range(nloc):
-                    input_str += "%.15g %.15g %.15g %.15g\n" % (mesh["LOCALISATION"][iloc[i]], mesh["PHI_INI_BULK"][iloc[i]], mesh["IPS_CONST_DIFF_BULK"][iloc[i]], mesh["IPS_CONST_DISS_BULK"][iloc[i]])
+                    # Basic parameters (degree of localisation, initial bulk porosity)
+                    input_str += "%.15g %.15g " % (mesh["LOCALISATION"][iloc[i]], mesh["PHI_INI_BULK"][iloc[i]])
+                    # Creep parameters (3 for each creep mechanism)
+                    for j in range(N_creep):
+                        input_str += "%.15g %.15g %.15g " % (mesh["A%i_bulk" % j][iloc[i]], mesh["N%i_bulk" % j][iloc[i]], mesh["M%i_bulk" % j][iloc[i]])
+                    # End the line
+                    input_str += "\n"
 
             # Check if thermal pressurisation is requested
             if settings["FEAT_TP"] == 1:

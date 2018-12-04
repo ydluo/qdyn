@@ -102,7 +102,7 @@ subroutine save_array(x,y,z,V,iproc,typ,nw,nx)
   character(len=256) :: fileproc
   character(len=16)   :: typ !PG, 'loc' or 'glo'
 
-  integer :: i,j,iproc,nx,nw
+  integer :: i,iproc,nx,nw
 
   write(fileproc,'(a,i6.6,a)') 'snap_v_',iproc,typ
 

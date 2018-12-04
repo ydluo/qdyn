@@ -208,7 +208,7 @@ end subroutine calc_params
 subroutine update_PT(tau_y,phi_dot,phi,dt,pb)
 
   type(problem_type), intent(inout) :: pb
-  double precision, dimension(pb%mesh%nn) :: tau_y, phi_dot, phi, PT
+  double precision, dimension(pb%mesh%nn) :: tau_y, phi_dot, phi
   double precision :: dt
 
   ! Compute PiTheta and Theta for step t+dt
@@ -412,24 +412,25 @@ end subroutine solve_spectral
 
 !===============================================================================
 ! SEISMIC: inverse Fourier transformation function [N&L, Eqn. 15 and 16]
+! NOTE: this function is currently not used, but kept here for reference
 !===============================================================================
-function inv_Fourier(fy,pb) result(y)
-
-  type(problem_type), intent(in) :: pb
-  double precision, dimension(pb%mesh%nn*pb%tp%mesh%Nl), intent(in) :: fy
-  double precision, dimension(pb%mesh%nn) :: y
-  integer :: i, j, n
-
-  ! Loop over all fault segments
-  do i=1,pb%mesh%nn
-    y(i) = 0d0
-    ! Loop over all spectral elements
-    do j=1,pb%tp%mesh%Nl
-      n = (i-1)*pb%tp%mesh%Nl+j
-      y(i) = y(i) + pb%tp%mesh%F_inv(j)*fy(n)*pb%tp%inv_w(i)
-    enddo
-  enddo
-
-end function inv_Fourier
+! function inv_Fourier(fy,pb) result(y)
+!
+!   type(problem_type), intent(in) :: pb
+!   double precision, dimension(pb%mesh%nn*pb%tp%mesh%Nl), intent(in) :: fy
+!   double precision, dimension(pb%mesh%nn) :: y
+!   integer :: i, j, n
+!
+!   ! Loop over all fault segments
+!   do i=1,pb%mesh%nn
+!     y(i) = 0d0
+!     ! Loop over all spectral elements
+!     do j=1,pb%tp%mesh%Nl
+!       n = (i-1)*pb%tp%mesh%Nl+j
+!       y(i) = y(i) + pb%tp%mesh%F_inv(j)*fy(n)*pb%tp%inv_w(i)
+!     enddo
+!   enddo
+!
+! end function inv_Fourier
 
 end module diffusion_solver

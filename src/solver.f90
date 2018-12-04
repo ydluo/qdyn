@@ -80,7 +80,6 @@ subroutine do_bsstep(pb)
 
   type(problem_type), intent(inout) :: pb
 
-  double precision :: t0
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
   double precision, dimension(pb%mesh%nn) :: main_var
   integer :: ik
@@ -186,7 +185,7 @@ subroutine update_field(pb)
 
   type(problem_type), intent(inout) :: pb
 
-  double precision, dimension(pb%mesh%nn) :: P_prev, test
+  double precision, dimension(pb%mesh%nn) :: P_prev
   integer :: i,ix,iw
 
   ! SEISMIC: obtain P at the previous time step

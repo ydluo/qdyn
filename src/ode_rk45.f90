@@ -775,6 +775,13 @@ contains
 
     esttol = abs ( h ) * eeoet * scale / 752400.0D+00
 
+    ! SEISMIC: if the integration result contains NaNs,
+    ! reduce step size and try again
+    if (any(isnan(f1))) then
+      s = 0.1D+00
+      go to 259
+    endif
+
     if ( esttol <= 1.0D+00 ) then
       go to 260
     end if
@@ -782,8 +789,6 @@ contains
   !  Unsuccessful step.  Reduce the stepsize, try again.
   !  The decrease is limited to a factor of 1/10.
   !
-    hfaild = .true.
-    output = .false.
 
     if ( esttol < 59049.0D+00 ) then
       s = 0.9D+00 / esttol**0.2D+00
@@ -791,7 +796,12 @@ contains
       s = 0.1D+00
     end if
 
+    259 continue
+
     h = s * h
+
+    hfaild = .true.
+    output = .false.
 
     if ( abs ( h ) < hmin ) then
       iflag = 6
@@ -846,83 +856,83 @@ contains
     return
   end subroutine rkfs_d
 
-  subroutine timestamp ( )
+  ! subroutine timestamp ( )
+  ! !
+  ! !*******************************************************************************
+  ! !
+  ! !! TIMESTAMP prints the current YMDHMS date as a time stamp.
+  ! !
+  ! !
+  ! !  Example:
+  ! !
+  ! !    May 31 2001   9:45:54.872 AM
+  ! !
+  ! !  Modified:
+  ! !
+  ! !    31 May 2001
+  ! !
+  ! !  Author:
+  ! !
+  ! !    John Burkardt
+  ! !
+  ! !  Parameters:
+  ! !
+  ! !    None
+  ! !
+  !   implicit none
+  ! !
+  !   character ( len = 8 ) ampm
+  !   integer d
+  !   character ( len = 8 ) date
+  !   integer h
+  !   integer m
+  !   integer mm
+  !   character ( len = 9 ), parameter, dimension(12) :: month = (/ &
+  !     'January  ', 'February ', 'March    ', 'April    ', &
+  !     'May      ', 'June     ', 'July     ', 'August   ', &
+  !     'September', 'October  ', 'November ', 'December ' /)
+  !   integer n
+  !   integer s
+  !   character ( len = 10 )  time
+  !   integer values(8)
+  !   integer y
+  !   character ( len = 5 ) zone
+  ! !
+  !   call date_and_time ( date, time, zone, values )
   !
-  !*******************************************************************************
+  !   y = values(1)
+  !   m = values(2)
+  !   d = values(3)
+  !   h = values(5)
+  !   n = values(6)
+  !   s = values(7)
+  !   mm = values(8)
   !
-  !! TIMESTAMP prints the current YMDHMS date as a time stamp.
+  !   if ( h < 12 ) then
+  !     ampm = 'AM'
+  !   else if ( h == 12 ) then
+  !     if ( n == 0 .and. s == 0 ) then
+  !       ampm = 'Noon'
+  !     else
+  !       ampm = 'PM'
+  !     end if
+  !   else
+  !     h = h - 12
+  !     if ( h < 12 ) then
+  !       ampm = 'PM'
+  !     else if ( h == 12 ) then
+  !       if ( n == 0 .and. s == 0 ) then
+  !         ampm = 'Midnight'
+  !       else
+  !         ampm = 'AM'
+  !       end if
+  !     end if
+  !   end if
   !
+  !   write ( *, '(a,1x,i2,1x,i4,2x,i2,a1,i2.2,a1,i2.2,a1,i3.3,1x,a)' ) &
+  !     trim ( month(m) ), d, y, h, ':', n, ':', s, '.', mm, trim ( ampm )
   !
-  !  Example:
-  !
-  !    May 31 2001   9:45:54.872 AM
-  !
-  !  Modified:
-  !
-  !    31 May 2001
-  !
-  !  Author:
-  !
-  !    John Burkardt
-  !
-  !  Parameters:
-  !
-  !    None
-  !
-    implicit none
-  !
-    character ( len = 8 ) ampm
-    integer d
-    character ( len = 8 ) date
-    integer h
-    integer m
-    integer mm
-    character ( len = 9 ), parameter, dimension(12) :: month = (/ &
-      'January  ', 'February ', 'March    ', 'April    ', &
-      'May      ', 'June     ', 'July     ', 'August   ', &
-      'September', 'October  ', 'November ', 'December ' /)
-    integer n
-    integer s
-    character ( len = 10 )  time
-    integer values(8)
-    integer y
-    character ( len = 5 ) zone
-  !
-    call date_and_time ( date, time, zone, values )
-
-    y = values(1)
-    m = values(2)
-    d = values(3)
-    h = values(5)
-    n = values(6)
-    s = values(7)
-    mm = values(8)
-
-    if ( h < 12 ) then
-      ampm = 'AM'
-    else if ( h == 12 ) then
-      if ( n == 0 .and. s == 0 ) then
-        ampm = 'Noon'
-      else
-        ampm = 'PM'
-      end if
-    else
-      h = h - 12
-      if ( h < 12 ) then
-        ampm = 'PM'
-      else if ( h == 12 ) then
-        if ( n == 0 .and. s == 0 ) then
-          ampm = 'Midnight'
-        else
-          ampm = 'AM'
-        end if
-      end if
-    end if
-
-    write ( *, '(a,1x,i2,1x,i4,2x,i2,a1,i2.2,a1,i2.2,a1,i3.3,1x,a)' ) &
-      trim ( month(m) ), d, y, h, ':', n, ':', s, '.', mm, trim ( ampm )
-
-    return
-  end subroutine timestamp
+  !   return
+  ! end subroutine timestamp
 
 end module ode_rk45
