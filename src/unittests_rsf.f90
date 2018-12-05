@@ -157,13 +157,11 @@ subroutine test_rsf_friction(pb)
     pb%i_rns_law = 0
     call set_theta_star(pb)
     mu = friction_mu(pb%v, pb%theta*randno, pb)
-    call dmu_dv_dtheta(dmu_dv, dmu_dtheta, pb%v, x, x, &
-                       pb%theta*randno, x, pb)
+    call dmu_dv_dtheta(dmu_dv, dmu_dtheta, pb%v, pb%theta*randno, pb)
     pb%i_rns_law = 2
     call set_theta_star(pb)
     mu2 = friction_mu(pb%v, pb%theta*randno, pb)
-    call dmu_dv_dtheta(dmu_dv2, dmu_dtheta2, pb%v, x, x, &
-                       pb%theta*randno, x, pb)
+    call dmu_dv_dtheta(dmu_dv2, dmu_dtheta2, pb%v, pb%theta*randno, pb)
     ! Test if mu, dmu/dv, and dmu/dtheta are ok for all random values of theta
     ! If one of the assertions fails, subpass will become .false.
     subpass1 = subpass1 .and. abs_assert_close(mu, mu2, atol)

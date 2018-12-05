@@ -3,6 +3,7 @@ import gzip
 import pickle
 
 import matplotlib.pyplot as plt
+import numpy as np
 from numpy.testing import assert_allclose
 from termcolor import colored
 
@@ -20,10 +21,14 @@ class AuxiliaryFunctions:
         benchmark = self.frozen_results[mode]
         results = self.test_results[mode]
 
+        t_b = benchmark["t"]
+        t_r = results["t"]
+        var1_int = np.interp(t_b, t_r, results["var1"])
+        var2_int = np.interp(t_b, t_r, results["var2"])
+
         try:
-            assert_allclose(benchmark["t"], results["t"], rtol=1e-4)
-            assert_allclose(benchmark["var1"], results["var1"], rtol=1e-4)
-            assert_allclose(benchmark["var2"], results["var2"], rtol=1e-4)
+            assert_allclose(benchmark["var1"], var1_int, rtol=1e-4)
+            assert_allclose(benchmark["var2"], var2_int, rtol=1e-4)
             self.test_results[mode]["success"] = True
             self.test_results[mode]["success_msg"] = "%s benchmark comparison... [%s]" % (mode.upper(), colored("OK", "green"))
         except AssertionError:
