@@ -5,6 +5,8 @@
 
 ## News 
 
+* December 2018* | QDYN version 2.0 has been released!
+
 *28 May 2018* | In order to address a problem in the QDYN history tree, the version history of the QDYN repository was rewritten. All developers that have cloned the QDYN repository before this date should follow the steps described in [this manual](doc/git_fix_2018-05-28.pdf). Users of QDYN that did not make any code changes can simply delete the old repository and clone the latest version to get a clean QDYN repository.
 
 *May 2018* | Two papers with simulation results based on *QDYN*, published in Tectonophysics - Special Issue on "[Physics of Earthquake Rupture Propagation](https://www.sciencedirect.com/journal/tectonophysics/vol/733/suppl/C)":  
@@ -100,15 +102,15 @@ Questions, feedback or suggestions can be submitted via our [issue tracking syst
 ------------------------
 ## Developers
 
-[Yingdi Luo](http://www.seismolab.caltech.edu/luo_y.html) (Caltech Seismolab, USA)
+[Yingdi Luo](http://www.seismolab.caltech.edu/luo_y.html) (UCLA/JPL, USA)
 
-[Jean-Paul Ampuero](http://www.seismolab.caltech.edu/ampuero_jp.html) (Caltech Seismolab, USA)
+[Jean-Paul Ampuero](http://www.seismolab.caltech.edu/ampuero_jp.html) (Géoazur laboratory, France; Caltech Seismolab, USA)
 
-Percy Galvez (AECOM, Switzerland)
+Percy Galvez (KAUST, KSA; AECOM, Switzerland)
 
-Martijn van den Ende (Utrecht University, The Netherlands)
+Martijn van den Ende (Géoazur laboratory, France)
 
-Benjamin Idini (University of Chile)
+Benjamin Idini (University of Chile; Caltech Seismolab, USA)
 
 
 
