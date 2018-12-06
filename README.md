@@ -5,11 +5,20 @@
 
 ## News 
 
+*6 December 2018* | Results of QDYN earthquake cycle simulations on faults surrounded by damaged zones were presented at:  
+* the AGU Fall Meeting 2017 (San Francisco, 11-15 December 2017): B. Idini and J. P. Ampuero, *Rupture complexity promoted by damaged fault zones in earthquake cycle models* (doi:10.1002/essoar.10500080.1, [poster](https://www.essoar.org/doi/abs/10.1002/essoar.10500080.1))  
+* the [10th ACES International Workshop](http://quaketm.bosai.go.jp/~shiqing/ACES2018/index_aces.html) (Japan, September 25-28, 2018), J. P. Ampuero et al., *Rupture complexity promoted by damaged fault zones in earthquake cycle models* ([slides](http://quaketm.bosai.go.jp/~shiqing/ACES2018/abstracts/aces_abstract_ampuero.pdf)) 
+* the [Workshop on Modeling Earthquake Source Processes](http://www.seismolab.caltech.edu/workshop.html) (Caltech, October 8-10, 2018). 
+
+*29 November 2018* | The QDYN team participated in  in the two first [benchmarks](http://scecdata.usc.edu/cvws/seas/ind) and [workshops](https://www.scec.org/workshops/2018/seas) of the SCEC SEAS project (Southern California Earthquake Center, Sequences of Earthquakes and Aseismic Slip). Yingdi Luo presented work using QDYN on *A heterogenous fault model of episodic tremor and slow-slip events with spatial-temporal variability* ([slides](https://files.scec.org/s3fs-public/2018_SEAS_Workshop_1115_Luo_A_heterogenous_fault_model_of_episodic_tremor_and_slow-slip_event_with_spatial-temporal_variability.pdf)).
+
+*11 September 2018* | Results based on QDYN were highlighted at the [2018 WEGENER conference](https://wegener2018.sciencesconf.org/) in the keynote presentation *The spectrum of slip behaviors emerging from the interactions between seismic and aseismic slip* by J. P. Ampuero ([slides](https://wegener2018.sciencesconf.org/data/pages/Jean_Paul_Ampuero_Wegener_2018.pdf)).
+
 *28 May 2018* | In order to address a problem in the QDYN history tree, the version history of the QDYN repository was rewritten. All developers that have cloned the QDYN repository before this date should follow the steps described in [this manual](doc/git_fix_2018-05-28.pdf). Users of QDYN that did not make any code changes can simply delete the old repository and clone the latest version to get a clean QDYN repository.
 
 *May 2018* | Two papers with simulation results based on *QDYN*, published in Tectonophysics - Special Issue on "[Physics of Earthquake Rupture Propagation](https://www.sciencedirect.com/journal/tectonophysics/vol/733/suppl/C)":  
   M. van den Ende, J. Chen, J. P. Ampuero and A. Niemeijer
-  *A comparison between rate-and-state friction and microphysical models, based on numerical simulations of fault slip*   (doi:[10.1016/j.tecto.2017.11.040](https://doi.org/10.1016/j.tecto.2017.11.040))  
+  *A comparison between rate-and-state friction and microphysical models, based on numerical simulations of fault slip* (doi:[10.1016/j.tecto.2017.11.040](https://doi.org/10.1016/j.tecto.2017.11.040))  
   Y. Luo and J. P. Ampuero  
   *Stability and effective friction of faults with heterogeneous friction properties and fluid pressure* (doi:[10.1016/j.tecto.2017.11.006](https://doi.org/10.1016/j.tecto.2017.11.006))
 
@@ -100,42 +109,51 @@ Questions, feedback or suggestions can be submitted via our [issue tracking syst
 ------------------------
 ## Developers
 
-[Yingdi Luo](http://www.seismolab.caltech.edu/luo_y.html) (Caltech Seismolab, USA)
+[Yingdi Luo](https://science.jpl.nasa.gov/people/YLuo/) (NASA JPL, USA)
 
-[Jean-Paul Ampuero](http://www.seismolab.caltech.edu/ampuero_jp.html) (Caltech Seismolab, USA)
+[Jean-Paul Ampuero](http://www.seismolab.caltech.edu/ampuero_jp.html) (Caltech Seismolab, USA and IRD / UCA, Geoazur, France)
 
-Percy Galvez (AECOM, Switzerland)
+[Percy Galvez](https://smi.kaust.edu.sa/Pages/People-Galvez.aspx) (KAUT, Saudi Arabia)
 
-Martijn van den Ende (Utrecht University, The Netherlands)
+[Martijn van den Ende](https://www.linkedin.com/in/martijnvandenende) (Universite Cote d'Azur, Geoazur, France)
 
-Benjamin Idini (University of Chile)
+[Benjamin Idini](http://www.seismolab.caltech.edu/idini_b.html) (Caltech Seismolab, USA)
 
 
 
 -------------------------
 
 ## Suggested References
-Luo, Y., & Ampuero, J. P. (2018). 
-Stability of faults with heterogeneous friction properties and effective normal stress. 
-Tectonophysics, 733, 257-272 pp. (doi:[10.1016/j.tecto.2017.11.006](https://doi.org/10.1016/j.tecto.2017.11.006))
+
+#### For all uses of the QDYN software
 
 Luo, Y., Ampuero, J. P., Galvez,  P., van den Ende, M., & Idini, B. (2017). 
-*QDYN: a Quasi-DYNamic earthquake simulator (v1.1) [Data set]*. Zenodo. doi:10.5281/zenodo.322459  
+QDYN: a Quasi-DYNamic earthquake simulator (v1.1) [Data set]. Zenodo. doi:10.5281/zenodo.322459  
  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.322459.svg)](https://doi.org/10.5281/zenodo.322459)
 
-Luo, Y., Ampuero, J. P., Miyakoshi, K., & Irikura, K. (2017). Surface rupture effects on earthquake moment-area scaling relations. Pure and Applied Geophysics, 174(9), 3331-3342.
-Topical Volume on *"Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"*
-  [doi:10.1007/s00024-017-1467-4](https://link.springer.com/article/10.1007/s00024-017-1467-4)  
-  [PDF](https://rdcu.be/oOL9)
+#### For simulations on heterogeneous faults
+
+Luo, Y., & Ampuero, J. P. (2018). 
+Stability of faults with heterogeneous friction properties and effective normal stress. 
+Tectonophysics, 733, 257-272, doi:[10.1016/j.tecto.2017.11.006](https://doi.org/10.1016/j.tecto.2017.11.006)
+
+Luo, Y., Ampuero, J. P., Miyakoshi, K., & Irikura, K. (2017). Surface rupture effects on earthquake moment-area scaling relations. Pure and Applied Geophysics, 174(9), 3331-3342, doi:[10.1007/s00024-017-1467-4](https://link.springer.com/article/10.1007/s00024-017-1467-4).
+In Topical Volume on *"Best Practices in Physics-based Fault Rupture Models for Seismic Hazard Assessment of Nuclear Installations"*.  
+[PDF](https://rdcu.be/oOL9)
 
 Luo, Y., & Ampuero, J. P. (2012), Simulation of Complex Tremor Migration Patterns, AGU Fall Meeting 2012 Abstract S44B-02
 
-Luo, Y., & Ampuero, J. P. (2011), Numerical Simulation of Tremor Migration Triggered by Slow Slip and Rapid Tremor Reversals, AGU Fall Meeting 2011 Abstract S33C-02
+Luo, Y., & Ampuero, J. P. (2011), Numerical Simulation of Tremor Migration Triggered by Slow Slip and Rapid Tremor Reversals, AGU Fall Meeting 2011, abstract S33C-02
 
 #### For the microphysically based (CNS) simulations
 
 van den Ende, M. P. A., Chen, J., Ampuero, J. P., & Niemeijer, A. R. (2018).
-A comparison between rate-and-state friction and microphysical models, based on numerical simulations of fault slip   
-Tectonophysics, 733, 273-295 pp. (doi:[10.1016/j.tecto.2017.11.040](https://doi.org/10.1016/j.tecto.2017.11.040))  
+A comparison between rate-and-state friction and microphysical models, based on numerical simulations of fault slip.
+Tectonophysics, 733, 273-295, doi:[10.1016/j.tecto.2017.11.040](https://doi.org/10.1016/j.tecto.2017.11.040)
  
-
+#### For simulations on faults surrounded by damaged zones
+  
+B. Idini, B., & Ampuero, J. P. (2017).
+Rupture complexity promoted by damaged fault zones in earthquake cycle models.
+AGU Fall Meeting 2017, abstract T41C-0632.  
+Poster [PDF](https://www.essoar.org/doi/abs/10.1002/essoar.10500080.1), doi:10.1002/essoar.10500080.1
