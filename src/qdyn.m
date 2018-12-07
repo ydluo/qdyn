@@ -42,11 +42,11 @@
 %			pars = qdyn('set')
 %
 %		Parameters defining the geometry of the problem and loading:
-%   FAULT_TYPE loading geometry of the fault
-%     1 = strike-slip (right-lateral)
-%    -1 = strike-slip (left-lateral)
-%     2 = thrust
-%    -2 = normal
+%		FAULT_TYPE loading geometry of the fault
+%			 1 = strike-slip (right-lateral)
+%			-1 = strike-slip (left-lateral)
+%			 2 = thrust
+%			-2 = normal
 %		MESHDIM	dimension of the problem:
 %			0 = spring-block system
 %			1 = 1D fault in a 2D elastic medium
@@ -85,7 +85,7 @@
 %		DC 	characteristic slip distance (m)
 %		MU_SS	reference steady-state friction coefficient
 %		V_SS	reference steady-state slip velocity (m/s)
-%       V_PL    slip rate loading (m/s)
+%		V_PL	slip rate loading (m/s)
 %		RNS_LAW	type of rate-and-state friction law:
 %			0 = original
 %			1 = with cut-off velocities
@@ -105,9 +105,9 @@
 %		TH_0 = initial state (m/s)
 %
 %		Discretization and accuracy parameters:
-%   SOLVER   ODE solver mode
-%     1 = Bulirsch-Stoer
-%     2 = Runge-Kutta-Fehlberg
+%		SOLVER	ODE solver mode
+%			1 = Bulirsch-Stoer
+%			2 = Runge-Kutta-Fehlberg
 %		N	number of fault elements if MESHDIM=1
 %		NX	number of fault elements along-strike in 3D
 %		NW 	number of fault elements along-dip in 3D
