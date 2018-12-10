@@ -46,17 +46,25 @@ subroutine solve(pb)
     call check_stop(pb)   ! here itstop will change
 !--------Output onestep to screen and ox file(snap_shot)
 ! if(mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
-    if(mod(pb%it,pb%ox%ntout) == 0 .or. pb%it == pb%itstop) then
+    if(mod(pb%it,pb%ox%ntout) == 0) then
 !      if (is_mpi_master()) write(6,*) 'it:',pb%it,'iktotal=',iktotal,'pb%time=',pb%time
       call screen_write(pb)
     endif
 
-    call ox_write(pb)
+    if (pb%it /= pb%itstop) then
+      call ox_write(pb)
+    endif
 ! if (is_mpi_master()) call ox_write(pb)
-    if (mod(pb%it, pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
+    if (mod(pb%it, pb%ot%ntout) == 0 .and. pb%it /= pb%itstop) then
       call ot_write(pb)
     endif
   enddo
+
+  ! Write data for last step
+  write(6,*) pb%time
+  call screen_write(pb)
+  call ox_write(pb)
+  call ot_write(pb)
 
   if (is_MPI_parallel()) call finalize_mpi()
 
@@ -120,11 +128,11 @@ subroutine do_bsstep(pb)
   elseif (SOLVER_TYPE == 2) then
     ! Set-up Runge-Kutta solver
 
-    pb%rk45%iflag = -2 ! Reset to one-step mode each call
+    pb%rk45%iflag = -1 ! Reset to one-step mode each call
     pb%t_prev = pb%time
 
     ! Call Runge-Kutta solver routine
-    call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, 2*pb%tmax, &
+    call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, pb%tmax, &
                   pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
 
     ! Set time step
@@ -265,7 +273,7 @@ subroutine check_stop(pb)
    ! STOP if time > tmax
     case (0)
       if (is_mpi_master()) call time_write(pb)
-      if (pb%time > pb%tmax) pb%itstop = pb%it
+      if (pb%time >= pb%tmax) pb%itstop = pb%it
 
    ! STOP soon after end of slip localization
     case (1)

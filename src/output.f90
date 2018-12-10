@@ -124,7 +124,7 @@ subroutine ot_init(pb)
 
    ! find stations
    !PG, temporal fix, only works for one station.
-    pb%ot%ic=0 !Setting all to zero 
+    pb%ot%ic=0 !Setting all to zero
     dmin2 = 0.01d0*minval(pb%mesh%dx) ! distance tolerance = 1% grid size
     dmin2 = dmin2*dmin2
     nsta = 1 !NOTE: currently only one station implemented
