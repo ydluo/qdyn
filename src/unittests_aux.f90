@@ -1,7 +1,7 @@
 module unittests_aux
 
   use problem_class, only : problem_type
-  use constants, only : SOLVER
+  use constants, only : SOLVER_TYPE
   use solver, only : init_rk45
 
   implicit none
@@ -98,7 +98,7 @@ subroutine initiate_solver(pb)
 
   ! RK45 must be re-initialised each test
 
-  if (SOLVER == 2) then
+  if (SOLVER_TYPE == 2) then
     call init_rk45(pb)
   endif
 

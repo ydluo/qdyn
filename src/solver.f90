@@ -76,7 +76,7 @@ subroutine do_bsstep(pb)
   use ode_bs
   use ode_rk45, only: rkf45_d
   use output, only : screen_write, ox_write, ot_write
-  use constants, only : SOLVER
+  use constants, only : SOLVER_TYPE
 
   type(problem_type), intent(inout) :: pb
 
@@ -95,13 +95,13 @@ subroutine do_bsstep(pb)
 
   ! SEISMIC: user-defined switch to use either (1) the Bulirsch-Stoer method, or
   ! the (2) Runge-Kutta-Fehlberg method
-  if (SOLVER == 0) then
-    ! Default value of SOLVER has not been altered
+  if (SOLVER_TYPE == 0) then
+    ! Default value of SOLVER_TYPE has not been altered
     write (6,*) "The default solver type (0) has not been altered, and no solver was picked"
     write( 6,*) "Check the input script and define a solver type > 0"
     stop
 
-  elseif (SOLVER == 1) then
+  elseif (SOLVER_TYPE == 1) then
     ! Use Bulirsch-Stoer method
 
     ! this update of derivatives is only needed to set up the scaling (yt_scale)
@@ -117,7 +117,7 @@ subroutine do_bsstep(pb)
       pb%dt_try = pb%dt_next
     endif
 
-  elseif (SOLVER == 2) then
+  elseif (SOLVER_TYPE == 2) then
     ! Set-up Runge-Kutta solver
 
     pb%rk45%iflag = -2 ! Reset to one-step mode each call
@@ -153,7 +153,7 @@ subroutine do_bsstep(pb)
 
   else
     ! Unknown solver type
-    write (6,*) "Solver type", SOLVER, "not recognised"
+    write (6,*) "Solver type", SOLVER_TYPE, "not recognised"
     stop
   endif
 

@@ -18,7 +18,7 @@ subroutine read_main(pb)
   use mesh, only : read_mesh_parameters, read_mesh_nodes, mesh_get_size
   use output, only : ot_read_stations
   use my_mpi, only : my_mpi_tag, is_MPI_parallel
-  use constants, only : FAULT_TYPE, SOLVER
+  use constants, only : FAULT_TYPE, SOLVER_TYPE
 
   type(problem_type), intent(inout) :: pb
 
@@ -49,7 +49,7 @@ subroutine read_main(pb)
   read(15,*) pb%NSTOP
   read(15,*) pb%DYN_FLAG,pb%DYN_SKIP
   read(15,*) pb%DYN_M,pb%DYN_th_on,pb%DYN_th_off
-  read(15,*) FAULT_TYPE, SOLVER
+  read(15,*) FAULT_TYPE, SOLVER_TYPE
   write(6,*) '  Flags input complete'
 
   n = mesh_get_size(pb%mesh) ! number of nodes in this processor

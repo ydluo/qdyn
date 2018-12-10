@@ -1,6 +1,6 @@
 module unittests_rsf
 
-  use constants, only : SOLVER
+  use constants, only : SOLVER_TYPE
   use problem_class, only : problem_type
   use mesh, only : mesh_get_size
   use solver, only : init_rk45
