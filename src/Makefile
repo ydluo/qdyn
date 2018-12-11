@@ -17,8 +17,8 @@ OPT = -O3 -Wall
 #OPT = -O3 -Wall -fopenmp
 #OPT = -O2 -w
 #-- Intel Fortran --
-#F90 = ifort
-#OPT = -O3 -ip -ipo
+# F90 = ifort
+# OPT = -O3 -ip -ipo
 # For parallel runs with OpenMP:
 #OPT = -O3 -ip -ipo -parallel -openmp -par-threshold:50
 #-no-inline-factor
@@ -43,11 +43,11 @@ OPT = -O3 -Wall
 
 # 3. Set the compiler option that enables preprocessing in your compiler
 # ifort
-#PREPROC = -fpp
+# PREPROC = -fpp
 # gfortran
 PREPROC = -cpp
 #PG, KAUST server
-CFLAGS = -B/usr/lib/x86_64-linux-gnu
+# CFLAGS = -B/usr/lib/x86_64-linux-gnu
 #CFLAGS = '' 
 
 #== END USER SETTINGS =============================================

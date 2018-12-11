@@ -3,6 +3,7 @@
 module solver
 
   use problem_class, only : problem_type
+  use utils, only : pack, unpack
 
   implicit none
   private
@@ -45,17 +46,24 @@ subroutine solve(pb)
     call check_stop(pb)   ! here itstop will change
 !--------Output onestep to screen and ox file(snap_shot)
 ! if(mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
-    if(mod(pb%it,pb%ox%ntout) == 0 .or. pb%it == pb%itstop) then
+    if(mod(pb%it,pb%ox%ntout) == 0) then
 !      if (is_mpi_master()) write(6,*) 'it:',pb%it,'iktotal=',iktotal,'pb%time=',pb%time
       call screen_write(pb)
     endif
 
-    call ox_write(pb)
+    if (pb%it /= pb%itstop) then
+      call ox_write(pb)
+    endif
 ! if (is_mpi_master()) call ox_write(pb)
-    if (mod(pb%it, pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
+    if (mod(pb%it, pb%ot%ntout) == 0 .and. pb%it /= pb%itstop) then
       call ot_write(pb)
     endif
   enddo
+
+  ! Write data for last step
+  call screen_write(pb)
+  call ox_write(pb)
+  call ot_write(pb)
 
   if (is_MPI_parallel()) call finalize_mpi()
 
@@ -75,47 +83,32 @@ subroutine do_bsstep(pb)
   use ode_bs
   use ode_rk45, only: rkf45_d
   use output, only : screen_write, ox_write, ot_write
-  use constants, only : SOLVER
+  use constants, only : SOLVER_TYPE
 
   type(problem_type), intent(inout) :: pb
 
-  double precision :: t0
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
-  integer :: ik, ind_stress_coupling, ind_localisation
-
-  ! Pack v, theta into yt
-  ! yt(2::pb%neqs) = pb%v(pb%rs_nodes) ! JPA Coulomb
-
-  ! SEISMIC: define the indices of yt and dydt based on which
-  ! features are requested (defined in input file)
-  ind_stress_coupling = 2 + pb%features%stress_coupling
-  ind_localisation = ind_stress_coupling + pb%features%localisation
+  double precision, dimension(pb%mesh%nn) :: main_var
+  integer :: ik
 
   ! SEISMIC: in the case of the CNS model, solve for tau and not v
   if (pb%i_rns_law == 3) then   ! SEISMIC: CNS model
-    yt(2::pb%neqs) = pb%tau
+    main_var = pb%tau
   else  ! SEISMIC: not CNS model (i.e. rate-and-state)
-    yt(2::pb%neqs) = pb%v
+    main_var = pb%v
   endif
-  yt(1::pb%neqs) = pb%theta
-  ! SEISMIC NOTE/WARNING: I don't know how permanent this temporary solution is,
-  ! but in case it gets fixed more permanently, derivs_all.f90 needs adjustment
-  if (pb%features%stress_coupling == 1) then           ! Temp solution for normal stress coupling
-    yt(ind_stress_coupling::pb%neqs) = pb%sigma
-  endif
-  if (pb%features%localisation == 1) then
-    yt(ind_localisation::pb%neqs) = pb%theta2
-  endif
+
+  call pack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%tp%P, pb)
 
   ! SEISMIC: user-defined switch to use either (1) the Bulirsch-Stoer method, or
   ! the (2) Runge-Kutta-Fehlberg method
-  if (SOLVER == 0) then
-    ! Default value of SOLVER has not been altered
+  if (SOLVER_TYPE == 0) then
+    ! Default value of SOLVER_TYPE has not been altered
     write (6,*) "The default solver type (0) has not been altered, and no solver was picked"
     write( 6,*) "Check the input script and define a solver type > 0"
     stop
 
-  elseif (SOLVER == 1) then
+  elseif (SOLVER_TYPE == 1) then
     ! Use Bulirsch-Stoer method
 
     ! this update of derivatives is only needed to set up the scaling (yt_scale)
@@ -131,14 +124,14 @@ subroutine do_bsstep(pb)
       pb%dt_try = pb%dt_next
     endif
 
-  elseif (SOLVER == 2) then
+  elseif (SOLVER_TYPE == 2) then
     ! Set-up Runge-Kutta solver
 
     pb%rk45%iflag = -2 ! Reset to one-step mode each call
     pb%t_prev = pb%time
 
     ! Call Runge-Kutta solver routine
-    call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, 2*pb%tmax, &
+    call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, pb%tmax, &
                   pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
 
     ! Set time step
@@ -150,7 +143,7 @@ subroutine do_bsstep(pb)
       write (6,*) "RK45 error [3]: relative error tolerance too small"
       stop
     case (4)
-      !write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
+      write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
     case (5)
       write (6,*) "RK45 error [5]: solution vanished, relative error test is not possible"
       stop
@@ -167,34 +160,20 @@ subroutine do_bsstep(pb)
 
   else
     ! Unknown solver type
-    write (6,*) "Solver type", SOLVER, "not recognised"
+    write (6,*) "Solver type", SOLVER_TYPE, "not recognised"
     stop
   endif
 
   iktotal=ik+iktotal
-  !  if (MY_RANK==0) write(6,*) 'iktotal=',iktotal,'pb%time=',pb%time
-  ! Unpack yt into v, theta
-  !  pb%v(pb%rs_nodes) = yt(2::pb%neqs) ! JPA Coulomb
+
+  call unpack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%tp%P, pb)
 
   ! SEISMIC: retrieve the solution for tau in the case of the CNS model, else
   ! retreive the solution for slip velocity
   if (pb%i_rns_law == 3) then
-    pb%tau = yt(2::pb%neqs)
-    pb%dtau_dt = yt(2::pb%neqs)
+    pb%tau = main_var
   else
-    pb%v = yt(2::pb%neqs)
-    pb%dtau_dt = 0d0
-  endif
-
-  pb%theta = yt(1::pb%neqs)
-  ! SEISMIC NOTE/WARNING: I don't know how permanent this temporary solution is,
-  ! but in case it gets fixed more permanently, derivs_all.f90 needs adjustment
-  if (pb%features%stress_coupling == 1) then           ! Temp solution for normal stress coupling
-    pb%sigma = yt(ind_stress_coupling::pb%neqs)
-  endif
-
-  if (pb%features%localisation == 1) then
-    pb%theta2 = yt(ind_localisation::pb%neqs)
+    pb%v = main_var
   endif
 
 end subroutine do_bsstep
@@ -213,7 +192,7 @@ subroutine update_field(pb)
 
   type(problem_type), intent(inout) :: pb
 
-  double precision, dimension(pb%mesh%nn) :: P_prev, test
+  double precision, dimension(pb%mesh%nn) :: P_prev
   integer :: i,ix,iw
 
   ! SEISMIC: obtain P at the previous time step
@@ -293,7 +272,7 @@ subroutine check_stop(pb)
    ! STOP if time > tmax
     case (0)
       if (is_mpi_master()) call time_write(pb)
-      if (pb%time > pb%tmax) pb%itstop = pb%it
+      if (pb%time >= pb%tmax) pb%itstop = pb%it
 
    ! STOP soon after end of slip localization
     case (1)
@@ -331,8 +310,8 @@ subroutine init_rk45(pb)
 
   type(problem_type), intent(inout) :: pb
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt
+  double precision, dimension(pb%mesh%nn) :: main_var
   integer :: nwork
-  integer :: ind_stress_coupling, ind_localisation
 
   write (6,*) "Initialising RK45 solver"
 
@@ -341,25 +320,13 @@ subroutine init_rk45(pb)
   allocate(pb%rk45%work(nwork))
   allocate(pb%rk45%iwork(5))
 
-  ! Prepare yt for first call
-  ind_stress_coupling = 2 + pb%features%stress_coupling
-  ind_localisation = ind_stress_coupling + pb%features%localisation
-
-  ! SEISMIC: in the case of the CNS model, solve for tau and not v
   if (pb%i_rns_law == 3) then   ! SEISMIC: CNS model
-    yt(2::pb%neqs) = pb%tau
+    main_var = pb%tau
   else  ! SEISMIC: not CNS model (i.e. rate-and-state)
-    yt(2::pb%neqs) = pb%v
+    main_var = pb%v
   endif
-  yt(1::pb%neqs) = pb%theta
-  ! SEISMIC NOTE/WARNING: I don't know how permanent this temporary solution is,
-  ! but in case it gets fixed more permanently, derivs_all.f90 needs adjustment
-  if (pb%features%stress_coupling == 1) then           ! Temp solution for normal stress coupling
-    yt(ind_stress_coupling::pb%neqs) = pb%sigma
-  endif
-  if (pb%features%localisation == 1) then
-    yt(ind_localisation::pb%neqs) = pb%theta2
-  endif
+
+  call pack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%tp%P_a, pb)
 
   call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, pb%time, &
                 pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)

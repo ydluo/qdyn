@@ -124,10 +124,10 @@ subroutine dtheta_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
 end subroutine dtheta_dt
 
 !--------------------------------------------------------------------------------------
-subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,tau,sigma,theta,theta2,pb)
+subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
 
   type(problem_type), intent(in) :: pb
-  double precision, dimension(pb%mesh%nn), intent(in) :: v, tau, sigma, theta, theta2
+  double precision, dimension(pb%mesh%nn), intent(in) :: v, theta
   double precision, dimension(pb%mesh%nn), intent(out) :: dmu_dv, dmu_dtheta
   double precision :: z(pb%mesh%nn)
 

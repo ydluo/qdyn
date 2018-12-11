@@ -56,6 +56,6 @@ integer :: FAULT_TYPE = 0
 ! Which ODE solver to use:
 !   1 : Bulirsch-Stoer
 !   2 : Runge-Kutta-Fehlberg
-integer :: SOLVER = 0
+integer :: SOLVER_TYPE = 0
 
 end module constants

@@ -18,11 +18,12 @@ subroutine read_main(pb)
   use mesh, only : read_mesh_parameters, read_mesh_nodes, mesh_get_size
   use output, only : ot_read_stations
   use my_mpi, only : my_mpi_tag, is_MPI_parallel
-  use constants, only : FAULT_TYPE, SOLVER
+  use constants, only : FAULT_TYPE, SOLVER_TYPE
 
   type(problem_type), intent(inout) :: pb
 
-  integer :: i,n
+  double precision, dimension(:), allocatable :: read_buf
+  integer :: i, j, n, N_cols, N_creep
 
   write(6,*) 'Start reading input ...'
 
@@ -36,6 +37,9 @@ subroutine read_main(pb)
   read(15,*) pb%i_rns_law
   read(15,*) pb%i_sigma_cpl
   ! SEISMIC: various simulation features can be turned on (1) or off (0)
+  if (pb%i_rns_law == 3) then
+    read(15,*) pb%cns_params%N_creep
+  endif
   read(15,*) pb%features%stress_coupling, pb%features%tp, pb%features%localisation
   read(15,*) pb%ot%ntout, pb%ox%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nxout_dyn, &
              pb%ox%i_ox_seq, pb%ox%i_ox_dyn
@@ -45,7 +49,7 @@ subroutine read_main(pb)
   read(15,*) pb%NSTOP
   read(15,*) pb%DYN_FLAG,pb%DYN_SKIP
   read(15,*) pb%DYN_M,pb%DYN_th_on,pb%DYN_th_off
-  read(15,*) FAULT_TYPE, SOLVER
+  read(15,*) FAULT_TYPE, SOLVER_TYPE
   write(6,*) '  Flags input complete'
 
   n = mesh_get_size(pb%mesh) ! number of nodes in this processor
@@ -59,41 +63,90 @@ subroutine read_main(pb)
   !   sigma:            applied normal stress (effective if no TP)
   !   tau:              initial shear stress
   !   theta:            initial porosity (phi in CNS formulation)
-  !   v_star:           load-point velocity
+  !   v_pl:             load-point velocity
   !   a_tilde:          coefficient of logarithmic rate dependence
   !   mu_tilde_star:    reference friction coefficient at y_gr_star
   !   y_gr_star:        reference granular fow strain rate
   !   H:                dilatancy geometric factor
   !   phi_c:            critical state porosity
   !   phi0:             lower cut-off porosity
-  !   IPS_const_diff:   pressure solution (temperature-dependent) constant
-  !                     for diffusion controlled pressure solution creep
-  !   IPS_const_diss:   pressure solution (temperature-dependent) constant
-  !                     for dissolution controlled pressure solution creep
+  !
+  !   (for each out of N creep mechanisms)
+  !   A:                creep law kinetic constant
+  !   n:                stress exponent
+  !   m:                porosity exponent
+  !
+  !   L:                total thickness of the fault zone
+  !   iot:              flag for other time series output
+  !   iasp:             flag for identification purposes
   !
   ! Note that these parameters are material (gouge) properties, and are
   ! generally not spatically uniform, and hence are allocatable
   ! See friction.f90 for a description of and references to the CNS model
-  ! See user manual for detailed definitions of the above parameters (TODO)
+  ! See user manual for detailed definitions of the above parameters
+  ! (this is a permanent TODO)
   ! </SEISMIC>
 
   ! If the CNS model is selected
   if (pb%i_rns_law == 3) then
+    N_creep = pb%cns_params%N_creep
+    ! Define the number of columns to read: 13 plus 3 for each creep mechanism
+    N_cols = 13 + 3*N_creep
+    ! Allocate read buffer
+    allocate( read_buf(N_cols) )
+    ! Allocate CNS parameters
     allocate( pb%cns_params%a_tilde(n), pb%cns_params%mu_tilde_star(n), &
               pb%cns_params%y_gr_star(n), pb%cns_params%H(n), &
               pb%cns_params%phi_c(n), pb%cns_params%phi0(n), &
-              pb%cns_params%IPS_const_diff(n), pb%cns_params%IPS_const_diss(n), &
               pb%cns_params%L(n) )
+    ! Allocate CNS parameters for N creep mechanisms
+    allocate( pb%cns_params%A(N_creep*n), pb%cns_params%n(N_creep*n), &
+              pb%cns_params%m(N_creep*n) )
     do i=1,n
-      read(15,*)pb%sigma(i), pb%tau(i), pb%theta(i), pb%v_pl(i),  &
-                pb%cns_params%a_tilde(i), pb%cns_params%mu_tilde_star(i), &
-                pb%cns_params%y_gr_star(i), pb%cns_params%H(i), &
-                pb%cns_params%phi_c(i), pb%cns_params%phi0(i), &
-                pb%cns_params%IPS_const_diff(i), pb%cns_params%IPS_const_diss(i), &
-                pb%cns_params%L(i), pb%ot%iot(i), pb%ot%iasp(i)
+
+      ! Read data into buffer
+      read(15,*) read_buf(:)
+
+      ! General fault parameters
+      pb%sigma(i) = read_buf(1)
+      pb%tau(i) = read_buf(2)
+      pb%theta(i) = read_buf(3)
+      pb%v_pl(i) = read_buf(4)
+
+      ! Granular flow parameters
+      pb%cns_params%a_tilde(i) = read_buf(5)
+      pb%cns_params%mu_tilde_star(i) = read_buf(6)
+      pb%cns_params%y_gr_star(i) = read_buf(7)
+      pb%cns_params%H(i) = read_buf(8)
+
+      ! Porosity parameters
+      pb%cns_params%phi_c(i) = read_buf(9)
+      pb%cns_params%phi0(i) = read_buf(10)
+
+      ! Creep mechanism parameters (3 per mechanism)
+      do j=1,N_creep
+        ! Kinetic constant
+        pb%cns_params%A((i-1)*N_creep+j) = read_buf(11+(j-1)*3)
+        ! Stress exponent
+        pb%cns_params%n((i-1)*N_creep+j) = read_buf(12+(j-1)*3)
+        ! Porosity exponent
+        pb%cns_params%m((i-1)*N_creep+j) = read_buf(13+(j-1)*3)
+      enddo
+
+      ! Fault zone thickness
+      pb%cns_params%L(i) = read_buf(N_cols-2)
+
+      ! Output parameters
+      pb%ot%iot(i) = int(read_buf(N_cols-1))
+      pb%ot%iasp(i) = int(read_buf(N_cols))
+
+      ! Set dummy values to unused parameters
       pb%dc(i) = 1.0
       pb%V(i) = 0.0
+
     end do
+    ! Deallocate the read buffer
+    deallocate(read_buf)
   ! Else, the RSF model is selected
   else
     allocate ( pb%a(n), pb%b(n), pb%v1(n), &
@@ -111,17 +164,50 @@ subroutine read_main(pb)
   ! These parameters and corresponding units are (in order):
   !
   if (pb%features%localisation == 1) then
-    allocate (  pb%cns_params%lambda(n), pb%theta2(n), &
-                pb%cns_params%IPS_const_diff_bulk(n), pb%cns_params%IPS_const_diss_bulk(n) )
+    ! Raise an error if the CNS model is not selected
+    if (pb%i_rns_law /= 3) then
+      write(6,*) "Localisation of shear strain is compatible only with the CNS model (i_rns_law = 3)"
+      stop
+    endif
+
+    N_creep = pb%cns_params%N_creep
+    ! Define the number of columns to read: 2 plus 3 for each creep mechanism
+    N_cols = 2 + 3*N_creep
+    ! Allocate read buffer
+    allocate( read_buf(N_cols) )
+    allocate( pb%cns_params%lambda(n), pb%theta2(n) )
+    allocate( pb%cns_params%A_bulk(N_creep*n), pb%cns_params%n_bulk(N_creep*n),&
+              pb%cns_params%m_bulk(N_creep*n) )
+
     do i=1,n
-      read(15,*)pb%cns_params%lambda(i), pb%theta2(i), &
-                pb%cns_params%IPS_const_diff_bulk(i), pb%cns_params%IPS_const_diss_bulk(i)
+
+      ! Read data into buffer
+      read(15,*) read_buf(:)
+
+      ! Degree of localisation (0 <= lambda <= 1)
+      pb%cns_params%lambda(i) = read_buf(1)
+      ! Porosity in bulk gouge
+      pb%theta2(i) = read_buf(2)
+
+      ! Creep mechanism parameters (3 per mechanism)
+      do j=1,N_creep
+        ! Kinetic constant
+        pb%cns_params%A_bulk((i-1)*N_creep+j) = read_buf(3+(j-1)*3)
+        ! Stress exponent
+        pb%cns_params%n_bulk((i-1)*N_creep+j) = read_buf(4+(j-1)*3)
+        ! Porosity exponent
+        pb%cns_params%m_bulk((i-1)*N_creep+j) = read_buf(5+(j-1)*3)
+      enddo
+
     end do
+    ! Deallocate the read buffer
+    deallocate(read_buf)
+  ! Else, set lambda and theta2 to dummy values
   else
     allocate(pb%cns_params%lambda(n), pb%theta2(n))
     do i=1,n
-      pb%cns_params%lambda(i) = 1
-      pb%theta2(i) = 0
+      pb%cns_params%lambda(i) = 1d0
+      pb%theta2(i) = 0d0
     end do
   endif
   ! End reading localisation model parameters

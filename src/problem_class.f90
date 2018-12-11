@@ -31,9 +31,10 @@ module problem_class
   ! See input.f90 for a description of the parameters
   type cns_type
     double precision, dimension(:), allocatable :: &
-      a_tilde, mu_tilde_star, IPS_const_diff, IPS_const_diss, H, L, &
+      a_tilde, mu_tilde_star, H, L, & ! Granular flow and microstructural params
       y_gr_star, phi_c, phi0, lambda, &
-      IPS_const_diff_bulk, IPS_const_diss_bulk
+      A, n, m, A_bulk, n_bulk, m_bulk ! Creep mechanism parameters
+    integer :: N_creep=-1 ! Number of active creep mechanisms
   end type cns_type
   ! End of the CNS model structure
 
@@ -99,6 +100,8 @@ module problem_class
    ! QSB
     double precision :: DYN_M,DYN_th_on,DYN_th_off
     integer :: DYN_FLAG,DYN_SKIP
+    ! Flag for unit testing
+    logical :: test_mode = .false.
 
     ! SEISMIC: added structures
     type (cns_type) :: cns_params

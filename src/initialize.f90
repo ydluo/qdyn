@@ -12,7 +12,7 @@ subroutine init_all(pb)
 
   use problem_class
   use mesh, only : init_mesh, mesh_get_size
-  use constants, only : PI, SOLVER
+  use constants, only : PI, SOLVER_TYPE
   use my_mpi, only: is_MPI_master
   use fault_stress, only : init_kernel
   use output, only : ot_init, ox_init
@@ -80,10 +80,13 @@ subroutine init_all(pb)
   if (pb%features%tp == 1) then
     call init_tp(pb)
     write(6,*) "Spectral mesh initiated"
+  else
+    allocate(pb%tp%P(pb%mesh%nn))
+    pb%tp%P = 0d0
   endif
 
   ! SEISMIC: initialise Runge-Kutta ODE solver, if selected
-  if (SOLVER == 2) then
+  if (SOLVER_TYPE == 2) then
     call init_rk45(pb)
   endif
 

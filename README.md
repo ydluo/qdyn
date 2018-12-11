@@ -5,6 +5,8 @@
 
 ## News 
 
+*11 December 2018* | QDYN version 2.0 has been released!
+
 *6 December 2018* | Results of QDYN earthquake cycle simulations on faults surrounded by damaged zones were presented at:  
 * the AGU Fall Meeting 2017 (San Francisco, 11-15 December 2017): B. Idini and J. P. Ampuero, *Rupture complexity promoted by damaged fault zones in earthquake cycle models* (doi:10.1002/essoar.10500080.1, [poster](https://www.essoar.org/doi/abs/10.1002/essoar.10500080.1))  
 * the [10th ACES International Workshop](http://quaketm.bosai.go.jp/~shiqing/ACES2018/index_aces.html) (Japan, September 25-28, 2018), J. P. Ampuero et al., *Rupture complexity promoted by damaged fault zones in earthquake cycle models* ([slides](http://quaketm.bosai.go.jp/~shiqing/ACES2018/abstracts/aces_abstract_ampuero.pdf)) 
@@ -109,16 +111,15 @@ Questions, feedback or suggestions can be submitted via our [issue tracking syst
 ------------------------
 ## Developers
 
-[Yingdi Luo](https://science.jpl.nasa.gov/people/YLuo/) (NASA JPL, USA)
+[Yingdi Luo](https://science.jpl.nasa.gov/people/YLuo/) (UCLA / NASA JPL, USA)
 
-[Jean-Paul Ampuero](http://www.seismolab.caltech.edu/ampuero_jp.html) (Caltech Seismolab, USA and IRD / UCA, Geoazur, France)
+[Jean-Paul Ampuero](http://www.seismolab.caltech.edu/ampuero_jp.html) (Caltech Seismolab, USA and IRD / UCA, Géoazur, France)
 
-[Percy Galvez](https://smi.kaust.edu.sa/Pages/People-Galvez.aspx) (KAUT, Saudi Arabia)
+[Percy Galvez](https://smi.kaust.edu.sa/Pages/People-Galvez.aspx) (KAUST, Saudi Arabia; AECOM, Switzerland)
 
-[Martijn van den Ende](https://www.linkedin.com/in/martijnvandenende) (Universite Cote d'Azur, Geoazur, France)
+[Martijn van den Ende](https://www.linkedin.com/in/martijnvandenende) (Université Côte d'Azur, Géoazur, France)
 
 [Benjamin Idini](http://www.seismolab.caltech.edu/idini_b.html) (Caltech Seismolab, USA)
-
 
 
 -------------------------
