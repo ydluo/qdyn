@@ -118,6 +118,9 @@ single_asperity = TestSingleAsperity(p)
 single_asperity.import_results()
 single_asperity.run_test("RSF")
 single_asperity.run_test("CNS")
+# Plot results
+# single_asperity.plot_results("RSF")
+# single_asperity.plot_results("CNS")
 
 # Tse & Rice (1986) example test (RSF)
 # see https://doi.org/10.1029/JB091iB09p09452
@@ -126,6 +129,8 @@ p.settings(set_dict)
 tse_rice = TestTseRice(p)
 tse_rice.import_results()
 tse_rice.run_test()
+# Plot results
+# tse_rice.plot_results("RSF")
 
 # Print out integration test report
 print("".join(["-"]*msg_width))

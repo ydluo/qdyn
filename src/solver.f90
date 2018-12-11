@@ -61,7 +61,6 @@ subroutine solve(pb)
   enddo
 
   ! Write data for last step
-  write(6,*) pb%time
   call screen_write(pb)
   call ox_write(pb)
   call ot_write(pb)
@@ -128,7 +127,7 @@ subroutine do_bsstep(pb)
   elseif (SOLVER_TYPE == 2) then
     ! Set-up Runge-Kutta solver
 
-    pb%rk45%iflag = -1 ! Reset to one-step mode each call
+    pb%rk45%iflag = -2 ! Reset to one-step mode each call
     pb%t_prev = pb%time
 
     ! Call Runge-Kutta solver routine
@@ -144,7 +143,7 @@ subroutine do_bsstep(pb)
       write (6,*) "RK45 error [3]: relative error tolerance too small"
       stop
     case (4)
-      !write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
+      write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
     case (5)
       write (6,*) "RK45 error [5]: solution vanished, relative error test is not possible"
       stop
