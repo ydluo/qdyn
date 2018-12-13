@@ -1,0 +1,15 @@
+- name: Home
+  link: /
+- name: Getting started
+- name: Optimizing performance
+  link: /test.html
+- name: Coupling with SPECFEM3D
+  link: #
+- name: Tutorial
+  link: /tutorial.html
+  subitems:
+  - name: Test 1
+    anchor: test_1
+  - name: Test 2 
+    anchor: test_2
+- name: Citing QDYN

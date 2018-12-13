@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>{{ page.title }} | QDYN Documentation</title>
+	<!-- link to main stylesheet -->
+	<link rel="stylesheet" type="text/css" href="/assets/css/styles.css">
+</head>
+<body>
+	<header>
+		<h1>QDYN Documentation</h1>
+	</header>
+	<div class="container">
+		<nav>
+			{% include navigation.html %}
+		</nav>
+		<div class="content">
+			{{ content }}
+		</div>
+		
+	</div><!-- /.container -->
+	<!--
+	<footer>
+		QDYN - a Quasi-DYNamic seismic cycle simulator
+	</footer>
+	-->
+</body>
+</html>
