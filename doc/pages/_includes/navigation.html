@@ -1,15 +1,34 @@
 <ul>
 	{% for item in site.data.navigation %}
 	<li>
-		<a href="{{ item.link }}" {% if page.url == item.link %}class="current"{% endif %}>
+
+		{% assign cls = "" %}
+		{% if page.url == item.link %}
+			{% assign cls = "current" %}
+		{% endif %}
+
+		{% for sublink in item.sublinks %}
+			{% if page.url == sublink.link %}
+				{% assign cls = "current" %}
+			{% endif %}
+		{% endfor %}
+
+		<a href="{{ item.link }}" class={{ cls }}>
 	  	{{ item.name }}
 		</a>
-		{% if page.url == item.link %}
+		{% if cls == "current" %}
 		<ul class="subitems">
 		{% for subitem in item.subitems %}
 			<li>
 				<a href="{{ item.link }}#{{ subitem.anchor }}">
 					# {{ subitem.name }}
+				</a>
+			</li>
+		{% endfor %}
+		{% for sublink in item.sublinks %}
+			<li>
+				<a href="{{ sublink.link }}">
+					> {{ sublink.name }}
 				</a>
 			</li>
 		{% endfor %}
