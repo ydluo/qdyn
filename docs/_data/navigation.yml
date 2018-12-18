@@ -1,5 +1,5 @@
 - name: Overview
-  link: /
+  link: index.html
   subitems:
     - name: Main features
       anchor: main-features
@@ -11,7 +11,7 @@
       anchor: license
 
 - name: Model assumptions
-  link: /model_assumptions.html
+  link: model_assumptions.html
   subitems:
     - name: Model geometry
       anchor: model-geometry
@@ -21,7 +21,7 @@
       anchor: fault-rheology
 
 - name: Getting started
-  link: /getting_started.html
+  link: getting_started.html
   subitems:
     - name: Requirements
       anchor: requirements
@@ -35,7 +35,7 @@
       anchor: additional-notes-for-windows-10-users
 
 - name: Running simulations
-  link: /running_simulations.html
+  link: running_simulations.html
   subitems:
     - name: Using the wrapper
       anchor: using-the-wrapper
@@ -47,20 +47,20 @@
       anchor: examples
 
 - name: Optimizing performance
-  link: /optimizing_performance.html
+  link: optimizing_performance.html
 
 - name: Coupling with SPECFEM3D
   link: #
 
 - name: Tutorials
-  link: /tutorials.html
+  link: tutorials.html
   sublinks:
     - name: Spring-block (MATLAB)
     - name: Spring-block (Python)
     - name: Single asperity
-      link: /tutorial_single_asperity_python.html
+      link: tutorial_single_asperity_python.html
 
 - name: Developer notes
 
 - name: Citing QDYN
-  link: /cite.html
+  link: cite.html
