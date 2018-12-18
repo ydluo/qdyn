@@ -3,16 +3,16 @@
 	<li>
 
 		{% assign cls = "" %}
-		{% if page.url == item.link %}
+		{% if page.url contains item.link %}
 			{% assign cls = "current" %}
 		{% endif %}
 
 		{% for sublink in item.sublinks %}
-			{% if page.url == sublink.link %}
+			{% if page.url contains sublink.link %}
 				{% assign cls = "current" %}
 			{% endif %}
 		{% endfor %}
-
+		
 		<a href="{{ item.link }}" class={{ cls }}>
 	  	{{ item.name }}
 		</a>
