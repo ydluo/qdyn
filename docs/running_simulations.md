@@ -169,7 +169,7 @@ Note** that with the Python wrapper, the rheological parameters below are set in
 |    `DC`     | Characteristic slip distance ($D_c$; m)                      |    `1e-5`     |
 |   `MU_SS`   | Reference steady-state friction coefficient ($\mu^*$)        |     `0.6`     |
 |   `V_SS`    | Reference steady-state slip velocity ($V^*$; m/s)            |    `1e-6`     |
-|  `RNS_LAW`  | Type of rate-and-state friction law (see [Model assumptions](http://127.0.0.1:4000/model_assumptions.html#fault-rheology)):<br />`0` = original formulation<br />`1` = with cut-off velocities `V1` and `V2`<br />`2` = regularized form |      `0`      |
+|  `RNS_LAW`  | Type of rate-and-state friction law (see [Model assumptions](model_assumptions.html#fault-rheology)):<br />`0` = original formulation<br />`1` = with cut-off velocities `V1` and `V2`<br />`2` = regularized form |      `0`      |
 |    `V0`     | Fault slip velocity at the start of the simulation (m/s)     |   `1.01e-5`   |
 |    `V1`     | Cut-off velocity of direct effect ($V_1$; m/s)               |    `0.01`     |
 |    `V2`     | Cut-off velocity of evolution effect ($V_2$; m/s) which controls the transition from velocity-weakening to -strengthening when `A < B`. `V2` should be `<= V1`. |    `1e-7`     |
