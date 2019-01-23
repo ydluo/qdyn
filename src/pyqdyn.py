@@ -558,7 +558,7 @@ class qdyn:
                 cols_ox = ("x", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma")
 
             # Read snapshot output
-            data_ox = read_csv(filename_ox, header=0, names=cols_ox, delim_whitespace=True, comment="#")
+            data_ox = read_csv(filename_ox, header=None, names=cols_ox, delim_whitespace=True, comment="#")
 
             # Store snapshot data in self.ox
             self.ox = data_ox
