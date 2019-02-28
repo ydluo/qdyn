@@ -499,7 +499,7 @@ function export_main_input()
     fprintf(fid,'%u     meshdim\n' , MESHDIM);
     if MESHDIM == 2
       fprintf(fid,'%u %u     NX, NW\n' , NX, nw);
-      fprintf(fid,'%.15g %.15g  %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
+      fprintf(fid,'%.15g %.15g %.15g      L, W, Z_CORNER\n', L, W, Z_CORNER);
       fprintf(fid,'%.15g %.15g \n', [DW(iwloc);DIP_W(iwloc)]);
     else
       fprintf(fid,'%u     NN\n' , N);
@@ -575,12 +575,28 @@ if ~exist('name','var') || isempty(name)
 end
 name = [name '.in'];
 
+if ~exist(name,'file') %
+    name = [name(1:end-3) '000000.in'];  %MPI first node
+    if exist(name,'file')
+        disp(['ERROR: MPI input find: ' name '... cannot process']);
+        return
+    else
+        disp('ERROR: no QDYN input');
+        return
+    end
+end
+
 fid = fopen(name);
 MESHDIM = sscanf(fgetl(fid), '%u');
 if MESHDIM == 2
-    rdat = sscanf(fgetl(fid), '%u %u'); NX = rdat(1); NW = rdat(2);
-    rdat = sscanf(fgetl(fid), '%.15g %.15g  %.15g'); L = rdat(1); W = rdat(2); Z_CORNER = rdat(3);
-    rdat = sscanf(fgetl(fid), '%.15g %.15g'); DW(iwloc) = rdat(1); DIP_W(iwloc) = rdat(2);
+    rdat = sscanf(fgetl(fid), '%u %u');
+    NX = rdat(1); NW = rdat(2);
+    rdat = sscanf(fgetl(fid), '%f %f %f');
+    L = rdat(1); W = rdat(2); Z_CORNER = rdat(3);
+    if ~exist('iwloc','var') || isempty(name)
+	    iwloc = [1:NW];
+    end
+    rdat = textscan(fid, '%f %f'); DW(iwloc) = rdat(1); DIP_W(iwloc) = rdat(2);
 else
     N = sscanf(fgetl(fid), '%u');
     rdat = sscanf(fgetl(fid), '%f %f'); L = rdat(1); W = rdat(2);
