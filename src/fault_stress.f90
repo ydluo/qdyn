@@ -145,7 +145,7 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
 
   write(6,*) 'FFT applied'
 
-  if (.not. k%finite) then
+  if (.not. k%finite) then ! FINITE = 0
 
    ! Kernel for a 1D in a 2D homogeneous elastic medium,
    ! assuming antiplane deformation (slip in the direction off the 2D plane)
@@ -193,21 +193,49 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
     endif
 
  !- Read coefficient I(n) from pre-calculated file.
-  else !NOTE: damaged zones are not available for FINITE=1
+  else ! FINITE = 1 
+    !NOTE: damaged zones are not available for FINITE=1
     write(6,*) 'Reading kernel ',SRC_PATH,'/kernel_I.tab'
+
+    ! Open the pre-computed kernel file
     open(57,file=SRC_PATH//'/kernel_I.tab')
+    
+    ! Assemble the odd indexes
     do i=1,k%nnfft/2-1
       read(57,*,end=100) k%kernel(2*i+1)
     enddo
+
+    ! Set the Nyquist wavenumber 
     read(57,*,end=100) k%kernel(2) ! Nyquist
     close(57)
+
     k%kernel(1) = 0d0
+
+    ! Scale the Nyquist wavenumber by N/2
     k%kernel(2) = dble(k%nnfft/2)*k%kernel(2)
+    
+    ! Scale the odd index by i/2. Fill in even indexes
     do i = 1,k%nnfft/2-1
       k%kernel(2*i+1) = dble(i)*k%kernel(2*i+1)
       k%kernel(2*i+2) = k%kernel(2*i+1)
     enddo
+
+    ! Scale the kernel by 0.5*pi*mu/L
     k%kernel = k%kernel * PI*mu / (2d0*m%Lfault)
+
+    ! NEW FEATURE: Introduce the effect of a LVFZ
+    
+    ! Define the wavenumber
+    allocate( kk(k%nnfft) )
+    do i=0,k%nnfft/2-1
+      kk(2*i+1) = dble(i)*2d0*PI/m%Lfault
+    enddo
+    kk(2::2) = kk(1::2) ! Fill in even index
+    kk(2) = dble(k%nnfft)*PI/m%Lfault ! Set Nyquist
+    
+    ! Scale the kernel with the LVFZ parameters
+    if (D>0d0 .and. H>0d0) k%kernel = k%kernel * (1-D) / tanh(H*kk + atanh(1-D))
+
   end if
 
  ! factor 2/N from the inverse FFT convention
