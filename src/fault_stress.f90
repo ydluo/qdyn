@@ -210,27 +210,27 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
 
     k%kernel(1) = 0d0
 
-    ! Scale the Nyquist wavenumber by N/2
-    k%kernel(2) = dble(k%nnfft/2)*k%kernel(2)
+    ! Scale the Nyquist wavenumber by N (NFFT = 2N)
+    k%kernel(2) = PI*dble(k%nnfft/2)*k%kernel(2)
 
-    ! Scale the odd index by i/2. Fill in even indices
+    ! Scale the odd index by i. Fill in even indices
     do i = 1,k%nnfft/2-1
-      k%kernel(2*i+1) = dble(i)*k%kernel(2*i+1)
+      k%kernel(2*i+1) = PI*dble(i)*k%kernel(2*i+1)
       k%kernel(2*i+2) = k%kernel(2*i+1)
     enddo
 
-    ! Scale the kernel by 0.5*pi*mu/L
-    k%kernel = k%kernel * PI*mu / (2d0*m%Lfault)
+    ! Scale the kernel by 0.5*mu/L
+    k%kernel = k%kernel*mu / (2d0*m%Lfault)
 
     ! Introduce the effect of a LVFZ
 
     ! Define the wavenumber
     allocate( kk(k%nnfft) )
     do i=0,k%nnfft/2-1
-      kk(2*i+1) = dble(i)*2d0*PI/m%Lfault
+      kk(2*i+1) = dble(i)*PI/m%Lfault
     enddo
     kk(2::2) = kk(1::2) ! Fill in even index
-    kk(2) = dble(k%nnfft)*PI/m%Lfault ! Set Nyquist
+    kk(2) = dble(k%nnfft/2)*PI/m%Lfault ! Set Nyquist
 
     ! Scale the kernel with the LVFZ parameters
     if (D>0d0 .and. H>0d0) k%kernel = k%kernel * (1-D) / tanh(H*kk + atanh(1-D))
