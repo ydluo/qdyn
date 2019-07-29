@@ -84,6 +84,7 @@ subroutine do_bsstep(pb)
   use ode_rk45, only: rkf45_d
   use output, only : screen_write, ox_write, ot_write
   use constants, only : SOLVER_TYPE
+  use diffusion_solver, only : update_PT_final
 
   type(problem_type), intent(inout) :: pb
 
@@ -98,7 +99,7 @@ subroutine do_bsstep(pb)
     main_var = pb%v
   endif
 
-  call pack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%tp%P, pb)
+  call pack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb)
 
   ! SEISMIC: user-defined switch to use either (1) the Bulirsch-Stoer method, or
   ! the (2) Runge-Kutta-Fehlberg method
@@ -143,7 +144,7 @@ subroutine do_bsstep(pb)
       write (6,*) "RK45 error [3]: relative error tolerance too small"
       stop
     case (4)
-      write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
+      ! write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
     case (5)
       write (6,*) "RK45 error [5]: solution vanished, relative error test is not possible"
       stop
@@ -166,7 +167,8 @@ subroutine do_bsstep(pb)
 
   iktotal=ik+iktotal
 
-  call unpack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%tp%P, pb)
+  call unpack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb)
+  call update_PT_final(pb%dt_did, pb)
 
   ! SEISMIC: retrieve the solution for tau in the case of the CNS model, else
   ! retreive the solution for slip velocity
@@ -192,33 +194,25 @@ subroutine update_field(pb)
 
   type(problem_type), intent(inout) :: pb
 
-  double precision, dimension(pb%mesh%nn) :: P_prev
+  double precision, dimension(pb%mesh%nn) :: P
   integer :: i,ix,iw
 
   ! SEISMIC: obtain P at the previous time step
-  P_prev = 0d0
-  if (pb%features%tp == 1) P_prev = pb%tp%P_prev
+  P = 0d0
+  if (pb%features%tp == 1) P = pb%tp%P
 
   ! SEISMIC: in case of the CNS model, re-compute the slip velocity with
   ! the final value of tau, sigma, and porosity. Otherwise, use the standard
   ! rate-and-state expression to calculate tau as a function of velocity
   if (pb%i_rns_law == 3) then
-    pb%v = compute_velocity(pb%tau, pb%sigma-P_prev, pb%theta, pb%theta2, pb)
+    pb%v = compute_velocity(pb%tau, pb%sigma-P, pb%theta, pb%theta2, pb)
   else
-    pb%tau = (pb%sigma-P_prev) * friction_mu(pb%v,pb%theta,pb) + pb%coh
+    pb%tau = (pb%sigma-P) * friction_mu(pb%v,pb%theta,pb) + pb%coh
   endif
   ! Update slip
   ! SEISMIC NOTE: slip needs to be calculated after velocity!
+  ! NOTE 2: include slip in solver routine to get higher order accuracy
   pb%slip = pb%slip + pb%v*pb%dt_did
-
-  ! SEISMIC: if thermal pressurisation is requested, update P and T
-  if (pb%features%tp == 1) then
-    if (pb%i_rns_law == 3) then
-      call dtheta_dt( pb%v, pb%tau, pb%sigma-P_prev, pb%theta, pb%theta2, &
-                      pb%dtheta_dt, pb%dtheta2_dt, pb)
-    endif
-    call update_PT_final(pb%dt_did, pb)
-  endif
 
   ! update potency and potency rate
 
@@ -326,7 +320,7 @@ subroutine init_rk45(pb)
     main_var = pb%v
   endif
 
-  call pack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%tp%P_a, pb)
+  call pack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb)
 
   call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, pb%time, &
                 pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)

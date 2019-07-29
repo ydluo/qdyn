@@ -29,7 +29,7 @@ subroutine init_all(pb)
   call init_mesh(pb%mesh)
 
  ! number of equations
-  pb%neqs = 2 + pb%features%localisation
+  pb%neqs = 2 + pb%features%localisation + 0*pb%features%tp
   if (pb%features%stress_coupling == 1 .and. pb%mesh%dim == 2) then
     pb%neqs = pb%neqs + 1
   endif

@@ -136,6 +136,8 @@ subroutine init_variables(pb)
               pb%tp%inv_w(pb%mesh%nn), &
               pb%tp%Pi(pb%mesh%nn*pb%tp%mesh%Nl), &
               pb%tp%Theta(pb%mesh%nn*pb%tp%mesh%Nl), &
+              pb%tp%PiTheta(pb%mesh%nn*pb%tp%mesh%Nl), &
+              pb%tp%dP_dt(pb%mesh%nn), &
               pb%dtheta_dt(pb%mesh%nn), &
               pb%dtheta2_dt(pb%mesh%nn) )
 
@@ -149,33 +151,22 @@ subroutine init_variables(pb)
               pb%tp%phi_b(pb%mesh%nn) )
 
   ! Allocate previous values
-  allocate (  pb%tp%P_prev(pb%mesh%nn), &
-              pb%tp%tau_y_prev(pb%mesh%nn), &
-              pb%tp%phi_dot_prev(pb%mesh%nn), &
-              pb%tp%phi_prev(pb%mesh%nn), &
-              pb%tp%Theta_prev(pb%mesh%nn*pb%tp%mesh%Nl), &
-              pb%tp%PiTheta(pb%mesh%nn*pb%tp%mesh%Nl), &
+  allocate (  pb%tp%Theta_prev(pb%mesh%nn*pb%tp%mesh%Nl), &
               pb%tp%PiTheta_prev(pb%mesh%nn*pb%tp%mesh%Nl) )
 
   do i=1,pb%mesh%nn
     pb%tp%inv_rhoc = 1.0/pb%tp%rhoc(i)
     pb%tp%inv_w(i) = 1.0/pb%tp%w(i)
     pb%tp%P(i) = pb%tp%P_a(i)
-    pb%tp%P_prev(i) = pb%tp%P_a(i)
     pb%tp%T(i) = pb%tp%T_a(i)
+    pb%tp%dP_dt(i) = 0d0
     pb%dtheta_dt(i) = 0d0
     pb%dtheta2_dt(i) = 0d0
-    pb%tp%tau_y_prev(i) = 0d0
-    pb%tp%phi_dot_prev(i) = 0d0
-    pb%tp%phi_prev(i) = 0d0
   enddo
 
   do i=1,pb%mesh%nn*pb%tp%mesh%Nl
     pb%tp%Pi(i) = 0d0
     pb%tp%Theta(i) = 0d0
-    pb%tp%Theta_prev(i) = 0d0
-    pb%tp%PiTheta(i) = 0d0
-    pb%tp%PiTheta_prev(i) = 0d0
   enddo
 
 end subroutine init_variables
@@ -224,34 +215,28 @@ end subroutine update_PT
 subroutine update_PT_final(dt,pb)
 
   type(problem_type), intent(inout) :: pb
-  double precision, dimension(pb%mesh%nn) :: tau_y_avg, phi_dot_avg, phi_avg, dP_dt
+  double precision, dimension(pb%mesh%nn) :: tau_y, phi_dot, phi, dP_dt
   double precision :: dt
 
   ! Calculate mid-point values of tau_y, phi_dot, phi between t and t+dt
-  tau_y_avg = 0.5*(pb%tau*0.5*pb%V*pb%tp%inv_w + pb%tp%tau_y_prev)
+  ! tau_y_avg = 0.5*(pb%tau*0.5*pb%V*pb%tp%inv_w + pb%tp%tau_y_prev)
+  tau_y = pb%tau * 0.5 * pb%V * pb%tp%inv_w
   if (pb%i_rns_law == 3) then
     ! CNS model: include porosity
-    phi_avg = 0.5*(pb%theta + pb%tp%phi_prev)
+    phi = pb%theta
     ! Multiply dilatancy rate with an arbitrary constant f >= 0 to control
     ! the amount of dilatancy hardening
-    phi_dot_avg = 0.5*(pb%dtheta_dt + pb%tp%phi_dot_prev)
+    phi_dot = pb%dtheta_dt
   else
     ! RSF: ignore state
-    phi_avg = 1d0
-    phi_dot_avg = 0d0
+    phi = 1d0
+    phi_dot = 0d0
   endif
 
   ! Compute PiTheta and Theta for step t+dt
-  call solve_spectral(tau_y_avg, phi_dot_avg, phi_avg, dt, pb)
+  call solve_spectral(tau_y, phi_dot, phi, dt, pb)
   ! SEISMIC: dP_dt is not used? !!!
-  call calc_dP_dt(tau_y_avg, phi_dot_avg, phi_avg, dP_dt, pb)
-
-  ! Update initial values of tau*y_dot, phi_dot, phi, and P
-  pb%tp%tau_y_prev = pb%tau*0.5*pb%V*pb%tp%inv_w
-  pb%tp%phi_dot_prev = pb%dtheta_dt
-  pb%tp%phi_prev = pb%theta
-  pb%tp%P_prev = pb%tp%P
-  ! TODO: Add T_prev here when being used
+  call calc_dP_dt(tau_y, phi_dot, phi, dP_dt, pb)
 
   ! Update initial values of Theta and PiTheta for next integration step
   pb%tp%Theta_prev = pb%tp%Theta
@@ -321,6 +306,7 @@ subroutine solve_spectral(tau_y,phi_dot,phi,dt,pb)
   type(problem_type), intent(inout) :: pb
   double precision, dimension(pb%mesh%nn) :: tau_y, phi_dot, phi
   double precision :: dt, A_T, B_T, exp_T, A_P, B_P, exp_P
+  double precision :: dPi, dTheta, dPiTheta
   integer :: i, j, n
 
   ! Update parameters in spatial domain
@@ -336,6 +322,7 @@ subroutine solve_spectral(tau_y,phi_dot,phi,dt,pb)
   do i=1,pb%mesh%nn
     pb%tp%P(i) = pb%tp%P_a(i)
     pb%tp%T(i) = pb%tp%T_a(i)
+    pb%tp%dP_dt(i) = 0d0
     ! Loop over all spectral elements
     do j=1,pb%tp%mesh%Nl
       n = (i-1)*pb%tp%mesh%Nl+j
@@ -362,6 +349,12 @@ subroutine solve_spectral(tau_y,phi_dot,phi,dt,pb)
       pb%tp%PiTheta(n) = B_P*(1.0 - exp_P)/A_P + pb%tp%PiTheta(n)*exp_P
       pb%tp%P(i) =  pb%tp%P(i) + pb%tp%mesh%F_inv(j)*pb%tp%inv_w(i)* &
                     (pb%tp%PiTheta(n) - pb%tp%Lam_prime(i)*pb%tp%Theta(n))
+
+      ! Update dP/dt
+      dTheta = -A_T*pb%tp%Theta(n) + B_T
+      dPiTheta = -A_P*pb%tp%PiTheta(n) + B_P
+      dPi = dPiTheta - pb%tp%Lam_prime(i)*dTheta
+      pb%tp%dP_dt(i) = pb%tp%dP_dt(i) + pb%tp%mesh%F_inv(j)*dPi*pb%tp%inv_w(i)
     enddo
 
     ! if (pb%V(i) <= pb%ot%v_th) then
