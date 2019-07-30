@@ -17,6 +17,7 @@ subroutine init_all(pb)
   use fault_stress, only : init_kernel
   use output, only : ot_init, ox_init
   use friction, only : set_theta_star, friction_mu
+  use friction_cns, only : compute_velocity, dphi_dt
   use solver, only : init_rk45
   use diffusion_solver, only: init_tp
 !!$  use omp_lib
@@ -65,17 +66,6 @@ subroutine init_all(pb)
   pb%slip = 0d0
   call set_theta_star(pb)
 
-  ! SEISMIC: the CNS model has the initial shear stress defined in the
-  ! input file, so we can skip the initial computation of friction
-  if (pb%i_rns_law /= 3) then
-    pb%tau = pb%sigma * friction_mu(pb%v,pb%theta,pb) + pb%coh
-  endif
-
-  call init_kernel(pb%lam,pb%smu,pb%mesh,pb%kernel, &
-                   pb%D,pb%H,pb%i_sigma_cpl,pb%finite)
-  call ot_init(pb)
-  call ox_init(pb)
-
   ! SEISMIC: initialise thermal pressurisation model (diffusion_solver.f90)
   if (pb%features%tp == 1) then
     call init_tp(pb)
@@ -84,6 +74,24 @@ subroutine init_all(pb)
     allocate(pb%tp%P(pb%mesh%nn))
     pb%tp%P = 0d0
   endif
+
+  ! SEISMIC: the CNS model has the initial shear stress defined in the
+  ! input file, so we can skip the initial computation of friction
+  if (pb%i_rns_law /= 3) then
+    pb%tau = (pb%sigma - pb%tp%P) * friction_mu(pb%v,pb%theta,pb) + pb%coh
+  endif
+  if (pb%i_rns_law == 3) then
+    pb%v = compute_velocity(pb%tau, pb%sigma-pb%tp%P, pb%theta, pb%theta2, pb)
+    if (pb%features%tp == 1) then
+      call dphi_dt( pb%v, pb%tau, pb%sigma-pb%tp%P, pb%theta, pb%theta2, &
+                    pb%dtheta_dt, pb%dtheta2_dt, pb)
+    endif
+  endif
+
+  call init_kernel(pb%lam,pb%smu,pb%mesh,pb%kernel, &
+                   pb%D,pb%H,pb%i_sigma_cpl,pb%finite)
+  call ot_init(pb)
+  call ox_init(pb)
 
   ! SEISMIC: initialise Runge-Kutta ODE solver, if selected
   if (SOLVER_TYPE == 2) then

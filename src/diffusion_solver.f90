@@ -32,7 +32,7 @@ module diffusion_solver
   implicit none
   private
 
-  public :: init_tp, update_PT, update_PT_final, calc_dP_dt
+  public :: init_tp, update_PT, update_PT_final
 
 contains
 
@@ -219,8 +219,7 @@ subroutine update_PT_final(dt,pb)
   double precision :: dt
 
   ! Calculate mid-point values of tau_y, phi_dot, phi between t and t+dt
-  ! tau_y_avg = 0.5*(pb%tau*0.5*pb%V*pb%tp%inv_w + pb%tp%tau_y_prev)
-  tau_y = pb%tau * 0.5 * pb%V * pb%tp%inv_w
+  tau_y = pb%tau * 0.5 * pb%v * pb%tp%inv_w
   if (pb%i_rns_law == 3) then
     ! CNS model: include porosity
     phi = pb%theta
@@ -235,68 +234,12 @@ subroutine update_PT_final(dt,pb)
 
   ! Compute PiTheta and Theta for step t+dt
   call solve_spectral(tau_y, phi_dot, phi, dt, pb)
-  ! SEISMIC: dP_dt is not used? !!!
-  call calc_dP_dt(tau_y, phi_dot, phi, dP_dt, pb)
 
   ! Update initial values of Theta and PiTheta for next integration step
   pb%tp%Theta_prev = pb%tp%Theta
   pb%tp%PiTheta_prev = pb%tp%PiTheta
 
 end subroutine update_PT_final
-
-!===============================================================================
-! SEISMIC: evaluate dP/dt at t+dt (during solver intermediate steps)
-!===============================================================================
-subroutine calc_dP_dt(tau_y,phi_dot,phi,dP_dt,pb)
-
-  type(problem_type), intent(inout) :: pb
-  double precision, dimension(pb%mesh%nn) :: tau_y, phi_dot, phi, dP_dt
-  double precision :: A_T, B_T, A_P, B_P, dTheta, dPiTheta, dPi
-  integer :: i, j, n
-
-  ! Update parameters in spatial domain
-  call calc_params(phi, pb)
-
-  ! Loop over all fault segments
-  do i=1,pb%mesh%nn
-    dP_dt(i) = 0d0
-
-    ! if (pb%V(i) > pb%ot%v_th) then
-      ! Loop over all spectral elements
-      do j=1,pb%tp%mesh%Nl
-        n = (i-1)*pb%tp%mesh%Nl+j
-
-        ! Calculate dF(t+dt)/dt = -A*F(t) + B [N&L, Eqn. 8]
-        ! NOTE: Theta and PiTheta stored in pb%tp should have retained their
-        ! values evaluated at t+dt from the current solver step. During each
-        ! step, the solver first calls update_PT, which advances Theta and
-        ! PiTheta to t+dt. Then this function should be called to obtain
-        ! dTheta/dt and dPiTheta/dt at t+dt
-
-        ! Temperature-related parameters in spectral domain
-        A_T = pb%tp%alpha_th(i)*(pb%tp%mesh%lw(j)*pb%tp%inv_w(i))**2
-        B_T = tau_y(i)*pb%tp%Omega(n)*pb%tp%inv_rhoc(i)
-        ! Update Ttheta(t+dt)
-        dTheta = -A_T*pb%tp%Theta(n) + B_T
-
-        ! Pressure-related parameters in spectral domain
-        A_P = pb%tp%alpha_hy(i)*(pb%tp%mesh%lw(j)*pb%tp%inv_w(i))**2
-        B_P = ( pb%tp%Lam_T(i)*tau_y(i) - pb%tp%phi_b(i)*phi_dot(i) )*pb%tp%Omega(n)
-        ! Update PiTtheta(t+dt)
-        ! Note that PiTheta contains the spectral representation of
-        ! Pi + Lambda_prime*Theta, where Pi is the Fourier transform of P
-        ! and Theta is the Fourier transform of T [see N&L, Eqn. 5 and 7]
-        dPiTheta = -A_P*pb%tp%PiTheta(n) + B_P
-        dPi = dPiTheta - pb%tp%Lam_prime(i)*dTheta
-
-        ! Collect the inverse Fourier transformation
-        dP_dt(i) = dP_dt(i) + pb%tp%mesh%F_inv(j)*dPi*pb%tp%inv_w(i)
-
-      enddo
-    ! endif
-  enddo
-
-end subroutine calc_dP_dt
 
 !===============================================================================
 ! SEISMIC: solve for P(t+dt) and T(t+dt) in the spectral domain
@@ -356,74 +299,8 @@ subroutine solve_spectral(tau_y,phi_dot,phi,dt,pb)
       dPi = dPiTheta - pb%tp%Lam_prime(i)*dTheta
       pb%tp%dP_dt(i) = pb%tp%dP_dt(i) + pb%tp%mesh%F_inv(j)*dPi*pb%tp%inv_w(i)
     enddo
-
-    ! if (pb%V(i) <= pb%ot%v_th) then
-    !   ! write(6,*) "TP not active"
-    !   ! else set P, T, Theta, PiTheta, Theta_prev, PiTheta_prev to zero
-    !   pb%tp%P(i) = 0d0
-    !   pb%tp%T(i) = 0d0
-    !   do j=1,pb%tp%mesh%Nl
-    !     n = (i-1)*pb%tp%mesh%Nl+j
-    !     pb%tp%PiTheta(n) = 0d0
-    !     pb%tp%Theta(n) = 0d0
-    !   enddo
-    ! else
-    !   ! write(6,*) "TP turned on!", pb%V(i), pb%ot%v_th
-    !   pb%tp%P(i) = pb%tp%P_a(i)
-    !   pb%tp%T(i) = pb%tp%T_a(i)
-    !   ! Loop over all spectral elements
-    !   do j=1,pb%tp%mesh%Nl
-    !     n = (i-1)*pb%tp%mesh%Nl+j
-    !
-    !     ! Calculate F(t+dt) = B*(1-exp(-Adt))/A + F(t)*exp(-Adt)
-    !     ! assuming constant A, B over the duration of dt [N&L, Eqn. 10]
-    !
-    !     ! Temperature-related parameters in spectral domain
-    !     A_T = pb%tp%alpha_th(i)*(pb%tp%mesh%lw(j)*pb%tp%inv_w(i))**2
-    !     B_T = tau_y(i)*pb%tp%Omega(n)*pb%tp%inv_rhoc(i)
-    !     exp_T = exp(-A_t*dt)
-    !     ! Update Ttheta(t+dt)
-    !     pb%tp%Theta(n) = B_T*(1.0 - exp_T)/A_T + pb%tp%Theta(n)*exp_T
-    !     pb%tp%T(i) = pb%tp%T(i) + pb%tp%mesh%F_inv(j)*pb%tp%inv_w(i)*pb%tp%Theta(n)
-    !
-    !     ! Pressure-related parameters in spectral domain
-    !     A_P = pb%tp%alpha_hy(i)*(pb%tp%mesh%lw(j)*pb%tp%inv_w(i))**2
-    !     B_P = ( pb%tp%Lam_T(i)*tau_y(i) - pb%tp%phi_b(i)*phi_dot(i) )*pb%tp%Omega(n)
-    !     exp_P = exp(-A_P*dt)
-    !     ! Update PiTtheta(t+dt)
-    !     ! Note that PiTheta contains the spectral representation of
-    !     ! Pi + Lambda_prime*Theta, where Pi is the Fourier transform of P
-    !     ! and Theta is the Fourier transform of T [see N&L, Eqn. 5 and 7]
-    !     pb%tp%PiTheta(n) = B_P*(1.0 - exp_P)/A_P + pb%tp%PiTheta(n)*exp_P
-    !     pb%tp%P(i) =  pb%tp%P(i) + pb%tp%mesh%F_inv(j)*pb%tp%inv_w(i)* &
-    !                   (pb%tp%PiTheta(n) - pb%tp%Lam_prime(i)*pb%tp%Theta(n))
-    !   enddo
-    ! endif
   enddo
 
 end subroutine solve_spectral
-
-!===============================================================================
-! SEISMIC: inverse Fourier transformation function [N&L, Eqn. 15 and 16]
-! NOTE: this function is currently not used, but kept here for reference
-!===============================================================================
-! function inv_Fourier(fy,pb) result(y)
-!
-!   type(problem_type), intent(in) :: pb
-!   double precision, dimension(pb%mesh%nn*pb%tp%mesh%Nl), intent(in) :: fy
-!   double precision, dimension(pb%mesh%nn) :: y
-!   integer :: i, j, n
-!
-!   ! Loop over all fault segments
-!   do i=1,pb%mesh%nn
-!     y(i) = 0d0
-!     ! Loop over all spectral elements
-!     do j=1,pb%tp%mesh%Nl
-!       n = (i-1)*pb%tp%mesh%Nl+j
-!       y(i) = y(i) + pb%tp%mesh%F_inv(j)*fy(n)*pb%tp%inv_w(i)
-!     enddo
-!   enddo
-!
-! end function inv_Fourier
 
 end module diffusion_solver

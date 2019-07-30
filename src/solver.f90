@@ -168,7 +168,7 @@ subroutine do_bsstep(pb)
   iktotal=ik+iktotal
 
   call unpack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb)
-  call update_PT_final(pb%dt_did, pb)
+  if (pb%features%tp == 1) call update_PT_final(pb%dt_did, pb)
 
   ! SEISMIC: retrieve the solution for tau in the case of the CNS model, else
   ! retreive the solution for slip velocity

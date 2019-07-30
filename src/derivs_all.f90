@@ -28,7 +28,7 @@ subroutine derivs(time,yt,dydt,pb)
   use fault_stress, only : compute_stress
   use friction, only : dtheta_dt, dmu_dv_dtheta, friction_mu
   use friction_cns, only : compute_velocity, CNS_derivs
-  use diffusion_solver, only : update_PT, calc_dP_dt
+  use diffusion_solver, only : update_PT
   use utils, only : pack, unpack
 
   type(problem_type), intent(inout) :: pb

@@ -9,7 +9,7 @@
 ! velocities, the contribution from the creep mechanism(s) to the volumetric
 ! strain is relatively fast compared to granular dilatation, so that the gouge
 ! densifies (porosity reduces). By contrast, at high sliding velocities, the
-! gouge dilates and 'softens', i.e. supports lower shear stress. At a given 
+! gouge dilates and 'softens', i.e. supports lower shear stress. At a given
 ! velocity, a steady-state porosity can be attained that corresponds to the
 ! porosity at which compaction balances dilatation, and hence results in a
 ! steady-state shear strength. Velocity-weakening behaviour emerges naturally
