@@ -64,10 +64,10 @@ subroutine derivs(time,yt,dydt,pb)
     tau_y = pb%tau * pb%v / (2 * pb%tp%w)
     if (pb%i_rns_law == 3) then
       ! CNS model uses porosity
-      call update_PT(tau_y, pb%dtheta_dt, pb%theta, dt, pb)
+      call update_PT(tau_y, pb%dtheta_dt, pb%theta, pb%v, dt, pb)
     else
       ! Replace porosity for dummies when using RSF
-      call update_PT(tau_y, dummy1, dummy2, dt, pb)
+      call update_PT(tau_y, dummy1, dummy2, pb%v, dt, pb)
     endif
     sigma = sigma - pb%tp%P
     dP_dt = pb%tp%dP_dt

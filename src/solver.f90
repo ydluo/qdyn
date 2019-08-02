@@ -90,6 +90,7 @@ subroutine do_bsstep(pb)
 
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
   double precision, dimension(pb%mesh%nn) :: main_var
+  double precision :: t_out
   integer :: ik
 
   ! SEISMIC: in the case of the CNS model, solve for tau and not v
@@ -130,9 +131,15 @@ subroutine do_bsstep(pb)
 
     pb%rk45%iflag = -2 ! Reset to one-step mode each call
     pb%t_prev = pb%time
+    ! Set maximum time step
+    if (pb%dt_max == 0) then
+      t_out = pb%tmax
+    else
+      t_out = pb%time + pb%dt_max
+    endif
 
     ! Call Runge-Kutta solver routine
-    call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, pb%tmax, &
+    call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, t_out, &
                   pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
 
     ! Set time step
