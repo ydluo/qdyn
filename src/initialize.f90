@@ -20,6 +20,7 @@ subroutine init_all(pb)
   use friction_cns, only : compute_velocity, dphi_dt
   use solver, only : init_rk45
   use diffusion_solver, only: init_tp
+  use ode_rk45_2, only : init_rk45_2
 !!$  use omp_lib
 
   type(problem_type), intent(inout) :: pb
@@ -96,6 +97,9 @@ subroutine init_all(pb)
   ! SEISMIC: initialise Runge-Kutta ODE solver, if selected
   if (SOLVER_TYPE == 2) then
     call init_rk45(pb)
+  endif
+  if (SOLVER_TYPE == 3) then
+    call init_rk45_2(pb)
   endif
 
   if (is_mpi_master()) write(6,*) 'Initialization completed'

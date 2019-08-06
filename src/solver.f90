@@ -82,6 +82,7 @@ subroutine do_bsstep(pb)
   use derivs_all
   use ode_bs
   use ode_rk45, only: rkf45_d
+  use ode_rk45_2, only: rkf45_d2
   use output, only : screen_write, ox_write, ot_write
   use constants, only : SOLVER_TYPE
   use diffusion_solver, only : update_PT_final
@@ -91,7 +92,9 @@ subroutine do_bsstep(pb)
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
   double precision, dimension(pb%mesh%nn) :: main_var
   double precision :: t_out
-  integer :: ik
+  integer :: ik, neqs
+
+  neqs = pb%neqs * pb%mesh%nn
 
   ! SEISMIC: in the case of the CNS model, solve for tau and not v
   if (pb%i_rns_law == 3) then   ! SEISMIC: CNS model
@@ -117,7 +120,7 @@ subroutine do_bsstep(pb)
     call derivs(pb%time,yt,dydt,pb)
     yt_scale=dabs(yt)+dabs(pb%dt_try*dydt)
     ! One step
-    call bsstep(yt,dydt,pb%neqs*pb%mesh%nn,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb,ik)
+    call bsstep(yt,dydt,neqs,pb%time,pb%dt_try,pb%acc,yt_scale,pb%dt_did,pb%dt_next,pb,ik)
 
     ! SEISMIC NOTE: what is happening here?
     if (pb%dt_max >  0.d0) then
@@ -131,15 +134,9 @@ subroutine do_bsstep(pb)
 
     pb%rk45%iflag = -2 ! Reset to one-step mode each call
     pb%t_prev = pb%time
-    ! Set maximum time step
-    if (pb%dt_max == 0) then
-      t_out = pb%tmax
-    else
-      t_out = pb%time + pb%dt_max
-    endif
 
     ! Call Runge-Kutta solver routine
-    call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, t_out, &
+    call rkf45_d( derivs_rk45, neqs, yt, pb%time, pb%tmax, &
                   pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
 
     ! Set time step
@@ -166,6 +163,13 @@ subroutine do_bsstep(pb)
       stop
     end select
 
+  elseif (SOLVER_TYPE == 3) then
+    ! Set-up Runge-Kutta solver
+    pb%t_prev = pb%time
+    ! Call Runge-Kutta solver routine
+    call rkf45_d2(derivs, yt, pb%time, pb%dt_max, pb%acc, 0d0, pb)
+    ! Set time step
+    pb%dt_did = pb%time - pb%t_prev
   else
     ! Unknown solver type
     write (6,*) "Solver type", SOLVER_TYPE, "not recognised"

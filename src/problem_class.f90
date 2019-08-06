@@ -69,6 +69,17 @@ module problem_class
   end type rk45_type
   ! End of features structure
 
+  ! SEISMIC: Runge-Kutta-Fehlberg solver parameters
+  type rk45_2_type
+    double precision, dimension(5) :: t_coeffs
+    double precision, dimension(5) :: error_coeffs
+    double precision, dimension(19) :: coeffs
+    double precision, dimension(:), allocatable :: k1, k2, k3, k4, k5, k6
+    double precision, dimension(:), allocatable :: dy1, dy2, dy3, dy4, dy5, dy6
+    double precision, dimension(:), allocatable :: y_new, h, e
+  end type rk45_2_type
+  ! End of features structure
+
   type problem_type
     type (mesh_type) :: mesh
     type (kernel_type) :: kernel
@@ -107,6 +118,7 @@ module problem_class
     type (tp_type) :: tp
     type (features_type) :: features
     type (rk45_type) :: rk45
+    type (rk45_2_type) :: rk45_2
   end type problem_type
 
 end module problem_class
