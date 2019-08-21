@@ -28,7 +28,7 @@ subroutine derivs(time,yt,dydt,pb)
   use fault_stress, only : compute_stress
   use friction, only : dtheta_dt, dmu_dv_dtheta, friction_mu
   use friction_cns, only : compute_velocity, CNS_derivs
-  use diffusion_solver, only : update_PT, calc_dP_dt
+  use diffusion_solver, only : update_PT
   use utils, only : pack, unpack
 
   type(problem_type), intent(inout) :: pb
@@ -39,7 +39,7 @@ subroutine derivs(time,yt,dydt,pb)
   double precision, dimension(pb%mesh%nn) :: main_var, dmain_var
   double precision, dimension(pb%mesh%nn) :: dsigma_dt, dtau_dt, dth_dt, dth2_dt
   double precision, dimension(pb%mesh%nn) :: dmu_dv, dmu_dtheta
-  double precision, dimension(pb%mesh%nn) :: dP_dt, dtau_dP
+  double precision, dimension(pb%mesh%nn) :: tau_y, dP_dt, dtau_dP
   double precision, dimension(pb%mesh%nn) :: dummy1, dummy2
   double precision :: dtau_per, dt
 
@@ -52,24 +52,25 @@ subroutine derivs(time,yt,dydt,pb)
   dtau_dP = 0d0
   dummy1 = 0d0
   dummy2 = 1d0
+  tau_y = 0d0
 
-  call unpack(yt, theta, main_var, sigma, theta2, P, pb)
+  call unpack(yt, theta, main_var, sigma, theta2, pb)
 
   ! SEISMIC: when thermal pressurisation is requested, update P and T,
   ! then calculate effective stress sigma_e = sigma - P
   if (pb%features%tp == 1) then
-    ! Time step
     dt = time - pb%t_prev
+    ! Shear heating rate (= shear stress x shear strain rate)
+    tau_y = pb%tau * pb%v / (2 * pb%tp%w)
     if (pb%i_rns_law == 3) then
-      ! SEISMIC: CNS model uses porosity
-      call update_PT(pb%tau*pb%V/(2*pb%tp%w), pb%dtheta_dt, pb%theta, dt, pb)
+      ! CNS model uses porosity
+      call update_PT(tau_y, pb%dtheta_dt, pb%theta, pb%v, dt, pb)
     else
-      ! SEISMIC: replace porosity for dummies when using RSF
-      call update_PT(pb%tau*pb%V/(2*pb%tp%w), dummy1, dummy2, dt, pb)
+      ! Replace porosity for dummies when using RSF
+      call update_PT(tau_y, dummy1, dummy2, pb%v, dt, pb)
     endif
-    ! stop
-    ! if (any(isnan(pb%tp%P))) stop
     sigma = sigma - pb%tp%P
+    dP_dt = pb%tp%dP_dt
   endif
 
   if (pb%i_rns_law == 3) then
@@ -109,19 +110,6 @@ subroutine derivs(time,yt,dydt,pb)
   !                    initialize/init_field;  derivs_all/derivs
   ! periodic loading
   dtau_per = pb%Omper * pb%Aper * cos(pb%Omper*time)
-
-  ! SEISMIC: calculate dP/dt for the thermal pressurisation model. Note that
-  ! P and T are updated outside of this solver routine, using a the spectral
-  ! approach of Noda & Lapusta (2010)
-  if (pb%features%tp == 1) then
-    if (pb%i_rns_law == 3) then
-      ! SEISMIC: CNS model uses porosity
-      call calc_dP_dt(tau*v/(2*pb%tp%w), dth_dt, theta, dP_dt, pb)
-    else
-      ! SEISMIC: replace porosity for dummies when using RSF
-      call calc_dP_dt(tau*v/(2*pb%tp%w), dummy1, dummy2, dP_dt, pb)
-    endif
-  endif
 
   ! SEISMIC: calculate radiation damping. For rate-and-state, dmu_dv and
   ! dmu_dtheta contain the partial derivatives of friction to V and theta,
@@ -163,7 +151,7 @@ subroutine derivs(time,yt,dydt,pb)
                      / ( sigma*dmu_dv + pb%zimpedance )
    endif
 
-   call pack(dydt, dth_dt, dmain_var, dsigma_dt, dth2_dt, dP_dt, pb)
+   call pack(dydt, dth_dt, dmain_var, dsigma_dt, dth2_dt, pb)
 
 end subroutine derivs
 

@@ -684,7 +684,7 @@ contains
   !
   !  Set smallest allowable stepsize.
   !
-  !  hmin = 26.0D+00 * eps * abs ( t )
+   ! hmin = 26.0D+00 * eps * abs ( t )
   ! SEISMIC: since t gets pretty large, hmin tends to become unacceptably
   ! large in magnitude. hmin is now set to the numerical accuracy at the risk
   ! of having significant underflow (extremely small time steps)...
