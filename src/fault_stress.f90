@@ -117,6 +117,9 @@ end subroutine init_kernel_1D
 
 
 !----------------------------------------------------------------------
+! Compute the Fourier transform of the kernel. 
+! Its storage scheme is explained in compute_stress_2d.
+
 subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
 
   use mesh, only : mesh_type
@@ -142,10 +145,12 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
   if (k%finite) k%nnfft = k%nnfft*2
   if (k%symmetric) k%nnfft = k%nnfft*2
   allocate (k%kernel(k%nnfft))
+  k%kernel = 0d0
 
   write(6,*) 'FFT applied'
 
-  if (.not. k%finite) then ! FINITE = 0
+ ! FINITE = 0
+  if (.not. k%finite) then 
 
    ! Kernel for a 1D in a 2D homogeneous elastic medium,
    ! assuming antiplane deformation (slip in the direction off the 2D plane)
@@ -192,48 +197,37 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
       if (kk(1)==0d0) k%kernel(1) = 0.5d0*mu/H
     endif
 
- !- Read coefficient I(n) from pre-calculated file.
-  else ! FINITE = 1 
-    !NOTE: damaged zones are not available for FINITE=1
+ ! FINITE = 1 
+ ! See equation 40 of Cochard and Rice (JMPS 1997 http://esag.harvard.edu/rice/182_Cochard_Rice_JMPS_97.pdf)
+ ! Note that the Fourier transform of slip velocity, D_n in equation 40, is a complex number 
+ ! but slip is a real function and thus its Fourier transform has Hermitian symmetry: D_-n = conj(D_n).
+ ! The FFT module exploits those symmetries and thus we can ignore the negative n indices of equation 40.
+  else 
+  
+   ! Read the term in brackets of equation 40 from kernel file pre-computed by src/TabKernelFiniteFlt.m
     write(6,*) 'Reading kernel ',SRC_PATH,'/kernel_I.tab'
-
-    ! Open the pre-computed kernel file
     open(57,file=SRC_PATH//'/kernel_I.tab')
-    
-    ! Assemble the odd indexes
     do i=1,k%nnfft/2-1
-      read(57,*,end=100) k%kernel(2*i+1)
-    enddo
-
-    ! Set the Nyquist wavenumber 
-    read(57,*,end=100) k%kernel(2) ! Nyquist
+      read(57,*,end=100) k%kernel(2*i+1) ! store in odd indices of kernel FFT
+      k%kernel(2*i+2) = k%kernel(2*i+1)  ! and in even indices
+    enddo  
+    read(57,*,end=100) k%kernel(2)  ! store in Nyquist index of kernel FFT
     close(57)
 
-    k%kernel(1) = 0d0
-
-    ! Scale the Nyquist wavenumber by N/2
-    k%kernel(2) = dble(k%nnfft/2)*k%kernel(2)
-    
-    ! Scale the odd index by i/2. Fill in even indexes
-    do i = 1,k%nnfft/2-1
-      k%kernel(2*i+1) = dble(i)*k%kernel(2*i+1)
-      k%kernel(2*i+2) = k%kernel(2*i+1)
-    enddo
-
-    ! Scale the kernel by 0.5*pi*mu/L
-    k%kernel = k%kernel * PI*mu / (2d0*m%Lfault)
-
-    ! NEW FEATURE: Introduce the effect of a LVFZ
-    
-    ! Define the wavenumber
+   ! Compute the wavenumber, i.e. the factor pi*|n|/L in equation 40
+   ! Note: the wavenumber is not 2*pi*n/L because here the length is 2*L
     allocate( kk(k%nnfft) )
     do i=0,k%nnfft/2-1
-      kk(2*i+1) = dble(i)*2d0*PI/m%Lfault
+      kk(2*i+1) = PI*dble(i)/m%Lfault ! n stored in odd indices
     enddo
-    kk(2::2) = kk(1::2) ! Fill in even index
-    kk(2) = dble(k%nnfft)*PI/m%Lfault ! Set Nyquist
+    kk(2::2) = kk(1::2) ! and in even indices
+    kk(2) = PI*dble(k%nnfft/2)/m%Lfault ! Nyquist n=NFFT/2
     
-    ! Scale the kernel with the LVFZ parameters
+   ! Scale the kernel by 0.5*mu*wavenumber
+   ! Note: the minus sign of equation 40 is applied later, in compute_stress_2d
+    k%kernel = 0.5d0*mu * kk * k%kernel
+
+   ! Introduce the effect of a LVFZ
     if (D>0d0 .and. H>0d0) k%kernel = k%kernel * (1-D) / tanh(H*kk + atanh(1-D))
 
   end if
@@ -511,6 +505,22 @@ subroutine compute_stress_1d(tau,k1,v)
 end subroutine compute_stress_1d
 
 !--------------------------------------------------------
+ ! This is a convolution between the kernel and slip velocity
+ ! computed efficiently in Fourier domain as a product of their Fourier transforms.
+ ! The Fourier transform of slip velocity is a complex number 
+ ! stored in a real array (tmp) according to the convention of the FFT of a real function in module fftsg:
+ ! real and imaginary parts of positive wavenumbers in the odd and even indices, respectively,
+ ! except for zero wavenumber in index 1 and Nyquist in index 2 (their imaginary parts are zero). 
+ ! In general, the convolution in Fourier domain is a product of complex numbers:
+ !   K*V = (ReK + i*ImK)*(ReV+i*ImV)
+ !   real(K*V) = ReK*ReV - ImK*ImV
+ !   imag(K*V) = ReK*ImV + ImK*ReV
+ ! The Fourier transform of the kernel is real, because the kernel in space-domain is even, K(-x)=K(x).
+ ! Thus:
+ !   real(K*V) = ReK*ReV 
+ !   imag(K*V) = ReK*ImV
+ ! For convenience and efficiency, ReK is stored redundantly in both the even and odd indices of k2f%kernel.
+ 
 subroutine compute_stress_2d(tau,k2f,v)
 
   use fftsg, only : my_rdft
@@ -531,7 +541,7 @@ subroutine compute_stress_2d(tau,k2f,v)
     tmp(1:nn) = v
   endif
   call my_rdft(1,tmp,k2f%m_fft)
-  tmp = - k2f%kernel * tmp
+  tmp = - k2f%kernel * tmp       ! ReK*ReV (odd indices) and ReK*ImV (even indices)
   call my_rdft(-1,tmp,k2f%m_fft)
   if (k2f%symmetric) then
     tau = tmp(nn+1:2*nn)
