@@ -178,6 +178,7 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
 
    ! To mimic the width W of the fault in the dimension normal to the 2D plane,
    ! we introduce a "2.5D" approximation: we replace k by sqrt(k^2 + (2*pi/W)^2)
+   ! as derived in appendix A.2 of Luo and Ampuero (2017, doi:10.1016/j.tecto.2017.11.006)
     kk = sqrt( kk*kk + (2d0*PI/m%W)**2 )
 
    ! Compute kernel for homogeneous medium
