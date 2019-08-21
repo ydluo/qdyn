@@ -5,6 +5,8 @@
 
 ## News 
 
+*21 August 2019* | QDYN version 2.1 has been released! See the [release notes](https://github.com/ydluo/qdyn/releases/tag/qdyn_2.1) for new features and (minor) bug fixes.
+
 *11 December 2018* | QDYN version 2.0 has been released!
 
 *6 December 2018* | Results of QDYN earthquake cycle simulations on faults surrounded by damaged zones were presented at:  
