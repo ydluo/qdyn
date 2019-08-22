@@ -6,6 +6,7 @@ module mesh
   type mesh_type
     integer :: dim = 0  ! dim = 1, 2 ,3 ~xD
     integer :: nx, nw, nn, nnglob, nwglob ! along-strike, along-dip, total grid number
+    logical :: test_mode = .false.
     double precision :: Lfault, W, Z_CORNER ! fault length, width, lower-left corner z (follow Okada's convention)
     double precision, allocatable :: DIP_W(:) !along-dip grid size and dip (adjustable), nw count
     double precision, pointer :: x(:), y(:), z(:), dip(:), dx(:), dw(:) !coordinates, dip, along-strike and along-dip size of every grid (nx*nw count)

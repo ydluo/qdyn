@@ -26,6 +26,7 @@ subroutine init_tests(pb)
   type(problem_type) :: pb
 
   pb%test_mode = .true.
+  pb%mesh%test_mode = .true.
 
   write(6,*) ""
   write(6,*) "-----------------------------------------------------------------"
@@ -44,7 +45,7 @@ subroutine init_tests(pb)
   call allocate_mesh(pb)
   call initiate_parameters(pb)
   call init_kernel(pb%lam, pb%smu, pb%mesh, pb%kernel, &
-                   pb%D, pb%H, pb%i_sigma_cpl, pb%finite, pb)
+                   pb%D, pb%H, pb%i_sigma_cpl, pb%finite)
 
   ! write(6,*) ""
   ! write(6,*) "Test suite initialised successfully"
@@ -97,7 +98,7 @@ subroutine test_kernel(pb)
   do i = 0, 3
     pb%finite = i
     call init_kernel( pb%lam, pb%smu, pb%mesh, pb%kernel, &
-                      pb%D, pb%H, pb%i_sigma_cpl, pb%finite, pb)
+                      pb%D, pb%H, pb%i_sigma_cpl, pb%finite)
 
     select case (pb%finite)
     case(0)
@@ -234,13 +235,14 @@ subroutine kernel_export(pb)
   ! Allocate mesh variables/parameters
   call initiate_parameters(pb)
 
+  pb%mesh%test_mode = .true.
   pb%mesh%dim = 1
   pb%kernel%kind = pb%mesh%dim + 1
 
   do i = 0, 3
     pb%finite = i
     call export_kernel( pb%lam, pb%smu, pb%mesh, pb%kernel, &
-                        pb%D, pb%H, pb%i_sigma_cpl, pb%finite, pb)
+                        pb%D, pb%H, pb%i_sigma_cpl, pb%finite)
   end do
 
   call test_kernel(pb)

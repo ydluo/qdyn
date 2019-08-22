@@ -58,14 +58,12 @@ contains
 !   dtau_dt = - K*( v - Vpl )
 
 !=============================================================
-subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt, pb)
+subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt)
 !NOTE: damaged zones (D, H) only available for 2D problems
 
-  use problem_class, only : problem_type
   use mesh, only : mesh_type
   use constants, only : FFT_TYPE
 
-  type(problem_type) :: pb
   type(mesh_type), intent(in) :: m
   type(kernel_type), intent(inout) :: k
   double precision, intent(in) :: lambda,mu,D,H
@@ -74,7 +72,7 @@ subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt, pb)
   ! NOTE: i_sigma_cpl is redundant (now stored as pb%features%sigma_coupling)
   ! and should be removed
 
-  if (.not. pb%test_mode) write(6,*) 'Intializing kernel: ...'
+  if (.not. m%test_mode) write(6,*) 'Intializing kernel: ...'
 
   if (m%dim==2) then
     k%kind =3+FFT_TYPE
@@ -93,7 +91,7 @@ subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt, pb)
     call init_kernel_1D(k%k1,mu,m%Lfault)
   case(2)
     allocate(k%k2f)
-    call init_kernel_2D(k%k2f,mu,m,D,H,k2_opt, pb)
+    call init_kernel_2D(k%k2f,mu,m,D,H,k2_opt)
   case(3)
     allocate(k%k3)
     call init_kernel_3D(k%k3,lambda,mu,m,k%has_sigma_coupling,.false.) ! 3D no fft
@@ -105,7 +103,7 @@ subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt, pb)
     call init_kernel_3D_fft2d(k%k3f2,lambda,mu,m) ! 3D with 2DFFT
   end select
 
-  if (.not. pb%test_mode) write(6,*) 'Kernel intialized'
+  if (.not. m%test_mode) write(6,*) 'Kernel intialized'
 
 end subroutine init_kernel
 
@@ -125,13 +123,11 @@ end subroutine init_kernel_1D
 ! Compute the Fourier transform of the kernel.
 ! Its storage scheme is explained in compute_stress_2d.
 
-subroutine init_kernel_2D(k,mu,m,D,H, k2_opt, pb)
+subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
 
-  use problem_class, only : problem_type
   use mesh, only : mesh_type
   use constants, only : PI, SRC_PATH
 
-  type(problem_type) :: pb
   type(kernel_2d_fft), intent(inout) :: k
   type(mesh_type), intent(in) :: m
   double precision, intent(in) :: mu,D,H
@@ -154,7 +150,7 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt, pb)
   allocate (k%kernel(k%nnfft))
   k%kernel = 0d0
 
-  if (.not. pb%test_mode) write(6,*) 'FFT applied'
+  if (.not. m%test_mode) write(6,*) 'FFT applied'
 
  ! FINITE = 0
   if (.not. k%finite) then
@@ -213,7 +209,7 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt, pb)
   else
 
    ! Read the term in brackets of equation 40 from kernel file pre-computed by src/TabKernelFiniteFlt.m
-    if (.not. pb%test_mode) write(6,*) 'Reading kernel ',SRC_PATH,'/kernel_I.tab'
+    if (.not. m%test_mode) write(6,*) 'Reading kernel ',SRC_PATH,'/kernel_I.tab'
     open(57,file=SRC_PATH//'/kernel_I.tab')
     do i=1,k%nnfft/2-1
       read(57,*,end=100) k%kernel(2*i+1) ! store in odd indices of kernel FFT
@@ -838,13 +834,11 @@ end subroutine compute_stress_3d_fft2d
 !===============================================================================
 ! Helper routine to export kernels to file
 !===============================================================================
-subroutine export_kernel(lambda, mu, m, k, D, H, i_sigma_cpl, k2_opt, pb)
+subroutine export_kernel(lambda, mu, m, k, D, H, i_sigma_cpl, k2_opt)
 
-  use problem_class, only : problem_type
   use mesh, only : mesh_type
   use constants, only : FFT_TYPE, SRC_PATH
 
-  type(problem_type) :: pb
   type(mesh_type), intent(in) :: m
   type(kernel_type), intent(inout) :: k
   double precision, intent(in) :: lambda, mu, D, H
@@ -854,7 +848,7 @@ subroutine export_kernel(lambda, mu, m, k, D, H, i_sigma_cpl, k2_opt, pb)
 
   dir = SRC_PATH//"/../test/kernels/"
 
-  call init_kernel(lambda, mu, m, k, D, H, i_sigma_cpl, k2_opt, pb)
+  call init_kernel(lambda, mu, m, k, D, H, i_sigma_cpl, k2_opt)
 
   select case (k%kind)
   case(2)
