@@ -24,13 +24,13 @@ install:
   - chmod +x mymakedepend.perl
   - ./mymakedepend.perl
   - make clean && make
-  # # Create a new environment
-  # - conda create --yes -n test python=$TRAVIS_PYTHON_VERSION
-  # # Activate it
-  # - source activate test
-  # # Install various dependencies
-  # - conda install --yes numpy matplotlib pandas termcolor
+  # Create a new environment
+  - conda create --yes -n test python=$TRAVIS_PYTHON_VERSION
+  # Activate it
+  - source activate test
+  # Install various dependencies
+  - conda install --yes numpy matplotlib pandas termcolor
 
 script:
-  # - cd $TRAVIS_BUILD_DIR/test/
-  # - python test/test_suite.py
+  - cd $TRAVIS_BUILD_DIR/test/
+  - python test/test_suite.py
