@@ -20,9 +20,6 @@ before_install:
 install:
     # Compile code
   - cd $TRAVIS_BUILD_DIR/src/
-  - ls
-  - chmod +x mymakedepend.perl
-  - ./mymakedepend.perl
   - make
   # # Create a new environment
   # - conda create --yes -n test python=$TRAVIS_PYTHON_VERSION
