@@ -1,0 +1,31 @@
+language: python
+
+python:
+  - 3.7
+
+addons:
+  apt:
+    packages:
+      - gfortran
+
+before_install:
+  # Install the latest version of Miniconda
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - chmod +x miniconda.sh
+  - ./miniconda.sh -b
+  - export PATH=/home/travis/miniconda/bin:$PATH
+  - conda update --yes conda  # Update CONDA without command line prompt
+
+install:
+  # Create a new environment
+  - conda create --yes -n test python=$TRAVIS_PYTHON_VERSION
+  # Activate it
+  - source activate test
+  # Install various dependencies
+  - conda install --yes numpy matplotlib pandas termcolor
+
+script:
+  - cd $HOME/src
+  - make
+  - cd $HOME/test
+  - python test/test_suite.py
