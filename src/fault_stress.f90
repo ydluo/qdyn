@@ -45,7 +45,7 @@ module fault_stress
 ! For MPI parallel
   integer, allocatable, save :: nnLocalfft_perproc(:),nnoffset_perproc(:)
 
-  public :: init_kernel, compute_stress, kernel_type
+  public :: init_kernel, compute_stress, kernel_type, export_kernel
 
 contains
 ! K is stiffness, different in sign with convention in Dieterich (1992)
@@ -58,18 +58,23 @@ contains
 !   dtau_dt = - K*( v - Vpl )
 
 !=============================================================
-subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt)
+subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt, pb)
 !NOTE: damaged zones (D, H) only available for 2D problems
 
+  use problem_class, only : problem_type
   use mesh, only : mesh_type
   use constants, only : FFT_TYPE
 
-  double precision, intent(in) :: lambda,mu,D,H
+  type(problem_type) :: pb
   type(mesh_type), intent(in) :: m
-  integer, intent(in) :: i_sigma_cpl,k2_opt
   type(kernel_type), intent(inout) :: k
+  double precision, intent(in) :: lambda,mu,D,H
+  integer, intent(in) :: i_sigma_cpl,k2_opt
 
-  write(6,*) 'Intializing kernel: ...'
+  ! NOTE: i_sigma_cpl is redundant (now stored as pb%features%sigma_coupling)
+  ! and should be removed
+
+  if (.not. pb%test_mode) write(6,*) 'Intializing kernel: ...'
 
   if (m%dim==2) then
     k%kind =3+FFT_TYPE
@@ -88,7 +93,7 @@ subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt)
     call init_kernel_1D(k%k1,mu,m%Lfault)
   case(2)
     allocate(k%k2f)
-    call init_kernel_2D(k%k2f,mu,m,D,H,k2_opt)
+    call init_kernel_2D(k%k2f,mu,m,D,H,k2_opt, pb)
   case(3)
     allocate(k%k3)
     call init_kernel_3D(k%k3,lambda,mu,m,k%has_sigma_coupling,.false.) ! 3D no fft
@@ -100,7 +105,7 @@ subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt)
     call init_kernel_3D_fft2d(k%k3f2,lambda,mu,m) ! 3D with 2DFFT
   end select
 
-  write(6,*) 'Kernel intialized'
+  if (.not. pb%test_mode) write(6,*) 'Kernel intialized'
 
 end subroutine init_kernel
 
@@ -117,14 +122,16 @@ end subroutine init_kernel_1D
 
 
 !----------------------------------------------------------------------
-! Compute the Fourier transform of the kernel. 
+! Compute the Fourier transform of the kernel.
 ! Its storage scheme is explained in compute_stress_2d.
 
-subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
+subroutine init_kernel_2D(k,mu,m,D,H, k2_opt, pb)
 
+  use problem_class, only : problem_type
   use mesh, only : mesh_type
   use constants, only : PI, SRC_PATH
 
+  type(problem_type) :: pb
   type(kernel_2d_fft), intent(inout) :: k
   type(mesh_type), intent(in) :: m
   double precision, intent(in) :: mu,D,H
@@ -147,10 +154,10 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
   allocate (k%kernel(k%nnfft))
   k%kernel = 0d0
 
-  write(6,*) 'FFT applied'
+  if (.not. pb%test_mode) write(6,*) 'FFT applied'
 
  ! FINITE = 0
-  if (.not. k%finite) then 
+  if (.not. k%finite) then
 
    ! Kernel for a 1D in a 2D homogeneous elastic medium,
    ! assuming antiplane deformation (slip in the direction off the 2D plane)
@@ -198,22 +205,30 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
       if (kk(1)==0d0) k%kernel(1) = 0.5d0*mu/H
     endif
 
- ! FINITE = 1 
+ ! FINITE = 1
  ! See equation 40 of Cochard and Rice (JMPS 1997 http://esag.harvard.edu/rice/182_Cochard_Rice_JMPS_97.pdf)
- ! Note that the Fourier transform of slip velocity, D_n in equation 40, is a complex number 
+ ! Note that the Fourier transform of slip velocity, D_n in equation 40, is a complex number
  ! but slip is a real function and thus its Fourier transform has Hermitian symmetry: D_-n = conj(D_n).
  ! The FFT module exploits those symmetries and thus we can ignore the negative n indices of equation 40.
-  else 
-  
+  else
+
    ! Read the term in brackets of equation 40 from kernel file pre-computed by src/TabKernelFiniteFlt.m
-    write(6,*) 'Reading kernel ',SRC_PATH,'/kernel_I.tab'
+    if (.not. pb%test_mode) write(6,*) 'Reading kernel ',SRC_PATH,'/kernel_I.tab'
     open(57,file=SRC_PATH//'/kernel_I.tab')
     do i=1,k%nnfft/2-1
       read(57,*,end=100) k%kernel(2*i+1) ! store in odd indices of kernel FFT
       k%kernel(2*i+2) = k%kernel(2*i+1)  ! and in even indices
-    enddo  
+    enddo
     read(57,*,end=100) k%kernel(2)  ! store in Nyquist index of kernel FFT
     close(57)
+
+    ! NOTE: the order of operations/allocations changed between version 2.0 and
+    ! version 2.1 (introduced by #26 -- https://github.com/ydluo/qdyn/pull/26)
+    ! These changes affected the magnitude of the kernel values at the level of
+    ! numerical (double) precision, introducing minute shifts in the Tse & Rice
+    ! simulation, causing the Tse & Rice benchmark test to fail. If this
+    ! benchmark fails again in the future, verify that the kernel is identical
+    ! (within numerical precision). TODO: create a unit test for this
 
    ! Compute the wavenumber, i.e. the factor pi*|n|/L in equation 40
    ! Note: the wavenumber is not 2*pi*n/L because here the length is 2*L
@@ -223,7 +238,7 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
     enddo
     kk(2::2) = kk(1::2) ! and in even indices
     kk(2) = PI*dble(k%nnfft/2)/m%Lfault ! Nyquist n=NFFT/2
-    
+
    ! Scale the kernel by 0.5*mu*wavenumber
    ! Note: the minus sign of equation 40 is applied later, in compute_stress_2d
     k%kernel = 0.5d0*mu * kk * k%kernel
@@ -508,20 +523,20 @@ end subroutine compute_stress_1d
 !--------------------------------------------------------
  ! This is a convolution between the kernel and slip velocity
  ! computed efficiently in Fourier domain as a product of their Fourier transforms.
- ! The Fourier transform of slip velocity is a complex number 
+ ! The Fourier transform of slip velocity is a complex number
  ! stored in a real array (tmp) according to the convention of the FFT of a real function in module fftsg:
  ! real and imaginary parts of positive wavenumbers in the odd and even indices, respectively,
- ! except for zero wavenumber in index 1 and Nyquist in index 2 (their imaginary parts are zero). 
+ ! except for zero wavenumber in index 1 and Nyquist in index 2 (their imaginary parts are zero).
  ! In general, the convolution in Fourier domain is a product of complex numbers:
  !   K*V = (ReK + i*ImK)*(ReV+i*ImV)
  !   real(K*V) = ReK*ReV - ImK*ImV
  !   imag(K*V) = ReK*ImV + ImK*ReV
  ! The Fourier transform of the kernel is real, because the kernel in space-domain is even, K(-x)=K(x).
  ! Thus:
- !   real(K*V) = ReK*ReV 
+ !   real(K*V) = ReK*ReV
  !   imag(K*V) = ReK*ImV
  ! For convenience and efficiency, ReK is stored redundantly in both the even and odd indices of k2f%kernel.
- 
+
 subroutine compute_stress_2d(tau,k2f,v)
 
   use fftsg, only : my_rdft
@@ -818,5 +833,54 @@ subroutine compute_stress_3d_fft2d(tau, k, v)
   tau = reshape(tmpx(1:nx,1:nw), (/ nx*nw /))
 
 end subroutine compute_stress_3d_fft2d
+
+
+!===============================================================================
+! Helper routine to export kernels to file
+!===============================================================================
+subroutine export_kernel(lambda, mu, m, k, D, H, i_sigma_cpl, k2_opt, pb)
+
+  use problem_class, only : problem_type
+  use mesh, only : mesh_type
+  use constants, only : FFT_TYPE, SRC_PATH
+
+  type(problem_type) :: pb
+  type(mesh_type), intent(in) :: m
+  type(kernel_type), intent(inout) :: k
+  double precision, intent(in) :: lambda, mu, D, H
+  integer, intent(in) :: i_sigma_cpl, k2_opt
+  integer :: i
+  character(len=200) :: filename, dir
+
+  dir = SRC_PATH//"/../test/kernels/"
+
+  call init_kernel(lambda, mu, m, k, D, H, i_sigma_cpl, k2_opt, pb)
+
+  select case (k%kind)
+  case(2)
+    ! Select filename based on kernel flavour
+    if (k%k2f%finite .and. .not. k%k2f%symmetric) then
+      filename = "kernel_finite.dat"
+    else if (k%k2f%finite .and. k%k2f%symmetric) then
+      filename = "kernel_finite_symmetric.dat"
+    else if (.not. k%k2f%finite .and. .not. k%k2f%symmetric) then
+      filename = "kernel_infinite.dat"
+    else if (.not. k%k2f%finite .and. k%k2f%symmetric) then
+      filename = "kernel_infinite_symmetric.dat"
+    endif
+
+    write(6,*) "Exporting 2D kernel to", filename
+    open(unit=99, file=trim(dir)//filename, action="write", status="replace")
+    do i = 1, k%k2f%nnfft
+      write(99, fmt="(e24.16)") k%k2f%kernel(i)
+    enddo
+    close(99)
+
+  case default
+    write(6,*) "Kernel export only supported for 2D kernels"
+  end select
+
+end subroutine export_kernel
+
 
 end module fault_stress

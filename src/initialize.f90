@@ -90,7 +90,7 @@ subroutine init_all(pb)
   endif
 
   call init_kernel(pb%lam,pb%smu,pb%mesh,pb%kernel, &
-                   pb%D,pb%H,pb%i_sigma_cpl,pb%finite)
+                   pb%D,pb%H,pb%i_sigma_cpl,pb%finite, pb)
   call ot_init(pb)
   call ox_init(pb)
 
