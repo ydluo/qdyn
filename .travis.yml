@@ -7,6 +7,7 @@ addons:
   apt:
     packages:
       - gfortran
+      - libopenmpi-dev
 
 before_install:
   # Install the latest version of Miniconda
@@ -24,9 +25,9 @@ install:
   # Install various dependencies
   - conda install --yes numpy matplotlib pandas termcolor
   # Compile code
-  - cd src/
+  - cd $TRAVIS_BUILD_DIR/src/
   - make
 
 script:
-  - cd test/
+  - cd $TRAVIS_BUILD_DIR/test/
   - python test/test_suite.py
