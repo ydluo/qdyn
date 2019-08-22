@@ -18,15 +18,16 @@ before_install:
   - conda update --yes conda  # Update CONDA without command line prompt
 
 install:
+    # Compile code
+  - cd $TRAVIS_BUILD_DIR/src/
+  - ./mymakedepend.perl
+  - make
   # Create a new environment
   - conda create --yes -n test python=$TRAVIS_PYTHON_VERSION
   # Activate it
   - source activate test
   # Install various dependencies
   - conda install --yes numpy matplotlib pandas termcolor
-  # Compile code
-  - cd $TRAVIS_BUILD_DIR/src/
-  - make
 
 script:
   - cd $TRAVIS_BUILD_DIR/test/
