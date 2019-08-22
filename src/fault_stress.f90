@@ -45,7 +45,7 @@ module fault_stress
 ! For MPI parallel
   integer, allocatable, save :: nnLocalfft_perproc(:),nnoffset_perproc(:)
 
-  public :: init_kernel, compute_stress, kernel_type
+  public :: init_kernel, compute_stress, kernel_type, export_kernel
 
 contains
 ! K is stiffness, different in sign with convention in Dieterich (1992)
@@ -58,18 +58,23 @@ contains
 !   dtau_dt = - K*( v - Vpl )
 
 !=============================================================
-subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt)
+subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt, pb)
 !NOTE: damaged zones (D, H) only available for 2D problems
 
+  use problem_class, only : problem_type
   use mesh, only : mesh_type
   use constants, only : FFT_TYPE
 
-  double precision, intent(in) :: lambda,mu,D,H
+  type(problem_type) :: pb
   type(mesh_type), intent(in) :: m
-  integer, intent(in) :: i_sigma_cpl,k2_opt
   type(kernel_type), intent(inout) :: k
+  double precision, intent(in) :: lambda,mu,D,H
+  integer, intent(in) :: i_sigma_cpl,k2_opt
 
-  write(6,*) 'Intializing kernel: ...'
+  ! NOTE: i_sigma_cpl is redundant (now stored as pb%features%sigma_coupling)
+  ! and should be removed
+
+  if (.not. pb%test_mode) write(6,*) 'Intializing kernel: ...'
 
   if (m%dim==2) then
     k%kind =3+FFT_TYPE
@@ -88,7 +93,7 @@ subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt)
     call init_kernel_1D(k%k1,mu,m%Lfault)
   case(2)
     allocate(k%k2f)
-    call init_kernel_2D(k%k2f,mu,m,D,H,k2_opt)
+    call init_kernel_2D(k%k2f,mu,m,D,H,k2_opt, pb)
   case(3)
     allocate(k%k3)
     call init_kernel_3D(k%k3,lambda,mu,m,k%has_sigma_coupling,.false.) ! 3D no fft
@@ -100,7 +105,7 @@ subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt)
     call init_kernel_3D_fft2d(k%k3f2,lambda,mu,m) ! 3D with 2DFFT
   end select
 
-  write(6,*) 'Kernel intialized'
+  if (.not. pb%test_mode) write(6,*) 'Kernel intialized'
 
 end subroutine init_kernel
 
@@ -120,11 +125,13 @@ end subroutine init_kernel_1D
 ! Compute the Fourier transform of the kernel.
 ! Its storage scheme is explained in compute_stress_2d.
 
-subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
+subroutine init_kernel_2D(k,mu,m,D,H, k2_opt, pb)
 
+  use problem_class, only : problem_type
   use mesh, only : mesh_type
   use constants, only : PI, SRC_PATH
 
+  type(problem_type) :: pb
   type(kernel_2d_fft), intent(inout) :: k
   type(mesh_type), intent(in) :: m
   double precision, intent(in) :: mu,D,H
@@ -147,7 +154,7 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
   allocate (k%kernel(k%nnfft))
   k%kernel = 0d0
 
-  write(6,*) 'FFT applied'
+  if (.not. pb%test_mode) write(6,*) 'FFT applied'
 
  ! FINITE = 0
   if (.not. k%finite) then
@@ -206,7 +213,7 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
   else
 
    ! Read the term in brackets of equation 40 from kernel file pre-computed by src/TabKernelFiniteFlt.m
-    write(6,*) 'Reading kernel ',SRC_PATH,'/kernel_I.tab'
+    if (.not. pb%test_mode) write(6,*) 'Reading kernel ',SRC_PATH,'/kernel_I.tab'
     open(57,file=SRC_PATH//'/kernel_I.tab')
     do i=1,k%nnfft/2-1
       read(57,*,end=100) k%kernel(2*i+1) ! store in odd indices of kernel FFT
@@ -826,5 +833,54 @@ subroutine compute_stress_3d_fft2d(tau, k, v)
   tau = reshape(tmpx(1:nx,1:nw), (/ nx*nw /))
 
 end subroutine compute_stress_3d_fft2d
+
+
+!===============================================================================
+! Helper routine to export kernels to file
+!===============================================================================
+subroutine export_kernel(lambda, mu, m, k, D, H, i_sigma_cpl, k2_opt, pb)
+
+  use problem_class, only : problem_type
+  use mesh, only : mesh_type
+  use constants, only : FFT_TYPE, SRC_PATH
+
+  type(problem_type) :: pb
+  type(mesh_type), intent(in) :: m
+  type(kernel_type), intent(inout) :: k
+  double precision, intent(in) :: lambda, mu, D, H
+  integer, intent(in) :: i_sigma_cpl, k2_opt
+  integer :: i
+  character(len=200) :: filename, dir
+
+  dir = SRC_PATH//"/../test/kernels/"
+
+  call init_kernel(lambda, mu, m, k, D, H, i_sigma_cpl, k2_opt, pb)
+
+  select case (k%kind)
+  case(2)
+    ! Select filename based on kernel flavour
+    if (k%k2f%finite .and. .not. k%k2f%symmetric) then
+      filename = "kernel_finite.dat"
+    else if (k%k2f%finite .and. k%k2f%symmetric) then
+      filename = "kernel_finite_symmetric.dat"
+    else if (.not. k%k2f%finite .and. .not. k%k2f%symmetric) then
+      filename = "kernel_infinite.dat"
+    else if (.not. k%k2f%finite .and. k%k2f%symmetric) then
+      filename = "kernel_infinite_symmetric.dat"
+    endif
+
+    write(6,*) "Exporting 2D kernel to", filename
+    open(unit=99, file=trim(dir)//filename, action="write", status="replace")
+    do i = 1, k%k2f%nnfft
+      write(99, fmt="(e24.16)") k%k2f%kernel(i)
+    enddo
+    close(99)
+
+  case default
+    write(6,*) "Kernel export only supported for 2D kernels"
+  end select
+
+end subroutine export_kernel
+
 
 end module fault_stress

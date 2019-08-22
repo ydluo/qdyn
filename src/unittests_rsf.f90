@@ -169,6 +169,7 @@ subroutine test_rsf_friction(pb)
     subpass3 = subpass3 .and. rel_assert_close(dmu_dtheta, dmu_dtheta2, rtol)
   enddo
 
+  pass = subpass1 .and. subpass2 .and. subpass3
   call print_result("Compare classical / regularised RSF", pass, num_passed, num_tests)
   call print_subresult("Friction", subpass1)
   call print_subresult("dmu/dV", subpass2)
