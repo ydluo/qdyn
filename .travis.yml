@@ -23,9 +23,10 @@ install:
   - source activate test
   # Install various dependencies
   - conda install --yes numpy matplotlib pandas termcolor
+  # Compile code
+  - cd src/
+  - make
 
 script:
-  - cd $HOME/src
-  - make
-  - cd $HOME/test
+  - cd test/
   - python test/test_suite.py
