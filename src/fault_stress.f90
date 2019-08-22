@@ -117,7 +117,7 @@ end subroutine init_kernel_1D
 
 
 !----------------------------------------------------------------------
-! Compute the Fourier transform of the kernel. 
+! Compute the Fourier transform of the kernel.
 ! Its storage scheme is explained in compute_stress_2d.
 
 subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
@@ -150,7 +150,7 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
   write(6,*) 'FFT applied'
 
  ! FINITE = 0
-  if (.not. k%finite) then 
+  if (.not. k%finite) then
 
    ! Kernel for a 1D in a 2D homogeneous elastic medium,
    ! assuming antiplane deformation (slip in the direction off the 2D plane)
@@ -198,22 +198,30 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
       if (kk(1)==0d0) k%kernel(1) = 0.5d0*mu/H
     endif
 
- ! FINITE = 1 
+ ! FINITE = 1
  ! See equation 40 of Cochard and Rice (JMPS 1997 http://esag.harvard.edu/rice/182_Cochard_Rice_JMPS_97.pdf)
- ! Note that the Fourier transform of slip velocity, D_n in equation 40, is a complex number 
+ ! Note that the Fourier transform of slip velocity, D_n in equation 40, is a complex number
  ! but slip is a real function and thus its Fourier transform has Hermitian symmetry: D_-n = conj(D_n).
  ! The FFT module exploits those symmetries and thus we can ignore the negative n indices of equation 40.
-  else 
-  
+  else
+
    ! Read the term in brackets of equation 40 from kernel file pre-computed by src/TabKernelFiniteFlt.m
     write(6,*) 'Reading kernel ',SRC_PATH,'/kernel_I.tab'
     open(57,file=SRC_PATH//'/kernel_I.tab')
     do i=1,k%nnfft/2-1
       read(57,*,end=100) k%kernel(2*i+1) ! store in odd indices of kernel FFT
       k%kernel(2*i+2) = k%kernel(2*i+1)  ! and in even indices
-    enddo  
+    enddo
     read(57,*,end=100) k%kernel(2)  ! store in Nyquist index of kernel FFT
     close(57)
+
+    ! NOTE: the order of operations/allocations changed between version 2.0 and
+    ! version 2.1 (introduced by #26 -- https://github.com/ydluo/qdyn/pull/26)
+    ! These changes affected the magnitude of the kernel values at the level of
+    ! numerical (double) precision, introducing minute shifts in the Tse & Rice
+    ! simulation, causing the Tse & Rice benchmark test to fail. If this
+    ! benchmark fails again in the future, verify that the kernel is identical
+    ! (within numerical precision). TODO: create a unit test for this
 
    ! Compute the wavenumber, i.e. the factor pi*|n|/L in equation 40
    ! Note: the wavenumber is not 2*pi*n/L because here the length is 2*L
@@ -223,7 +231,7 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt)
     enddo
     kk(2::2) = kk(1::2) ! and in even indices
     kk(2) = PI*dble(k%nnfft/2)/m%Lfault ! Nyquist n=NFFT/2
-    
+
    ! Scale the kernel by 0.5*mu*wavenumber
    ! Note: the minus sign of equation 40 is applied later, in compute_stress_2d
     k%kernel = 0.5d0*mu * kk * k%kernel
@@ -508,20 +516,20 @@ end subroutine compute_stress_1d
 !--------------------------------------------------------
  ! This is a convolution between the kernel and slip velocity
  ! computed efficiently in Fourier domain as a product of their Fourier transforms.
- ! The Fourier transform of slip velocity is a complex number 
+ ! The Fourier transform of slip velocity is a complex number
  ! stored in a real array (tmp) according to the convention of the FFT of a real function in module fftsg:
  ! real and imaginary parts of positive wavenumbers in the odd and even indices, respectively,
- ! except for zero wavenumber in index 1 and Nyquist in index 2 (their imaginary parts are zero). 
+ ! except for zero wavenumber in index 1 and Nyquist in index 2 (their imaginary parts are zero).
  ! In general, the convolution in Fourier domain is a product of complex numbers:
  !   K*V = (ReK + i*ImK)*(ReV+i*ImV)
  !   real(K*V) = ReK*ReV - ImK*ImV
  !   imag(K*V) = ReK*ImV + ImK*ReV
  ! The Fourier transform of the kernel is real, because the kernel in space-domain is even, K(-x)=K(x).
  ! Thus:
- !   real(K*V) = ReK*ReV 
+ !   real(K*V) = ReK*ReV
  !   imag(K*V) = ReK*ImV
  ! For convenience and efficiency, ReK is stored redundantly in both the even and odd indices of k2f%kernel.
- 
+
 subroutine compute_stress_2d(tau,k2f,v)
 
   use fftsg, only : my_rdft
