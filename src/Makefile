@@ -50,6 +50,10 @@ PREPROC = -cpp
 # CFLAGS = -B/usr/lib/x86_64-linux-gnu
 #CFLAGS = '' 
 
+travis: F90 = mpif90
+	OPT = -O3 -Wall
+	PREPROC = -cpp
+
 #== END USER SETTINGS =============================================
 
 EXEC = $(EXEC_PATH)/qdyn
@@ -58,6 +62,7 @@ OBJS := $(patsubst %.f90,%.o,$(wildcard *.f90))
 #OBJS := $($(wildcard *.f90):.f90=.o)
 
 all: $(EXEC)
+travis: $(EXEC)
 
 $(EXEC): $(OBJS)
 	$(F90) $(OPT) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
@@ -65,6 +70,7 @@ $(EXEC): $(OBJS)
 
 clean:
 	rm -f $(EXEC) $(OBJS) *.M *.mod
+
 
 .SUFFIXES:
 .SUFFIXES: .f90 .o
