@@ -19,8 +19,7 @@ QDYN implements adaptive time stepping, shared-memory parallelization, and can d
     <source src="img/double_asperity.mp4" type="video/mp4">
 </video>
 
-
-
+<div style="width: 100%; text-align: center;"><em>(evolution of slip velocity on a fault with two seismogenic asperities)</em></div>
 
 
 ## Main features
