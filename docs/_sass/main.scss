@@ -160,6 +160,23 @@ div.container div.content blockquote {
 }
 
 
+/* Build status */
+
+div.container div.status {
+	margin-top: 20px;
+	padding-left: 10px;
+}
+
+div.container div.status span {
+	font-size: 0.8em;
+	line-height: 2.5em;
+}
+
+div.container div.status img {
+	margin-left: 5px;
+}
+
+
 /* Footer */
 
 footer {

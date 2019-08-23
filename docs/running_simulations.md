@@ -128,8 +128,8 @@ As an alternative to the MATLAB wrapper, users can chose to generate their input
 
 |   Parameter   | Description                                                  | Default value |
 | :-----------: | ------------------------------------------------------------ | :-----------: |
-|   `MESHDIM`   | Dimension of the problem:<br />`0` = spring-block model<br />`1` = 1D fault in a 2D elastic medium<br />`2` = 2D fault in a 3D elastic medium |      `0`      |
-| `FAULT_TYPE`  | Fault loading geometry:<br />`1` = strike-slip (right-lateral)<br />`-1` = strike-slip (left-lateral)<br />`2` = thrust<br />`-2` = normal |      `1`      |
+|   `MESHDIM`   | Dimension of the problem:<br />`0` = spring-block model<br />`1` = 1D fault in a 2D elastic medium, antiplane slip<br />`2` = 2D fault in a 3D elastic medium |      `0`      |
+| `FAULT_TYPE`  | Faulting type (only used if `MESHDIM=2`):<br />`1` = strike-slip (right-lateral)<br />`-1` = strike-slip (left-lateral)<br />`2` = thrust<br />`-2` = normal |      `1`      |
 |   `SOLVER`    | ODE solver mode:<br />`1` = Bulirsch-Stoer<br />`2` = Runge-Kutta-Fehlberg |      `1`      |
 |     `MU`      | Shear modulus (Pa)                                           |    `30e9`     |
 |     `LAM`     | Elastic modulus lambda for 3D simulations (Pa)               |    `30e9`     |
@@ -139,7 +139,7 @@ As an alternative to the MATLAB wrapper, users can chose to generate their input
 |     `HD`      | If `D > 0`, half-thickness of the fault damage zone (m)<br />If `D = 0`, half-thickness of an elastic slab bisected by a fault<br /><br />This feature is currently implemented only for `MESHDIM = 1` and `FINITE = 0` |      `0`      |
 |      `L`      | If `MESHDIM = 1`, `L` is the fault length (or spatial period; m)<br />If `MESHDIM = 0`, `MU/L` is the spring stiffness |      `1`      |
 |   `FINITE`    | Boundary conditions when `MESHDIM=1`:<br />`0` = **Periodic fault**: the fault is infinitely long, but slip is spatially periodic with period `L`, loaded by steady displacement at distance `W` from the fault.<br />`1` = **Finite fault**: the fault is infinitely long, but only a segment of length `L` is explicitly governed by a [friction law](model_assumptions.html#fault-rheology). The remainder of the fault has steady slip at a rate `V_PL`. If running the code with this option gives the error message `kernel file src/kernel_I.tab is too short`, you should create a larger kernel file with the MATLAB function `TabKernelFiniteFit.m`.<br />`2` = **Symmetric periodic fault**: like option `0`, but slip is symmetric relative to the first element.<br />`3` = **Symmetric finite fault**: like option `1`, but slip is symmetric relative to the first element. This can be used to simulate a free surface adjacent to the first element. |      `1`      |
-|      `W`      | Distance between the fault and the loading point (m). This parameter is only used when `MESHDIM=1` and `FINITE=0`. **Note** that the model framework assumes that `W >> L`. |      `1`      |
+|      `W`      | Out-of-plane seismogenic width of the fault, only if `MESHDIM=1` and `FINITE=0`. **Note** that the model framework assumes that `W >> L`. |      `1`      |
 |    `DIP_W`    | Distance between the fault and the loading point (m). This parameter is only used when `MESHDIM=2` or `4`. If depth-dependent, values must be given from deeper to shallower depth. |      `0`      |
 |  `Z_CORNER`   | Fault bottom depth (m; negative down)                        |      `0`      |
 | `SIGMA_COUPL` | Turn on or off normal stress coupling:<br />`0` = disabled<br />`1` = enabled<br />This parameter is **deprecated** for the Python wrapper, use `FEAT_STRESS_COUPL` instead (see below). |      `0`      |
@@ -160,7 +160,7 @@ QDYN offers various optional simulation features. Set the following parameters t
 
 **Rate-and-state friction (RSF) parameters:**
 
-Note** that with the Python wrapper, the rheological parameters below are set in a dictionary `SET_DICT_RSF` nested within `set_dict`.
+**Note** that with the Python wrapper, the rheological parameters below are set in a dictionary `SET_DICT_RSF` nested within `set_dict`.
 
 |  Parameter  | Description                                                  | Default value |
 | :---------: | ------------------------------------------------------------ | :-----------: |
@@ -191,6 +191,25 @@ Note** that with the Python wrapper, the rheological parameters below are set in
 |       `A`       | List of kinetic parameters for each creep mechanism. These are passed to `set_dict` as a list or NumPy array following the format `[A1, A2, A3, ...]` |    `[0.0]`    |
 |       `N`       | List of stress exponents for each creep mechanism. These are passed to `set_dict` as a list or NumPy array following the format `[N1, N2, N3, ...]` |    `[1.0]`    |
 |       `M`       | List of porosity exponents for each creep mechanism. These are passed to `set_dict` as a list or NumPy array following the format `[M1, M2, M3, ...]` |    `[2.0]`    |
+
+
+
+**Thermal pressurisation model parameters (only available via Python wrapper):**
+
+**Note** that with the Python wrapper, the rheological parameters below are set in a dictionary `SET_DICT_TP` nested within `set_dict`.
+
+|    Parameter    | Description                                                  | Default value |
+| :-------------: | ------------------------------------------------------------ | :-----------: |
+|     `HALFW`     | Half-width of the fault zone (m). If the CNS model is used, this value will be set to half the width of the gouge layer (`THICKNESS`) |   `0.5e-3`    |
+|     `RHOC`      | Mean density times specific heat capacity of the medium (J/k/m3). This reflects a weighted average of the solid and fluid phases. |    `2.1e6`    |
+|     `BETA`      | Bulk compressibility (pores + fluid) (1/Pa)                  |    `2e-9`     |
+|      `ETA`      | Fluid dynamic viscosity (Pa s)                               |    `2e-4`     |
+|      `LAM`      | Net thermal expansion coefficient (fluid - solid) (1/K)      |   `2.78e-4`   |
+|      `K_T`      | Thermal conductivity (J/s/K/m)                               |     `2.0`     |
+|      `K_P`      | Intrinsic hydraulic permeability (m2)                        |    `1e-16`    |
+|      `P_A`      | Ambient fluid pressure (Pa)                                  |     `0.0`     |
+|      `T_A`      | Ambient temperature (K)                                      |    `293.0`    |
+| `DILATE_FACTOR` | Coefficient to control the efficiency of dilatancy hardening (-). Set to zero to disable dilatancy hardening effects. |     `0.0`     |
 
 **Initial conditions:**
 

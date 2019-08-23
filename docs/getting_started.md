@@ -16,6 +16,11 @@ title: Getting started
   ```
   pip install numpy pandas matplotlib termcolor
   ```
+  or through [Anaconda](https://www.anaconda.com/):<br />
+  ```
+  conda create -n QDYN python=3.7 numpy matplotlib pandas termcolor
+  conda activate QDYN
+  ```
 
 - For Windows 10 users, Linux tools can be acquired and run natively through a [Linux subsystem](https://docs.microsoft.com/en-us/windows/wsl/install-win10)
 
