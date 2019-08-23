@@ -80,6 +80,13 @@ module problem_class
   end type rk45_2_type
   ! End of features structure
 
+  ! Structure for (unit)testing
+  type test_type
+    logical :: test_mode = .false.
+    logical :: test_passed = .true.
+  end type test_type
+  ! End of testing structure
+
   type problem_type
     type (mesh_type) :: mesh
     type (kernel_type) :: kernel
@@ -119,6 +126,7 @@ module problem_class
     type (features_type) :: features
     type (rk45_type) :: rk45
     type (rk45_2_type) :: rk45_2
+    type (test_type) :: test
   end type problem_type
 
 end module problem_class

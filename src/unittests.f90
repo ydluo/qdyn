@@ -25,7 +25,8 @@ contains
 subroutine init_tests(pb)
   type(problem_type) :: pb
 
-  pb%test_mode = .true.
+  pb%test%test_mode = .true.
+  pb%test%test_passed = .true.
 
   write(6,*) ""
   write(6,*) "-----------------------------------------------------------------"
@@ -44,7 +45,7 @@ subroutine init_tests(pb)
   call allocate_mesh(pb)
   call initiate_parameters(pb)
   call init_kernel( pb%lam, pb%smu, pb%mesh, pb%kernel, pb%D, pb%H, &
-                    pb%i_sigma_cpl, pb%finite, pb%test_mode)
+                    pb%i_sigma_cpl, pb%finite, pb%test%test_mode)
 
   ! write(6,*) ""
   ! write(6,*) "Test suite initialised successfully"
@@ -64,6 +65,12 @@ subroutine init_tests(pb)
   write(6,*) ""
   write(6,*) "Finalised QDYN unit test suite"
   write(6,*) "-----------------------------------------------------------------"
+
+  if (pb%test%test_passed) then
+    call exit(0)
+  else
+    call exit(1)
+  endif
 end subroutine init_tests
 
 !===============================================================================
@@ -97,7 +104,7 @@ subroutine test_kernel(pb)
   do i = 0, 3
     pb%finite = i
     call init_kernel( pb%lam, pb%smu, pb%mesh, pb%kernel, pb%D, pb%H, &
-                      pb%i_sigma_cpl, pb%finite, pb%test_mode)
+                      pb%i_sigma_cpl, pb%finite, pb%test%test_mode)
 
     select case (pb%finite)
     case(0)
@@ -126,6 +133,7 @@ subroutine test_kernel(pb)
     call print_subresult(trim(filename), pass)
   end do
 
+  pb%test%test_passed = pb%test%test_passed .and. all_pass
   write(6, '(A, I0, A, I0, A)') " Kernel tests: ", num_passed, " / 4 passed"
   write(6,*) ""
 
@@ -234,7 +242,7 @@ subroutine kernel_export(pb)
   ! Allocate mesh variables/parameters
   call initiate_parameters(pb)
 
-  pb%test_mode = .true.
+  pb%test%test_mode = .true.
   pb%mesh%dim = 1
   pb%kernel%kind = pb%mesh%dim + 1
 
