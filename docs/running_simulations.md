@@ -59,7 +59,7 @@ As an alternative to the MATLAB wrapper, users can chose to generate their input
 
 2. Create a dictionary with simulation parameters to override the default values, for example:
 
-   ```
+   ```python
    # General simulation parameters
    set_dict = {
        "FAULT_TYPE": 1,
@@ -90,7 +90,7 @@ As an alternative to the MATLAB wrapper, users can chose to generate their input
 
 3. Pass the parameter values to the QDYN instance and generate the mesh:
 
-   ```
+   ```python
    p.settings(set_dict)
    p.render_mesh()
    ```
@@ -99,14 +99,14 @@ As an alternative to the MATLAB wrapper, users can chose to generate their input
 
 5. Write the input file and run the simulation as:
 
-   ```
+   ```python
    p.write_input()
    p.run()
    ```
 
 6. During and after the simulation, the current/final simulation output can be read using `p.read_output()`. This creates two new objects contained in the QDYN instance: `p.ot` contains the time series data, and `p.ox` contains the fault snapshots. See the section "[Simulation output structure](#simulation-output-structure)" for a list of output parameters. An example of how to access output data:
 
-   ```
+   ```python
    time = p.ot["t"]  # Vector of simulation time steps
    Vmax = p.ot["V_max"]  # Vector of maximum slip velocity
    
