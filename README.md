@@ -1,4 +1,4 @@
-# QDYN <img src="docs/img/qdyn_logo_small.jpeg" alt="QDYN logo" style="float:right;" />
+# QDYN <span style="float:right"><img src="docs/img/qdyn_logo_small.jpeg" alt="QDYN logo" /></span>
 
 ## A Quasi-DYNamic earthquake simulator
 
