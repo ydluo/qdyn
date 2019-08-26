@@ -57,6 +57,12 @@ To get started with QDYN, see [the documentation](http://ydluo.github.io/qdyn/).
 
 *21 August 2019* | QDYN version 2.1 has been released! See the [release notes](https://github.com/ydluo/qdyn/releases/tag/qdyn_2.1) for new features and (minor) bug fixes.
 
+*13 June 2019* | Article published on modeling earthquake cycles on geometrically-complex fault systems with the QDYN-SPECFEM Bridge:  
+  P. Galvez, P. Somerville, A. Petukhin, J. P. Ampuero and D. Peter, *Earthquake cycle modelling of multi-segmented faults: dynamic rupture and ground motion simulation of the 1992 Mw 7.3 Landers earthquake*, Pure Appl. Geophys., doi:[10.1007/s00024-019-02228-x](https://doi.org/10.1007/s00024-019-02228-x)
+  
+*24 April 2019* | Recent work using QDYN earthquake cycle simulations to constrain seismic hazard models:  
+  L. Ceferino, P. Galvez, J. P. Ampuero, A. Kiremidjian, G. Deierlin and J. C. Villegas-Lanza, *Bayesian parameter estimation for space and time interacting earthquake rupture model using historical and physics-based simulated earthquake catalogs*, pre-print, [doi:10.31223/osf.io/3wfr4](https://doi.org/10.31223/osf.io/3wfr4)
+
 *11 December 2018* | QDYN version 2.0 has been released!
 
 *6 December 2018* | Results of QDYN earthquake cycle simulations on faults surrounded by damaged zones were presented at:  
