@@ -1,8 +1,7 @@
-# ![QDYN logo](/home/vanden/qdyn/docs/img/qdyn_logo_small.jpeg) QDYN
+# ![QDYN logo](docs/img/qdyn_logo_small.jpeg) QDYN
 
 ## A Quasi-DYNamic earthquake simulator
 
---------------------------------
 [![Build Status](https://travis-ci.com/ydluo/qdyn.svg?branch=master)](https://travis-ci.com/ydluo/qdyn) [![Documentation Status](https://readthedocs.org/projects/ansicolortags/badge/?version=latest)](http://ydluo.github.io/qdyn/) [![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
 
 *QDYN* is a boundary element software to simulate earthquake cycles (seismic and aseismic slip on tectonic faults) under the quasi-dynamic approximation (quasi-static elasticity combined with radiation damping) on faults governed by rate-and-state friction and embedded in elastic media.
