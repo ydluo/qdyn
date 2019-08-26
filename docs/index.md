@@ -21,7 +21,6 @@ QDYN implements adaptive time stepping, shared-memory parallelization, and can d
 
 <div style="width: 100%; text-align: center;"><em>(evolution of slip velocity on a fault with two seismogenic asperities)</em></div>
 
-
 ## Main features
 
 - Rate-and-state friction, with velocity cut-offs, aging and slip laws
