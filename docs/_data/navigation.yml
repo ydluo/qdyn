@@ -1,0 +1,67 @@
+- name: Overview
+  link: index.html
+  subitems:
+    - name: Main features
+      anchor: main-features
+    - name: Support
+      anchor: support
+    - name: Acknowledgements
+      anchor: acknowledgements
+    - name: License
+      anchor: license
+
+- name: Model assumptions
+  link: model_assumptions.html
+  subitems:
+    - name: Model geometry
+      anchor: model-geometry
+    - name: Boundary conditions
+      anchor: boundary-conditions
+    - name: Fault rheology
+      anchor: fault-rheology
+
+- name: Getting started
+  link: getting_started.html
+  subitems:
+    - name: Requirements
+      anchor: requirements
+    - name: Downloading QDYN
+      anchor: downloading-qdyn
+    - name: Installing QDYN
+      anchor: installing-qdyn
+    - name: Updating QDYN
+      anchor: keeping-qdyn-up-to-date
+    - name: Additional notes
+      anchor: additional-notes-for-windows-10-users
+
+- name: Running simulations
+  link: running_simulations.html
+  subitems:
+    - name: Using the wrapper
+      anchor: using-the-wrapper
+    - name: Simulation input
+      anchor: simulation-input-parameters
+    - name: Simulation output
+      anchor: simulation-output-structure
+    - name: Examples
+      anchor: examples
+
+- name: Optimizing performance
+  link: optimizing_performance.html
+
+# - name: Coupling with SPECFEM3D
+#   link: #
+
+# - name: Tutorials
+#   link: tutorials.html
+#   sublinks:
+#     - name: Spring-block (MATLAB)
+#     - name: Spring-block (Python)
+#     - name: Single asperity
+#       link: tutorial_single_asperity_python.html
+
+- name: Developer notes
+  link: developer_notes.html
+
+- name: Citing QDYN
+  link: cite.html
