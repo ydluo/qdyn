@@ -6,6 +6,9 @@
 		{% if page.url contains item.link %}
 			{% assign cls = "current" %}
 		{% endif %}
+		{% if page.url == "/" and item.id == "index" %}
+			{% assign cls = "current" %}
+		{% endif %}
 
 		{% for sublink in item.sublinks %}
 			{% if page.url contains sublink.link %}

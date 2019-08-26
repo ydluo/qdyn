@@ -5,9 +5,7 @@ title: Tutorials
 
 # Tutorials
 
-There are several step-by-step tutorials available on various topics:
+There are currently two tutorials available, with corresponding Jupyter Notebooks located in `examples/notebooks`. More tutorials will be added in the future.
 
-- Setting-up spring-block simulations (MATLAB wrapper)
-- Setting-up spring-block simulations (Python wrapper)
-- [Simulating a 1D heterogeneous fault](tutorial_single_asperity_python.html)
-- The Tohoku earthquake
+- [Simulating a single asperity on a 2D fault](tutorial_single_asperity_python.html)
+- [Simulating two interacting asperities on a 2D fault](tutorial_double_asperity_python.html)

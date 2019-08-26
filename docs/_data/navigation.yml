@@ -1,5 +1,6 @@
 - name: Overview
   link: index.html
+  id: index
   subitems:
     - name: Main features
       anchor: main-features
@@ -52,13 +53,13 @@
 # - name: Coupling with SPECFEM3D
 #   link: #
 
-# - name: Tutorials
-#   link: tutorials.html
-#   sublinks:
-#     - name: Spring-block (MATLAB)
-#     - name: Spring-block (Python)
-#     - name: Single asperity
-#       link: tutorial_single_asperity_python.html
+- name: Tutorials
+  link: tutorials.html
+  sublinks:
+    - name: Single asperity
+      link: tutorial_single_asperity_python.html
+    - name: Double asperity
+      link: tutorial_double_asperity_python.html
 
 - name: Developer notes
   link: developer_notes.html

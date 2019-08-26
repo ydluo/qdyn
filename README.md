@@ -5,11 +5,14 @@
 
 ## News 
 
+*26 August 2019* | QDYN version 2.2 has been released! This version is now more user-friendly than QDYN has ever been, with a new documentation website, Jupyter Notebooks, and automated testing for developers. See the [release notes](https://github.com/ydluo/qdyn/releases/tag/qdyn_2.1) for details.
+
 *21 August 2019* | QDYN version 2.1 has been released! See the [release notes](https://github.com/ydluo/qdyn/releases/tag/qdyn_2.1) for new features and (minor) bug fixes.
 
 *11 December 2018* | QDYN version 2.0 has been released!
 
 *6 December 2018* | Results of QDYN earthquake cycle simulations on faults surrounded by damaged zones were presented at:  
+
 * the AGU Fall Meeting 2017 (San Francisco, 11-15 December 2017): B. Idini and J. P. Ampuero, *Rupture complexity promoted by damaged fault zones in earthquake cycle models* (doi:10.1002/essoar.10500080.1, [poster](https://www.essoar.org/doi/abs/10.1002/essoar.10500080.1))  
 * the [10th ACES International Workshop](http://quaketm.bosai.go.jp/~shiqing/ACES2018/index_aces.html) (Japan, September 25-28, 2018), J. P. Ampuero et al., *Rupture complexity promoted by damaged fault zones in earthquake cycle models* ([slides](http://quaketm.bosai.go.jp/~shiqing/ACES2018/abstracts/aces_abstract_ampuero.pdf)) 
 * the [Workshop on Modeling Earthquake Source Processes](http://www.seismolab.caltech.edu/workshop.html) (Caltech, October 8-10, 2018). 
@@ -48,7 +51,6 @@
 
 *QDYN* was previously hosted on [GoogleCode](https://code.google.com/p/qdyn/) and is now on [Github](http://ydluo.github.io/qdyn). Both [SVN](https://subversion.apache.org) and [GIT](https://git-scm.com) version control systems are supported. 
 
-
 --------------------------------
 
 ## Summary
@@ -76,7 +78,6 @@
   * parallelized for distributed memory systems (MPI)
   * fully coupled with SPECFEM3D via QSB (QDYN-SPECFEM Bridge)
 
-
 --------------------------------
 
 ## Downloads, documentation and support
@@ -88,7 +89,6 @@ Stable versions of QDYN can be downloaded from the [release page](https://github
 To install QDYN please follow the instructions in _Section 2.3_ of the manual. 
 
 Questions, feedback or suggestions can be submitted via our [issue tracking system](https://github.com/ydluo/qdyn/issues).
-
 
 -------------------------
 
@@ -109,7 +109,6 @@ Questions, feedback or suggestions can be submitted via our [issue tracking syst
 ### [Simulation_Cascadia_Tremor](https://github.com/ydluo/qdyn/wiki/Simulation_Cascadia_Tremor)
 ![](https://lh5.googleusercontent.com/-a_2MRxcUgf8/T-v2JCjmxBI/AAAAAAAAAB8/NlQTwfra4fY/s900/Tremor_3D_Cascadia.gif)
 
-
 ------------------------
 ## Developers
 
@@ -122,7 +121,6 @@ Questions, feedback or suggestions can be submitted via our [issue tracking syst
 [Martijn van den Ende](https://www.linkedin.com/in/martijnvandenende) (Université Côte d'Azur, Géoazur, France)
 
 [Benjamin Idini](http://www.seismolab.caltech.edu/idini_b.html) (Caltech Seismolab, USA)
-
 
 -------------------------
 
@@ -153,9 +151,9 @@ Luo, Y., & Ampuero, J. P. (2011), Numerical Simulation of Tremor Migration Trigg
 van den Ende, M. P. A., Chen, J., Ampuero, J. P., & Niemeijer, A. R. (2018).
 A comparison between rate-and-state friction and microphysical models, based on numerical simulations of fault slip.
 Tectonophysics, 733, 273-295, doi:[10.1016/j.tecto.2017.11.040](https://doi.org/10.1016/j.tecto.2017.11.040)
- 
+
 #### For simulations on faults surrounded by damaged zones
-  
+
 B. Idini, B., & Ampuero, J. P. (2017).
 Rupture complexity promoted by damaged fault zones in earthquake cycle models.
 AGU Fall Meeting 2017, abstract T41C-0632.  
