@@ -1,4 +1,4 @@
-- name: Overview
+- name: 1. Overview
   link: index.html
   id: index
   subitems:
@@ -11,7 +11,7 @@
     - name: License
       anchor: license
 
-- name: Model assumptions
+- name: 2. Model assumptions
   link: model_assumptions.html
   subitems:
     - name: Model geometry
@@ -21,7 +21,7 @@
     - name: Fault rheology
       anchor: fault-rheology
 
-- name: Getting started
+- name: 3. Getting started
   link: getting_started.html
   subitems:
     - name: Requirements
@@ -35,7 +35,7 @@
     - name: Additional notes
       anchor: additional-notes-for-windows-10-users
 
-- name: Running simulations
+- name: 4. Running simulations
   link: running_simulations.html
   subitems:
     - name: Using the wrapper
@@ -47,13 +47,13 @@
     - name: Examples
       anchor: examples
 
-- name: Optimizing performance
+- name: 5. Optimizing performance
   link: optimizing_performance.html
 
 # - name: Coupling with SPECFEM3D
 #   link: #
 
-- name: Tutorials
+- name: 6. Tutorials
   link: tutorials.html
   sublinks:
     - name: Single asperity
@@ -61,8 +61,8 @@
     - name: Double asperity
       link: tutorial_double_asperity_python.html
 
-- name: Developer notes
+- name: 7. Developer notes
   link: developer_notes.html
 
-- name: Citing QDYN
+- name: 8. Citing QDYN
   link: cite.html

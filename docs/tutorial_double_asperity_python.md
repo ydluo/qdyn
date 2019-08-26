@@ -8,7 +8,7 @@ mathjax: true
 
 In this tutorial, we'll consider a fault with two asperities, one of size $f L_a$, and another of size $(1-f)L_a$. We begin with $f = 0.5$, meaning that both asperities are of equal size $0.5 L_a$. Later on, we can tune this parameter $f$ to see how the behaviour changes. The corresponding Jupyter Notebook file is found in `examples/notebooks/double_asperity.ipynb`.
 
-```Python
+```python
 # Make plots interactive in the notebook
 %matplotlib notebook
 
@@ -50,7 +50,7 @@ To preprare a simulation, the global simulation and mesh parameters will have to
 
 In this simulation, the only heterogeneity stems from a lateral variation in the direct effect parameter $a$, which is chosen such that the asperities have $(a-b) < 0$, and such that the matrix has $(a - b) > 0$.
 
-```Python
+```python
 # Instantiate the QDYN class object
 p = qdyn()
 
@@ -121,7 +121,7 @@ p.write_input()
 ```
 
 We can visualise the two asperities by plotting $(a-b)$ versus position on the fault:
-```Python
+```python
 plt.clf()
 plt.plot(x, p.mesh_dict["A"] - p.mesh_dict["B"])
 plt.axhline(0, ls=":", c="k")
@@ -137,11 +137,11 @@ As desired, the asperities are defined by $(a-b) < 0$, embedded in a stable matr
 
 The `p.write()` command writes a `qdyn.in` file to the current working directory, which is read by QDYN at the start of the simulation. To do this, call `p.run()`. Note that in the interactive notebook, the screen output (`stdout`) is captured by the console, so you won't see any output here.
 
-```Python
+```python
 p.run()
 ```
 During the simulation, output is flushed to disk every `NTOUT` time steps. This output can be reloaded without re-running the simulation, so you only have to call `p.run()` again if you made any changes to the input parameters. To read/process the output, call:
-```Python
+```python
 p.read_output()
 ```
 

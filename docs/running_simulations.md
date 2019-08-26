@@ -6,6 +6,8 @@ mathjax: true
 
 # Running a simulation
 
+This section describes some of the details of the various methods and options for setting-up QDYN simulations. For practical examples, see the [*Tutorials* section](tutorials.html).
+
 ## Using the wrapper
 
 The core of QDYN is a Fortran code. While the format of its input and output files is well defined, we find it more convenient to set up the input parameters, perform simulations, and read the output data within a MATLAB (`qdyn.m`) or Python (`pyqdyn.py`) environment. The operation of both these wrappers is detailed below.
@@ -311,4 +313,4 @@ QDYN offers various optional simulation features. Set the following parameters t
 
 ## Examples
 
-There are a number of examples provided in the `/examples` directory.
+There are a number of (self-documented) examples provided in the `examples/` directory. Interactive Jupyter Notebooks are found in `examples/notebooks/` (see also the [*Tutorials* section](tutorials.html)).

@@ -20,7 +20,6 @@ QDYN implements adaptive time stepping, shared-memory parallelization, and can d
 </video>
 
 <div style="width: 100%; text-align: center;"><em>(evolution of slip velocity on a fault with two seismogenic asperities)</em></div>
-
 ## Main features
 
 - Rate-and-state friction, with velocity cut-offs, aging and slip laws
@@ -72,7 +71,7 @@ The development of QDYN has been supported by the US National Science Foundation
 
 ## License
 
-This software is freely available for academic research purposes. If you use QDYN please include proper attributions to its authors and cite one of the references in section 1.7 in your scientific papers and reports.
+This software is freely available for academic research purposes. If you use QDYN please include proper attributions to its authors and cite one of [the references](cite.html) in your scientific papers and reports.
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
