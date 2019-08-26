@@ -476,7 +476,7 @@ class qdyn:
                 cmd.append("test")
             if not test:
                 # Run command
-                call(cmd)
+                return call(cmd)
             else:
                 # Run and suppress stdout
                 with open(os.devnull, "w") as output:

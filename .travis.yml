@@ -1,0 +1,36 @@
+language: python
+
+python:
+  - 3.7
+
+addons:
+  apt:
+    packages:
+      - gfortran
+      - libopenmpi-dev
+
+before_install:
+  # Install the latest version of Miniconda
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - chmod +x miniconda.sh
+  - ./miniconda.sh -b
+  - export PATH=/home/travis/miniconda2/bin:$PATH
+  - conda update --yes conda  # Update CONDA without command line prompt
+
+install:
+  # Create a new Conda environment
+  - conda create --yes -n test python=$TRAVIS_PYTHON_VERSION
+  # Activate it
+  - source activate test
+  # Install various dependencies
+  - conda install --yes numpy matplotlib pandas termcolor
+  # Compile QDYN code
+  - cp $TRAVIS_BUILD_DIR/utils/devel_tools/mymakedepend.perl $TRAVIS_BUILD_DIR/src
+  - cd $TRAVIS_BUILD_DIR/src/
+  - chmod +x mymakedepend.perl
+  - ./mymakedepend.perl
+  - make clean && make travis
+
+script:
+  - cd $TRAVIS_BUILD_DIR/test/
+  - python test_suite.py

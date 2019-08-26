@@ -6,15 +6,16 @@ module unittests
   use solver, only : init_rk45
   use friction
   ! use friction_cns
-  use fault_stress, only : init_kernel
+  use fault_stress, only : init_kernel, export_kernel
 
   use unittests_rsf
   ! use unittests_cns
+  use unittests_aux
 
   implicit none
   private
 
-  public :: init_tests
+  public :: init_tests, kernel_export
 
 contains
 
@@ -24,26 +25,30 @@ contains
 subroutine init_tests(pb)
   type(problem_type) :: pb
 
-  pb%test_mode = .true.
+  pb%test%test_mode = .true.
+  pb%test%test_passed = .true.
 
   write(6,*) ""
   write(6,*) "-----------------------------------------------------------------"
   write(6,*) "Initiating QDYN unit test suite"
   write(6,*) ""
 
-  ! Define assert_close function
-
-  ! Spring-block configuration
-  call initiate_springblock(pb)
-
   ! Allocate mesh variables/parameters
   call allocate_mesh(pb)
   call initiate_parameters(pb)
-  call init_kernel(pb%lam, pb%smu, pb%mesh, pb%kernel, &
-                   pb%D, pb%H, pb%i_sigma_cpl, pb%finite)
 
-  write(6,*) ""
-  write(6,*) "Test suite initialised successfully"
+  ! Test kernels
+  call test_kernel(pb)
+
+  ! Spring-block configuration
+  call initiate_springblock(pb)
+  call allocate_mesh(pb)
+  call initiate_parameters(pb)
+  call init_kernel( pb%lam, pb%smu, pb%mesh, pb%kernel, pb%D, pb%H, &
+                    pb%i_sigma_cpl, pb%finite, pb%test%test_mode)
+
+  ! write(6,*) ""
+  ! write(6,*) "Test suite initialised successfully"
 
   ! Test RSF
   call test_rsf_friction(pb)
@@ -60,7 +65,79 @@ subroutine init_tests(pb)
   write(6,*) ""
   write(6,*) "Finalised QDYN unit test suite"
   write(6,*) "-----------------------------------------------------------------"
+
+  if (pb%test%test_passed) then
+    call exit(0)
+  else
+    call exit(1)
+  endif
 end subroutine init_tests
+
+!===============================================================================
+! Export stress transfer kernels
+!===============================================================================
+subroutine test_kernel(pb)
+
+  use constants, only : SRC_PATH
+
+  type(problem_type) :: pb
+  integer :: i, n, num_passed
+  character(len=200) :: filename, dir
+  double precision :: kernel_n, e
+  logical :: pass, all_pass
+
+  dir = SRC_PATH//"/../test/kernels/"
+  all_pass = .true.
+  num_passed = 4
+
+  ! Discretisation parameters
+  pb%mesh%nn = 1024
+  pb%mesh%Lfault = 10e3
+  pb%mesh%W = 100 * pb%mesh%Lfault
+  pb%mesh%dim = 1
+  pb%kernel%kind = pb%mesh%dim + 1
+
+  write(6,*) ""
+  write(6,*) "Testing kernels ..."
+  write(6,*) ""
+
+  do i = 0, 3
+    pb%finite = i
+    call init_kernel( pb%lam, pb%smu, pb%mesh, pb%kernel, pb%D, pb%H, &
+                      pb%i_sigma_cpl, pb%finite, pb%test%test_mode)
+
+    select case (pb%finite)
+    case(0)
+      filename = "kernel_infinite.dat"
+    case(1)
+      filename = "kernel_finite.dat"
+    case(2)
+      filename = "kernel_infinite_symmetric.dat"
+    case(3)
+      filename = "kernel_finite_symmetric.dat"
+    end select
+
+    pass = .true.
+
+    open(unit=99, file=trim(dir)//filename, action="read")
+    do n = 1, pb%kernel%k2f%nnfft
+      read(99, *) kernel_n
+      e = (pb%kernel%k2f%kernel(n) - kernel_n) / (kernel_n + 1e-15)
+      if (abs(e) > 1e-12) then
+        pass = .false.
+        all_pass = .false.
+        num_passed = num_passed - 1
+      endif
+    end do
+
+    call print_subresult(trim(filename), pass)
+  end do
+
+  pb%test%test_passed = pb%test%test_passed .and. all_pass
+  write(6, '(A, I0, A, I0, A)') " Kernel tests: ", num_passed, " / 4 passed"
+  write(6,*) ""
+
+end subroutine test_kernel
 
 !===============================================================================
 ! Set the parameters corresponding to a 0-D spring-block configuration
@@ -86,6 +163,11 @@ subroutine allocate_mesh(pb)
   n = mesh_get_size(pb%mesh) ! number of nodes in this processor
 
   ! Allocate general parameters
+  if (allocated(pb%tau)) then
+    deallocate (  pb%tau, pb%sigma, pb%v, pb%theta, pb%theta2, pb%v_star, &
+                  pb%ot%iot, pb%ot%iasp, pb%dc, pb%coh, pb%v_pl , pb%a, pb%b, &
+                  pb%v1, pb%v2, pb%mu_star, pb%dtau_dt, pb%slip, pb%theta_star )
+  endif
   allocate ( pb%tau(n), pb%sigma(n), pb%v(n), pb%theta(n), pb%theta2(n),  &
              pb%v_star(n), pb%ot%iot(n), pb%ot%iasp(n), &
              pb%dc(n), pb%coh(n), pb%v_pl(n) )
@@ -147,5 +229,31 @@ subroutine initiate_parameters(pb)
   write(6,*) " * Global parameters initialised"
 
 end subroutine initiate_parameters
+
+!===============================================================================
+! Export stress transfer kernels
+!===============================================================================
+subroutine kernel_export(pb)
+  type(problem_type) :: pb
+  integer :: i
+
+  write(6,*) 'Intializing kernel: ...'
+
+  ! Allocate mesh variables/parameters
+  call initiate_parameters(pb)
+
+  pb%test%test_mode = .true.
+  pb%mesh%dim = 1
+  pb%kernel%kind = pb%mesh%dim + 1
+
+  do i = 0, 3
+    pb%finite = i
+    call export_kernel( pb%lam, pb%smu, pb%mesh, pb%kernel, pb%D, pb%H, &
+                        pb%i_sigma_cpl, pb%finite)
+  end do
+
+  call test_kernel(pb)
+
+end subroutine kernel_export
 
 end module unittests

@@ -94,6 +94,7 @@ subroutine test_rsf_friction(pb)
 
   ! Collect results of subtests and print to screen
   pass = subpass1 .and. subpass2
+  pb%test%test_passed = pb%test%test_passed .and. pass
   call print_result("Steady-state evolution laws", pass, num_passed, num_tests)
   call print_subresult("Steady-state ageing law", subpass1)
   call print_subresult("Steady-state slip law", subpass2)
@@ -105,6 +106,7 @@ subroutine test_rsf_friction(pb)
   mu2 = friction_mu(pb%v, pb%theta, pb)
   dmu_truth = (pb%a - pb%b)*log(10d0)
   pass = abs_assert_close(mu2-mu, dmu_truth, atol)
+  pb%test%test_passed = pb%test%test_passed .and. pass
   call print_result("Steady-state friction (classical RSF)", pass, num_passed, num_tests)
 
   ! Steady-state friction tests for cut-off velocity model
@@ -137,6 +139,7 @@ subroutine test_rsf_friction(pb)
 
   ! Collect results of subtests and print to screen
   pass = subpass1 .and. subpass2 .and. subpass3
+  pb%test%test_passed = pb%test%test_passed .and. pass
   call print_result("Steady-state friction (cut-off velocities)", pass, num_passed, num_tests)
   call print_subresult("V1 = V2", subpass1)
   call print_subresult("V1 = V2 << V", subpass2)
@@ -169,6 +172,8 @@ subroutine test_rsf_friction(pb)
     subpass3 = subpass3 .and. rel_assert_close(dmu_dtheta, dmu_dtheta2, rtol)
   enddo
 
+  pass = subpass1 .and. subpass2 .and. subpass3
+  pb%test%test_passed = pb%test%test_passed .and. pass
   call print_result("Compare classical / regularised RSF", pass, num_passed, num_tests)
   call print_subresult("Friction", subpass1)
   call print_subresult("dmu/dV", subpass2)

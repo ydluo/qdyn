@@ -22,7 +22,7 @@ solver.o: constants.o derivs_all.o diffusion_solver.o friction.o \
 	friction_cns.o ode_bs.o ode_rk45.o ode_rk45_2.o output.o parallel.o \
 	problem_class.o utils.o
 unittests.o: constants.o fault_stress.o friction.o mesh.o problem_class.o \
-	solver.o unittests_rsf.o
+	solver.o unittests_aux.o unittests_rsf.o
 unittests_aux.o: constants.o problem_class.o solver.o
 unittests_rsf.o: constants.o fault_stress.o friction.o mesh.o problem_class.o \
 	solver.o unittests_aux.o
