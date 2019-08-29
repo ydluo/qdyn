@@ -59,7 +59,7 @@ To get started with QDYN, see [the documentation](http://ydluo.github.io/qdyn/).
 
 *13 June 2019* | Article published on modeling earthquake cycles on geometrically-complex fault systems with the QDYN-SPECFEM Bridge:  
   P. Galvez, P. Somerville, A. Petukhin, J. P. Ampuero and D. Peter, *Earthquake cycle modelling of multi-segmented faults: dynamic rupture and ground motion simulation of the 1992 Mw 7.3 Landers earthquake*, Pure Appl. Geophys., doi:[10.1007/s00024-019-02228-x](https://doi.org/10.1007/s00024-019-02228-x)
-  
+
 *24 April 2019* | Recent work using QDYN earthquake cycle simulations to constrain seismic hazard models:  
   L. Ceferino, P. Galvez, J. P. Ampuero, A. Kiremidjian, G. Deierlin and J. C. Villegas-Lanza, *Bayesian parameter estimation for space and time interacting earthquake rupture model using historical and physics-based simulated earthquake catalogs*, pre-print, [doi:10.31223/osf.io/3wfr4](https://doi.org/10.31223/osf.io/3wfr4)
 
@@ -141,6 +141,8 @@ Questions, feedback or suggestions can be submitted via our [issue tracking syst
 ------------------------
 ## Developers
 
+*(listed alphabetically)*
+
 [Jean-Paul Ampuero](http://www.seismolab.caltech.edu/ampuero_jp.html) (IRD/UCA, Géoazur, France; Caltech Seismolab, USA)
 
 [Martijn van den Ende](https://www.linkedin.com/in/martijnvandenende) (Université Côte d'Azur, Géoazur, France)
@@ -186,4 +188,5 @@ Tectonophysics, 733, 273-295, doi:[10.1016/j.tecto.2017.11.040](https://doi.org/
 Idini, B., & Ampuero, J. P. (2017).
 Rupture complexity promoted by damaged fault zones in earthquake cycle models.
 AGU Fall Meeting 2017, abstract T41C-0632.  
-Poster [PDF](https://www.essoar.org/doi/abs/10.1002/essoar.10500080.1), doi:10.1002/essoar.10500080.1
+Poster [PDF](https://www.essoar.org/doi/abs/10.1002/essoar.10500080.1), doi:[10.1002/essoar.10500080.1](https://dx.doi.org/10.1002/essoar.10500080.1)
+

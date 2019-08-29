@@ -120,14 +120,6 @@ div.container div.content code.highlighter-rouge {
 	font-size: 0.8em;
 }
 
-div.container div.content ul {
-	padding-left: 40px;
-}
-
-div.container div.content ul li {
-	margin: 5px 0;
-}
-
 div.container h1 {
 	font-size: 2.5em;
 	line-height: 2.2em;
@@ -157,6 +149,25 @@ div.container h3 {
 div.container div.content blockquote {
 	margin-left: 20px;
 	border-left-color: green;
+}
+
+/* Lists/enumerations */
+
+div.container div.content ul {
+	padding-left: 40px;
+}
+
+div.container div.content ul li {
+	margin: 5px 0;
+}
+
+div.container div.content ul.task-list {
+	padding: 0 10px;
+}
+
+div.container div.content ul.task-list li {
+	list-style-type: none;
+	font-style: italic;
 }
 
 

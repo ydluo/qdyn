@@ -18,8 +18,42 @@ For large modifications or new features, please contact the QDYN team or [open a
 
 
 
+## Work in progress
+
+The following items are under active development and will be included in the stable branch in the future.
+
+### Physics
+
+- Surface deformation to compare with GPS data
+- Slip-dependent friction law
+- 3D kernel for faults in infinite media
+- Variable strike
+- Layered media: EDKS (Luis Rivera), Relax (Sylvain Barbot)
+- Heterogeneous media: import kernel from Relax, Pylith, or SPECFEM3D?
+- Triangular mesh elements: e.g. Meade ([2007](https://doi.org/10.1016/j.cageo.2006.12.003)), Gimbutas et al. ([2012](https://doi.org/10.1785/0120120127)), Pan et al. ([2014](https://doi.org/10.1785/0120140161)), Nikkhoo & Walter ([2015](https://doi.org/10.1093/gji/ggv035))
+
+### Code engineering and optimisation
+
+- Non-structured mesh elements
+- QDYN-SPECFEM3D (QSB) bridge
+  - [ ] Update I/O management for compatibility with the stable QDYN version
+  - [ ] Design benchmark/integration test
+  - [ ] Create examples/tutorials using QSB
+  - [ ] Update documentation
+- Incorporate [Intel MKL](https://software.intel.com/en-us/mkl) optimised libraries
+- Hierarchical matrix techniques ("H-matrices")
+
+### Input/Output
+
+- Parallel MPI I/O or parallel I/O library (HDF5, NETCDF4, ADIOS)
+- Binary output
+
+
+
 
 ## The QDYN team
+
+*(listed alphabetically)*
 
 [Jean-Paul Ampuero](http://www.seismolab.caltech.edu/ampuero_jp.html) (IRD/UCA, Géoazur, France; Caltech Seismolab, USA)
 
