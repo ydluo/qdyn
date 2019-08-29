@@ -1,15 +1,71 @@
-# QDYN
+# QDYN <img src="docs/img/qdyn_logo_small.jpeg" alt="QDYN logo" align="right" />
+
 ## A Quasi-DYNamic earthquake simulator
 
---------------------------------
+[![Build Status](https://travis-ci.com/ydluo/qdyn.svg?branch=master)](https://travis-ci.com/ydluo/qdyn) [![Documentation Status](https://readthedocs.org/projects/ansicolortags/badge/?version=latest)](http://ydluo.github.io/qdyn/) [![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
+
+*QDYN* is a boundary element software to simulate earthquake cycles (seismic and aseismic slip on tectonic faults) under the quasi-dynamic approximation (quasi-static elasticity combined with radiation damping) on faults governed by rate-and-state friction and embedded in elastic media.
+
+*QDYN* includes various forms of rate-and-state friction and state evolution laws, and handles non-planar fault geometry in 3D and 2D media, as well as spring-block simulations. Loading is controlled by remote displacement, steady creep or oscillatory load. In 3D it handles free surface effects in a half-space, including normal stress coupling. The medium surrounding the fault is linear, isotropic and elastic, and may be uniform or (in 2D) contain a damaged layer.
+
+*QDYN* implements adaptive time stepping, shared-memory parallelization, and can deal with multi-scale earthquake cycle simulations with fine details in both time and space. It is equipped with user-friendly MATLAB and Python interfaces and graphical output utilities.
+
+To get started with QDYN, see [the documentation](http://ydluo.github.io/qdyn/).
+
+
+
+------
+
+## Features
+
+- rate-and-state friction, with velocity cut-offs, aging and slip laws
+
+- microphysically based frictional model (*Chen-Niemeijer-Spiers* model)
+
+- heterogeneous frictional properties
+
+- slow and fast, aseismic and seismic slip transients
+
+- dynamic weakening (thermal pressurization)
+
+- non-planar faults (currently limited to variable dip, rectangular elements)
+
+- 3D, 2D and 1D (spring-block)
+
+- tectonic and transient loads
+
+- normal stress coupling
+
+- faults surrounded by damaged zones
+
+- MATLAB and Python wrappers, and graphic output display utilities
+
+- parallelized for shared memory systems (OpenMP)
+
+- parallelized for distributed memory systems (MPI)
+
+
+
+
+-----------------------
+
 
 ## News 
 
+*29 August 2019* | QDYN version 2.2 has been released! This version is now more user-friendly than QDYN has ever been, with a new documentation website, Jupyter Notebooks, and automated testing for developers. See the [release notes](https://github.com/ydluo/qdyn/releases/tag/qdyn_2.2) for details.
+
 *21 August 2019* | QDYN version 2.1 has been released! See the [release notes](https://github.com/ydluo/qdyn/releases/tag/qdyn_2.1) for new features and (minor) bug fixes.
+
+*13 June 2019* | Article published on modeling earthquake cycles on geometrically-complex fault systems with the QDYN-SPECFEM Bridge:  
+  P. Galvez, P. Somerville, A. Petukhin, J. P. Ampuero and D. Peter, *Earthquake cycle modelling of multi-segmented faults: dynamic rupture and ground motion simulation of the 1992 Mw 7.3 Landers earthquake*, Pure Appl. Geophys., doi:[10.1007/s00024-019-02228-x](https://doi.org/10.1007/s00024-019-02228-x)
+
+*24 April 2019* | Recent work using QDYN earthquake cycle simulations to constrain seismic hazard models:  
+  L. Ceferino, P. Galvez, J. P. Ampuero, A. Kiremidjian, G. Deierlin and J. C. Villegas-Lanza, *Bayesian parameter estimation for space and time interacting earthquake rupture model using historical and physics-based simulated earthquake catalogs*, pre-print, [doi:10.31223/osf.io/3wfr4](https://doi.org/10.31223/osf.io/3wfr4)
 
 *11 December 2018* | QDYN version 2.0 has been released!
 
 *6 December 2018* | Results of QDYN earthquake cycle simulations on faults surrounded by damaged zones were presented at:  
+
 * the AGU Fall Meeting 2017 (San Francisco, 11-15 December 2017): B. Idini and J. P. Ampuero, *Rupture complexity promoted by damaged fault zones in earthquake cycle models* (doi:10.1002/essoar.10500080.1, [poster](https://www.essoar.org/doi/abs/10.1002/essoar.10500080.1))  
 * the [10th ACES International Workshop](http://quaketm.bosai.go.jp/~shiqing/ACES2018/index_aces.html) (Japan, September 25-28, 2018), J. P. Ampuero et al., *Rupture complexity promoted by damaged fault zones in earthquake cycle models* ([slides](http://quaketm.bosai.go.jp/~shiqing/ACES2018/abstracts/aces_abstract_ampuero.pdf)) 
 * the [Workshop on Modeling Earthquake Source Processes](http://www.seismolab.caltech.edu/workshop.html) (Caltech, October 8-10, 2018). 
@@ -49,45 +105,17 @@
 *QDYN* was previously hosted on [GoogleCode](https://code.google.com/p/qdyn/) and is now on [Github](http://ydluo.github.io/qdyn). Both [SVN](https://subversion.apache.org) and [GIT](https://git-scm.com) version control systems are supported. 
 
 
---------------------------------
-
-## Summary
-
-*QDYN* is a boundary element software to simulate earthquake cycles (tectonic fault slip) under the quasi-dynamic approximation (quasi-static elasticity with radiation damping).  
-
-*QDYN* has adaptive time stepping to simulate earthquake cycles including seismic and aseismic slip, on non-planar faults in 3D and 2D elastic media and on spring-block systems. It includes various forms of rate-and-state friction and state evolution laws, a microphysical model implementation, dynamic weakening (thermal pressurization), parallelization for shared and distributed memory systems, and a user-friendly matlab or python interface for setting inputs and visualizing outputs.
-
---------------------------------
-
-## Features
-
-  * rate-and-state friction, with velocity cut-offs, aging and slip laws
-  * microphysically based frictional model (Chen-Niemeijer-Spiers model)
-  * heterogeneous frictional properties
-  * slow and fast, aseismic and seismic slip transients
-  * dynamic weakening (thermal pressurization)
-  * non-planar faults (currently limited to variable dip, rectangular elements)
-  * 3D, 2D and 1D (spring-block)
-  * tectonic and transient loads
-  * normal stress coupling
-  * faults surrounded by damaged zones
-  * matlab and python wrappers, and graphic output display utilities
-  * parallelized for shared memory systems (OpenMP)
-  * parallelized for distributed memory systems (MPI)
-  * fully coupled with SPECFEM3D via QSB (QDYN-SPECFEM Bridge)
-
 
 --------------------------------
 
 ## Downloads, documentation and support
 
-The primary documentation for QDYN is the [User's manual](https://github.com/ydluo/qdyn/blob/master/doc/QDYN_man_GIT.pdf). 
+Previous (stable) versions of QDYN can be downloaded from the [release page](https://github.com/ydluo/qdyn/releases). Development versions are available as separate [branches](https://github.com/ydluo/qdyn/branches) following the naming convention `release/x.x.x`.
 
-Stable versions of QDYN can be downloaded from the [release page](https://github.com/ydluo/qdyn/releases). To download development versions please follow the instructions in _Section 2.2_ of the manual.
-
-To install QDYN please follow the instructions in _Section 2.3_ of the manual. 
+To install QDYN please follow the *Getting started* section in [the documentation](http://ydluo.github.io/qdyn/).
 
 Questions, feedback or suggestions can be submitted via our [issue tracking system](https://github.com/ydluo/qdyn/issues).
+
 
 
 -------------------------
@@ -109,20 +137,20 @@ Questions, feedback or suggestions can be submitted via our [issue tracking syst
 ### [Simulation_Cascadia_Tremor](https://github.com/ydluo/qdyn/wiki/Simulation_Cascadia_Tremor)
 ![](https://lh5.googleusercontent.com/-a_2MRxcUgf8/T-v2JCjmxBI/AAAAAAAAAB8/NlQTwfra4fY/s900/Tremor_3D_Cascadia.gif)
 
-
 ------------------------
 ## Developers
 
-[Yingdi Luo](https://science.jpl.nasa.gov/people/YLuo/) (UCLA / NASA JPL, USA)
+*(listed alphabetically)*
 
-[Jean-Paul Ampuero](http://www.seismolab.caltech.edu/ampuero_jp.html) (Caltech Seismolab, USA and IRD / UCA, Géoazur, France)
-
-[Percy Galvez](https://smi.kaust.edu.sa/Pages/People-Galvez.aspx) (KAUST, Saudi Arabia; AECOM, Switzerland)
+[Jean-Paul Ampuero](http://www.seismolab.caltech.edu/ampuero_jp.html) (IRD/UCA, Géoazur, France; Caltech Seismolab, USA)
 
 [Martijn van den Ende](https://www.linkedin.com/in/martijnvandenende) (Université Côte d'Azur, Géoazur, France)
 
+[Percy Galvez](https://smi.kaust.edu.sa/Pages/People-Galvez.aspx) (KAUST, Saudi Arabia; AECOM, Switzerland)
+
 [Benjamin Idini](http://www.seismolab.caltech.edu/idini_b.html) (Caltech Seismolab, USA)
 
+[Yingdi Luo](https://science.jpl.nasa.gov/people/YLuo/) (NASA JPL, USA)
 
 -------------------------
 
@@ -153,10 +181,10 @@ Luo, Y., & Ampuero, J. P. (2011), Numerical Simulation of Tremor Migration Trigg
 van den Ende, M. P. A., Chen, J., Ampuero, J. P., & Niemeijer, A. R. (2018).
 A comparison between rate-and-state friction and microphysical models, based on numerical simulations of fault slip.
 Tectonophysics, 733, 273-295, doi:[10.1016/j.tecto.2017.11.040](https://doi.org/10.1016/j.tecto.2017.11.040)
- 
+
 #### For simulations on faults surrounded by damaged zones
-  
-B. Idini, B., & Ampuero, J. P. (2017).
+
+Idini, B., & Ampuero, J. P. (2017).
 Rupture complexity promoted by damaged fault zones in earthquake cycle models.
 AGU Fall Meeting 2017, abstract T41C-0632.  
-Poster [PDF](https://www.essoar.org/doi/abs/10.1002/essoar.10500080.1), doi:10.1002/essoar.10500080.1
+Poster [PDF](https://www.essoar.org/doi/abs/10.1002/essoar.10500080.1), doi:[10.1002/essoar.10500080.1](https://dx.doi.org/10.1002/essoar.10500080.1)

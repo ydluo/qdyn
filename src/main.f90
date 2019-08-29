@@ -9,7 +9,7 @@ program main
   use solver
   use my_mpi, only: init_mpi
   use derivs_all
-  use unittests, only: init_tests
+  use unittests, only: init_tests, kernel_export
 
   type(problem_type), pointer :: pb
   character(len=32) :: arg = "none"
@@ -25,6 +25,9 @@ program main
       ! Initiate unit tests
       call init_mpi()
       call init_tests(pb)
+      stop
+    else if (arg == "kernel") then
+      call kernel_export(pb)
       stop
     else
       write(6,*) "Argument not recognised: ", arg

@@ -1,0 +1,50 @@
+<ul>
+	{% for item in site.data.navigation %}
+	<li>
+
+		{% assign cls = "" %}
+		{% if page.url contains item.link %}
+			{% assign cls = "current" %}
+		{% endif %}
+		{% if page.url == "/" and item.id == "index" %}
+			{% assign cls = "current" %}
+		{% endif %}
+
+		{% for sublink in item.sublinks %}
+			{% if page.url contains sublink.link %}
+				{% assign cls = "current" %}
+			{% endif %}
+		{% endfor %}
+		
+		<a href="{{ item.link }}" class={{ cls }}>
+	  	{{ item.name }}
+		</a>
+		{% if cls == "current" %}
+		<ul class="subitems">
+		{% for subitem in item.subitems %}
+			<li>
+				<a href="{{ item.link }}#{{ subitem.anchor }}">
+					# {{ subitem.name }}
+				</a>
+			</li>
+		{% endfor %}
+		{% for sublink in item.sublinks %}
+			<li>
+				<a href="{{ sublink.link }}">
+					> {{ sublink.name }}
+				</a>
+			</li>
+		{% endfor %}
+		</ul>
+		{% endif %}
+	</li>
+	{% endfor %}
+</ul>
+
+<div class="status">
+	<span>Build status (stable):</span>
+	<a href="https://travis-ci.com/ydluo/qdyn">
+		<img src="https://travis-ci.com/ydluo/qdyn.svg?branch=master" />
+	</a>
+</div>
+

@@ -1,6 +1,7 @@
 # Importing some required modules
 import os
 import sys
+from termcolor import colored
 import warnings
 warnings.filterwarnings("ignore")
 # Go up in the directory tree
@@ -90,7 +91,11 @@ print("".join([" "]*((msg_width-25)//2)) + "Initiated QDYN Test Suite\n")
 
 # Unit tests (hard coded in FORTRAN)
 print(" Running unit tests...")
-p.run(test=False, unit=True)
+unit_failed = p.run(test=False, unit=True)
+
+if unit_failed:
+    print("Unit tests %s" % colored("FAILED", "red"))
+    exit(1)
 
 # Integration tests (executed from Python)
 print(" Running integration tests...")
