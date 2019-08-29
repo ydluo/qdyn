@@ -258,6 +258,8 @@ QDYN offers various optional simulation features. Set the following parameters t
 
 **Parameters for integration with dynamic code:**
 
+**NOTE**: the QDYN-SPECFEM3D bridge (QSB) is currently incompatible with the input/output structures of QDYN. Proper functioning of this feature is not guaranteed, and use of the QSB is not advised.
+
 | Parameter  | Description                                                  | Default value |
 | :--------: | ------------------------------------------------------------ | :-----------: |
 | `DYN_FLAG` | Integration with dynamic code:<br />`0` = Disable<br />`1` = Enable: stop QDYN at the `DYN_SKIP+1`-th event with seismic moment larger than `DYN_M` |      `0`      |

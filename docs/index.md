@@ -20,6 +20,7 @@ QDYN implements adaptive time stepping, shared-memory parallelization, and can d
 </video>
 
 <div style="width: 100%; text-align: center;"><em>(evolution of slip velocity on a fault with two seismogenic asperities)</em></div>
+
 ## Main features
 
 - Rate-and-state friction, with velocity cut-offs, aging and slip laws
@@ -35,7 +36,6 @@ QDYN implements adaptive time stepping, shared-memory parallelization, and can d
 - MATLAB and python wrappers, and graphic output display utilities
 - Parallelized for shared memory systems (OpenMP)
 - Parallelized for distributed memory systems (MPI)
-- Fully coupled with SPECFEM3D via QSB (QDYN-SPECFEM Bridge)
 
 
 
@@ -57,7 +57,7 @@ When submitting a new issue, please include all information needed to reproduce 
 
 ### Code contributions
 
-QDYN started from a 2D code written by Allan Rubin (Princeton University) in the early 2000s (*Rubin & Ampuero*, [2005](http://dx.doi.org/10.1029/2005JB003686), [2009](http://dx.doi.org/10.1029/2009JB006529); *Ampuero & Rubin*, [2008](http://dx.doi.org/10.1029/2007JB005082)). The main developers of QDYN are Jean-Paul Ampuero, Martijn van den Ende, Percy Galvez, Benjamin Idini and Yingi Luo. Bryan Riel contributed the double-FFT version.
+QDYN started from a 2D code written by Allan Rubin (Princeton University) in the early 2000s (*Rubin & Ampuero*, [2005](http://dx.doi.org/10.1029/2005JB003686), [2009](http://dx.doi.org/10.1029/2009JB006529); *Ampuero & Rubin*, [2008](http://dx.doi.org/10.1029/2007JB005082)). The main developers of QDYN are Jean-Paul Ampuero, Martijn van den Ende, Percy Galvez, Benjamin Idini and Yingi Luo (listed alphabetically). Bryan Riel contributed the double-FFT version.
 
 The subroutines implementing Okada’s formulas were provided by Shinichi Miyazaki (Kyoto University). They include subroutines written by Y. Okada. The FFT subroutines are based on the  General Purpose FFT Package written by Takuya Ooura (Kyoto University).
 
@@ -65,7 +65,7 @@ The subroutines implementing Okada’s formulas were provided by Shinichi Miyaza
 
 ### Funding
 
-The development of QDYN has been supported by the US National Science Foundation, the Southern California Earthquake Center, Japan’s Nuclear Regulation Authority (formerly Japan Nuclear Energy Safety Organization), and the European Research Council, and the French National Research Agency (UCAJEDI Investments in the Future project ANR-15-IDEX-01).
+The development of QDYN has been supported by the US National Science Foundation, the Southern California Earthquake Center, Japan’s Nuclear Regulation Authority (formerly Japan Nuclear Energy Safety Organization), and the European Research Council, and the French National Research Agency (UCA<sup>JEDI</sup> Investments in the Future project ANR-15-IDEX-01).
 
 
 

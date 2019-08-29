@@ -34,13 +34,13 @@ The following items are under active development and will be included in the sta
 
 ### Code engineering and optimisation
 
-- Non-structured mesh elements
 - QDYN-SPECFEM3D (QSB) bridge
   - [ ] Update I/O management for compatibility with the stable QDYN version
   - [ ] Design benchmark/integration test
   - [ ] Create examples/tutorials using QSB
   - [ ] Update documentation
-- Incorporate [Intel MKL](https://software.intel.com/en-us/mkl) optimised libraries
+  - [ ] Incorporate QSB into the Python wrapper
+- [Intel MKL](https://software.intel.com/en-us/mkl) optimised libraries (e.g. for FFT)
 - Hierarchical matrix techniques ("H-matrices")
 
 ### Input/Output

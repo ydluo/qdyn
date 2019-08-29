@@ -44,7 +44,6 @@ To get started with QDYN, see [the documentation](http://ydluo.github.io/qdyn/).
 
 - parallelized for distributed memory systems (MPI)
 
-- fully coupled with SPECFEM3D via QSB (QDYN-SPECFEM Bridge)
 
 
 
@@ -189,4 +188,3 @@ Idini, B., & Ampuero, J. P. (2017).
 Rupture complexity promoted by damaged fault zones in earthquake cycle models.
 AGU Fall Meeting 2017, abstract T41C-0632.  
 Poster [PDF](https://www.essoar.org/doi/abs/10.1002/essoar.10500080.1), doi:[10.1002/essoar.10500080.1](https://dx.doi.org/10.1002/essoar.10500080.1)
-
