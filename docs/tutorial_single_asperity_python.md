@@ -42,7 +42,7 @@ from pyqdyn import qdyn
 import plot_functions as qdyn_plot
 ```
 
-To preprare a simulation, the global simulation and mesh parameters will have to be specified. This is done in three steps: 
+To prepare a simulation, the global simulation and mesh parameters will have to be specified. This is done in three steps: 
 
 1. Specify global parameters, like simulation duration, output resolution, mesh size, and default mesh values
 2. Render the mesh (assigning default values to every element)
