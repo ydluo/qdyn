@@ -5,7 +5,7 @@ title: Tutorials
 
 # Tutorials
 
-There are currently two tutorials available, with corresponding Jupyter Notebooks located in `examples/notebooks`. More tutorials will be added in the future.
+There are several documented, step-by-step tutorials available, with corresponding Jupyter Notebooks located in `examples/notebooks`. More tutorials will be added in the future.
 
 
 
