@@ -3,7 +3,6 @@
                     .: PyQDYN: Python wrapper for QDYN :.
 
 Author: Martijn van den Ende
-Modification date: 2017/07/24
 
 This wrapper can be imported and called from a different Python script file to
 do the heavy lifting regarding the generation and population of the mesh,
@@ -288,8 +287,11 @@ class qdyn:
         mesh_dict["Z"] = np.zeros(N)
         mesh_dict["DIP_W"] = np.zeros(N)
 
+        dx = 1.0 * settings["L"] / settings["NX"]
+        halfL = settings["L"] / 2.0
+
         if dim == 1:
-            mesh_dict["X"] = np.linspace(-N/2, N/2, N)*settings["L"]/N
+            mesh_dict["X"] = np.linspace(-halfL + 0.5*dx, halfL - 0.5*dx, N)
             mesh_dict["Y"] = np.ones(N)*settings["W"]
 
         if dim == 2:
@@ -297,8 +299,7 @@ class qdyn:
             theta = settings["DIP_W"]*np.pi/180.0
             mesh_dict["DW"] = np.ones(settings["NW"])*settings["DW"]
             mesh_dict["DIP_W"] = np.ones(N)*settings["DIP_W"]
-            dx = 1.0*settings["L"]/settings["NX"]
-            mesh_dict["X"] = (np.arange(N)%settings["NX"] + 0.5)*dx
+            mesh_dict["X"] = (np.arange(N) % settings["NX"] + 0.5)*dx
             mesh_dict["Y"] = (np.floor(np.arange(N)/settings["NX"]) + 0.5)*settings["DW"]*np.cos(theta)
             mesh_dict["Z"] = mesh_dict["Y"]*np.tan(theta)
 
