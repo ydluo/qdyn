@@ -103,7 +103,7 @@ subroutine do_bsstep(pb)
     main_var = pb%v
   endif
 
-  call pack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb)
+  call pack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%slip, pb)
 
   ! SEISMIC: user-defined switch to use either (1) the Bulirsch-Stoer method, or
   ! the (2) Runge-Kutta-Fehlberg method
@@ -178,7 +178,7 @@ subroutine do_bsstep(pb)
 
   iktotal=ik+iktotal
 
-  call unpack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb)
+  call unpack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%slip, pb)
   if (pb%features%tp == 1) call update_PT_final(pb%dt_did, pb)
 
   ! SEISMIC: retrieve the solution for tau in the case of the CNS model, else
@@ -223,7 +223,7 @@ subroutine update_field(pb)
   ! Update slip
   ! SEISMIC NOTE: slip needs to be calculated after velocity!
   ! NOTE 2: include slip in solver routine to get higher order accuracy
-  pb%slip = pb%slip + pb%v*pb%dt_did
+  ! pb%slip = pb%slip + pb%v*pb%dt_did
 
   ! update potency and potency rate
 
@@ -331,7 +331,7 @@ subroutine init_rk45(pb)
     main_var = pb%v
   endif
 
-  call pack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb)
+  call pack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%slip, pb)
 
   call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, pb%time, &
                 pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)

@@ -1,6 +1,7 @@
 # Importing some required modules
 import os
 import sys
+from time import time
 from termcolor import colored
 import warnings
 warnings.filterwarnings("ignore")
@@ -82,6 +83,8 @@ set_dict["SET_DICT_CNS"] = set_dict_CNS
 
 qdyn_files = ["qdyn.in", "fort.18", "fort.19", "fort.22", "fort.121"]
 
+t0 = time()
+
 # QDYN class object
 p = qdyn()
 
@@ -124,8 +127,8 @@ single_asperity.import_results()
 single_asperity.run_test("RSF")
 single_asperity.run_test("CNS")
 # Plot results
-# single_asperity.plot_results("RSF")
-# single_asperity.plot_results("CNS")
+single_asperity.plot_results("RSF")
+single_asperity.plot_results("CNS")
 
 # Tse & Rice (1986) example test (RSF)
 # see https://doi.org/10.1029/JB091iB09p09452
@@ -135,7 +138,9 @@ tse_rice = TestTseRice(p)
 tse_rice.import_results()
 tse_rice.run_test()
 # Plot results
-# tse_rice.plot_results("RSF")
+tse_rice.plot_results("RSF")
+
+t1 = time()
 
 # Print out integration test report
 print("".join(["-"]*msg_width))
@@ -152,6 +157,8 @@ print("     %s" % single_asperity.test_results["CNS"]["success_msg"])
 print(" - Tse & Rice (1986) example")
 print("     %s" % tse_rice.test_results["RSF"]["success_msg"])
 print("".join(["="]*msg_width))
+
+print("Finished in %.2f s" % (t1 - t0))
 
 # Clean-up
 for file in qdyn_files:
