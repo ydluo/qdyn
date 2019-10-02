@@ -77,9 +77,10 @@ end subroutine screen_write
 subroutine time_write(pb)
 
   use problem_class
+  use my_mpi, only: is_mpi_master
   type (problem_type), intent(inout) :: pb
 
-  write(121,*) pb%time, pb%tmax
+  if (is_mpi_master()) write(121,*) pb%time, pb%dt_did
 
 end subroutine time_write
 
@@ -279,6 +280,7 @@ subroutine ot_write(pb)
   if (is_MPI_parallel()) then
    ! if "ic" station is in this processor
     if (pb%ot%ic>0) then
+
       open(pb%ot%unit,access='APPEND',status='old',iostat=ios)
       if (ios>0) stop 'Fatal error: ot_write: Error opening a fort.18 file'
      !JPA add test for the first time we try to open this file but it does not exist yet
@@ -307,6 +309,7 @@ subroutine ot_write(pb)
    !JPA warning: ivmax outputs not implemented in parallel yet
 
   else
+
     if (.not.BIN_OUTPUT) then
 
       if (OCTAVE_OUTPUT) then

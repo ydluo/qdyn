@@ -19,7 +19,7 @@ contains
 !
 subroutine solve(pb)
 
-  use output, only : screen_init, screen_write, ox_write, ot_write
+  use output, only : screen_init, screen_write, ox_write, ot_write, time_write
   use my_mpi, only : is_MPI_parallel, is_mpi_master, finalize_mpi
 
   type(problem_type), intent(inout)  :: pb
@@ -56,11 +56,13 @@ subroutine solve(pb)
     endif
 ! if (is_mpi_master()) call ox_write(pb)
     if (mod(pb%it, pb%ot%ntout) == 0 .and. pb%it /= pb%itstop) then
+      call time_write(pb)
       call ot_write(pb)
     endif
   enddo
 
   ! Write data for last step
+  call time_write(pb)
   call screen_write(pb)
   call ox_write(pb)
   call ot_write(pb)
@@ -83,13 +85,14 @@ subroutine do_bsstep(pb)
   use ode_bs
   use ode_rk45, only: rkf45_d
   use ode_rk45_2, only: rkf45_d2
-  use output, only : screen_write, ox_write, ot_write
+  use output, only : screen_write, ox_write, ot_write, time_write
   use constants, only : SOLVER_TYPE
   use diffusion_solver, only : update_PT_final
 
   type(problem_type), intent(inout) :: pb
 
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
+  double precision, dimension(pb%neqs*pb%mesh%nn) :: yt_prev
   double precision, dimension(pb%mesh%nn) :: main_var
   double precision :: t_out
   integer :: ik, neqs
@@ -104,6 +107,7 @@ subroutine do_bsstep(pb)
   endif
 
   call pack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%slip, pb)
+  yt_prev = yt
 
   ! SEISMIC: user-defined switch to use either (1) the Bulirsch-Stoer method, or
   ! the (2) Runge-Kutta-Fehlberg method
@@ -135,12 +139,11 @@ subroutine do_bsstep(pb)
     pb%rk45%iflag = -2 ! Reset to one-step mode each call
     pb%t_prev = pb%time
 
+    100 continue
+
     ! Call Runge-Kutta solver routine
     call rkf45_d( derivs_rk45, neqs, yt, pb%time, pb%tmax, &
                   pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
-
-    ! Set time step
-    pb%dt_did = pb%time - pb%t_prev
 
     ! Basic error checking. See description of rkf45_d in ode_rk45.f90 for details
     select case (pb%rk45%iflag)
@@ -148,7 +151,9 @@ subroutine do_bsstep(pb)
       write (6,*) "RK45 error [3]: relative error tolerance too small"
       stop
     case (4)
-      ! write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
+      write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
+      yt = yt_prev
+      goto 100
     case (5)
       write (6,*) "RK45 error [5]: solution vanished, relative error test is not possible"
       stop
@@ -156,12 +161,20 @@ subroutine do_bsstep(pb)
       write (6,*) "RK45 error [6]: requested accuracy could not be achieved"
       stop
     case (8)
+      call time_write(pb)
       call ot_write(pb)
       call screen_write(pb)
       call ox_write(pb)
       write (6,*) "RK45 error [8]: invalid input parameters"
       stop
     end select
+
+  ! Set time step
+  pb%dt_did = pb%time - pb%t_prev
+
+  if (pb%dt_did < 1e-12) then
+    write(6,*) pb%dt_did
+  endif
 
   elseif (SOLVER_TYPE == 3) then
     ! Set-up Runge-Kutta solver
@@ -276,7 +289,7 @@ subroutine check_stop(pb)
 
    ! STOP if time > tmax
     case (0)
-      if (is_mpi_master()) call time_write(pb)
+      ! if (is_mpi_master()) call time_write(pb)
       if (pb%time >= pb%tmax) pb%itstop = pb%it
 
    ! STOP soon after end of slip localization

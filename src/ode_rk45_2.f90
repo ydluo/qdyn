@@ -75,7 +75,8 @@ subroutine rkf45_d2(f, y, t, dtmax, rtol, atol, pb)
   ! UPDATE dt after successful step
   dt = pb%dt_did
   y_new = pb%rk45_2%y_new
-  e = pb%rk45_2%e
+  ! e = pb%rk45_2%e
+  e = 0d0
 
   do
     ! Increment loop counter
@@ -90,7 +91,7 @@ subroutine rkf45_d2(f, y, t, dtmax, rtol, atol, pb)
       call rk45_step(f, y, t, dt, y_new, e, pb)
     endif
     ! Calculate error
-    e_ratio = maxval(e / (rtol * abs(y_new) + atol)) + 1e-12
+    e_ratio = maxval(e / (rtol * abs(y_new) + atol + 1e-12)) + 1e-12
     ! Check for NaNs
     if (isnan(e_ratio)) then
       ! Decimate step size and try again

@@ -515,13 +515,17 @@ class qdyn:
 
 
     # Read QDYN output data
-    def read_output(self, mirror=False, read_ot=True, filename_ot="fort.18", read_ox=True, filename_ox="fort.19"):
+    def read_output(self, mirror=False, read_ot=True, filename_ot="fort.18",
+                    read_ox=True, filename_ox="fort.19", filename_time="fort.121"):
 
         # If a suffix is specified (optional), change file names
         suffix = self.set_dict["SUFFIX"]
         if suffix != "":
             filename_ot = "%s_%s" % (filename_ot, suffix)
             filename_ox = "%s_%s" % (filename_ox, suffix)
+            filename_time = "%s_%s" % (filename_time, suffix)
+
+        time_data = read_csv(filename_time, header=None, names=("t", "dt"), delim_whitespace=True)
 
         # Default number of header lines
         nheaders = 6
@@ -538,7 +542,10 @@ class qdyn:
 
         # If time series data is requested
         if read_ot:
-            data = read_csv(filename_ot, header=nheaders, names=cols, delim_whitespace=True)
+            # Read time series data
+            data = read_csv(filename_ot, header=None, skiprows=6, names=cols, delim_whitespace=True)
+            # Replace (less precise) time values
+            data["t"] = time_data["t"]
             self.ot = data	# Store data in self.ot
 
             # Check if time series output was requested for other fault elements

@@ -4,6 +4,7 @@ import pickle
 
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.interpolate import interp1d
 from numpy.testing import assert_allclose
 from termcolor import colored
 
@@ -23,8 +24,24 @@ class AuxiliaryFunctions:
 
         t_b = benchmark["t"]
         t_r = results["t"]
-        var1_int = np.interp(t_b, t_r, results["var1"])
-        var2_int = np.interp(t_b, t_r, results["var2"])
+        dt = np.diff(t_r)
+        inds = np.arange(len(dt))[dt == 0]
+        # var1_int = np.interp(t_b, t_r, results["var1"])
+        # var2_int = np.interp(t_b, t_r, results["var2"])
+        var1_int = interp1d(t_r, results["var1"])(t_b)
+        var2_int = interp1d(t_r, results["var2"])(t_b)
+
+        # print((benchmark["var2"]-var2_int).sum())
+        # ax = plt.subplot(211)
+        # plt.plot(benchmark["var2"], ".-")
+        # plt.plot(var2_int, ".-")
+        # plt.subplot(212, sharex=ax)
+        # # plt.plot(results["var2"], ".-")
+        # plt.plot(t_r, ".-")
+        # plt.plot(inds, t_r[inds], ".-")
+        # # plt.plot(benchmark["var2"], "k.-")
+        # plt.show()
+        # exit()
 
         try:
             assert_allclose(benchmark["var1"], var1_int, rtol=1e-4)
