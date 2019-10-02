@@ -36,7 +36,7 @@ subroutine derivs(time,yt,dydt,pb)
   double precision, intent(out) :: dydt(pb%neqs*pb%mesh%nn)
 
   double precision, dimension(pb%mesh%nn) :: theta, theta2, sigma, tau, v, P
-  double precision, dimension(pb%mesh%nn) :: main_var, dmain_var
+  double precision, dimension(pb%mesh%nn) :: main_var, dmain_var, slip, dslip
   double precision, dimension(pb%mesh%nn) :: dsigma_dt, dtau_dt, dth_dt, dth2_dt
   double precision, dimension(pb%mesh%nn) :: dmu_dv, dmu_dtheta
   double precision, dimension(pb%mesh%nn) :: tau_y, dP_dt, dtau_dP
@@ -54,7 +54,7 @@ subroutine derivs(time,yt,dydt,pb)
   dummy2 = 1d0
   tau_y = 0d0
 
-  call unpack(yt, theta, main_var, sigma, theta2, pb)
+  call unpack(yt, theta, main_var, sigma, theta2, slip, pb)
 
   ! SEISMIC: when thermal pressurisation is requested, update P and T,
   ! then calculate effective stress sigma_e = sigma - P
@@ -111,6 +111,9 @@ subroutine derivs(time,yt,dydt,pb)
   ! periodic loading
   dtau_per = pb%Omper * pb%Aper * cos(pb%Omper*time)
 
+  ! Rate of change of slip is simply the velocity
+  dslip = v
+
   ! SEISMIC: calculate radiation damping. For rate-and-state, dmu_dv and
   ! dmu_dtheta contain the partial derivatives of friction to V and theta,
   ! respectively. For the CNS model, these variables contain the partials of
@@ -151,7 +154,7 @@ subroutine derivs(time,yt,dydt,pb)
                      / ( sigma*dmu_dv + pb%zimpedance )
    endif
 
-   call pack(dydt, dth_dt, dmain_var, dsigma_dt, dth2_dt, pb)
+   call pack(dydt, dth_dt, dmain_var, dsigma_dt, dth2_dt, dslip, pb)
 
 end subroutine derivs
 
