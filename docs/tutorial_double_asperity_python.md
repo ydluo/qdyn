@@ -29,12 +29,12 @@ src_dir = os.path.abspath(
 )
 # Append src directory to Python path
 sys.path.append(src_dir)
-# Get QDYN src directory
+# Get QDYN plotting library directory
 plot_dir = os.path.abspath(
     os.path.join(
         os.path.join(os.path.abspath(""), qdyn_dir), "utils", "post_processing")
 )
-# Append src directory to Python path
+# Append plotting library directory to Python path
 sys.path.append(plot_dir)
 
 # Import QDYN wrapper and plotting library
