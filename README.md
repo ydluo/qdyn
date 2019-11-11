@@ -2,7 +2,7 @@
 
 ## A Quasi-DYNamic earthquake simulator
 
-[![Build Status](https://travis-ci.com/ydluo/qdyn.svg?branch=master)](https://travis-ci.com/ydluo/qdyn) [![Documentation Status](https://readthedocs.org/projects/ansicolortags/badge/?version=latest)](http://ydluo.github.io/qdyn/) [![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
+[![Build Status](https://travis-ci.com/ydluo/qdyn.svg?branch=master)](https://travis-ci.com/ydluo/qdyn) [![Documentation Status](https://readthedocs.org/projects/ansicolortags/badge/?version=latest)](https://ydluo.github.io/qdyn/) [![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://perso.crans.org/besson/LICENSE.html)
 
 *QDYN* is a boundary element software to simulate earthquake cycles (seismic and aseismic slip on tectonic faults) under the quasi-dynamic approximation (quasi-static elasticity combined with radiation damping) on faults governed by rate-and-state friction and embedded in elastic media.
 
@@ -10,7 +10,7 @@
 
 *QDYN* implements adaptive time stepping, shared-memory parallelization, and can deal with multi-scale earthquake cycle simulations with fine details in both time and space. It is equipped with user-friendly MATLAB and Python interfaces and graphical output utilities.
 
-To get started with QDYN, see [the documentation](http://ydluo.github.io/qdyn/).
+To get started with QDYN, see [the documentation](https://ydluo.github.io/qdyn/).
 
 
 
