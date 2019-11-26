@@ -14,7 +14,7 @@ class TestVstep(AuxiliaryFunctions):
     # frozen benchmark results, and it is checked against each time the results
     # are imported. When a new benchmark is generated, this hash should be
     # updated.
-    frozen_hash = "e599cf2970fa080320f577ea4b31cd683c82b679"
+    frozen_hash = "161afa5fe587d428936d45cfe326bd600524cd2b"
     frozen_loaded = False
 
     def __init__(self, p):

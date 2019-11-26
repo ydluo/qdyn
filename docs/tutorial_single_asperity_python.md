@@ -29,12 +29,12 @@ src_dir = os.path.abspath(
 )
 # Append src directory to Python path
 sys.path.append(src_dir)
-# Get QDYN src directory
+# Get QDYN plotting library directory
 plot_dir = os.path.abspath(
     os.path.join(
         os.path.join(os.path.abspath(""), qdyn_dir), "utils", "post_processing")
 )
-# Append src directory to Python path
+# Append plotting library directory to Python path
 sys.path.append(plot_dir)
 
 # Import QDYN wrapper and plotting library
@@ -42,7 +42,7 @@ from pyqdyn import qdyn
 import plot_functions as qdyn_plot
 ```
 
-To preprare a simulation, the global simulation and mesh parameters will have to be specified. This is done in three steps: 
+To prepare a simulation, the global simulation and mesh parameters will have to be specified. This is done in three steps: 
 
 1. Specify global parameters, like simulation duration, output resolution, mesh size, and default mesh values
 2. Render the mesh (assigning default values to every element)

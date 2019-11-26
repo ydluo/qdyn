@@ -3,7 +3,6 @@
                     .: PyQDYN: Python wrapper for QDYN :.
 
 Author: Martijn van den Ende
-Modification date: 2017/07/24
 
 This wrapper can be imported and called from a different Python script file to
 do the heavy lifting regarding the generation and population of the mesh,
@@ -288,8 +287,11 @@ class qdyn:
         mesh_dict["Z"] = np.zeros(N)
         mesh_dict["DIP_W"] = np.zeros(N)
 
+        dx = 1.0 * settings["L"] / settings["NX"]
+        halfL = settings["L"] / 2.0
+
         if dim == 1:
-            mesh_dict["X"] = np.linspace(-N/2, N/2, N)*settings["L"]/N
+            mesh_dict["X"] = np.linspace(-halfL + 0.5*dx, halfL - 0.5*dx, N)
             mesh_dict["Y"] = np.ones(N)*settings["W"]
 
         if dim == 2:
@@ -297,8 +299,7 @@ class qdyn:
             theta = settings["DIP_W"]*np.pi/180.0
             mesh_dict["DW"] = np.ones(settings["NW"])*settings["DW"]
             mesh_dict["DIP_W"] = np.ones(N)*settings["DIP_W"]
-            dx = 1.0*settings["L"]/settings["NX"]
-            mesh_dict["X"] = (np.arange(N)%settings["NX"] + 0.5)*dx
+            mesh_dict["X"] = (np.arange(N) % settings["NX"] + 0.5)*dx
             mesh_dict["Y"] = (np.floor(np.arange(N)/settings["NX"]) + 0.5)*settings["DW"]*np.cos(theta)
             mesh_dict["Z"] = mesh_dict["Y"]*np.tan(theta)
 
@@ -515,13 +516,17 @@ class qdyn:
 
 
     # Read QDYN output data
-    def read_output(self, mirror=False, read_ot=True, filename_ot="fort.18", read_ox=True, filename_ox="fort.19"):
+    def read_output(self, mirror=False, read_ot=True, filename_ot="fort.18",
+                    read_ox=True, filename_ox="fort.19", filename_time="fort.121"):
 
         # If a suffix is specified (optional), change file names
         suffix = self.set_dict["SUFFIX"]
         if suffix != "":
             filename_ot = "%s_%s" % (filename_ot, suffix)
             filename_ox = "%s_%s" % (filename_ox, suffix)
+            filename_time = "%s_%s" % (filename_time, suffix)
+
+        time_data = read_csv(filename_time, header=None, names=("t", "dt"), delim_whitespace=True)
 
         # Default number of header lines
         nheaders = 6
@@ -538,7 +543,10 @@ class qdyn:
 
         # If time series data is requested
         if read_ot:
-            data = read_csv(filename_ot, header=nheaders, names=cols, delim_whitespace=True)
+            # Read time series data
+            data = read_csv(filename_ot, header=None, skiprows=6, names=cols, delim_whitespace=True)
+            # Replace (less precise) time values
+            data["t"] = time_data["t"]
             self.ot = data	# Store data in self.ot
 
             # Check if time series output was requested for other fault elements

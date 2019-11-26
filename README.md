@@ -46,7 +46,6 @@ To get started with QDYN, see [the documentation](https://ydluo.github.io/qdyn/)
 
 
 
-
 -----------------------
 
 
@@ -74,7 +73,7 @@ To get started with QDYN, see [the documentation](https://ydluo.github.io/qdyn/)
 
 *11 September 2018* | Results based on QDYN were highlighted at the [2018 WEGENER conference](https://wegener2018.sciencesconf.org/) in the keynote presentation *The spectrum of slip behaviors emerging from the interactions between seismic and aseismic slip* by J. P. Ampuero ([slides](https://wegener2018.sciencesconf.org/data/pages/Jean_Paul_Ampuero_Wegener_2018.pdf)).
 
-*28 May 2018* | In order to address a problem in the QDYN history tree, the version history of the QDYN repository was rewritten. All developers that have cloned the QDYN repository before this date should follow the steps described in [this manual](doc/git_fix_2018-05-28.pdf). Users of QDYN that did not make any code changes can simply delete the old repository and clone the latest version to get a clean QDYN repository.
+*28 May 2018* | In order to address a problem in the QDYN history tree, the version history of the QDYN repository was rewritten. All developers that have cloned the QDYN repository before this date should follow the steps described in [this manual](docs/git_fix_2018-05-28.pdf). Users of QDYN that did not make any code changes can simply delete the old repository and clone the latest version to get a clean QDYN repository.
 
 *May 2018* | Two papers with simulation results based on *QDYN*, published in Tectonophysics - Special Issue on "[Physics of Earthquake Rupture Propagation](https://www.sciencedirect.com/journal/tectonophysics/vol/733/suppl/C)":  
   M. van den Ende, J. Chen, J. P. Ampuero and A. Niemeijer

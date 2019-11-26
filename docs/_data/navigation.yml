@@ -56,6 +56,10 @@
 - name: 6. Tutorials
   link: tutorials.html
   sublinks:
+    - name: RSF spring-block
+      link: tutorial_RSF_spring-block.html
+    - name: CNS spring-block
+      link: tutorial_CNS_spring-block.html
     - name: Single asperity
       link: tutorial_single_asperity_python.html
     - name: Double asperity

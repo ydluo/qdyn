@@ -22,23 +22,25 @@ contains
 ! dv/dt or dtau/dt = dydt(2::pb%neqs)
 ! + feature specific variables
 !===============================================================================
-subroutine pack(yt, theta, main_var, sigma, theta2, pb)
+subroutine pack(yt, theta, main_var, sigma, theta2, slip, pb)
 
   type(problem_type), intent(inout) :: pb
   double precision, dimension(pb%neqs*pb%mesh%nn), intent(out) :: yt
   double precision, dimension(pb%mesh%nn), intent(in) :: theta, main_var, sigma
-  double precision, dimension(pb%mesh%nn), intent(in) :: theta2
+  double precision, dimension(pb%mesh%nn), intent(in) :: theta2, slip
   integer :: nmax, ind_stress_coupling, ind_localisation, ind_tp
 
+  ! pb%neqs is defined in problem_class.f90
   nmax = pb%neqs*pb%mesh%nn
   ! Define the indices of yt and dydt based on which
   ! features are requested (defined in input file)
-  ind_stress_coupling = 2 + pb%features%stress_coupling
+  ind_stress_coupling = 3 + pb%features%stress_coupling
   ind_localisation = ind_stress_coupling + pb%features%localisation
   ind_tp = ind_localisation + pb%features%tp
 
   yt(1:nmax:pb%neqs) = theta
   yt(2:nmax:pb%neqs) = main_var
+  yt(3:nmax:pb%neqs) = slip
 
   if (pb%features%stress_coupling == 1) then
     yt(ind_stress_coupling:nmax:pb%neqs) = sigma
@@ -53,20 +55,23 @@ end subroutine pack
 !===============================================================================
 ! Helper routine to unpack variables from solver
 !===============================================================================
-subroutine unpack(yt, theta, main_var, sigma, theta2, pb)
+subroutine unpack(yt, theta, main_var, sigma, theta2, slip, pb)
 
   type(problem_type), intent(inout) :: pb
   double precision, dimension(pb%neqs*pb%mesh%nn), intent(in) :: yt
-  double precision, dimension(pb%mesh%nn) :: theta, main_var, sigma, theta2
+  double precision, dimension(pb%mesh%nn) :: theta, main_var, sigma
+  double precision, dimension(pb%mesh%nn) :: theta2, slip
   integer :: nmax, ind_stress_coupling, ind_localisation, ind_tp
 
+  ! pb%neqs is defined in problem_class.f90
   nmax = pb%neqs*pb%mesh%nn
-  ind_stress_coupling = 2 + pb%features%stress_coupling
+  ind_stress_coupling = 3 + pb%features%stress_coupling
   ind_localisation = ind_stress_coupling + pb%features%localisation
   ind_tp = ind_localisation + pb%features%tp
 
   theta = yt(1:nmax:pb%neqs)
   main_var = yt(2:nmax:pb%neqs)
+  slip = yt(3:nmax:pb%neqs)
 
   if (pb%features%stress_coupling == 1) then
     sigma = yt(ind_stress_coupling:nmax:pb%neqs)

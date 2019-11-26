@@ -1,6 +1,7 @@
 # Importing some required modules
 import os
 import sys
+from time import time
 from termcolor import colored
 import warnings
 warnings.filterwarnings("ignore")
@@ -82,6 +83,8 @@ set_dict["SET_DICT_CNS"] = set_dict_CNS
 
 qdyn_files = ["qdyn.in", "fort.18", "fort.19", "fort.22", "fort.121"]
 
+t0 = time()
+
 # QDYN class object
 p = qdyn()
 
@@ -107,6 +110,9 @@ vstep = TestVstep(p)
 vstep.import_results()
 vstep.run_test("RSF")
 vstep.run_test("CNS")
+# vstep.export_results()
+# vstep.plot_results("RSF")
+# vstep.plot_results("CNS")
 
 # Spring-block stick-slip simulation (RSF and CNS)
 print(" - Testing spring-block (stick-slip)..")
@@ -115,6 +121,9 @@ stickslip = TestStickSlip(p)
 stickslip.import_results()
 stickslip.run_test("RSF")
 stickslip.run_test("CNS")
+# stickslip.export_results()
+# stickslip.plot_results("RSF")
+# stickslip.plot_results("CNS")
 
 # 2D fault single asperity simulation (RSF)
 print(" - Testing single asperity (will take a few minutes)...")
@@ -123,9 +132,12 @@ single_asperity = TestSingleAsperity(p)
 single_asperity.import_results()
 single_asperity.run_test("RSF")
 single_asperity.run_test("CNS")
+# single_asperity.export_results()
 # Plot results
 # single_asperity.plot_results("RSF")
+# print("     %s" % single_asperity.test_results["CNS"]["success_msg"])
 # single_asperity.plot_results("CNS")
+# exit()
 
 # Tse & Rice (1986) example test (RSF)
 # see https://doi.org/10.1029/JB091iB09p09452
@@ -134,8 +146,11 @@ p.settings(set_dict)
 tse_rice = TestTseRice(p)
 tse_rice.import_results()
 tse_rice.run_test()
+# tse_rice.export_results()
 # Plot results
 # tse_rice.plot_results("RSF")
+
+t1 = time()
 
 # Print out integration test report
 print("".join(["-"]*msg_width))
@@ -152,6 +167,8 @@ print("     %s" % single_asperity.test_results["CNS"]["success_msg"])
 print(" - Tse & Rice (1986) example")
 print("     %s" % tse_rice.test_results["RSF"]["success_msg"])
 print("".join(["="]*msg_width))
+
+print("Finished in %.2f s" % (t1 - t0))
 
 # Clean-up
 for file in qdyn_files:
