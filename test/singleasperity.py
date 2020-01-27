@@ -44,7 +44,7 @@ class TestSingleAsperity(AuxiliaryFunctions):
         Lasp *= Lc
         L *= Lasp
 
-        N = np.power(2, np.ceil(np.log2(resolution*L/Lb)))
+        N = int(np.power(2, np.ceil(np.log2(resolution*L/Lb))))
         x = np.linspace(-L/2, L/2, N, dtype=float)
 
         a = b*(1 + cab_ratio*(1 - 2*np.exp(-(2*x/Lasp)**6)))
@@ -53,7 +53,7 @@ class TestSingleAsperity(AuxiliaryFunctions):
         V0 = V0 * V_pl / np.mean(V0)
 
         result = {
-            "N": int(N),
+            "N": N,
             "L": L,
             "a": a,
             "V0": V0,
