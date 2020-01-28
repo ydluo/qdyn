@@ -46,11 +46,12 @@ To get started with QDYN, see [the documentation](http://ydluo.github.io/qdyn/).
 
 
 
-
 -----------------------
 
 
 ## News 
+
+*January 2020* | The QDYN team participated in the *Community Code Verification Exercise for Simulating Sequences of Earthquakes and Aseismic Slip (SEAS)*, funded by SCEC. The results of this community benchmark exercise are accepted for publication in Seismological Research Letters (see also this [preprint on EarthArXiv](https://eartharxiv.org/2dmp5/)). A script to run these simulations in QDYN is included in the `/examples/scec_benchmarks/BP2` directory.
 
 *29 August 2019* | QDYN version 2.2 has been released! This version is now more user-friendly than QDYN has ever been, with a new documentation website, Jupyter Notebooks, and automated testing for developers. See the [release notes](https://github.com/ydluo/qdyn/releases/tag/qdyn_2.2) for details.
 
