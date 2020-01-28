@@ -176,7 +176,7 @@ class qdyn:
         # Output control parameters
         set_dict["V_TH"] = 1e-2				# Threshold velocity for seismic event
         set_dict["NTOUT_OT"] = 1			# Temporal interval (number of time steps) for time series output
-        set_dict["NTOUT"] = 1				# Temporal interval (number of time steps) for snapshout output
+        set_dict["NTOUT"] = 1				# Temporal interval (number of time steps) for snapshot output
         set_dict["NXOUT"] = 1				# Spatial interval (number of elements) for snapshot output
         set_dict["OX_SEQ"] = 0				# Type of snapshot outputs (0: all snapshots in single file, 1: one file per snapshot)
         set_dict["OX_DYN"] = 0				# Output specific snapshots of dynamic events defined by thresholds on peak slip velocity DYN_TH_ON and DYN_TH_OFF
@@ -194,7 +194,6 @@ class qdyn:
         set_dict["DYN_M"] = 1e18			# Target seismic moment of dynamic event
 
         set_dict["NPROC"] = 1				# Number of processors, default 1 = serial (no MPI)
-
 
         self.set_dict = set_dict
 
