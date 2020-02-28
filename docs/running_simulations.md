@@ -254,7 +254,8 @@ QDYN offers various optional simulation features. Set the following parameters t
 | `DYN_TH_OFF` | Peak slip rate threshold (m/s) to define the end of a dynamic event. It is recommended to have `DYN_TH_ON >> DYN_TH_OFF`, so that small fluctuations in slip rate during the main event do not "trigger" new events. |    `1e-4`     |
 |     `IC`     | Index of selected element for time series output             |      `0`      |
 |    `IOT`     | Indices of elements for additional time series output. This is a vector of length $N$ (with $N$ being the number of fault elements) with default values set to zero. To enable time series output for element `i`, set `IOT(i) = 1` (MATLAB) or `set_dict["IOT"][i] = 1` (Python). Each element has a separate output file named `fort.xxxxx`, where `xxxxx` is an index (different from `i`) that starts at `10001` and is incremented by 1 for each selected element. For instance, if `IOT = [0, 0, 1, 1]`, the output of elements `i = 3` and `i = 4` are in files `fort.10001` and `fort.10002`, respectively. |      `0`      |
-|    `IASP`    | Auxiliary flags for elements. This will not affect output, but is for identification purposes only (e.g. one can set elements of a particular region to `-1` and another region to `1`). |      `0`      |
+|    `V_TH`    | Velocity threshold (m/s) to output peak slip velocities. |      `0.01`      |
+|    `IASP`    | Vector (of length = number of elements) indicating on which elements to output peak slip velocities. If `IASP(i)=1`, the following information about all velocity maxima at element `i` that exceed the threshold `V_TH` are output in file `fort.22`: location (index), time, peak slip velocity. If `IASP(i)=0`, element `i` is ignored in the `fort.22` output file. |      `0`      |
 
 **Parameters for integration with dynamic code:**
 
