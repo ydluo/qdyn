@@ -148,8 +148,12 @@
 %			and is incremented by 1 for each selected element. For instance if
 %			IOT=[0 0 1 1], the output of elements i=3 and i=4 are in files
 %			fort.10001 and fort.10002, respectively.
-%		IASP	Flags for elements. This is for convenient identification purposes only,
-%			it does not affect computation and outputs.
+%		V_TH	Velocity threshold (m/s) to output peak slip velocities.
+%		IASP	Vector (of length = number of elements) indicating on which elements 
+%			to output peak slip velocities. If IASP(i)=1, the following information 
+%			about all velocity maxima at element i that exceed the threshold V_TH are output 
+%			in file fort.22: location (index), time, peak slip velocity. 
+%			If IASP(i)=0, element i is ignored in the fort.22 output file.
 %
 %		Parameters for integration with SPECFEM3D dynamic code:
 %		DYN_FLAG integration with dynamic code
@@ -239,7 +243,7 @@ LAM = 30e9;
 VS = 3000; 	% shear wave velocity (if VS=0: turn off radiation damping)
 D = 0;		% damage level
 H = 0;		% half-thickness of the fault damage zone
-V_TH= 1e-5; % threshold velocity for seismic events;
+V_TH= 1e-2; 	% threshold velocity for seismic events;
 
 %-- numerical settings
 N=1024/2; 	% number of grid cells
