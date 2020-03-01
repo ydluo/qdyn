@@ -4,6 +4,11 @@ module output
 
   implicit none
   private
+  
+ ! id in output file names "fort.id" 
+ ! 
+  parameter, integer :: FID_OT = 18, FID_VMAX = 22, FID_IOT_0 = 10000 
+  
   public :: screen_init, ot_read_stations, ot_init, ox_init, &
             screen_write, ot_write, ox_write,  &
             time_write, crack_size
@@ -114,7 +119,7 @@ subroutine ot_init(pb)
   use mesh, only : mesh_get_size
 
   type (problem_type), intent(inout) :: pb
-  integer :: i,n,nsta,ista,ik
+  integer :: i,j,n,nsta,ista,ik
   double precision :: dmin2, d2
 
   n = mesh_get_size(pb%mesh)
@@ -144,7 +149,7 @@ subroutine ot_init(pb)
     enddo
 
     if (OUT_MASTER .and. is_mpi_master() ) then
-      pb%ot%unit = 18
+      pb%ot%unit = FID_OT
       write(pb%ot%unit,'(a)')'# macroscopic values:'
       write(pb%ot%unit,'(a)')'# 1=t'
       write(pb%ot%unit,'(a)')'# values at selected point:'
@@ -152,58 +157,46 @@ subroutine ot_init(pb)
       if (pb%features%tp == 1) write(pb%ot%unit,'(a)')'# 7=P, 8=T'
       close(pb%ot%unit)
     endif
-!JPA WARNING Implementation in progress
-!    pb%ot%unit = 22
-!    write(pb%ot%unit,'(a)')'# Seismicity record:'
-!    write(pb%ot%unit,'(a)')'# 1=loc, 2=t, 3=v'
-!  pb%ot%unit = 10000
-!  do i=1,n
-!    if (pb%ot%iot(i) == 1) then
-!      pb%ot%unit = pb%ot%unit+1
-!      write(pb%ot%unit,'(a,i10)')'# nx= ', i
-!      write(pb%ot%unit,'(a)')'# 1=t, 2=V, 3=theta, 4=tau, 5=slip, 6=sigma'
-!    endif
-!  enddo
+  
+   !JPA WARNING VMAX and IOT outputs not implemented yet in parallel 
 
-else
-
-  pb%ot%unit = 18
-  if (.not.BIN_OUTPUT) then
-    write(pb%ot%unit,'(a)')'# macroscopic values:'
-    write(pb%ot%unit,'(a)')'# 1=t,2=loc_size,3=crack_size,4=potcy,5=pot_rate'
-    write(pb%ot%unit,'(a)')'# values at selected point:'
-    write(pb%ot%unit,'(a)')'# 6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip'
-    write(pb%ot%unit,'(a)')'# values at max(V) location:'
-    write(pb%ot%unit,'(a)')'# 11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip, 17=sigma'
-    if (pb%features%tp == 1) then
-      write(pb%ot%unit,'(a)')'# 18=P, 19=T (selected point)'
-      write(pb%ot%unit,'(a)')'# 20=P, 21=T (at max(V))'
-    endif
   else
-    open(pb%ot%unit,form='unformatted',access='stream')
-  endif
 
-  pb%ot%unit = 22
-  write(pb%ot%unit,'(a)')'# Seismicity record:'
-  write(pb%ot%unit,'(a)')'# 1=loc, 2=t, 3=v'
-
-  pb%ot%unit = 10000
-  do i=1,n
-    if (pb%ot%iot(i) == 1) then
-      pb%ot%unit = pb%ot%unit+1
-      write(pb%ot%unit,'(a,i10)')'# nx= ', i
-      write(pb%ot%unit,'(a)')'# 1=t, 2=V, 3=theta, 4=tau, 5=slip, 6=sigma'
+    pb%ot%unit = FID_OT
+    if (.not.BIN_OUTPUT) then
+      write(pb%ot%unit,'(a)')'# macroscopic values:'
+      write(pb%ot%unit,'(a)')'# 1=t,2=loc_size,3=crack_size,4=potcy,5=pot_rate'
+      write(pb%ot%unit,'(a)')'# values at selected point:'
+      write(pb%ot%unit,'(a)')'# 6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip'
+      write(pb%ot%unit,'(a)')'# values at max(V) location:'
+      write(pb%ot%unit,'(a)')'# 11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip, 17=sigma'
+      if (pb%features%tp == 1) then
+        write(pb%ot%unit,'(a)')'# 18=P, 19=T (selected point)'
+        write(pb%ot%unit,'(a)')'# 20=P, 21=T (at max(V))'
+      endif
+    else
+      open(pb%ot%unit,form='unformatted',access='stream')
     endif
-  enddo
 
-endif
+    write(FID_VMAX,'(a)')'# Seismicity record:'
+    write(FID_VMAX,'(a)')'# 1=loc, 2=t, 3=v'
+
+    j = FID_IOT_0
+    do i=1,n
+      if (pb%ot%iot(i) == 1) then
+        j = j+1
+        write(j,'(a,i10)') '# nx= ', i
+        write(j,'(a)') '# 1=t, 2=V, 3=theta, 4=tau, 5=slip, 6=sigma'
+      endif
+    enddo
+
+  endif
 
   allocate ( pb%ot%v_pre(n), pb%ot%v_pre2(n) )
   pb%ot%v_pre = 0.d0
   pb%ot%v_pre2 = 0.d0
 
 end subroutine ot_init
-
 
 
 !=====================================================================
@@ -273,10 +266,9 @@ subroutine ot_write(pb)
   use my_mpi, only : is_MPI_parallel, my_mpi_tag
 
   type (problem_type), intent(inout) :: pb
-  integer :: i,ios
+  integer :: i,j,ios
   character(30) :: ot_fmt
 
-  pb%ot%unit = 18
   if (is_MPI_parallel()) then
    ! if "ic" station is in this processor
     if (pb%ot%ic>0) then
@@ -284,7 +276,7 @@ subroutine ot_write(pb)
       open(pb%ot%unit,access='APPEND',status='old',iostat=ios)
       if (ios>0) stop 'Fatal error: ot_write: Error opening a fort.18 file'
      !JPA add test for the first time we try to open this file but it does not exist yet
-     !JPA add test to prevent appenaingd data to a file from a previous simulation
+     !JPA add test to prevent appending data to a file from a previous simulation
       if (OCTAVE_OUTPUT) then
         ot_fmt = '(g0.16,5(",",g0.6))'
         if (pb%features%tp == 1) ot_fmt = '(g0.16,7(",",g0.6))'
@@ -384,27 +376,24 @@ subroutine ot_write(pb)
   endif
 
   if (is_MPI_parallel()) return
- !JPA warning: the ot outputs below are not yet implemented in parallel
+ !JPA warning: the outputs below are not yet implemented in parallel
 
  ! output slip velocity maxima at selected nodes
-  pb%ot%unit = 22
   do i=1,pb%mesh%nn
     if ((pb%ot%iasp(i) == 1) .and. (pb%ot%v_pre(i) >= pb%ot%v_th) .and.      &
         (pb%v(i) < pb%ot%v_pre(i)) .and. (pb%ot%v_pre(i) >= pb%ot%v_pre2(i))) then
-      write(pb%ot%unit,'(i10,2e24.16)') i, pb%time, pb%ot%v_pre(i)
+      write(FID_VMAX,'(i10,2e24.16)') i, pb%time, pb%ot%v_pre(i)
     endif
   enddo
   pb%ot%v_pre2=pb%ot%v_pre
   pb%ot%v_pre=pb%v
 
-  pb%ot%unit = 10000
-
  ! output time series at selected nodes
+  j = FID_IOT_0
   do i=1,pb%mesh%nn
     if (pb%ot%iot(i) == 1) then
-      pb%ot%unit = pb%ot%unit+1
-      write(pb%ot%unit,'(e24.16,5e14.6)') pb%time, pb%v(i), &
-        pb%theta(i), pb%tau(i), pb%slip(i), pb%sigma(i)
+      j = j+1
+      write(j,'(e24.16,5e14.6)') pb%time, pb%v(i), pb%theta(i), pb%tau(i), pb%slip(i), pb%sigma(i)
     endif
   enddo
 
