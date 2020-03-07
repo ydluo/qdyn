@@ -6,8 +6,7 @@ module output
   private
   
  ! id in output file names "fort.id" 
- ! 
-  parameter, integer :: FID_OT = 18, FID_VMAX = 22, FID_IOT_0 = 10000 
+  integer, parameter :: FID_OT = 18, FID_VMAX = 22, FID_IOT_0 = 10000 
   
   public :: screen_init, ot_read_stations, ot_init, ox_init, &
             screen_write, ot_write, ox_write,  &
