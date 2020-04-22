@@ -221,6 +221,9 @@ subroutine update_field(pb)
   double precision, dimension(pb%mesh%nn) :: P
   integer :: i,ix,iw
 
+  ! Update global time
+  pb%mesh%time = pb%time
+
   ! SEISMIC: obtain P at the previous time step
   P = 0d0
   if (pb%features%tp == 1) P = pb%tp%P

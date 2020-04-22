@@ -7,8 +7,9 @@ module mesh
     integer :: dim = 0  ! dim = 1, 2 ,3 ~xD
     integer :: nx, nw, nn, nnglob, nwglob ! along-strike, along-dip, total grid number
     double precision :: Lfault, W, Z_CORNER ! fault length, width, lower-left corner z (follow Okada's convention)
-    double precision, allocatable :: DIP_W(:) !along-dip grid size and dip (adjustable), nw count
-    double precision, pointer :: x(:), y(:), z(:), dip(:), dx(:), dw(:) !coordinates, dip, along-strike and along-dip size of every grid (nx*nw count)
+    double precision, allocatable :: DIP_W(:) ! along-dip grid size and dip (adjustable), nw count
+    double precision, pointer :: time(:) ! time (same for every element)
+    double precision, pointer :: x(:), y(:), z(:), dip(:), dx(:), dw(:) ! coordinates, dip, along-strike and along-dip size of every grid (nx*nw count)
     double precision, pointer :: xglob(:), yglob(:), zglob(:), dipglob(:), dwglob(:) ! same on global grid (nx*nwglobal count)
   end type mesh_type
 
@@ -91,6 +92,10 @@ subroutine init_mesh(m)
   type(mesh_type), intent(inout) :: m
 
   write(6,*) 'Initializing mesh ...'
+
+  ! Allocate time array (same for all m%dim)
+  allocate(m%time(m%nn))
+  m%time = 0d0
 
   select case (m%dim)
     case(0); call init_mesh_0D(m)
