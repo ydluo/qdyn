@@ -516,7 +516,8 @@ class qdyn:
 
     # Read QDYN output data
     def read_output(self, mirror=False, read_ot=True, filename_ot="fort.18",
-                    read_ox=True, filename_ox="fort.19", filename_time="fort.121"):
+                    read_ox=True, filename_ox="fort.19", read_ox_dyn=False,
+                    filename_time="fort.121"):
 
         # If a suffix is specified (optional), change file names
         suffix = self.set_dict["SUFFIX"]
@@ -561,9 +562,9 @@ class qdyn:
 
             # Snapshot output template depends on requested features
             if self.set_dict["FEAT_TP"] == 1:
-                cols_ox = ("x", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma", "P", "T")
+                cols_ox = ("x", "y", "z", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma", "P", "T")
             else:
-                cols_ox = ("x", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma")
+                cols_ox = ("x", "y", "z", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma")
 
             # Read snapshot output
             data_ox = read_csv(filename_ox, header=None, names=cols_ox, delim_whitespace=True, comment="#")
@@ -581,6 +582,55 @@ class qdyn:
                 self.ox = data_ox
         else:
             self.ox = None
+
+        if read_ox_dyn == True:
+
+            # Snapshot output template depends on requested features
+            if self.set_dict["FEAT_TP"] == 1:
+                cols_ox_dyn = ("x", "y", "z", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma", "P", "T")
+            else:
+                cols_ox_dyn = ("x", "y", "z", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma")
+
+            cols_ox_rup = ("x", "y", "z", "t_tau_max", "tau_max", "t_v_max", "v_max")
+
+            ox_dyn_files = np.array([file for file in os.listdir(".") if file.startswith("fort.200")])
+            ox_dyn_files_pre = ox_dyn_files[0::3]
+            ox_dyn_files_post = ox_dyn_files[1::3]
+            ox_dyn_files_rup = ox_dyn_files[2::3]
+
+            # Read snapshot output
+            data_ox_dyn_pre = [None] * len(ox_dyn_files_pre)
+            data_ox_dyn_post = [None] * len(ox_dyn_files_post)
+            data_ox_dyn_rup = [None] * len(ox_dyn_files_rup)
+            for i in range(len(ox_dyn_files_pre)):
+                # Read pre-rupture file
+                data_ox_dyn_pre[i] = read_csv(
+                    ox_dyn_files_pre[i], header=None, names=cols_ox_dyn,
+                    delim_whitespace=True, comment="#"
+                )
+                # Sanitise output (check for near-infinite numbers, etc.)
+                data_ox_dyn_pre[i] = data_ox_dyn_pre[i].apply(pd.to_numeric, errors="coerce")
+
+                # Read pre-rupture file
+                data_ox_dyn_post[i] = read_csv(
+                    ox_dyn_files_post[i], header=None, names=cols_ox_dyn,
+                    delim_whitespace=True, comment="#"
+                )
+                # Sanitise output (check for near-infinite numbers, etc.)
+                data_ox_dyn_post[i] = data_ox_dyn_post[i].apply(pd.to_numeric, errors="coerce")
+
+                # Rupture stats file
+                data_ox_dyn_rup[i] = read_csv(
+                    ox_dyn_files_rup[i], header=None, names=cols_ox_rup,
+                    delim_whitespace=True, comment="#"
+                )
+                # Sanitise output (check for near-infinite numbers, etc.)
+                data_ox_dyn_rup[i] = data_ox_dyn_rup[i].apply(pd.to_numeric, errors="coerce")
+
+            # Store snapshot data in self.ox
+            self.ox_dyn_pre = data_ox_dyn_pre
+            self.ox_dyn_post = data_ox_dyn_post
+            self.ox_dyn_rup = data_ox_dyn_rup
 
         return True
 
