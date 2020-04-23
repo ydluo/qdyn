@@ -19,20 +19,21 @@ module problem_class
   end type ot_type
 
   type oxptr
-    double precision, pointer :: p(:)
+    double precision, pointer :: p(:) => null()
   end type oxptr
 
  ! snapshot outputs: at every fault point, but only at few selected times
   type ox_type
     integer :: ntout=0, nox=-1, nox_dyn=-1
-    integer :: QSB_unit_pre=-1, QSB_unit_post=-1
-    integer ::  count, dyn_count2, unit, ox_dyn_unit, nxout, nxout_dyn, &
+    integer :: unit=-1, ox_dyn_unit=-1, QSB_unit_pre=-1, QSB_unit_post=-1
+    integer ::  count, dyn_count2, nxout, nxout_dyn, &
                 countglob, i_ox_seq, i_ox_dyn, dyn_stat, dyn_stat2, dyn_count
     double precision :: pot_pre
     double precision, dimension(:), allocatable :: tau_max, t_rup, v_max, t_vmax
     character(len=256) :: header
     character(len=16), dimension(:), allocatable :: fmt
-    type(oxptr), dimension(:), allocatable :: objects_loc, objects_glob
+    type(oxptr), dimension(:), allocatable :: objects_glob, objects_loc
+    type(oxptr), dimension(:), allocatable :: objects_dyn, objects_ox
   end type ox_type
 
   ! SEISMIC: structure that holds the CNS model parameters

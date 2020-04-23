@@ -96,6 +96,7 @@ subroutine init_mesh(m)
   ! Allocate time array (same for all m%dim)
   allocate(m%time(m%nn))
   m%time = 0d0
+  m%nnglob = m%nn
 
   select case (m%dim)
     case(0); call init_mesh_0D(m)
@@ -142,6 +143,10 @@ subroutine init_mesh_1D(m)
     m%y(i) = 0d0
     m%z(i) = 0d0
   enddo
+
+  m%xglob => m%x
+  m%yglob => m%y
+  m%zglob => m%z
 
 end subroutine init_mesh_1D
 

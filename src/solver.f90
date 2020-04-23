@@ -151,7 +151,7 @@ subroutine do_bsstep(pb)
       write (6,*) "RK45 error [3]: relative error tolerance too small"
       stop
     case (4)
-      write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
+      ! write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
       yt = yt_prev
       goto 100
     case (5)
@@ -357,7 +357,7 @@ subroutine init_rk45(pb)
     write (6,*) "RK45 error [3]: relative error tolerance too small"
     stop
   case (4)
-    write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
+    ! write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
   case (5)
     write (6,*) "RK45 error [5]: solution vanished, relative error test is not possible"
     stop
