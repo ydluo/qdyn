@@ -203,7 +203,6 @@ end subroutine ot_init
 subroutine ox_init(pb)
 
   use problem_class
-  use constants, only : OUT_MASTER, BIN_OUTPUT
   use my_mpi, only : is_MPI_parallel, is_mpi_master
   use mesh, only : mesh_get_size
 
@@ -297,7 +296,7 @@ subroutine ox_init(pb)
     pb%ox%objects_rup(2)%p => pb%v
 
   ! Case 2: parallel execution with output master. All quantities are global
-  elseif (is_MPI_parallel() .and. OUT_MASTER) then
+  elseif (is_MPI_parallel() .and. is_MPI_master()) then
     ! Assign global objects to ox and dynamic objects
     do i=1,pb%ox%nox
       pb%ox%objects_dyn(i)%p => pb%ox%objects_glob(i)%p
@@ -307,23 +306,6 @@ subroutine ox_init(pb)
     pb%ox%objects_rup(1)%p => pb%tau_glob
     pb%ox%objects_rup(2)%p => pb%v_glob
 
-  ! Case 3: parallel execution with all procs writing output
-  ! Standard ox quantities are local, but dynamic quantities are global
-  elseif (is_MPI_parallel() .and. .not. OUT_MASTER) then
-    ! Assign local objects to ox and global objects to dynamic
-    do i=1,pb%ox%nox
-      pb%ox%objects_dyn(i)%p => pb%ox%objects_glob(i)%p
-      pb%ox%objects_ox(i)%p => pb%ox%objects_loc(i)%p
-    enddo
-    ! Assign global tau/v to rupture object
-    pb%ox%objects_rup(1)%p => pb%tau_glob
-    pb%ox%objects_rup(2)%p => pb%v_glob
-
-  ! The 3 cases should be mutually exhaustive. If not: something is wrong
-  else
-    write(6, *) "Error in output.f90::ox_write"
-    write(6, *) "Unrecognised case in output assignment"
-    stop "Terminating..."
   endif
 
   ! Define headers
@@ -335,13 +317,7 @@ subroutine ox_init(pb)
   ! Define output units
 
   ! Standard ox output unit
-  if (pb%ox%i_ox_seq == 0) then
-    ! Single file
-    pb%ox%unit = 19
-  else
-    ! Sequence of files (starting with 1000)
-    pb%ox%unit = 999
-  endif
+  pb%ox%unit = 19
 
   ! If ox_dyn is requested
   if (pb%ox%i_ox_dyn == 1) then
@@ -367,18 +343,6 @@ subroutine ox_init(pb)
 
   ! End preparing data structures/headers
   ! ---------------------------------------------------------------------------
-
-  ! Raise an error when each proc is supposed to write multiple ox files
-  if ((pb%ox%i_ox_seq == 1) .and. is_MPI_parallel() .and. .not. OUT_MASTER) then
-    write(6,*) "Write conflict encountered in output.f90::ox_init"
-    write(6,*) "(i_ox_seq == 1) .and. (OUT_MASTER == .false.)"
-    write(6,*) "Set OX_SEQ = 1 or set OUT_MASTER = .true."
-    stop "Terminating..."
-  endif
-
-  if (BIN_OUTPUT) then
-    open(pb%ox%unit, form='unformatted', access='stream')
-  endif
 
 end subroutine ox_init
 
@@ -529,17 +493,13 @@ end subroutine ot_write
 subroutine ox_write(pb)
 
   use problem_class
-  use constants, only: OUT_MASTER, BIN_OUTPUT
-  use my_mpi, only: is_MPI_parallel, is_mpi_master, my_mpi_tag, synchronize_all
+  use my_mpi, only: is_MPI_parallel, is_mpi_master
 
   type (problem_type), intent(inout) :: pb
 
-  type (oxptr) :: objects_dyn, objects_ox
-  integer :: i, iox, ixout, nox, nxout, nxout_dyn, unit
-  character(len=256) :: fileproc
+  integer :: ixout, nox, nxout_dyn, unit
   logical ::  call_gather, close_unit, dynamic, falling_edge, last_call, &
-              MPI_master, rising_edge, write_master, write_multiple, write_ox, &
-              write_ox_dyn, write_QSB
+              MPI_master, rising_edge, write_ox, write_ox_dyn, write_QSB
   double precision, dimension(pb%mesh%nnglob) :: tau, v
 
   nox = pb%ox%nox
@@ -554,11 +514,6 @@ subroutine ox_write(pb)
 
   ! Is this proc MPI master? (default .true. for serial)
   MPI_master = is_MPI_master()
-  ! Should this proc write the data? Yes when:
-  !  1. Parallel/serial execution, and this proc is master
-  !  2. OR parallel execution, but each proc writes its own file
-  write_master =  ((MPI_master .and. OUT_MASTER) .or. &
-                  (is_MPI_parallel() .and. .not. OUT_MASTER))
 
   ! Check if we're crossing dynamic thresholds from below (rising edge)
   ! or from above (falling edge)
@@ -575,9 +530,9 @@ subroutine ox_write(pb)
   dynamic = (pb%ox%dyn_stat == 1)
 
   ! Should this proc write ox, ox_dyn, or QSB output?
-  write_ox = (mod(pb%it, pb%ox%ntout) == 0 .or. last_call) .and. write_master
-  write_ox_dyn = ((pb%ox%i_ox_dyn == 1) .and. dynamic) .and. write_master
-  write_QSB = ((pb%DYN_FLAG == 1) .and. dynamic) .and. write_master
+  write_ox = (mod(pb%it, pb%ox%ntout) == 0 .or. last_call) .and. MPI_master
+  write_ox_dyn = ((pb%ox%i_ox_dyn == 1) .and. dynamic) .and. MPI_master
+  write_QSB = ((pb%DYN_FLAG == 1) .and. dynamic) .and. MPI_master
 
   ! Call an MPI gather when:
   !  1. Output is requested (either regular ox or other flavour)
@@ -586,12 +541,8 @@ subroutine ox_write(pb)
   call_gather = (write_ox .or. write_ox_dyn .or. write_QSB) .and. &
                 is_MPI_parallel() .and. MPI_master
 
-  ! Write multiple ox files?
-  write_multiple =  ((pb%ox%i_ox_seq == 1) .or. &
-                    (is_MPI_parallel() .and. .not. OUT_MASTER))
-
   ! Does the output unit need to be closed?
-  close_unit = (write_multiple .or. last_call)
+  close_unit = last_call
 
   ! End checks
   !---------------------------------------------------------------------------
@@ -606,20 +557,6 @@ subroutine ox_write(pb)
   ! Write regular ox output
 
   if (write_ox) then
-
-    ! Check if we need to write to a separate file
-    if (write_multiple) then
-      ! Increment ox unit
-      pb%ox%unit = pb%ox%unit + 1
-      ! If parallel and each proc writes its own file
-      if (is_MPI_parallel()) then
-        ! Construct filename
-        write(fileproc, '(a,i6.6,a,a)') 'fort.', pb%ox%unit, '_proc', my_mpi_tag()
-        ! Open output unit with specific filename
-        open( pb%ox%unit, file=fileproc(1:len_trim(fileproc)), &
-              status='replace', form='formatted', action='write')
-      endif
-    endif
 
     ! Write ox data
     call write_ox_lines(pb%ox%unit, pb%ox%fmt, pb%ox%objects_ox, pb)
@@ -756,7 +693,6 @@ end subroutine ox_write
 subroutine write_ox_lines(unit, fmt, objects, pb)
 
   use problem_class
-  use constants, only: BIN_OUTPUT
   type (problem_type), intent(inout) :: pb
   integer :: unit, ixout, iox, nn
   character(len=16), dimension(pb%ox%nox) :: fmt
@@ -765,32 +701,18 @@ subroutine write_ox_lines(unit, fmt, objects, pb)
   ! Number of nodes to loop over (either local or global)
   nn = size(objects(1)%p)
 
-  ! Formatted (ASCII) output
-  if (.not. BIN_OUTPUT) then
-    ! Write header
-    write(unit,'(a)') trim(pb%ox%header)
-    ! Loop over all ox elements
-    do ixout=1,nn,pb%ox%nxout
-      ! Loop over all ox output quantities (except last one)
-      do iox=1,pb%ox%nox-1
-        ! Write ox output quantity, do not advance to next line
-        write(unit, fmt(iox), advance='no') objects(iox)%p(ixout)
-      enddo
-      ! Write last ox output quantity, advance to next line
-      write(unit, fmt(pb%ox%nox)) objects(pb%ox%nox)%p(ixout)
+  ! Write header
+  write(unit,'(a)') trim(pb%ox%header)
+  ! Loop over all ox elements
+  do ixout=1,nn,pb%ox%nxout
+    ! Loop over all ox output quantities (except last one)
+    do iox=1,pb%ox%nox-1
+      ! Write ox output quantity, do not advance to next line
+      write(unit, fmt(iox), advance='no') objects(iox)%p(ixout)
     enddo
-
-  ! Binary output
-  else
-    ! Loop over all ox elements
-    do ixout=1,nn,pb%ox%nxout
-      ! Loop over all ox output quantities
-      do iox=1,pb%ox%nox
-        ! Write ox output quantity
-        write(unit) objects(iox)%p(ixout)
-      enddo
-    enddo
-  endif
+    ! Write last ox output quantity, advance to next line
+    write(unit, fmt(pb%ox%nox)) objects(pb%ox%nox)%p(ixout)
+  enddo
 
 end subroutine write_ox_lines
 

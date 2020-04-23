@@ -94,7 +94,6 @@ subroutine do_bsstep(pb)
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt_prev
   double precision, dimension(pb%mesh%nn) :: main_var
-  double precision :: t_out
   integer :: ik, neqs
 
   neqs = pb%neqs * pb%mesh%nn
@@ -330,7 +329,7 @@ subroutine init_rk45(pb)
   use ode_rk45, only: rkf45_d
 
   type(problem_type), intent(inout) :: pb
-  double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt
+  double precision, dimension(pb%neqs*pb%mesh%nn) :: yt
   double precision, dimension(pb%mesh%nn) :: main_var
   integer :: nwork
 
