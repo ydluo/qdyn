@@ -223,6 +223,7 @@ subroutine ox_init(pb)
 
   ! Number of ox output quantities
   pb%ox%nox = 10
+  pb%ox%nrup = 2
   ! If thermal pressurisation is requested, add 2 more
   if (pb%features%tp == 1) then
     pb%ox%nox = pb%ox%nox + 2
@@ -232,6 +233,7 @@ subroutine ox_init(pb)
   allocate(pb%ox%objects_glob(pb%ox%nox))
   allocate(pb%ox%objects_loc(pb%ox%nox))
   allocate(pb%ox%objects_ox(pb%ox%nox))
+  allocate(pb%ox%objects_rup(pb%ox%nrup))
   allocate(pb%ox%fmt(pb%ox%nox))
   ! Default output format
   pb%ox%fmt = "(e15.7)"
@@ -285,25 +287,37 @@ subroutine ox_init(pb)
 
   ! Case 1: serial execution. All quantities are local
   if (.not. is_MPI_parallel()) then
+    ! Assign local objects to ox and dynamic objects
     do i=1,pb%ox%nox
       pb%ox%objects_dyn(i)%p => pb%ox%objects_loc(i)%p
       pb%ox%objects_ox(i)%p => pb%ox%objects_loc(i)%p
     enddo
+    ! Assign local tau/v to rupture object
+    pb%ox%objects_rup(1)%p => pb%tau
+    pb%ox%objects_rup(2)%p => pb%v
 
   ! Case 2: parallel execution with output master. All quantities are global
   elseif (is_MPI_parallel() .and. OUT_MASTER) then
+    ! Assign global objects to ox and dynamic objects
     do i=1,pb%ox%nox
       pb%ox%objects_dyn(i)%p => pb%ox%objects_glob(i)%p
       pb%ox%objects_ox(i)%p => pb%ox%objects_glob(i)%p
     enddo
+    ! Assign global tau/v to rupture object
+    pb%ox%objects_rup(1)%p => pb%tau_glob
+    pb%ox%objects_rup(2)%p => pb%v_glob
 
   ! Case 3: parallel execution with all procs writing output
   ! Standard ox quantities are local, but dynamic quantities are global
   elseif (is_MPI_parallel() .and. .not. OUT_MASTER) then
+    ! Assign local objects to ox and global objects to dynamic
     do i=1,pb%ox%nox
       pb%ox%objects_dyn(i)%p => pb%ox%objects_glob(i)%p
       pb%ox%objects_ox(i)%p => pb%ox%objects_loc(i)%p
     enddo
+    ! Assign global tau/v to rupture object
+    pb%ox%objects_rup(1)%p => pb%tau_glob
+    pb%ox%objects_rup(2)%p => pb%v_glob
 
   ! The 3 cases should be mutually exhaustive. If not: something is wrong
   else
@@ -362,36 +376,8 @@ subroutine ox_init(pb)
     stop "Terminating..."
   endif
 
-  ! If parallel
-  if (is_MPI_parallel()) then
-    ! Check if this processor is master
-    if (OUT_MASTER .and. is_mpi_master()) then
-      ! Number of global ox elements
-      pb%ox%countglob = ceiling(pb%mesh%nnglob / float(pb%ox%countglob))
-      ! If writing to a single ox file
-      if (pb%ox%i_ox_seq == 0) then
-        ! Write number of global ox elements
-        write(pb%ox%unit, '(a,i10)')'# nx= ', pb%ox%countglob
-      endif
-    endif
-
-  ! Not parallel
-  else
-    ! If not binary output
-    if (.not. BIN_OUTPUT) then
-      write(pb%ox%unit, '(a,i10)') '# nx= ', pb%ox%count
-    ! If yes binary output
-    else
-      ! Create stream
-      open(pb%ox%unit,form='unformatted',access='stream')
-      ! Write number of ox elements
-      write(pb%ox%unit) pb%ox%count
-      ! Loop over all ox elements
-      do i=1,n,pb%ox%nxout
-        ! Write x location (why only x? TODO)
-        write(pb%ox%unit) pb%mesh%x(i)
-      enddo
-    endif
+  if (BIN_OUTPUT) then
+    open(pb%ox%unit, form='unformatted', access='stream')
   endif
 
 end subroutine ox_init
@@ -554,6 +540,7 @@ subroutine ox_write(pb)
   logical ::  call_gather, close_unit, dynamic, falling_edge, last_call, &
               MPI_master, rising_edge, write_master, write_multiple, write_ox, &
               write_ox_dyn, write_QSB
+  double precision, dimension(pb%mesh%nnglob) :: tau, v
 
   nox = pb%ox%nox
   nxout_dyn = pb%ox%nxout_dyn
@@ -693,18 +680,18 @@ subroutine ox_write(pb)
 
     ! No threshold crossing, but still dynamic
     else
+      tau = pb%ox%objects_rup(1)%p
+      v = pb%ox%objects_rup(2)%p
       ! Update max stress/slip rate for each ox element
       do ixout=1,pb%mesh%nnglob,nxout_dyn
         ! Mark location of rupture front (max tau at given location)
-        if (pb%tau_glob(ixout) > pb%tau_max_glob(ixout)) then
-          ! write(6, *) ixout, "update tau"
-          pb%tau_max_glob(ixout) = pb%tau_glob(ixout)
+        if (tau(ixout) > pb%tau_max_glob(ixout)) then
+          pb%tau_max_glob(ixout) = tau(ixout)
           pb%t_rup_glob(ixout) = pb%time
         endif
         ! Mark location of max slip rate (at given location)
-        if (pb%v_glob(ixout) > pb%v_max_glob(ixout)) then
-          ! write(6, *) ixout, "update v"
-          pb%v_max_glob(ixout) = pb%v_glob(ixout)
+        if (v(ixout) > pb%v_max_glob(ixout)) then
+          pb%v_max_glob(ixout) = v(ixout)
           pb%t_vmax_glob(ixout) = pb%time
         endif
       enddo
@@ -769,26 +756,41 @@ end subroutine ox_write
 subroutine write_ox_lines(unit, fmt, objects, pb)
 
   use problem_class
+  use constants, only: BIN_OUTPUT
   type (problem_type), intent(inout) :: pb
-  integer :: unit, ixout, iox
+  integer :: unit, ixout, iox, nn
   character(len=16), dimension(pb%ox%nox) :: fmt
   type(oxptr), dimension(pb%ox%nox) :: objects
 
-  ! TODO: is the stuff below generalisable to binary output?
+  ! Number of nodes to loop over (either local or global)
+  nn = size(objects(1)%p)
 
-  ! TODO: why write these metadata?
-  ! write(unit, '(2i8, e14.6)') pb%it, pb%ot%ivmax, pb%time
-  write(unit,'(a)') trim(pb%ox%header)
-  ! Loop over all ox elements
-  do ixout=1,pb%mesh%nn,pb%ox%nxout
-    ! Loop over all ox output quantities (except last one)
-    do iox=1,pb%ox%nox-1
-      ! Write ox output quantity, do not advance to next line
-      write(unit, fmt(iox), advance='no') objects(iox)%p(ixout)
+  ! Formatted (ASCII) output
+  if (.not. BIN_OUTPUT) then
+    ! Write header
+    write(unit,'(a)') trim(pb%ox%header)
+    ! Loop over all ox elements
+    do ixout=1,nn,pb%ox%nxout
+      ! Loop over all ox output quantities (except last one)
+      do iox=1,pb%ox%nox-1
+        ! Write ox output quantity, do not advance to next line
+        write(unit, fmt(iox), advance='no') objects(iox)%p(ixout)
+      enddo
+      ! Write last ox output quantity, advance to next line
+      write(unit, fmt(pb%ox%nox)) objects(pb%ox%nox)%p(ixout)
     enddo
-    ! Write last ox output quantity, advance to next line
-    write(unit, fmt(pb%ox%nox)) objects(pb%ox%nox)%p(ixout)
-  enddo
+
+  ! Binary output
+  else
+    ! Loop over all ox elements
+    do ixout=1,nn,pb%ox%nxout
+      ! Loop over all ox output quantities
+      do iox=1,pb%ox%nox
+        ! Write ox output quantity
+        write(unit) objects(iox)%p(ixout)
+      enddo
+    enddo
+  endif
 
 end subroutine write_ox_lines
 

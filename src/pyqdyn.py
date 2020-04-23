@@ -81,7 +81,7 @@ class qdyn:
 
         set_dict["V_PL"] = 1e-9             # Tectonic loading rate [m/s]
         set_dict["L"] = 1					# Length of the fault if MESHDIM = 1. Stiffness is MU/L if MESHDIM = 0
-        set_dict["W"] = 1					# Distance between load point and fault if MESHDIM = 1 and FINITE = 0
+        set_dict["W"] = 50e3	       		# Distance between load point and fault if MESHDIM = 1 and FINITE = 0
         set_dict["SIGMA"] = 50e6            # Normal stress [Pa]
         set_dict["SIGMA_CPL"] = 0			# Normal stress coupling (only for dipping faults)
         set_dict["VS"] = 3000				# Shear wave speed [m/s]. If VS = 0 radiation damping is off
@@ -89,7 +89,7 @@ class qdyn:
         set_dict["LAM"] = 30e9				# Elastic modulus for 3D simulations [Pa]
         set_dict["TPER"] = 31536000			# Period of additional time-dependent oscillatory shear stress loading [s]
         set_dict["APER"] = 0				# Amplitude of additional time-dependent oscillatory shear stress loading [Pa]
-        set_dict["DIP_W"] = 0				# Fault dip in 3D
+        set_dict["DIP_W"] = 90				# Fault dip in 3D
         set_dict["Z_CORNER"] = 0			# 3D
 
         # Optional simulation features

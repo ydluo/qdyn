@@ -24,16 +24,16 @@ module problem_class
 
  ! snapshot outputs: at every fault point, but only at few selected times
   type ox_type
-    integer :: ntout=0, nox=-1, nox_dyn=-1
+    integer :: ntout=0, nox=-1, nox_dyn=-1, nrup=-1
     integer :: unit=-1, ox_dyn_unit=-1, QSB_unit_pre=-1, QSB_unit_post=-1
-    integer ::  count, dyn_count2, nxout, nxout_dyn, &
-                countglob, i_ox_seq, i_ox_dyn, dyn_stat, dyn_stat2, dyn_count
+    integer :: count, dyn_count, dyn_stat, i_ox_dyn, i_ox_seq, nxout, nxout_dyn
     double precision :: pot_pre
     double precision, dimension(:), allocatable :: tau_max, t_rup, v_max, t_vmax
     character(len=256) :: header
     character(len=16), dimension(:), allocatable :: fmt
-    type(oxptr), dimension(:), allocatable :: objects_glob, objects_loc
-    type(oxptr), dimension(:), allocatable :: objects_dyn, objects_ox
+    type(oxptr), dimension(:), allocatable :: objects_glob, objects_loc, &
+                                              objects_dyn, objects_ox, &
+                                              objects_rup
   end type ox_type
 
   ! SEISMIC: structure that holds the CNS model parameters
