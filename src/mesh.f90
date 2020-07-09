@@ -8,9 +8,15 @@ module mesh
     integer :: nx, nw, nn, nnglob, nwglob ! along-strike, along-dip, total grid number
     double precision :: Lfault, W, Z_CORNER ! fault length, width, lower-left corner z (follow Okada's convention)
     double precision, allocatable :: DIP_W(:) ! along-dip grid size and dip (adjustable), nw count
-    double precision, pointer :: time(:) ! time (same for every element)
-    double precision, pointer :: x(:), y(:), z(:), dip(:), dx(:), dw(:) ! coordinates, dip, along-strike and along-dip size of every grid (nx*nw count)
-    double precision, pointer :: xglob(:), yglob(:), zglob(:), dipglob(:), dwglob(:) ! same on global grid (nx*nwglobal count)
+    double precision, pointer :: time(:) => null() ! time (same for every element)
+    ! Local mesh coordinates
+    double precision, pointer :: x(:) => null(), y(:) => null(), z(:) => null()
+    ! Local dip, and along-strike and along-dip size of grid cells (nx*nw count)
+    ! TODO: grid sizes should be constant in order for FFT to work!
+    double precision, pointer :: dip(:) => null(), dx(:) => null(), dw(:) => null()
+    ! Global mesh coordinates (nx*nwglobal count)
+    double precision, pointer :: xglob(:) => null(), yglob(:) => null(), zglob(:) => null()
+    double precision, pointer :: dipglob(:) => null(), dwglob(:) => null()
   end type mesh_type
 
   ! SEISMIC: discretisation of spectral domain for diffusion solver
@@ -102,7 +108,6 @@ subroutine init_mesh(m)
     case(0); call init_mesh_0D(m)
     case(1); call init_mesh_1D(m)
     case(2); call init_mesh_2D(m)
-    case(4); call init_mesh_2D(m)
   end select
 
 end subroutine init_mesh
@@ -175,32 +180,32 @@ subroutine init_mesh_2D(m)
 
 if (.not.is_MPI_parallel()) then
 
-  m%dx = m%Lfault/m%nx
-  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%dip(m%nn))
-
-  ! set x, y, z, dip of first row
-  cd = cos(m%DIP_W(1)/180d0*PI)
-  sd = sin(m%DIP_W(1)/180d0*PI)
-  do j = 1,m%nx
-    m%x(j) = 0d0+(0.5d0+dble(j-1))*m%dx(1)
-  end do
-  m%y(1:m%nx) = 0d0+0.5d0*m%dw(1)*cd
-  m%z(1:m%nx) = m%Z_CORNER+0.5d0*m%dw(1)*sd
-  m%dip(1:m%nx) = m%DIP_W(1)
-
-  ! set x, y, z, dip of row 2 to nw
-  do i = 2,m%nw
-    cd0 = cd
-    sd0 = sd
-    cd = cos(m%DIP_W(i)/180d0*PI)
-    sd = sin(m%DIP_W(i)/180d0*PI)
-    j0 = (i-1)*m%nx
-    m%x(j0+1:j0+m%nx) = m%x(1:m%nx)
-    m%y(j0+1:j0+m%nx) = m%y(j0) + 0.5d0*m%dw(i-1)*cd0 + 0.5d0*m%dw(i)*cd
-    m%z(j0+1:j0+m%nx) = m%z(j0) + 0.5d0*m%dw(i-1)*sd0 + 0.5d0*m%dw(i)*sd
-!    write(66,*) m%z(j0+1:j0+m%nx) !JPA Who is using this output? Shall we remove it?
-    m%dip(j0+1:j0+m%nx) = m%DIP_W(i)
-  end do
+!   m%dx = m%Lfault/m%nx
+!   allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%dip(m%nn))
+!
+!   ! set x, y, z, dip of first row
+!   cd = cos(m%DIP_W(1)/180d0*PI)
+!   sd = sin(m%DIP_W(1)/180d0*PI)
+!   do j = 1,m%nx
+!     m%x(j) = 0d0+(0.5d0+dble(j-1))*m%dx(1)
+!   end do
+!   m%y(1:m%nx) = 0d0+0.5d0*m%dw(1)*cd
+!   m%z(1:m%nx) = m%Z_CORNER+0.5d0*m%dw(1)*sd
+!   m%dip(1:m%nx) = m%DIP_W(1)
+!
+!   ! set x, y, z, dip of row 2 to nw
+!   do i = 2,m%nw
+!     cd0 = cd
+!     sd0 = sd
+!     cd = cos(m%DIP_W(i)/180d0*PI)
+!     sd = sin(m%DIP_W(i)/180d0*PI)
+!     j0 = (i-1)*m%nx
+!     m%x(j0+1:j0+m%nx) = m%x(1:m%nx)
+!     m%y(j0+1:j0+m%nx) = m%y(j0) + 0.5d0*m%dw(i-1)*cd0 + 0.5d0*m%dw(i)*cd
+!     m%z(j0+1:j0+m%nx) = m%z(j0) + 0.5d0*m%dw(i-1)*sd0 + 0.5d0*m%dw(i)*sd
+! !    write(66,*) m%z(j0+1:j0+m%nx) !JPA Who is using this output? Shall we remove it?
+!     m%dip(j0+1:j0+m%nx) = m%DIP_W(i)
+!   end do
 
     m%xglob => m%x
     m%yglob => m%y

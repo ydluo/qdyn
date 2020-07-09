@@ -125,6 +125,8 @@ subroutine ot_init(pb)
   pb%ot%lcnew = dble(n)
   pb%ot%llocnew = dble(n)
 
+  write(6, *) "entering the rabbit hole"
+
   if (is_MPI_parallel()) then
 
    ! find stations
@@ -133,6 +135,7 @@ subroutine ot_init(pb)
     dmin2 = 0.01d0*minval(pb%mesh%dx) ! distance tolerance = 1% grid size
     dmin2 = dmin2*dmin2
     nsta = 1 !NOTE: currently only one station implemented
+
     do ista=1,nsta
       do ik=1,n
         d2 = (pb%mesh%x(ik)-pb%ot%xsta(ista))**2 &
@@ -158,6 +161,7 @@ subroutine ot_init(pb)
     endif
 
    !JPA WARNING VMAX and IOT outputs not implemented yet in parallel
+   ! TODO: why are these not implemented?
 
   else
 

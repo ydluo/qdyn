@@ -142,7 +142,7 @@ As an alternative to the MATLAB wrapper, users can chose to generate their input
 |      `L`      | If `MESHDIM = 1`, `L` is the fault length (or spatial period; m)<br />If `MESHDIM = 0`, `MU/L` is the spring stiffness |      `1`      |
 |   `FINITE`    | Boundary conditions when `MESHDIM=1`:<br />`0` = **Periodic fault**: the fault is infinitely long, but slip is spatially periodic with period `L`, loaded by steady displacement at distance `W` from the fault.<br />`1` = **Finite fault**: the fault is infinitely long, but only a segment of length `L` is explicitly governed by a [friction law](model_assumptions.html#fault-rheology). The remainder of the fault has steady slip at a rate `V_PL`. If running the code with this option gives the error message `kernel file src/kernel_I.tab is too short`, you should create a larger kernel file with the MATLAB function `TabKernelFiniteFit.m`.<br />`2` = **Symmetric periodic fault**: like option `0`, but slip is symmetric relative to the first element.<br />`3` = **Symmetric finite fault**: like option `1`, but slip is symmetric relative to the first element. This can be used to simulate a free surface adjacent to the first element. |      `1`      |
 |      `W`      | Out-of-plane seismogenic width of the fault (m), only if `MESHDIM=1` and `FINITE=0`, following the "2.5D" approximation introduced in appendix A.2 of [Luo and Ampuero (2017)](http://dx.doi.org/10.1016/j.tecto.2017.11.006). **Note** that the approximation assumes that the grid size is `> W`. |      `50e3`      |
-|    `DIP_W`    | Fault dip angle (degree). This parameter is only used when `MESHDIM=2` or `4`. If depth-dependent, values must be given from deeper to shallower depth. |      `90`      |
+|    `DIP_W`    | Fault dip angle (degree). This parameter is only used when `MESHDIM=2`. If depth-dependent, values must be given from deeper to shallower depth. |      `90`      |
 |  `Z_CORNER`   | Fault bottom depth (m; negative down)                        |      `0`      |
 | `SIGMA_COUPL` | Turn on or off normal stress coupling:<br />`0` = disabled<br />`1` = enabled<br />This parameter is **deprecated** for the Python wrapper, use `FEAT_STRESS_COUPL` instead (see below). |      `0`      |
 |    `APER`     | Amplitude of additional time-dependent oscillatory shear stress loading (Pa) |      `0`      |
@@ -244,7 +244,6 @@ QDYN offers various optional simulation features. Set the following parameters t
 
 |  Parameter   | Description                                                  | Default value |
 | :----------: | ------------------------------------------------------------ | :-----------: |
-|   `OX_SEQ`   | Type of snapshot outputs:<br />`0` = All snapshots in a single output file (`fort.19`)<br />`1`  = One output file per snapshot (`fort.1001, ...`) |      `0`      |
 |   `NXOUT`    | Spatial interval for snapshot output (in number of elements) |      `1`      |
 |   `NTOUT`    | Temporal interval (in number of time steps) for snapshot output |      `1`      |
 |  `NTOUT_OT`  | Temporal interval (in number of time steps) for time series output |      `1`      |

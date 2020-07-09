@@ -194,6 +194,7 @@ class qdyn:
         set_dict["DYN_M"] = 1e18			# Target seismic moment of dynamic event
 
         set_dict["NPROC"] = 1				# Number of processors, default 1 = serial (no MPI)
+        set_dict["MPI_path"] = "/usr/local/bin/mpirun"   # Path to MPI executable
 
         self.set_dict = set_dict
 
@@ -218,7 +219,6 @@ class qdyn:
         settings = self.set_dict
         dim = settings["MESHDIM"]
         N = settings["N"]
-        self.set_dict["NW"] = N
 
         # Determine number of creep mechanisms
         A = np.array(settings["SET_DICT_CNS"]["A"])
@@ -300,7 +300,7 @@ class qdyn:
             mesh_dict["DIP_W"] = np.ones(N)*settings["DIP_W"]
             mesh_dict["X"] = (np.arange(N) % settings["NX"] + 0.5)*dx
             mesh_dict["Y"] = (np.floor(np.arange(N)/settings["NX"]) + 0.5)*settings["DW"]*np.cos(theta)
-            mesh_dict["Z"] = mesh_dict["Y"]*np.tan(theta)
+            mesh_dict["Z"] = mesh_dict["Y"]*np.tan(-theta)
 
         self.mesh_dict.update(mesh_dict)
         self.mesh_rendered = True
@@ -312,6 +312,11 @@ class qdyn:
         if self.mesh_rendered == False:
             print("The mesh has not yet been rendered!")
             exit()
+
+        if self.set_dict["OX_SEQ"] == 1:
+            print("Warning: OX_SEQ = 1 is no longer supported by the snapshot output module.")
+            print("All snapshots are combined into a single output file (default).")
+            print("This legacy code will be removed in a future release.")
 
         # Optionally, output can be created to an external working directory
         # This is still experimental...
@@ -352,8 +357,7 @@ class qdyn:
             if settings["MESHDIM"] == 2:
                 input_str += "%u %u%s NX, NW\n" % (settings["NX"], nwLocal[iproc], delimiter)
                 input_str += "%.15g %.15g %.15g%s L, W, Z_CORNER\n" % (settings["L"], settings["W"], settings["Z_CORNER"], delimiter)
-                # TODO: MPI the stuff below
-                for i in range(settings["NW"]):
+                for i in range(nwLocal[iproc]):
                     input_str += "%.15g %.15g \n" % (mesh["DW"][i], mesh["DIP_W"][i])
             else:
                 input_str += "%u%s NN\n" % (settings["N"], delimiter)
@@ -485,13 +489,15 @@ class qdyn:
 
         else: # MPI parallel
 
+            MPI_path = self.set_dict["MPI_path"]
+
             # If we're on a Windows 10 + Unix subsystem, call bash
             if self.W10_bash is True:
                 cmd = ["bash", "-c",
-                "\"/usr/local/bin/mpirun -np %i %s\"" % (self.set_dict["NPROC"], qdyn_exec_bash)]
+                "\"%s -np %i %s\"" % (MPI_path, self.set_dict["NPROC"], qdyn_exec_bash)]
             # If we're on Unix, simply call the mpi executable directly
             else:
-                cmd = ["/usr/local/bin/mpirun", "-np", "%i" % (self.set_dict["NPROC"]), qdyn_exec]
+                cmd = [MPI_path, "-np", "%i" % (self.set_dict["NPROC"]), qdyn_exec]
 
             # If unit testing is requested, append test argument
             if unit:
