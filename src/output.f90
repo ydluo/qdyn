@@ -561,7 +561,8 @@ subroutine ox_write(pb)
   if (write_ox) then
 
     ! Write ox data
-    call write_ox_lines(pb%ox%unit, pb%ox%fmt, pb%ox%objects_ox, pb)
+    call write_ox_lines(pb%ox%unit, pb%ox%fmt, pb%ox%objects_ox, &
+                        pb%ox%nxout, pb%ox%nwout, pb)
 
     ! Check if unit needs to be closed
     if (close_unit) then
@@ -588,7 +589,8 @@ subroutine ox_write(pb)
       ! Define unit for rising edge ox output
       unit = pb%ox%ox_dyn_unit + 3 * pb%ox%dyn_count + 1
       ! Write ox data
-      call write_ox_lines(unit, pb%ox%fmt, pb%ox%objects_dyn, pb)
+      call write_ox_lines(unit, pb%ox%fmt, pb%ox%objects_dyn, &
+                          pb%ox%nxout_dyn, pb%ox%nwout_dyn, pb)
       ! Close output unit
       close(unit)
 
@@ -599,7 +601,8 @@ subroutine ox_write(pb)
       ! Define unit for falling edge ox output
       unit = pb%ox%ox_dyn_unit + 3 * pb%ox%dyn_count + 2
       ! Write ox data
-      call write_ox_lines(unit, pb%ox%fmt, pb%ox%objects_dyn, pb)
+      call write_ox_lines(unit, pb%ox%fmt, pb%ox%objects_dyn, &
+                          pb%ox%nxout_dyn, pb%ox%nwout_dyn, pb)
       ! Close output unit
       close(unit)
 
@@ -641,6 +644,8 @@ subroutine ox_write(pb)
   ! End ox_dyn output
   !---------------------------------------------------------------------------
   ! Write QSB output
+  ! Note that for QSB output, the data for each element needs to be written to
+  ! the output file, so that nxout = nwout = 1
 
   if (write_QSB) then
 
@@ -648,7 +653,7 @@ subroutine ox_write(pb)
 
       unit = pb%ox%QSB_unit_pre
       open(unit, file='DYN_PRE.txt', status='REPLACE')
-      call write_ox_lines(unit, pb%ox%fmt, pb%ox%objects_dyn, pb)
+      call write_ox_lines(unit, pb%ox%fmt, pb%ox%objects_dyn, 1, 1, pb)
       pb%ox%pot_pre = pb%ot%pot
       close(unit)
 
@@ -656,7 +661,7 @@ subroutine ox_write(pb)
 
       unit = pb%ox%QSB_unit_post
       open(unit, file='DYN_POST.txt', status='REPLACE')
-      call write_ox_lines(unit, pb%ox%fmt, pb%ox%objects_dyn, pb)
+      call write_ox_lines(unit, pb%ox%fmt, pb%ox%objects_dyn, 1, 1, pb)
       close(unit)
 
       ! Check for seismic moment
@@ -692,28 +697,32 @@ end subroutine ox_write
 
 !=====================================================================
 ! Write ox data to file
-subroutine write_ox_lines(unit, fmt, objects, pb)
+subroutine write_ox_lines(unit, fmt, objects, nxout, nwout, pb)
 
   use problem_class
   type (problem_type), intent(inout) :: pb
-  integer :: unit, ixout, iox, nn
+  integer :: iox, iwout, ixout, n, nw, nwout, nx, nxout, unit
   character(len=16), dimension(pb%ox%nox) :: fmt
   type(oxptr), dimension(pb%ox%nox) :: objects
 
   ! Number of nodes to loop over (either local or global)
-  nn = size(objects(1)%p)
+  nx = pb%mesh%nx
+  nw = pb%mesh%nw
 
   ! Write header
   write(unit,'(a)') trim(pb%ox%header)
   ! Loop over all ox elements
-  do ixout=1,nn,pb%ox%nxout
+  do iwout=1, nw, nwout
+    do ixout=1, nx, nxout
+      n = (iwout - 1) * nx + ixout
     ! Loop over all ox output quantities (except last one)
-    do iox=1,pb%ox%nox-1
-      ! Write ox output quantity, do not advance to next line
-      write(unit, fmt(iox), advance='no') objects(iox)%p(ixout)
+      do iox=1,pb%ox%nox-1
+        ! Write ox output quantity, do not advance to next line
+        write(unit, fmt(iox), advance='no') objects(iox)%p(n)
+      enddo
+      ! Write last ox output quantity, advance to next line
+      write(unit, fmt(pb%ox%nox)) objects(pb%ox%nox)%p(n)
     enddo
-    ! Write last ox output quantity, advance to next line
-    write(unit, fmt(pb%ox%nox)) objects(pb%ox%nox)%p(ixout)
   enddo
 
 end subroutine write_ox_lines

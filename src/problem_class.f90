@@ -26,7 +26,8 @@ module problem_class
   type ox_type
     integer :: ntout=0, nox=-1, nox_dyn=-1, nrup=-1
     integer :: unit=-1, ox_dyn_unit=-1, QSB_unit_pre=-1, QSB_unit_post=-1
-    integer :: count, dyn_count, dyn_stat, i_ox_dyn, i_ox_seq, nxout, nxout_dyn
+    integer :: count, dyn_count, dyn_stat, i_ox_dyn
+    integer :: nwout, nwout_dyn, nxout, nxout_dyn
     double precision :: pot_pre
     double precision, dimension(:), allocatable :: tau_max, t_rup, v_max, t_vmax
     character(len=256) :: header

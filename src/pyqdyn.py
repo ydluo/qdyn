@@ -177,10 +177,12 @@ class qdyn:
         set_dict["V_TH"] = 1e-2				# Threshold velocity for seismic event
         set_dict["NTOUT_OT"] = 1			# Temporal interval (number of time steps) for time series output
         set_dict["NTOUT"] = 1				# Temporal interval (number of time steps) for snapshot output
-        set_dict["NXOUT"] = 1				# Spatial interval (number of elements) for snapshot output
-        set_dict["OX_SEQ"] = 0				# Type of snapshot outputs (0: all snapshots in single file, 1: one file per snapshot)
+        set_dict["NXOUT"] = 1				# Spatial interval (number of elements in x-direction) for snapshot output
+        set_dict["NWOUT"] = 1               # Spatial interval (number of elements in y-direction) for snapshot output
+        set_dict["OX_SEQ"] = 0				# Type of snapshot outputs (0: all snapshots in single file, 1: one file per snapshot) - DEPRECATED
         set_dict["OX_DYN"] = 0				# Output specific snapshots of dynamic events defined by thresholds on peak slip velocity DYN_TH_ON and DYN_TH_OFF
-        set_dict["NXOUT_DYN"] = 1			# Spatial interval (number of elements) for dynamic snapshot outputs
+        set_dict["NXOUT_DYN"] = 1			# Spatial interval (number of elements in x-direction) for dynamic snapshot outputs
+        set_dict["NWOUT_DYN"] = 1           # Spatial interval (number of elements in y-direction) for dynamic snapshot outputs
         set_dict["DYN_TH_ON"] = 1e-3		# peak slip rate threshold defining beginning of dynamic event
         set_dict["DYN_TH_OFF"] = 1e-4		# peak slip rate threshold defining end of dynamic event
         set_dict["IC"] = 0					# Index of selected elements for time series output (starting at 0)
@@ -390,7 +392,7 @@ class qdyn:
                     exit()
                 input_str += "%u%s N_creep\n" % (N_creep, delimiter)
             input_str += "%u %u %u%s stress_coupling, thermal press., localisation\n" % (settings["FEAT_STRESS_COUPL"], settings["FEAT_TP"], settings["FEAT_LOCALISATION"], delimiter)
-            input_str += "%u %u %u %u %u %u %u%s ntout_ot, ntout_ox, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n" % (settings["NTOUT_OT"], settings["NTOUT"], settings["IC"]+1, settings["NXOUT"], settings["NXOUT_DYN"], settings["OX_SEQ"], settings["OX_DYN"], delimiter)
+            input_str += "%u %u %u %u %u %u %u %u%s ntout_ot, ntout_ox, nt_coord, nxout, nwout, nxout_DYN, nwout_DYN, ox_DYN\n" % (settings["NTOUT_OT"], settings["NTOUT"], settings["IC"]+1, settings["NXOUT"], settings["NWOUT"], settings["NXOUT_DYN"], settings["NWOUT_DYN"], settings["OX_DYN"], delimiter)
             input_str += "%.15g %.15g %.15g %.15g %.15g %.15g%s beta, smu, lambda, v_th\n" % (settings["VS"], settings["MU"], settings["LAM"], settings["D"], settings["HD"], settings["V_TH"], delimiter)
             input_str += "%.15g %.15g%s Tper, Aper\n" % (settings["TPER"], settings["APER"], delimiter)
             input_str += "%.15g %.15g %.15g %.15g%s dt_try, dtmax, tmax, accuracy\n" % (settings["DTTRY"] ,settings["DTMAX"] ,settings["TMAX"] ,settings["ACC"] , delimiter)
