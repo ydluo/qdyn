@@ -230,8 +230,8 @@ QDYN offers various optional simulation features. Set the following parameters t
 | Parameter | Description                                                  | Default value |
 | :-------: | ------------------------------------------------------------ | :-----------: |
 |    `N`    | Number of fault elements if `MESHDIM=1`. It must be a power of 2. |     `-1`      |
-|   `NX`    | Number of fault elements along strike if `MESHDIM=2`. It must be a power of 2 if FFT is used along strike (`FFT_TYPE=1` or `2` in `constants.f90`) |      `1`      |
-|   `NW`    | Number of fault elements along dip if `MESHDIM=2`. It must be a power of 2 if FFT is used along dip (`FFT_TYPE=2`) |     `-1`      |
+|   `NX`    | Number of fault elements along strike if `MESHDIM=2`. It must be a power of 2 if FFT is used along strike (`FFT_TYPE=1` in `constants.f90`) |      `1`      |
+|   `NW`    | Number of fault elements along dip if `MESHDIM=2`. It must be a power of 2 if FFT is used along dip (`FFT_TYPE=2` in `constants.f90`) |     `-1`      |
 | `NPROCS`  | Number of processors if running in parallel and with MPI (only implemented for `MESHDIM=2` and `FFT_TYPE=1`) |      `1`      |
 |   `DW`    | Along-dip length (m) of each element, from deep to shallow   |      `1`      |
 |  `TMAX`   | Threshold for stopping criterion:<br />Final simulation time (s) when `NSTOP=0`<br />Slip velocity threshold (m/s) when `NSTOP=3` |               |
@@ -244,11 +244,13 @@ QDYN offers various optional simulation features. Set the following parameters t
 
 |  Parameter   | Description                                                  | Default value |
 | :----------: | ------------------------------------------------------------ | :-----------: |
-|   `NXOUT`    | Spatial interval for snapshot output (in number of elements) |      `1`      |
+|   `NWOUT`    | Spatial interval for snapshot output (in number of elements along-dip) |      `1`      |
+|   `NXOUT`    | Spatial interval for snapshot output (in number of elements along-strike) |      `1`      |
 |   `NTOUT`    | Temporal interval (in number of time steps) for snapshot output |      `1`      |
 |  `NTOUT_OT`  | Temporal interval (in number of time steps) for time series output |      `1`      |
 |   `OX_DYN`   | Output specific snapshots of dynamic events defined by thresholds on peak slip velocity `DYN_TH_ON` and `DYN_TH_OFF` (see below):<br />`0` = Disable<br />`1` = Enable outputs for event `i`: event start = `fort.19998+3i`; event end = `fort.19999+3i`; rupture time = `fort.20000+3i` |      `0`      |
-| `NXOUT_DYN`  | Spatial interval (in number of elements) for dynamic snapshot output |      `1`      |
+| `NWOUT_DYN`  | Spatial interval (in number of elements along-dip) for dynamic snapshot output |      `1`      |
+| `NXOUT_DYN`  | Spatial interval (in number of elements along-strike) for dynamic snapshot output |      `1`      |
 | `DYN_TH_ON`  | Peak slip rate threshold (m/s) to define the beginning of a dynamic event |    `1e-2`     |
 | `DYN_TH_OFF` | Peak slip rate threshold (m/s) to define the end of a dynamic event. It is recommended to have `DYN_TH_ON >> DYN_TH_OFF`, so that small fluctuations in slip rate during the main event do not "trigger" new events. |    `1e-4`     |
 |     `IC`     | Index of selected element for time series output             |      `0`      |
