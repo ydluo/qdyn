@@ -242,7 +242,7 @@ subroutine read_main(pb)
 
   if (pb%mesh%dim == 2) then
     call read_mesh_nodes(15,pb%mesh)
-    call ot_read_stations(pb%ot)
+    ! call ot_read_stations(pb%ot)
   endif
 
   close(15)

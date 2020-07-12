@@ -125,30 +125,28 @@ subroutine ot_init(pb)
   pb%ot%lcnew = dble(n)
   pb%ot%llocnew = dble(n)
 
-  write(6, *) "entering the rabbit hole"
-
   if (is_MPI_parallel()) then
 
    ! find stations
    !PG, temporal fix, only works for one station.
-    pb%ot%ic=0 !Setting all to zero
-    dmin2 = 0.01d0*minval(pb%mesh%dx) ! distance tolerance = 1% grid size
-    dmin2 = dmin2*dmin2
-    nsta = 1 !NOTE: currently only one station implemented
-
-    do ista=1,nsta
-      do ik=1,n
-        d2 = (pb%mesh%x(ik)-pb%ot%xsta(ista))**2 &
-           + (pb%mesh%y(ik)-pb%ot%ysta(ista))**2 &
-           + (pb%mesh%z(ik)-pb%ot%zsta(ista))**2
-        if (d2 < dmin2) then
-          pb%ot%ic=ik
-          write(6,*) 'Processor: ',my_mpi_tag(),', station ',ista, &
-                     ' found, distance mismatch = ',d2
-          exit
-        endif
-      enddo
-    enddo
+    ! pb%ot%ic=0 !Setting all to zero
+    ! dmin2 = 0.01d0*minval(pb%mesh%dx) ! distance tolerance = 1% grid size
+    ! dmin2 = dmin2*dmin2
+    ! nsta = 1 !NOTE: currently only one station implemented
+    !
+    ! do ista=1,nsta
+    !   do ik=1,n
+    !     d2 = (pb%mesh%x(ik)-pb%ot%xsta(ista))**2 &
+    !        + (pb%mesh%y(ik)-pb%ot%ysta(ista))**2 &
+    !        + (pb%mesh%z(ik)-pb%ot%zsta(ista))**2
+    !     if (d2 < dmin2) then
+    !       pb%ot%ic=ik
+    !       write(6,*) 'Processor: ',my_mpi_tag(),', station ',ista, &
+    !                  ' found, distance mismatch = ',d2
+    !       exit
+    !     endif
+    !   enddo
+    ! enddo
 
     if (OUT_MASTER .and. is_mpi_master() ) then
       pb%ot%unit = FID_OT

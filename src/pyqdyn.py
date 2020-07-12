@@ -230,6 +230,10 @@ class qdyn:
             self.set_dict["N"] = N
             self.set_dict["NW"] = N
 
+        if dim == 1:
+            N = self.set_dict["N"]
+            self.set_dict["NW"] = N
+
         if dim == 2:
             N = self.set_dict["NX"]*self.set_dict["NW"]
             self.set_dict["N"] = N
@@ -300,7 +304,7 @@ class qdyn:
             mesh_dict["DIP_W"] = np.ones(N)*settings["DIP_W"]
             mesh_dict["X"] = (np.arange(N) % settings["NX"] + 0.5)*dx
             mesh_dict["Y"] = (np.floor(np.arange(N)/settings["NX"]) + 0.5)*settings["DW"]*np.cos(theta)
-            mesh_dict["Z"] = mesh_dict["Y"]*np.tan(-theta)
+            mesh_dict["Z"] = settings["Z_CORNER"] + mesh_dict["Y"]*np.tan(theta)
 
         self.mesh_dict.update(mesh_dict)
         self.mesh_rendered = True
@@ -342,7 +346,6 @@ class qdyn:
 
         # Loop over processor nodes
         for iproc in range(Nprocs):
-
             nloc = nwLocal[iproc]*settings["NX"]	# number of fault elements hosted on node
             iloc = np.zeros(nloc, dtype=int)		# buffer for indices of those elements
 

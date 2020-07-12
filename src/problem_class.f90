@@ -52,7 +52,7 @@ module problem_class
   ! Spectral mesh parameters (Dlogl, lw_max, Nl) are hard-coded in mesh.f90
   type tp_type
     type (spectral_mesh_type) :: mesh
-    double precision, pointer :: P(:), T(:)
+    double precision, pointer :: P(:) => null(), T(:) => null()
     double precision, dimension(:), allocatable :: &
       rhoc, inv_rhoc, beta, eta, k_t, k_p, l, w, inv_w, P_a, T_a, &
       Pi, Theta, PiTheta, Omega, dP_dt, Theta_prev, PiTheta_prev, &
@@ -103,8 +103,9 @@ module problem_class
     ! Basic variables
     ! Allocate ox output variables as pointers
     ! NOTE: if theta2 needs to be in output sequence, add here
-    double precision, pointer ::  tau(:), dtau_dt(:), sigma(:), &
-                                  slip(:), v(:), theta(:)
+    double precision, pointer ::  tau(:) => null(), dtau_dt(:) => null(), &
+                                  sigma(:) => null(), slip(:) => null(), &
+                                  v(:) => null(), theta(:) => null()
     double precision, dimension(:), allocatable :: dtheta_dt, dtheta2_dt
     double precision, dimension(:), allocatable :: theta2, alpha
    ! Boundary conditions
@@ -127,9 +128,10 @@ module problem_class
     type (ot_type) :: ot
     type (ox_type) :: ox
    ! For MPI outputs
-    double precision, pointer ::  tau_glob(:), dtau_dt_glob(:), sigma_glob(:), &
-                                  slip_glob(:), v_glob(:), theta_glob(:), &
-                                  P_glob(:), T_glob(:)
+    double precision, pointer ::  tau_glob(:) => null(), dtau_dt_glob(:) => null(), &
+                                  sigma_glob(:) => null(), slip_glob(:) => null(), &
+                                  v_glob(:) => null(), theta_glob(:) => null(), &
+                                  P_glob(:) => null(), T_glob(:) => null()
     double precision, dimension(:), allocatable ::  tau_max_glob, t_rup_glob, &
                                                     v_max_glob, t_vmax_glob
     logical :: allocated_glob = .false.
