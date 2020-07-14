@@ -113,7 +113,7 @@ end subroutine ot_read_stations
 subroutine ot_init(pb)
 
   use problem_class
-  use constants, only: OUT_MASTER, BIN_OUTPUT
+  use constants, only: BIN_OUTPUT
   use my_mpi, only : is_MPI_parallel, is_mpi_master, my_mpi_tag
   use mesh, only : mesh_get_size
 
@@ -148,7 +148,7 @@ subroutine ot_init(pb)
     !   enddo
     ! enddo
 
-    if (OUT_MASTER .and. is_mpi_master() ) then
+    if (is_mpi_master() ) then
       pb%ot%unit = FID_OT
       write(pb%ot%unit,'(a)')'# macroscopic values:'
       write(pb%ot%unit,'(a)')'# 1=t'
@@ -353,7 +353,7 @@ end subroutine ox_init
 subroutine ot_write(pb)
 
   use problem_class
-  use constants, only : OCTAVE_OUTPUT, BIN_OUTPUT
+  use constants, only : BIN_OUTPUT
   use my_mpi, only : is_MPI_parallel, my_mpi_tag
 
   type (problem_type), intent(inout) :: pb
@@ -368,13 +368,8 @@ subroutine ot_write(pb)
       if (ios>0) stop 'Fatal error: ot_write: Error opening a fort.18 file'
      !JPA add test for the first time we try to open this file but it does not exist yet
      !JPA add test to prevent appending data to a file from a previous simulation
-      if (OCTAVE_OUTPUT) then
-        ot_fmt = '(g0.16,5(",",g0.6))'
-        if (pb%features%tp == 1) ot_fmt = '(g0.16,7(",",g0.6))'
-      else
-        ot_fmt = '(e24.16,5e14.6)'
-        if (pb%features%tp == 1) ot_fmt = '(e24.16,7e14.6)'
-      endif
+      ot_fmt = '(e24.16,5e14.6)'
+      if (pb%features%tp == 1) ot_fmt = '(e24.16,7e14.6)'
 
       ! If thermal pressurisation is requested, output P and T
       if (pb%features%tp == 1) then
@@ -395,14 +390,9 @@ subroutine ot_write(pb)
 
     if (.not.BIN_OUTPUT) then
 
-      if (OCTAVE_OUTPUT) then
-        ! for Octave: comma as field delimiter and no spaces
-        ot_fmt = '(g0.16,16(",",g0.6))'
-        if (pb%features%tp == 1) ot_fmt = '(g0.16,20(",",g0.6))'
-      else
-        ot_fmt = '(e24.16,16e14.6)'
-        if (pb%features%tp == 1) ot_fmt = '(e24.16,20e14.6)'
-      endif
+      ot_fmt = '(e24.16,16e14.6)'
+      if (pb%features%tp == 1) ot_fmt = '(e24.16,20e14.6)'
+
       if (pb%features%tp == 1) then
         write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx(1),  &
           pb%ot%lcnew*pb%mesh%dx(1), pb%ot%pot, pb%ot%pot_rate,    &
@@ -581,7 +571,6 @@ subroutine ox_write(pb)
     if (rising_edge) then
 
       ! Collect output quantities
-      ! TODO: check slice is same as loop?
       pb%tau_max_glob = pb%tau_glob(::nxout_dyn)
       pb%v_max_glob = pb%v_glob(::nxout_dyn)
       pb%t_rup_glob = pb%time

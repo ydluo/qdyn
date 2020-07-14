@@ -24,8 +24,3 @@ This command allows QDYN to run on 8 threads, which will roughly speed up calcul
 ### MPI
 
 For 3D simulations with `MESHDIM=2`, QDYN can run in parallel in distributed memory clusters with MPI. The number of processors must be set in the variable `NPROCS`.
-
-### Managing outputs of large simulations
-
-QDYN by default outputs results as a single ASCII file (`fort.19`). In most multi-cycle 3D simulations this file is very large. It is then helpful to set `OX_SEQ = 1` in the wrapper, to generate separate `ox` files outputs for each snapshot (`fort.1001, ...`). Also, setting `OX_DYN = 1` will automatically detect seismic events
-(according to parameters `DYN_TH_ON` and `DYN_TH_OFF`) and generate 3 snapshots for each event.
