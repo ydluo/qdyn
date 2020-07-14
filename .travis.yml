@@ -33,4 +33,4 @@ install:
 
 script:
   - cd $TRAVIS_BUILD_DIR/test/
-  - python test_suite.py
+  - "travis wait python test_suite.py"
