@@ -240,10 +240,10 @@ subroutine read_main(pb)
   ! End reading TP model parameters
   ! </SEISMIC>
 
-  if (pb%mesh%dim == 2) then
-    call read_mesh_nodes(15,pb%mesh)
+  ! if (pb%mesh%dim == 2) then
+    ! call read_mesh_nodes(15,pb%mesh)
     ! call ot_read_stations(pb%ot)
-  endif
+  ! endif
 
   close(15)
   write(6,*) 'Input complete'
