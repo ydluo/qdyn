@@ -51,8 +51,7 @@ end subroutine initiate_RSF
 subroutine test_rsf_friction(pb)
 
   type(problem_type) :: pb
-  double precision, dimension(pb%mesh%nn) :: a, b, dc, v_star, v1, v2, mu_star
-  double precision, dimension(pb%mesh%nn) :: dtheta, dv, dtau, mu, mu2
+  double precision, dimension(pb%mesh%nn) :: dtheta, mu, mu2
   double precision, dimension(pb%mesh%nn) :: dmu_dv, dmu_dv2
   double precision, dimension(pb%mesh%nn) :: dmu_dtheta, dmu_dtheta2
   double precision, dimension(pb%mesh%nn) :: x, zero, mu_truth, dmu_truth

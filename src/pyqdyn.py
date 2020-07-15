@@ -81,7 +81,7 @@ class qdyn:
 
         set_dict["V_PL"] = 1e-9             # Tectonic loading rate [m/s]
         set_dict["L"] = 1					# Length of the fault if MESHDIM = 1. Stiffness is MU/L if MESHDIM = 0
-        set_dict["W"] = 1					# Distance between load point and fault if MESHDIM = 1 and FINITE = 0
+        set_dict["W"] = 50e3	       		# Distance between load point and fault if MESHDIM = 1 and FINITE = 0
         set_dict["SIGMA"] = 50e6            # Normal stress [Pa]
         set_dict["SIGMA_CPL"] = 0			# Normal stress coupling (only for dipping faults)
         set_dict["VS"] = 3000				# Shear wave speed [m/s]. If VS = 0 radiation damping is off
@@ -89,7 +89,7 @@ class qdyn:
         set_dict["LAM"] = 30e9				# Elastic modulus for 3D simulations [Pa]
         set_dict["TPER"] = 31536000			# Period of additional time-dependent oscillatory shear stress loading [s]
         set_dict["APER"] = 0				# Amplitude of additional time-dependent oscillatory shear stress loading [Pa]
-        set_dict["DIP_W"] = 0				# Fault dip in 3D
+        set_dict["DIP_W"] = 90				# Fault dip in 3D
         set_dict["Z_CORNER"] = 0			# 3D
 
         # Optional simulation features
@@ -177,10 +177,12 @@ class qdyn:
         set_dict["V_TH"] = 1e-2				# Threshold velocity for seismic event
         set_dict["NTOUT_OT"] = 1			# Temporal interval (number of time steps) for time series output
         set_dict["NTOUT"] = 1				# Temporal interval (number of time steps) for snapshot output
-        set_dict["NXOUT"] = 1				# Spatial interval (number of elements) for snapshot output
-        set_dict["OX_SEQ"] = 0				# Type of snapshot outputs (0: all snapshots in single file, 1: one file per snapshot)
+        set_dict["NXOUT"] = 1				# Spatial interval (number of elements in x-direction) for snapshot output
+        set_dict["NWOUT"] = 1               # Spatial interval (number of elements in y-direction) for snapshot output
+        set_dict["OX_SEQ"] = 0				# Type of snapshot outputs (0: all snapshots in single file, 1: one file per snapshot) - DEPRECATED
         set_dict["OX_DYN"] = 0				# Output specific snapshots of dynamic events defined by thresholds on peak slip velocity DYN_TH_ON and DYN_TH_OFF
-        set_dict["NXOUT_DYN"] = 1			# Spatial interval (number of elements) for dynamic snapshot outputs
+        set_dict["NXOUT_DYN"] = 1			# Spatial interval (number of elements in x-direction) for dynamic snapshot outputs
+        set_dict["NWOUT_DYN"] = 1           # Spatial interval (number of elements in y-direction) for dynamic snapshot outputs
         set_dict["DYN_TH_ON"] = 1e-3		# peak slip rate threshold defining beginning of dynamic event
         set_dict["DYN_TH_OFF"] = 1e-4		# peak slip rate threshold defining end of dynamic event
         set_dict["IC"] = 0					# Index of selected elements for time series output (starting at 0)
@@ -194,6 +196,7 @@ class qdyn:
         set_dict["DYN_M"] = 1e18			# Target seismic moment of dynamic event
 
         set_dict["NPROC"] = 1				# Number of processors, default 1 = serial (no MPI)
+        set_dict["MPI_path"] = "/usr/local/bin/mpirun"   # Path to MPI executable
 
         self.set_dict = set_dict
 
@@ -218,7 +221,6 @@ class qdyn:
         settings = self.set_dict
         dim = settings["MESHDIM"]
         N = settings["N"]
-        self.set_dict["NW"] = N
 
         # Determine number of creep mechanisms
         A = np.array(settings["SET_DICT_CNS"]["A"])
@@ -228,6 +230,10 @@ class qdyn:
         if dim == 0:
             N = 1
             self.set_dict["N"] = N
+            self.set_dict["NW"] = N
+
+        if dim == 1:
+            N = self.set_dict["N"]
             self.set_dict["NW"] = N
 
         if dim == 2:
@@ -300,7 +306,7 @@ class qdyn:
             mesh_dict["DIP_W"] = np.ones(N)*settings["DIP_W"]
             mesh_dict["X"] = (np.arange(N) % settings["NX"] + 0.5)*dx
             mesh_dict["Y"] = (np.floor(np.arange(N)/settings["NX"]) + 0.5)*settings["DW"]*np.cos(theta)
-            mesh_dict["Z"] = mesh_dict["Y"]*np.tan(theta)
+            mesh_dict["Z"] = settings["Z_CORNER"] + mesh_dict["Y"]*np.tan(theta)
 
         self.mesh_dict.update(mesh_dict)
         self.mesh_rendered = True
@@ -312,6 +318,11 @@ class qdyn:
         if self.mesh_rendered == False:
             print("The mesh has not yet been rendered!")
             exit()
+
+        if self.set_dict["OX_SEQ"] == 1:
+            print("Warning: OX_SEQ = 1 is no longer supported by the snapshot output module.")
+            print("All snapshots are combined into a single output file (default).")
+            print("This legacy code will be removed in a future release.")
 
         # Optionally, output can be created to an external working directory
         # This is still experimental...
@@ -337,7 +348,6 @@ class qdyn:
 
         # Loop over processor nodes
         for iproc in range(Nprocs):
-
             nloc = nwLocal[iproc]*settings["NX"]	# number of fault elements hosted on node
             iloc = np.zeros(nloc, dtype=int)		# buffer for indices of those elements
 
@@ -352,8 +362,7 @@ class qdyn:
             if settings["MESHDIM"] == 2:
                 input_str += "%u %u%s NX, NW\n" % (settings["NX"], nwLocal[iproc], delimiter)
                 input_str += "%.15g %.15g %.15g%s L, W, Z_CORNER\n" % (settings["L"], settings["W"], settings["Z_CORNER"], delimiter)
-                # TODO: MPI the stuff below
-                for i in range(settings["NW"]):
+                for i in range(nwLocal[iproc]):
                     input_str += "%.15g %.15g \n" % (mesh["DW"][i], mesh["DIP_W"][i])
             else:
                 input_str += "%u%s NN\n" % (settings["N"], delimiter)
@@ -383,7 +392,7 @@ class qdyn:
                     exit()
                 input_str += "%u%s N_creep\n" % (N_creep, delimiter)
             input_str += "%u %u %u%s stress_coupling, thermal press., localisation\n" % (settings["FEAT_STRESS_COUPL"], settings["FEAT_TP"], settings["FEAT_LOCALISATION"], delimiter)
-            input_str += "%u %u %u %u %u %u %u%s ntout_ot, ntout_ox, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n" % (settings["NTOUT_OT"], settings["NTOUT"], settings["IC"]+1, settings["NXOUT"], settings["NXOUT_DYN"], settings["OX_SEQ"], settings["OX_DYN"], delimiter)
+            input_str += "%u %u %u %u %u %u %u %u%s ntout_ot, ntout_ox, nt_coord, nxout, nwout, nxout_DYN, nwout_DYN, ox_DYN\n" % (settings["NTOUT_OT"], settings["NTOUT"], settings["IC"]+1, settings["NXOUT"], settings["NWOUT"], settings["NXOUT_DYN"], settings["NWOUT_DYN"], settings["OX_DYN"], delimiter)
             input_str += "%.15g %.15g %.15g %.15g %.15g %.15g%s beta, smu, lambda, v_th\n" % (settings["VS"], settings["MU"], settings["LAM"], settings["D"], settings["HD"], settings["V_TH"], delimiter)
             input_str += "%.15g %.15g%s Tper, Aper\n" % (settings["TPER"], settings["APER"], delimiter)
             input_str += "%.15g %.15g %.15g %.15g%s dt_try, dtmax, tmax, accuracy\n" % (settings["DTTRY"] ,settings["DTMAX"] ,settings["TMAX"] ,settings["ACC"] , delimiter)
@@ -485,13 +494,15 @@ class qdyn:
 
         else: # MPI parallel
 
+            MPI_path = self.set_dict["MPI_path"]
+
             # If we're on a Windows 10 + Unix subsystem, call bash
             if self.W10_bash is True:
                 cmd = ["bash", "-c",
-                "\"/usr/local/bin/mpirun -np %i %s\"" % (self.set_dict["NPROC"], qdyn_exec_bash)]
+                "\"%s -np %i %s\"" % (MPI_path, self.set_dict["NPROC"], qdyn_exec_bash)]
             # If we're on Unix, simply call the mpi executable directly
             else:
-                cmd = ["/usr/local/bin/mpirun", "-np", "%i" % (self.set_dict["NPROC"]), qdyn_exec]
+                cmd = [MPI_path, "-np", "%i" % (self.set_dict["NPROC"]), qdyn_exec]
 
             # If unit testing is requested, append test argument
             if unit:
@@ -516,7 +527,8 @@ class qdyn:
 
     # Read QDYN output data
     def read_output(self, mirror=False, read_ot=True, filename_ot="fort.18",
-                    read_ox=True, filename_ox="fort.19", filename_time="fort.121"):
+                    read_ox=True, filename_ox="fort.19", read_ox_dyn=False,
+                    filename_time="fort.121"):
 
         # If a suffix is specified (optional), change file names
         suffix = self.set_dict["SUFFIX"]
@@ -561,9 +573,9 @@ class qdyn:
 
             # Snapshot output template depends on requested features
             if self.set_dict["FEAT_TP"] == 1:
-                cols_ox = ("x", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma", "P", "T")
+                cols_ox = ("x", "y", "z", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma", "P", "T")
             else:
-                cols_ox = ("x", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma")
+                cols_ox = ("x", "y", "z", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma")
 
             # Read snapshot output
             data_ox = read_csv(filename_ox, header=None, names=cols_ox, delim_whitespace=True, comment="#")
@@ -581,6 +593,55 @@ class qdyn:
                 self.ox = data_ox
         else:
             self.ox = None
+
+        if read_ox_dyn == True:
+
+            # Snapshot output template depends on requested features
+            if self.set_dict["FEAT_TP"] == 1:
+                cols_ox_dyn = ("x", "y", "z", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma", "P", "T")
+            else:
+                cols_ox_dyn = ("x", "y", "z", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma")
+
+            cols_ox_rup = ("x", "y", "z", "t_tau_max", "tau_max", "t_v_max", "v_max")
+
+            ox_dyn_files = np.array([file for file in os.listdir(".") if file.startswith("fort.200")])
+            ox_dyn_files_pre = ox_dyn_files[0::3]
+            ox_dyn_files_post = ox_dyn_files[1::3]
+            ox_dyn_files_rup = ox_dyn_files[2::3]
+
+            # Read snapshot output
+            data_ox_dyn_pre = [None] * len(ox_dyn_files_pre)
+            data_ox_dyn_post = [None] * len(ox_dyn_files_post)
+            data_ox_dyn_rup = [None] * len(ox_dyn_files_rup)
+            for i in range(len(ox_dyn_files_pre)):
+                # Read pre-rupture file
+                data_ox_dyn_pre[i] = read_csv(
+                    ox_dyn_files_pre[i], header=None, names=cols_ox_dyn,
+                    delim_whitespace=True, comment="#"
+                )
+                # Sanitise output (check for near-infinite numbers, etc.)
+                data_ox_dyn_pre[i] = data_ox_dyn_pre[i].apply(pd.to_numeric, errors="coerce")
+
+                # Read pre-rupture file
+                data_ox_dyn_post[i] = read_csv(
+                    ox_dyn_files_post[i], header=None, names=cols_ox_dyn,
+                    delim_whitespace=True, comment="#"
+                )
+                # Sanitise output (check for near-infinite numbers, etc.)
+                data_ox_dyn_post[i] = data_ox_dyn_post[i].apply(pd.to_numeric, errors="coerce")
+
+                # Rupture stats file
+                data_ox_dyn_rup[i] = read_csv(
+                    ox_dyn_files_rup[i], header=None, names=cols_ox_rup,
+                    delim_whitespace=True, comment="#"
+                )
+                # Sanitise output (check for near-infinite numbers, etc.)
+                data_ox_dyn_rup[i] = data_ox_dyn_rup[i].apply(pd.to_numeric, errors="coerce")
+
+            # Store snapshot data in self.ox
+            self.ox_dyn_pre = data_ox_dyn_pre
+            self.ox_dyn_post = data_ox_dyn_post
+            self.ox_dyn_rup = data_ox_dyn_rup
 
         return True
 

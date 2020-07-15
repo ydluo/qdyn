@@ -60,8 +60,10 @@
       link: tutorial_RSF_spring-block.html
     - name: CNS spring-block
       link: tutorial_CNS_spring-block.html
-    - name: Single asperity
+    - name: Single asperity (2D)
       link: tutorial_single_asperity_python.html
+    - name: Single asperity (3D)
+      link: tutorial_single_asperity_3D.html
     - name: Double asperity
       link: tutorial_double_asperity_python.html
 

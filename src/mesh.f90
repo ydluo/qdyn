@@ -7,9 +7,16 @@ module mesh
     integer :: dim = 0  ! dim = 1, 2 ,3 ~xD
     integer :: nx, nw, nn, nnglob, nwglob ! along-strike, along-dip, total grid number
     double precision :: Lfault, W, Z_CORNER ! fault length, width, lower-left corner z (follow Okada's convention)
-    double precision, allocatable :: DIP_W(:) !along-dip grid size and dip (adjustable), nw count
-    double precision, pointer :: x(:), y(:), z(:), dip(:), dx(:), dw(:) !coordinates, dip, along-strike and along-dip size of every grid (nx*nw count)
-    double precision, pointer :: xglob(:), yglob(:), zglob(:), dipglob(:), dwglob(:) ! same on global grid (nx*nwglobal count)
+    double precision, allocatable :: DIP_W(:) ! along-dip grid size and dip (adjustable), nw count
+    double precision, pointer :: time(:) => null() ! time (same for every element)
+    ! Local mesh coordinates
+    double precision, pointer :: x(:) => null(), y(:) => null(), z(:) => null()
+    ! Local dip, and along-strike and along-dip size of grid cells (nx*nw count)
+    ! TODO: grid sizes should be constant in order for FFT to work!
+    double precision, pointer :: dip(:) => null(), dx(:) => null(), dw(:) => null()
+    ! Global mesh coordinates (nx*nwglobal count)
+    double precision, pointer :: xglob(:) => null(), yglob(:) => null(), zglob(:) => null()
+    double precision, pointer :: dipglob(:) => null(), dwglob(:) => null()
   end type mesh_type
 
   ! SEISMIC: discretisation of spectral domain for diffusion solver
@@ -92,11 +99,15 @@ subroutine init_mesh(m)
 
   write(6,*) 'Initializing mesh ...'
 
+  ! Allocate time array (same for all m%dim)
+  allocate(m%time(m%nn))
+  m%time = 0d0
+  m%nnglob = m%nn
+
   select case (m%dim)
     case(0); call init_mesh_0D(m)
     case(1); call init_mesh_1D(m)
     case(2); call init_mesh_2D(m)
-    case(4); call init_mesh_2D(m)
   end select
 
 end subroutine init_mesh
@@ -137,6 +148,10 @@ subroutine init_mesh_1D(m)
     m%y(i) = 0d0
     m%z(i) = 0d0
   enddo
+
+  m%xglob => m%x
+  m%yglob => m%y
+  m%zglob => m%z
 
 end subroutine init_mesh_1D
 

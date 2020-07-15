@@ -215,7 +215,7 @@ end subroutine update_PT
 subroutine update_PT_final(dt,pb)
 
   type(problem_type), intent(inout) :: pb
-  double precision, dimension(pb%mesh%nn) :: tau_y, phi_dot, phi, dP_dt
+  double precision, dimension(pb%mesh%nn) :: tau_y, phi_dot, phi
   double precision :: dt
 
   ! Calculate mid-point values of tau_y, phi_dot, phi between t and t+dt

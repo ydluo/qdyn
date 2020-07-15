@@ -94,7 +94,6 @@ subroutine do_bsstep(pb)
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt_prev
   double precision, dimension(pb%mesh%nn) :: main_var
-  double precision :: t_out
   integer :: ik, neqs
 
   neqs = pb%neqs * pb%mesh%nn
@@ -151,7 +150,7 @@ subroutine do_bsstep(pb)
       write (6,*) "RK45 error [3]: relative error tolerance too small"
       stop
     case (4)
-      write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
+      ! write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
       yt = yt_prev
       goto 100
     case (5)
@@ -220,6 +219,9 @@ subroutine update_field(pb)
 
   double precision, dimension(pb%mesh%nn) :: P
   integer :: i,ix,iw
+
+  ! Update global time
+  pb%mesh%time = pb%time
 
   ! SEISMIC: obtain P at the previous time step
   P = 0d0
@@ -327,7 +329,7 @@ subroutine init_rk45(pb)
   use ode_rk45, only: rkf45_d
 
   type(problem_type), intent(inout) :: pb
-  double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt
+  double precision, dimension(pb%neqs*pb%mesh%nn) :: yt
   double precision, dimension(pb%mesh%nn) :: main_var
   integer :: nwork
 
@@ -354,7 +356,7 @@ subroutine init_rk45(pb)
     write (6,*) "RK45 error [3]: relative error tolerance too small"
     stop
   case (4)
-    write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
+    ! write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
   case (5)
     write (6,*) "RK45 error [5]: solution vanished, relative error test is not possible"
     stop

@@ -123,10 +123,11 @@
 %		ACC	solver accuracy
 %
 %		Output control parameters:
-%		OX_SEQ 	type of snapshot outputs
+%		OX_SEQ 	type of snapshot outputs [DEPRECATED]
 %			0 = all snapshots in a single output file (fort.19)
 %			1 = one output file per snapshot (fort.1001, ...)
-%		NXOUT 	spatial interval (in number of elements) for snapshot outputs
+%		NXOUT 	spatial interval (in number of elements along-strike) for snapshot outputs
+%   NWOUT   spatial interval (in number of elements along-dip) for snapshot outputs
 %		NTOUT 	temporal interval (number of time steps) for snapshot outputs
 %		NTOUT_OT 	temporal interval (number of time steps) for time series outputs
 %		OX_DYN	output specific snapshots of dynamic events defined by thresholds
@@ -136,7 +137,8 @@
 %				event start: fort.19998+3i
 %				event end: fort.19999+3i
 %				rupture time: fort.20000+3i
-%		NXOUT_DYN spatial interval (in number of elements) for dynamic snapshot outputs
+%		NXOUT_DYN spatial interval (in number of elements along-strike) for dynamic snapshot outputs
+%   NWOUT_DYN spatial interval (in number of elements along-dip) for dynamic snapshot outputs
 % 		DYN_TH_ON peak slip rate threshold defining the beginning of a dynamic event
 %		DYN_TH_OFF peak slip rate threshold defining the end of a dynamic event
 %		IC 	index of selected element for time series output (ot)
@@ -260,7 +262,9 @@ DTTRY = 1e2;   % first trial timestep
 DTMAX = 0;	% maximum timestep (0=unrestricted)
 ACC = 1e-7;     % solver accuracy
 NXOUT = 8;	% space stride (cells) for snapshot outputs
+NWOUT = 1;  % space stride (cells) for snapshot outputs
 NXOUT_DYN = 1;	% space stride (cells) for dynamic snapshot outputs
+NWOUT_DYN = 1;  % space stride (cells) for dynamic snapshot outputs
 NTOUT = 100; 	% time stride (iterations) for snapshot outputs
 NTOUT_OT = 1;   % time stride (iterations) for time series outputs
 OX_SEQ = 0; 	% = 1 ; enable sequential ox output , from fort.1000 ...
@@ -514,8 +518,8 @@ function export_main_input()
     fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
     fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);
     fprintf(fid,'0 0 0     stress_coupling, thermal press., localisation\n');
-    fprintf(fid,'%u %u %u %u %u %u %u  ntout_ot, ntout, nt_coord, nxout, nxout_DYN, ox_SEQ, ox_DYN\n', ...
-                NTOUT_OT, NTOUT,IC,NXOUT,NXOUT_DYN,OX_SEQ,OX_DYN);
+    fprintf(fid,'%u %u %u %u %u %u %u  ntout_ot, ntout, nt_coord, nxout, nwout, nxout_DYN, nwout_DYN, ox_DYN\n', ...
+                NTOUT_OT, NTOUT,IC,NXOUT,NWOUT,NXOUT_DYN,NWOUT_DYN,OX_DYN);
     fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g   beta, smu, lambda, D, H, v_th\n', ...
                 VS, MU, LAM, D, H, V_TH);
     fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
