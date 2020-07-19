@@ -171,5 +171,9 @@ print("".join(["="]*msg_width))
 print("Finished in %.2f s" % (t1 - t0))
 
 # Clean-up
-for file in qdyn_files:
-    os.remove(file)
+cwd = os.getcwd()
+files = os.listdir(cwd)
+os.remove(os.path.join(cwd, "qdyn.in"))
+for file in files:
+    if file.startswith("output_"):
+        os.remove(os.path.join(cwd, file))

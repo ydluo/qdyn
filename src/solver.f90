@@ -19,54 +19,30 @@ contains
 !
 subroutine solve(pb)
 
-  use output, only : screen_init, screen_write, ox_write, ot_write, time_write
-  use my_mpi, only : is_MPI_parallel, is_mpi_master, finalize_mpi
+  use output, only : write_output
+  use my_mpi, only : is_MPI_parallel, finalize_mpi
 
   type(problem_type), intent(inout)  :: pb
 
-  if (is_mpi_master()) call screen_init(pb)
+  ! Before the first step, update field and write output (initial state)
   call update_field(pb)
-  call screen_write(pb)
-  call ox_write(pb)
+  call write_output(pb)
 
   iktotal=0
   ! Time loop
   do while (pb%it /= pb%itstop)
-!  do while (pb%it+1 /= pb%itstop)
     pb%it = pb%it + 1
-!   if (is_mpi_master()) write(6,*) 'it:',pb%it
+    ! Do one integration step
     call do_bsstep(pb)
-! if stress exceeds yield call Coulomb_solver ! JPA Coulomb quick and dirty
-!                         or (cleaner version) do linear adjustment of
-!                         timestep then redo bsstep
-!                         or (cleanest version) iterate tiemstep adjustment and
-!                         bsstep until stress is exactly equal to yield
-
+    ! Update field variables
     call update_field(pb)
-    call check_stop(pb)   ! here itstop will change
-!--------Output onestep to screen and ox file(snap_shot)
-! if(mod(pb%it-1,pb%ot%ntout) == 0 .or. pb%it == pb%itstop) then
-    if(mod(pb%it,pb%ox%ntout) == 0) then
-!      if (is_mpi_master()) write(6,*) 'it:',pb%it,'iktotal=',iktotal,'pb%time=',pb%time
-      call screen_write(pb)
-    endif
-
-    if (pb%it /= pb%itstop) then
-      call ox_write(pb)
-    endif
-! if (is_mpi_master()) call ox_write(pb)
-    if (mod(pb%it, pb%ot%ntout) == 0 .and. pb%it /= pb%itstop) then
-      call time_write(pb)
-      call ot_write(pb)
-    endif
+    ! Check if we need to stop (set pb%itstop = pb%it)
+    call check_stop(pb)
+    ! Write output (if needed)
+    call write_output(pb)
   enddo
 
-  ! Write data for last step
-  call time_write(pb)
-  call screen_write(pb)
-  call ox_write(pb)
-  call ot_write(pb)
-
+  ! Finalise MPI
   if (is_MPI_parallel()) call finalize_mpi()
 
 end subroutine solve
@@ -85,9 +61,8 @@ subroutine do_bsstep(pb)
   use ode_bs
   use ode_rk45, only: rkf45_d
   use ode_rk45_2, only: rkf45_d2
-  use output, only : screen_write, ox_write, ot_write, time_write
-  use constants, only : SOLVER_TYPE
-  use diffusion_solver, only : update_PT_final
+  use constants, only: FID_SCREEN, SOLVER_TYPE
+  use diffusion_solver, only: update_PT_final
 
   type(problem_type), intent(inout) :: pb
 
@@ -112,8 +87,8 @@ subroutine do_bsstep(pb)
   ! the (2) Runge-Kutta-Fehlberg method
   if (SOLVER_TYPE == 0) then
     ! Default value of SOLVER_TYPE has not been altered
-    write (6,*) "The default solver type (0) has not been altered, and no solver was picked"
-    write( 6,*) "Check the input script and define a solver type > 0"
+    write(FID_SCREEN, *) "The default solver type (0) has not been altered, and no solver was picked"
+    write(FID_SCREEN, *) "Check the input script and define a solver type > 0"
     stop
 
   elseif (SOLVER_TYPE == 1) then
@@ -147,46 +122,36 @@ subroutine do_bsstep(pb)
     ! Basic error checking. See description of rkf45_d in ode_rk45.f90 for details
     select case (pb%rk45%iflag)
     case (3)
-      write (6,*) "RK45 error [3]: relative error tolerance too small"
-      stop
+      write(FID_SCREEN, *) "RK45 error [3]: relative error tolerance too small"
+      call stop_simulation(pb)
     case (4)
-      ! write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
+      ! write(FID_SCREEN, *) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
       yt = yt_prev
       goto 100
     case (5)
-      write (6,*) "RK45 error [5]: solution vanished, relative error test is not possible"
-      stop
+      write(FID_SCREEN, *) "RK45 error [5]: solution vanished, relative error test is not possible"
+      call stop_simulation(pb)
     case (6)
-      write (6,*) "RK45 error [6]: requested accuracy could not be achieved"
-      stop
+      write(FID_SCREEN, *) "RK45 error [6]: requested accuracy could not be achieved"
+      call stop_simulation(pb)
     case (8)
-      call time_write(pb)
-      call ot_write(pb)
-      call screen_write(pb)
-      call ox_write(pb)
-      write (6,*) "RK45 error [8]: invalid input parameters"
-      stop
+      write(FID_SCREEN, *) "RK45 error [8]: invalid input parameters"
+      call stop_simulation(pb)
     end select
-
-  ! Set time step
-  pb%dt_did = pb%time - pb%t_prev
-
-  if (pb%dt_did < 1e-12) then
-    write(6,*) pb%dt_did
-  endif
 
   elseif (SOLVER_TYPE == 3) then
     ! Set-up Runge-Kutta solver
     pb%t_prev = pb%time
     ! Call Runge-Kutta solver routine
     call rkf45_d2(derivs, yt, pb%time, pb%dt_max, pb%acc, 0d0, pb)
-    ! Set time step
-    pb%dt_did = pb%time - pb%t_prev
   else
     ! Unknown solver type
-    write (6,*) "Solver type", SOLVER_TYPE, "not recognised"
+    write(FID_SCREEN, *) "Solver type", SOLVER_TYPE, "not recognised"
     stop
   endif
+
+  ! Set time step
+  pb%dt_did = pb%time - pb%t_prev
 
   iktotal=ik+iktotal
 
@@ -209,7 +174,6 @@ end subroutine do_bsstep
 !
 subroutine update_field(pb)
 
-  use output, only : crack_size
   use friction, only : friction_mu, dtheta_dt
   use friction_cns, only : compute_velocity
   use my_mpi, only: max_allproc, is_MPI_parallel
@@ -218,14 +182,11 @@ subroutine update_field(pb)
   type(problem_type), intent(inout) :: pb
 
   double precision, dimension(pb%mesh%nn) :: P
-  integer :: i,ix,iw
-
-  ! Update global time
-  pb%mesh%time = pb%time
+  integer :: ivmax
 
   ! SEISMIC: obtain P at the previous time step
   P = 0d0
-  if (pb%features%tp == 1) P = pb%tp%P
+  if (pb%features%tp == 1) P = pb%P
 
   ! SEISMIC: in case of the CNS model, re-compute the slip velocity with
   ! the final value of tau, sigma, and porosity. Otherwise, use the standard
@@ -235,40 +196,15 @@ subroutine update_field(pb)
   else
     pb%tau = (pb%sigma-P) * friction_mu(pb%v,pb%theta,pb) + pb%coh
   endif
-  ! Update slip
-  ! SEISMIC NOTE: slip needs to be calculated after velocity!
-  ! NOTE 2: include slip in solver routine to get higher order accuracy
-  ! pb%slip = pb%slip + pb%v*pb%dt_did
 
-  ! update potency and potency rate
-
-  if (pb%mesh%dim == 0 .or. pb%mesh%dim == 1) then
-    pb%ot%pot = sum(pb%slip*pb%mesh%dx(1))
-    pb%ot%pot_rate = sum(pb%v*pb%mesh%dx(1))
-
-  else
-    pb%ot%pot=0d0;
-    pb%ot%pot_rate=0d0;
-    do iw=1,pb%mesh%nw
-      do ix=1,pb%mesh%nx
-        i=(iw-1)*pb%mesh%nx+ix
-        pb%ot%pot = pb%ot%pot + pb%slip(i) * pb%mesh%dx(1) * pb%mesh%dw(iw)
-        pb%ot%pot_rate = pb%ot%pot_rate + pb%v(i) * pb%mesh%dx(1) * pb%mesh%dw(iw)
-      end do
-    end do
-  endif
-!PG: the crack size only work in serial.
-  ! update crack size
-  pb%ot%lcold = pb%ot%lcnew
-  pb%ot%lcnew = crack_size(pb%slip,pb%mesh%nn)
-  pb%ot%llocold = pb%ot%llocnew
-  pb%ot%llocnew = crack_size(pb%dtau_dt,pb%mesh%nn)
-  ! Output time series at max(v) location
-  pb%ot%ivmax = maxloc(pb%v,1)
+  ! Update pb%vmaxglob (required for stopping routine)
+  ! Note that ivmax is re-computed globally at output time, so no need
+  ! to store this quantity for now.
+  ivmax = maxloc(pb%v, 1)
   if (is_MPI_parallel()) then
-    call max_allproc(pb%v(pb%ot%ivmax),pb%vmaxglob)
+    call max_allproc(pb%v(ivmax), pb%vmaxglob)
   else
-    pb%vmaxglob = pb%v(pb%ot%ivmax)
+    pb%vmaxglob = pb%v(ivmax)
   endif
 
 end subroutine update_field
@@ -278,7 +214,7 @@ end subroutine update_field
 !
 subroutine check_stop(pb)
 
-  use output, only : time_write
+  use constants, only: FID_SCREEN
   use my_mpi, only: is_MPI_parallel, is_mpi_master, finalize_mpi
 
   type(problem_type), intent(inout) :: pb
@@ -291,35 +227,42 @@ subroutine check_stop(pb)
 
    ! STOP if time > tmax
     case (0)
-      ! if (is_mpi_master()) call time_write(pb)
-      if (pb%time >= pb%tmax) pb%itstop = pb%it
+      if (pb%time >= pb%tmax) call stop_simulation(pb)
 
    ! STOP soon after end of slip localization
     case (1)
-      if (is_MPI_parallel()) then !JPA WARNING in progress
-        print *, 'Stop criterion 1 not implemented yet for MPI'
-        call finalize_mpi()
-      endif
-      if (pb%ot%llocnew > pb%ot%llocold) pb%itstop=pb%it+2*pb%ox%ntout
+      write(FID_SCREEN, *) "Stop criterion 1 (end of slip localization) is deprecated"
+      stop "Terminating..."
 
-   ! STOP soon after maximum slip rate
+   ! STOP 10 ox snapshots after maximum slip rate
     case (2)
       if (pb%it > 2 .and. vmax_old > vmax_older .and. pb%vmaxglob < vmax_old)  &
         pb%itstop = pb%it+10*pb%ox%ntout
       vmax_older = vmax_old
       vmax_old = pb%vmaxglob
 
-   ! STOP at a slip rate threshold
+   ! STOP at a slip rate threshold (here tmax is threshold velocity)
     case (3)
-      if (pb%vmaxglob > pb%tmax) pb%itstop = pb%it    !here tmax is threshhold velocity
+      if (pb%vmaxglob > pb%tmax) call stop_simulation(pb)
 
     case default
-      print *, 'Stop criterion ',pb%NSTOP,' not implemented'
-      pb%itstop = pb%it
+      write(FID_SCREEN, *) "Stop criterion ", pb%NSTOP, " not implemented"
+      stop "Terminating..."
 
   end select
 
 end subroutine check_stop
+
+!=====================================================================
+! A "soft" stop of the simulation by letting the solver loop run out
+!
+subroutine stop_simulation(pb)
+  type(problem_type), intent(inout) :: pb
+
+  ! Setting itstop to current iteration will terminate the solver loop
+  pb%itstop = pb%it
+
+end subroutine stop_simulation
 
 
 subroutine init_rk45(pb)
@@ -327,13 +270,14 @@ subroutine init_rk45(pb)
   use problem_class
   use derivs_all
   use ode_rk45, only: rkf45_d
+  use constants, only: FID_SCREEN
 
   type(problem_type), intent(inout) :: pb
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt
   double precision, dimension(pb%mesh%nn) :: main_var
   integer :: nwork
 
-  write (6,*) "Initialising RK45 solver"
+  write (FID_SCREEN, *) "Initialising RK45 solver"
 
   nwork = 3 + 6*pb%neqs*pb%mesh%nn
   pb%rk45%iflag = -1
@@ -353,22 +297,22 @@ subroutine init_rk45(pb)
 
   select case (pb%rk45%iflag)
   case (3)
-    write (6,*) "RK45 error [3]: relative error tolerance too small"
+    write(FID_SCREEN, *) "RK45 error [3]: relative error tolerance too small"
     stop
   case (4)
-    ! write (6,*) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
+    ! write(FID_SCREEN, *) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
   case (5)
-    write (6,*) "RK45 error [5]: solution vanished, relative error test is not possible"
+    write(FID_SCREEN, *) "RK45 error [5]: solution vanished, relative error test is not possible"
     stop
   case (6)
-    write (6,*) "RK45 error [6]: requested accuracy could not be achieved"
+    write(FID_SCREEN, *) "RK45 error [6]: requested accuracy could not be achieved"
     stop
   case (8)
-    write (6,*) "RK45 error [8]: invalid input parameters"
+    write(FID_SCREEN, *) "RK45 error [8]: invalid input parameters"
     stop
   end select
 
-write (6,*) "Finished initialising RK45 solver"
+write(FID_SCREEN, *) "Finished initialising RK45 solver"
 
 end subroutine init_rk45
 

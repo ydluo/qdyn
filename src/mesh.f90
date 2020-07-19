@@ -8,7 +8,6 @@ module mesh
     integer :: nx, nw, nn, nnglob, nwglob ! along-strike, along-dip, total grid number
     double precision :: Lfault, W, Z_CORNER ! fault length, width, lower-left corner z (follow Okada's convention)
     double precision, allocatable :: DIP_W(:) ! along-dip grid size and dip (adjustable), nw count
-    double precision, pointer :: time(:) => null() ! time (same for every element)
     ! Local mesh coordinates
     double precision, pointer :: x(:) => null(), y(:) => null(), z(:) => null()
     ! Local dip, and along-strike and along-dip size of grid cells (nx*nw count)
@@ -99,9 +98,6 @@ subroutine init_mesh(m)
 
   write(6,*) 'Initializing mesh ...'
 
-  ! Allocate time array (same for all m%dim)
-  allocate(m%time(m%nn))
-  m%time = 0d0
   m%nnglob = m%nn
 
   select case (m%dim)
@@ -120,8 +116,11 @@ subroutine init_mesh_0D(m)
 
   write(6,*) 'Spring-block System'
   allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn))
-  allocate(m%dx(1))
+  allocate(m%dx(1), m%dw(1))
+  m%nx = 1
+  m%nw = 1
   m%dx = m%Lfault
+  m%dw = 1d0
   m%x = 0d0
   m%y = 0d0
   m%z = 0d0
@@ -137,8 +136,11 @@ subroutine init_mesh_1D(m)
   integer :: i
 
   write(6,*) '1D fault, uniform grid'
-  allocate(m%dx(1))
+  allocate(m%dx(1), m%dw(1))
+  m%nx = m%nn
+  m%nw = 1
   m%dx = m%Lfault/m%nn
+  m%dw = 1d0
   allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn))
   do i=1,m%nn
     m%x(i) = (i-m%nn*0.5d0-0.5d0)*m%dx(1)

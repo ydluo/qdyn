@@ -83,14 +83,14 @@ class TestVstep(AuxiliaryFunctions):
             p.read_output()
 
             # Store results
-            result_t = np.hstack([result_t, p.ot["t"]-p.ot["t"].iloc[0]+t_final])
-            result_var1 = np.hstack([result_var1, p.ot["theta"]])
-            result_var2 = np.hstack([result_var2, p.ot["tau"]/set_dict["SIGMA"]])
+            result_t = np.hstack([result_t, p.ot[0]["t"]-p.ot[0]["t"].iloc[0]+t_final])
+            result_var1 = np.hstack([result_var1, p.ot[0]["theta"]])
+            result_var2 = np.hstack([result_var2, p.ot[0]["tau"]/set_dict["SIGMA"]])
 
             # Set starting point for next simulation
-            var2_final = p.ot[var2].values[-1]
-            state_final = p.ot["theta"].values[-1]
-            t_final += p.ot["t"].values[-1]
+            var2_final = p.ot[0][var2].values[-1]
+            state_final = p.ot[0]["theta"].values[-1]
+            t_final += p.ot[0]["t"].values[-1]
 
         self.test_results[mode] = {
             "t": result_t,

@@ -257,6 +257,9 @@ class qdyn:
         for param in mesh_params_general:
             mesh_dict[param] = np.ones(N)*settings[param]
 
+        # Add time series (IC) output point
+        mesh_dict["IOT"][settings["IC"]] = 1
+
         # Check for friction model
         if settings["FRICTION_MODEL"] == "RSF":
             for param in mesh_params_RSF:
@@ -526,59 +529,62 @@ class qdyn:
 
 
     # Read QDYN output data
-    def read_output(self, mirror=False, read_ot=True, filename_ot="fort.18",
-                    read_ox=True, filename_ox="fort.19", read_ox_dyn=False,
-                    filename_time="fort.121"):
-
-        # If a suffix is specified (optional), change file names
-        suffix = self.set_dict["SUFFIX"]
-        if suffix != "":
-            filename_ot = "%s_%s" % (filename_ot, suffix)
-            filename_ox = "%s_%s" % (filename_ox, suffix)
-            filename_time = "%s_%s" % (filename_time, suffix)
-
-        time_data = read_csv(filename_time, header=None, names=("t", "dt"), delim_whitespace=True)
-
-        # Default number of header lines
-        nheaders = 6
+    def read_output(self, mirror=False, read_ot=True, filename_ot="output_ot",
+                    filename_vmax="output_vmax", read_ox=True,
+                    filename_ox="output_ox", read_ox_dyn=False,):
 
         # Output file contents depends on the requested features
-        if self.set_dict["FEAT_LOCALISATION"] == 1:
-            #cols = ("t", "loc_size", "crack_size", "potcy", "pot_rate", "v", "theta", "theta2", "v_theta_dc", "tau", "x", "x_max", "v_max", "theta_max", "theta2_max", "omeg_max", "tau_max", "x_max", "sigma_max")
-            cols = ("t", "loc_size", "crack_size", "potcy", "pot_rate", "v", "theta", "v_theta_dc", "tau", "slip", "x_max", "v_max", "theta_max", "omeg_max", "tau_max", "slip_max", "sigma_max")
-        elif self.set_dict["FEAT_TP"] == 1:
-            cols = ("t", "loc_size", "crack_size", "potcy", "pot_rate", "v", "theta", "v_theta_dc", "tau", "slip", "x_max", "v_max", "theta_max", "omeg_max", "tau_max", "slip_max", "sigma_max", "P", "T", "P_max", "T_max")
-            nheaders = 8
-        else:
-            cols = ("t", "loc_size", "crack_size", "potcy", "pot_rate", "v", "theta", "v_theta_dc", "tau", "slip", "x_max", "v_max", "theta_max", "omeg_max", "tau_max", "slip_max", "sigma_max")
+        # Time series (ot)
+        nheaders_ot = 4
+        quants_ot = ("t", "potcy", "pot_rate", "v", "theta", "tau", "dtau_dt", "slip", "sigma")
+        if self.set_dict["FEAT_TP"] == 1:
+            nheaders_ot += 1
+            quants_ot += ("P", "T")
+
+        # Vmax
+        nheaders_vmax = 2
+        quants_vmax = ("t", "ivmax", "v", "theta", "tau", "dtau_dt", "slip", "sigma")
+        if self.set_dict["FEAT_TP"] == 1:
+            nheaders_vmax += 1
+            quants_vmax += ("P", "T")
+
+        # Standard snapshots (ox)
+        quants_ox = ("t", "x", "y", "z", "v", "theta", "tau", "tau_dot", "slip", "sigma")
+        if self.set_dict["FEAT_TP"] == 1:
+            quants_ox += ("P", "T")
 
         # If time series data is requested
         if read_ot:
-            # Read time series data
-            data = read_csv(filename_ot, header=None, skiprows=6, names=cols, delim_whitespace=True)
-            # Replace (less precise) time values
-            data["t"] = time_data["t"]
-            self.ot = data	# Store data in self.ot
-
-            # Check if time series output was requested for other fault elements
-            N_iot = int(np.sum(self.mesh_dict["IOT"]))
+            iot = self.mesh_dict["IOT"]
+            inds = (iot == 1)
+            N_iot = inds.sum()
             self.N_iot = N_iot
-            if N_iot > 0:
-                self.iot = [self.read_other_output(i) for i in range(N_iot)]
+
+            iot = np.arange(len(self.mesh_dict["IOT"]))[inds]
+            self.iot_inds = iot
+            self.ot = [None] * N_iot
+
+            for n, i in enumerate(iot):
+                filename_iot = "%s_%i" % (filename_ot, i)
+                self.ot[n] = read_csv(
+                    filename_iot, header=None, skiprows=nheaders_ot,
+                    names=quants_ot, delim_whitespace=True
+                )
+
+            self.ot_vmax = read_csv(
+                filename_vmax, header=None, skiprows=nheaders_vmax,
+                names=quants_vmax, delim_whitespace=True
+            )
+
         else:
             self.ot = None
+            self.ot_vmax = None
             self.N_iot = 0
 
         if read_ox:
 
-            # Snapshot output template depends on requested features
-            if self.set_dict["FEAT_TP"] == 1:
-                cols_ox = ("x", "y", "z", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma", "P", "T")
-            else:
-                cols_ox = ("x", "y", "z", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma")
-
             # Read snapshot output
-            data_ox = read_csv(filename_ox, header=None, names=cols_ox, delim_whitespace=True, comment="#")
+            data_ox = read_csv(filename_ox, header=None, names=quants_ox, delim_whitespace=True, comment="#")
 
             # Store snapshot data in self.ox
             self.ox = data_ox
@@ -596,27 +602,21 @@ class qdyn:
 
         if read_ox_dyn == True:
 
-            # Snapshot output template depends on requested features
-            if self.set_dict["FEAT_TP"] == 1:
-                cols_ox_dyn = ("x", "y", "z", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma", "P", "T")
-            else:
-                cols_ox_dyn = ("x", "y", "z", "t", "v", "theta", "dtau", "tau_dot", "slip", "sigma")
-
-            cols_ox_rup = ("x", "y", "z", "t_tau_max", "tau_max", "t_v_max", "v_max")
-
-            ox_dyn_files = np.array([file for file in os.listdir(".") if file.startswith("fort.200")])
-            ox_dyn_files_pre = ox_dyn_files[0::3]
-            ox_dyn_files_post = ox_dyn_files[1::3]
-            ox_dyn_files_rup = ox_dyn_files[2::3]
+            ox_dyn_files_pre = np.array([file for file in os.listdir(".") if file.startswith("output_dyn_pre")])
+            ox_dyn_files_post = np.array([file for file in os.listdir(".") if file.startswith("output_dyn_post")])
+            ox_dyn_files_rup = np.array([file for file in os.listdir(".") if file.startswith("output_dyn_max")])
 
             # Read snapshot output
             data_ox_dyn_pre = [None] * len(ox_dyn_files_pre)
             data_ox_dyn_post = [None] * len(ox_dyn_files_post)
             data_ox_dyn_rup = [None] * len(ox_dyn_files_rup)
             for i in range(len(ox_dyn_files_pre)):
+
+                quants_rup = ("x", "y", "z", "t", "tau_max", "t_v_max", "v_max")
+
                 # Read pre-rupture file
                 data_ox_dyn_pre[i] = read_csv(
-                    ox_dyn_files_pre[i], header=None, names=cols_ox_dyn,
+                    ox_dyn_files_pre[i], header=None, names=quants_ox,
                     delim_whitespace=True, comment="#"
                 )
                 # Sanitise output (check for near-infinite numbers, etc.)
@@ -624,7 +624,7 @@ class qdyn:
 
                 # Read pre-rupture file
                 data_ox_dyn_post[i] = read_csv(
-                    ox_dyn_files_post[i], header=None, names=cols_ox_dyn,
+                    ox_dyn_files_post[i], header=None, names=quants_ox,
                     delim_whitespace=True, comment="#"
                 )
                 # Sanitise output (check for near-infinite numbers, etc.)
@@ -632,7 +632,7 @@ class qdyn:
 
                 # Rupture stats file
                 data_ox_dyn_rup[i] = read_csv(
-                    ox_dyn_files_rup[i], header=None, names=cols_ox_rup,
+                    ox_dyn_files_rup[i], header=None, names=quants_rup,
                     delim_whitespace=True, comment="#"
                 )
                 # Sanitise output (check for near-infinite numbers, etc.)

@@ -96,9 +96,9 @@ class TestTseRice(AuxiliaryFunctions):
         p.read_output()
 
         # Store results
-        result_t = (p.ot["t"] - p.ot["t"].iloc[0]).values
-        result_var1 = p.ot["theta"].values
-        result_var2 = np.log10(p.ot["v_max"].values)
+        result_t = (p.ot[0]["t"] - p.ot[0]["t"].iloc[0]).values
+        result_var1 = p.ot[0]["theta"].values
+        result_var2 = np.log10(p.ot_vmax["v"].values)
 
         self.test_results["RSF"] = {
             "t": result_t,

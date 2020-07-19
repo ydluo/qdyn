@@ -54,9 +54,9 @@ class TestStickSlip(AuxiliaryFunctions):
         p.read_output()
 
         # Store results
-        result_t = (p.ot["t"]-p.ot["t"].iloc[0]).values
-        result_var1 = p.ot["theta"].values
-        result_var2 = p.ot["tau"].values/set_dict["SIGMA"]
+        result_t = (p.ot[0]["t"]-p.ot[0]["t"].iloc[0]).values
+        result_var1 = p.ot[0]["theta"].values
+        result_var2 = p.ot[0]["tau"].values/set_dict["SIGMA"]
 
         self.test_results[mode] = {
             "t": result_t,

@@ -52,4 +52,26 @@ integer :: FAULT_TYPE = 0
 !   2 : Runge-Kutta-Fehlberg
 integer :: SOLVER_TYPE = 0
 
+! Output units
+integer, parameter :: FID_SCREEN = 6
+integer, parameter :: FID_OT = 18
+integer, parameter :: FID_OX = 19
+integer, parameter :: FID_VMAX = 22
+integer, parameter :: FID_IASP = 23
+integer, parameter :: FID_QSB_PRE = 100
+integer, parameter :: FID_QSB_POST = 101
+integer, parameter :: FID_TIME = 121
+integer, parameter :: FID_STATIONS = 200
+integer, parameter :: FID_MW = 222
+integer, parameter :: FID_OX_DYN = 20000
+
+! Output names
+character(*), parameter :: FILE_OX = "output_ox"
+character(*), parameter :: FILE_OX_DYN_PRE = "output_dyn_pre_"
+character(*), parameter :: FILE_OX_DYN_POST = "output_dyn_post_"
+character(*), parameter :: FILE_OX_DYN_MAX = "output_dyn_max_"
+character(*), parameter :: FILE_OT = "output_ot_"
+character(*), parameter :: FILE_IASP = "output_iasp"
+character(*), parameter :: FILE_VMAX = "output_vmax"
+
 end module constants

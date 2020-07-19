@@ -67,7 +67,7 @@ subroutine derivs(time,yt,dydt,pb)
       ! Replace porosity for dummies when using RSF
       call update_PT(tau_y, dummy1, dummy2, pb%v, dt, pb)
     endif
-    sigma = sigma - pb%tp%P
+    sigma = sigma - pb%P
     dP_dt = pb%tp%dP_dt
   endif
 

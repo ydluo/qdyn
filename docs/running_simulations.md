@@ -235,7 +235,7 @@ QDYN offers various optional simulation features. Set the following parameters t
 | `NPROCS`  | Number of processors if running in parallel and with MPI (only implemented for `MESHDIM=2` and `FFT_TYPE=1`) |      `1`      |
 |   `DW`    | Along-dip length (m) of each element, from deep to shallow   |      `1`      |
 |  `TMAX`   | Threshold for stopping criterion:<br />Final simulation time (s) when `NSTOP=0`<br />Slip velocity threshold (m/s) when `NSTOP=3` |               |
-|  `NSTOP`  | Stopping criterion:<br />`0` = Stop at `t = TMAX`<br />`1` = Stop at end of slip localization phase<br />`2` = Stop soon after first slip rate peak<br />`3` = Stop when slip velocity exceeds `TMAX` (m/s) |      `0`      |
+|  `NSTOP`  | Stopping criterion:<br />`0` = Stop at `t = TMAX`<br />`1` = Stop at end of slip localization phase (**deprecated**)<br />`2` = Stop soon after first slip rate peak<br />`3` = Stop when slip velocity exceeds `TMAX` (m/s) |      `0`      |
 |  `DTTRY`  | First trial timestep (s)                                     |    `1e-1`     |
 |  `DTMAX`  | Maximum timestep (s). Set `DTMAX = 0` for unrestricted time-marching |      `0`      |
 |   `ACC`   | Solver accuracy (relative tolerance)                         |    `1e-7`     |

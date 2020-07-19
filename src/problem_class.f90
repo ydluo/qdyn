@@ -9,32 +9,35 @@ module problem_class
 
   public
 
+  ! Placeholder for output quantities
+  type optr
+    ! Vector quantities
+    double precision, pointer :: v(:) => null()
+    ! Scalar quantities (double)
+    double precision, pointer :: s => null()
+    ! Scalar quantities (integer)
+    integer, pointer :: i => null()
+  end type optr
+
  ! timeseries outputs: at every time step, but only macroscopic quantities
   type ot_type
-    double precision :: lcold, lcnew, llocnew, llocold, v_th, pot, pot_rate
+    double precision :: v_th
     double precision, dimension(:), allocatable :: xsta, ysta, zsta, v_pre, v_pre2
-    integer :: unit=0, ic=0, ntout=0, ivmax=0
-    integer :: ivmaxglob=0 ! For MPI
-    integer, dimension(:), allocatable :: iot, iasp
+    integer :: ic=-1, ntout=0, not=-1, not_vmax=-1
+    integer, dimension(:), allocatable :: iasp, iot
+    character(len=16), dimension(:), allocatable :: fmt, fmt_vmax
+    type(optr), dimension(:), allocatable :: objects_ot, objects_vmax
   end type ot_type
-
-  type oxptr
-    double precision, pointer :: p(:) => null()
-  end type oxptr
 
  ! snapshot outputs: at every fault point, but only at few selected times
   type ox_type
-    integer :: ntout=0, nox=-1, nox_dyn=-1, nrup=-1
-    integer :: unit=-1, ox_dyn_unit=-1, QSB_unit_pre=-1, QSB_unit_post=-1
+    integer :: ntout=0, nrup=-1
     integer :: count, dyn_count, dyn_stat, i_ox_dyn
     integer :: nwout, nwout_dyn, nxout, nxout_dyn
     double precision :: pot_pre
-    double precision, dimension(:), allocatable :: tau_max, t_rup, v_max, t_vmax
     character(len=256) :: header
     character(len=16), dimension(:), allocatable :: fmt
-    type(oxptr), dimension(:), allocatable :: objects_glob, objects_loc, &
-                                              objects_dyn, objects_ox, &
-                                              objects_rup
+    type(optr), dimension(:), allocatable :: objects_rup
   end type ox_type
 
   ! SEISMIC: structure that holds the CNS model parameters
@@ -53,7 +56,6 @@ module problem_class
   ! Spectral mesh parameters (Dlogl, lw_max, Nl) are hard-coded in mesh.f90
   type tp_type
     type (spectral_mesh_type) :: mesh
-    double precision, pointer :: P(:) => null(), T(:) => null()
     double precision, dimension(:), allocatable :: &
       rhoc, inv_rhoc, beta, eta, k_t, k_p, l, w, inv_w, P_a, T_a, &
       Pi, Theta, PiTheta, Omega, dP_dt, Theta_prev, PiTheta_prev, &
@@ -101,14 +103,23 @@ module problem_class
   type problem_type
     type (mesh_type) :: mesh
     type (kernel_type) :: kernel
+
+    ! Containers for local and global quantities
+    type(optr), dimension(:), allocatable :: objects_glob, objects_loc
+    ! Number of objects in the containers
+    integer :: nobj=9
+
     ! Basic variables
-    ! Allocate ox output variables as pointers
     ! NOTE: if theta2 needs to be in output sequence, add here
     double precision, pointer ::  tau(:) => null(), dtau_dt(:) => null(), &
                                   sigma(:) => null(), slip(:) => null(), &
-                                  v(:) => null(), theta(:) => null()
+                                  v(:) => null(), theta(:) => null(), &
+                                  P(:) => null(), T(:) => null()
     double precision, dimension(:), allocatable :: dtheta_dt, dtheta2_dt
     double precision, dimension(:), allocatable :: theta2, alpha
+    double precision, pointer ::  tau_max(:) => null(), t_rup(:) => null(), &
+                                  v_max(:) => null(), t_vmax(:) => null()
+    double precision, pointer :: pot => null(), pot_rate => null()
    ! Boundary conditions
     integer :: i_sigma_cpl=0, finite=0
    ! Friction properties
@@ -121,8 +132,10 @@ module problem_class
    ! Periodic loading
     double precision :: Tper=0d0, Aper=0d0, Omper=0d0
    ! Time solver
-    double precision :: t_prev=0d0, time=0d0, dt_try=0d0, dt_did=0d0, &
+    double precision :: t_prev=0d0, dt_try=0d0, dt_did=0d0, &
                         dt_next=0d0, dt_max=0d0, tmax, acc
+    double precision, pointer :: time => null()
+    integer, pointer :: ivmax => null()
     integer :: NSTOP, itstop=-1, it=0
     double precision :: vmaxglob
    ! For outputs
@@ -133,8 +146,8 @@ module problem_class
                                   sigma_glob(:) => null(), slip_glob(:) => null(), &
                                   v_glob(:) => null(), theta_glob(:) => null(), &
                                   P_glob(:) => null(), T_glob(:) => null()
-    double precision, dimension(:), allocatable ::  tau_max_glob, t_rup_glob, &
-                                                    v_max_glob, t_vmax_glob
+    double precision, pointer ::  tau_max_glob(:) => null(), t_rup_glob(:) => null(), &
+                                  v_max_glob(:) => null(), t_vmax_glob(:) => null()
     logical :: allocated_glob = .false.
    ! QSB
     double precision :: DYN_M,DYN_th_on,DYN_th_off

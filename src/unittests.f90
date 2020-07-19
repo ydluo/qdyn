@@ -33,6 +33,8 @@ subroutine init_tests(pb)
   write(6,*) "Initiating QDYN unit test suite"
   write(6,*) ""
 
+  allocate(pb%time)
+
   ! Allocate mesh variables/parameters
   call allocate_mesh(pb)
   call initiate_parameters(pb)
