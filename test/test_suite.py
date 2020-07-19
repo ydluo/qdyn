@@ -81,8 +81,6 @@ set_dict_CNS = {
 set_dict["SET_DICT_RSF"] = set_dict_RSF
 set_dict["SET_DICT_CNS"] = set_dict_CNS
 
-qdyn_files = ["qdyn.in", "fort.18", "fort.19", "fort.22", "fort.121"]
-
 t0 = time()
 
 # QDYN class object

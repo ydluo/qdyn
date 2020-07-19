@@ -109,8 +109,8 @@ As an alternative to the MATLAB wrapper, users can chose to generate their input
 6. During and after the simulation, the current/final simulation output can be read using `p.read_output()`. This creates two new objects contained in the QDYN instance: `p.ot` contains the time series data, and `p.ox` contains the fault snapshots. See the section "[Simulation output structure](#simulation-output-structure)" for a list of output parameters. An example of how to access output data:
 
    ```python
-   time = p.ot["t"]  # Vector of simulation time steps
-   Vmax = p.ot["V_max"]  # Vector of maximum slip velocity
+   time = p.ot_vmax["t"]  # Vector of simulation time steps
+   Vmax = p.ot_vmax["v"]  # Vector of maximum slip velocity
    
    # Import matplotlib and plot results
    import matplotlib.pyplot as plt
@@ -254,9 +254,9 @@ QDYN offers various optional simulation features. Set the following parameters t
 | `DYN_TH_ON`  | Peak slip rate threshold (m/s) to define the beginning of a dynamic event |    `1e-2`     |
 | `DYN_TH_OFF` | Peak slip rate threshold (m/s) to define the end of a dynamic event. It is recommended to have `DYN_TH_ON >> DYN_TH_OFF`, so that small fluctuations in slip rate during the main event do not "trigger" new events. |    `1e-4`     |
 |     `IC`     | Index of selected element for time series output             |      `0`      |
-|    `IOT`     | Indices of elements for additional time series output. This is a vector of length $N$ (with $N$ being the number of fault elements) with default values set to zero. To enable time series output for element `i`, set `IOT(i) = 1` (MATLAB) or `set_dict["IOT"][i] = 1` (Python). Each element has a separate output file named `fort.xxxxx`, where `xxxxx` is an index (different from `i`) that starts at `10001` and is incremented by 1 for each selected element. For instance, if `IOT = [0, 0, 1, 1]`, the output of elements `i = 3` and `i = 4` are in files `fort.10001` and `fort.10002`, respectively. |      `0`      |
+|    `IOT`     | Indices of elements for additional time series output. This is a vector of length $N$ (with $N$ being the number of fault elements) with default values set to zero. To enable time series output for element `i`, set `IOT(i) = 1` (MATLAB) or `set_dict["IOT"][i] = 1` (Python). Each element has a separate output file named `output_ot_xxxx`, where `xxxx` is the index that corresponds with `i` (starting at 0). For instance, if `IOT = [0, 0, 1, 1]`, the output of elements `i = 2` and `i = 3` are in files `output_ot_2` and `output_ot_3`, respectively. |      `0`      |
 |    `V_TH`    | Velocity threshold (m/s) to output peak slip velocities. |      `0.01`      |
-|    `IASP`    | Vector (of length = number of elements) indicating on which elements to output peak slip velocities. If `IASP(i)=1`, the following information about all velocity maxima at element `i` that exceed the threshold `V_TH` are output in file `fort.22`: location (index), time, peak slip velocity. If `IASP(i)=0`, element `i` is ignored in the `fort.22` output file. |      `0`      |
+|    `IASP`    | Vector (of length = number of elements) indicating on which elements to output peak slip velocities. If `IASP(i)=1`, the following information about all velocity maxima at element `i` that exceed the threshold `V_TH` are output in file `output_iasp`: location (index), time, peak slip velocity. If `IASP(i)=0`, element `i` is ignored in the `output_iasp` output file. |      `0`      |
 
 **Parameters for integration with dynamic code:**
 
@@ -272,46 +272,55 @@ QDYN offers various optional simulation features. Set the following parameters t
 
 ## Simulation output structure
 
-**Time-series output** (`ot`)
+**Time-series output** (`output_ot_x`)
+
 
 |   MATLAB    |    Python    | Description                                                  |
 | :---------: | :----------: | ------------------------------------------------------------ |
 |     `t`     |     `t`      | Simulation time (s)                                          |
-|   `locl`    |  `loc_size`  | Localization length (distance between stressing rate maxima; m) |
-|    `cl`     | `crack_size` | Crack length (distance between slip rate maxima; m)          |
-|     `p`     |   `potcy`    | Seismic potency                                              |
-|   `pdot`    |  `pot_rate`  | Seismic potency rate                                         |
-|    `vc`     |     `v`      | Slip rate at `IC`                                            |
-|    `thc`    |   `theta`    | State at `IC`. For RSF simulations, this is the state parameter $\theta$, for CNS simulations this is porosity. |
-|    `omc`    | `v_theta_dc` | $\frac{V \theta}{D_c}$ at `IC`                               |
-|   `tauc`    |    `tau`     | Shear stress (Pa) at `IC`                                    |
-|    `dc`     |     `x`      | Slip at `IC`                                                 |
-|     `x`     |  `pos_max`   | Location of maximum slip rate                                |
-|     `v`     |   `v_max`    | Maximum slip rate                                            |
-|    `th`     | `theta_max`  | State at location of maximum slip rate                       |
-|    `om`     |  `omeg_max`  | $\frac{V \theta}{D_c}$ at location of maximum slip rate      |
-|    `tau`    |  `tau_max`   | Shear stress at location of maximum slip rate                |
-|     `d`     |   `x_max`    | Slip at location of maximum slip rate                        |
-| `sigma_max` | `sigma_max`  | Normal stress at location of maximum slip rate               |
-|     `P`     |     `P`      | Fluid pressure at `IC` (only for `FEAT_TP = 1`)              |
-|     `T`     |     `T`      | Temperature at `IC` (only for `FEAT_TP = 1`)                 |
-|   `P_max`   |   `P_max`    | Fluid pressure at location of maximum slip rate (only for `FEAT_TP = 1`) |
-|   `T_max`   |   `T_max`    | Temperature at location of maximum slip rate (only for `FEAT_TP = 1`) |
+|     `p`     |   `potcy`    | Seismic potency (m$^3$)                                      |
+|   `pdot`    |  `pot_rate`  | Seismic potency rate (m$^3$/s)                               |
+|    `vc`     |     `v`      | Slip rate (m/s)                                              |
+|    `thc`    |   `theta`    | State. For RSF simulations, this is the state parameter $\theta$ (s), for CNS simulations this is porosity (-). |
+|   `tauc`    |    `tau`     | Shear stress (Pa)                                            |
+|   `dtauc`   |  `dtau_dt`   | Shear stress rate (Pa/s)                                     |
+|    `dc`     |    `slip`    | Slip (m)                                                     |
+|  `sigma`    |   `sigma`    | Effective normal stress (Pa). If `FEAT_TP = 1`, it is total normal stress |
+|     `P`     |     `P`      | Fluid pressure (Pa; only for `FEAT_TP = 1`)                  |
+|     `T`     |     `T`      | Temperature (K; only for `FEAT_TP = 1`)                      |
 
-**Snapshot output** (`ox`)
+
+**Time-series output at `Vmax`** (`output_vmax`)
+
+|   MATLAB    |    Python    | Description                                                  |
+| :---------: | :----------: | ------------------------------------------------------------ |
+|     `t`     |     `t`      | Simulation time (s)                                          |
+|     `x`     |   `ivmax`    | Location index of maximum slip rate                          |
+|    `vc`     |     `v`      | Slip rate (m/s)                                              |
+|    `thc`    |   `theta`    | State. For RSF simulations, this is the state parameter $\theta$ (s), for CNS simulations this is porosity (-). |
+|   `tauc`    |    `tau`     | Shear stress (Pa)                                            |
+|   `tauc`    |  `dtau_dt`   | Shear stress rate (Pa/s)                                     |
+|    `dc`     |    `slip`    | Slip (m)                                                     |
+|  `sigma`    |   `sigma`    | Effective normal stress (Pa). If `FEAT_TP = 1`, it is total normal stress |
+|     `P`     |     `P`      | Fluid pressure (Pa; only for `FEAT_TP = 1`)                  |
+|     `T`     |     `T`      | Temperature (K; only for `FEAT_TP = 1`)                      |
+
+**Snapshot output** (`output_ox`, `output_ox_dyn`)
 
 | MATLAB  |  Python   | Description                                                  |
 | :-----: | :-------: | ------------------------------------------------------------ |
-|   `x`   |    `x`    | Fault coordinates (m)                                        |
 |   `t`   |    `t`    | Simulation time (t)                                          |
+|   `x`   |    `x`    | Fault x-coordinates (m)                                      |
+|   `y`   |    `y`    | Fault y-coordinates (m)                                      |
+|   `z`   |    `z`    | Fault z-coordinates (m)                                      |
 |   `v`   |    `v`    | Slip rate (m/s)                                              |
 |  `th`   |  `theta`  | State variable. or RSF simulations, this is the state parameter $\theta$ (s), for CNS simulations this is porosity (-). |
-| `dtau`  |  `dtau`   | Shear stress (Pa)                                            |
-| `dtaud` | `tau_dot` | Shear stress rate (Pa/s)                                     |
+| `dtau`  |  `tau`    | Shear stress (Pa)                                            |
+| `dtaud` | `dtau_dt` | Shear stress rate (Pa/s)                                     |
 |   `d`   |  `slip`   | Slip (m)                                                     |
-| `sigma` |  `sigma`  | Effective normal stress. If `FEAT_TP = 1`, it is total normal stress |
-|   `P`   |    `P`    | Fluid pressure (only for `FEAT_TP = 1`)                      |
-|   `T`   |    `T`    | Temperature (only for `FEAT_TP = 1`)                         |
+| `sigma` |  `sigma`  | Effective normal stress (Pa). If `FEAT_TP = 1`, it is total normal stress |
+|   `P`   |    `P`    | Fluid pressure (Pa; only for `FEAT_TP = 1`)                  |
+|   `T`   |    `T`    | Temperature (K; only for `FEAT_TP = 1`)                      |
 
 
 
