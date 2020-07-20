@@ -41,7 +41,7 @@ class AuxiliaryFunctions:
 
         self.test_results["hash"] = self.frozen_hash
         with gzip.GzipFile(self.pickle_file, "w") as f:
-            pickle.dump(self.test_results, f, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self.test_results, f)
         pass
 
     def import_results(self):
