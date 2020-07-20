@@ -353,13 +353,13 @@ subroutine ot_init(pb)
   use mesh, only : mesh_get_size, nnLocal_perproc, nnoffset_glob_perproc
 
   type (problem_type), intent(inout) :: pb
-  integer :: i, id, iasp_count, iot_count, j, n, niasp, niot, nnGlobal
+  integer :: i, id, iasp_count, iot_count, n, niasp, niot, nnGlobal
   integer, dimension(pb%mesh%nnglob) :: iasp_buf, iot_buf
   integer, allocatable, dimension(:) :: iasp_list, iot_list
   logical :: call_gather
 
   character(len=100) :: tmp
-	character(:), allocatable :: iot_name
+  character(len=100), allocatable :: iot_name
 
   call_gather = is_MPI_parallel() .and. is_MPI_master()
 
@@ -454,7 +454,7 @@ subroutine ot_init(pb)
       id = FID_OT + pb%ot%iot(i) - 1
       ! Write headers
       write(tmp, "(a, i0)") FILE_OT, pb%ot%iot(i) - 1
-  		iot_name = trim(tmp)
+      iot_name = trim(tmp)
       open(id, file=iot_name, status="replace")
       write(id, "(a)") "# macroscopic values:"
       write(id, "(a)") "# 1=t, 2=pot, 3=pot_rate"
@@ -495,7 +495,6 @@ subroutine ox_init(pb)
   use my_mpi, only : is_MPI_parallel, is_mpi_master
 
   type (problem_type), intent(inout) :: pb
-  logical :: file_exists
 
   integer :: n, count_w, count_x
 
@@ -587,11 +586,11 @@ subroutine ot_write(pb)
   use my_mpi, only: is_MPI_master, is_MPI_parallel
 
   type (problem_type), intent(inout) :: pb
-  integer :: i, id, iasp, iot, istart, ivmax, k, n, niasp, niot
+  integer :: i, id, iot, istart, ivmax, k, n, niasp, niot
   logical :: call_gather
 
   character(len=100) :: tmp
-	character(:), allocatable :: iot_name
+  character(len=100), allocatable :: iot_name
 
   ! Skip the first 4 elements of the pointer container
   istart = 4
@@ -622,7 +621,7 @@ subroutine ot_write(pb)
       id = FID_OT + pb%ot%iot(iot) - 1
       ! Write headers
       write(tmp, "(a, i0)") FILE_OT, pb%ot%iot(iot) - 1
-  		iot_name = trim(tmp)
+      iot_name = trim(tmp)
       ! Open OT file
       open(id, file=iot_name, status="old", access="append")
       ! Write data (one line)
@@ -691,7 +690,7 @@ subroutine ox_write(pb)
               MPI_master, skip, rising_edge, write_ox, write_ox_dyn, write_QSB
   double precision, dimension(pb%mesh%nnglob) :: tau, v
   character(len=100) :: tmp
-	character(:), allocatable :: file_name
+  character(len=100), allocatable :: file_name
 
   nwout_dyn = pb%ox%nwout_dyn
   nxout_dyn = pb%ox%nxout_dyn
@@ -923,7 +922,7 @@ subroutine write_ot_lines(unit, fmt, objects, iot, pb)
 
   use problem_class
   type (problem_type), intent(inout) :: pb
-  integer :: i, iot, istart, k, n, unit
+  integer :: i, iot, istart, k, unit
   character(len=16), dimension(pb%nobj) :: fmt
   type(optr), dimension(pb%nobj) :: objects
 

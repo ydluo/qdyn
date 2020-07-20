@@ -26,7 +26,7 @@ subroutine solve(pb)
 
   ! Before the first step, update field and write output (initial state)
   call update_field(pb)
-  ! call write_output(pb)
+  call write_output(pb)
 
   iktotal=0
   ! Time loop
