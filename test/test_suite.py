@@ -132,10 +132,7 @@ single_asperity.run_test("RSF")
 single_asperity.run_test("CNS")
 # single_asperity.export_results()
 # Plot results
-# single_asperity.plot_results("RSF")
-# print("     %s" % single_asperity.test_results["CNS"]["success_msg"])
 # single_asperity.plot_results("CNS")
-# exit()
 
 # Tse & Rice (1986) example test (RSF)
 # see https://doi.org/10.1029/JB091iB09p09452

@@ -14,7 +14,7 @@ class TestTseRice(AuxiliaryFunctions):
     # frozen benchmark results, and it is checked against each time the results
     # are imported. When a new benchmark is generated, this hash should be
     # updated.
-    frozen_hash = "9c0281dda0e913633fa7f3c1c26422c0bec38db0"
+    frozen_hash = "672933dd47a6c072c8971d1fd963ced595999875"
     frozen_loaded = False
 
     def __init__(self, p):

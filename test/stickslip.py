@@ -13,7 +13,7 @@ class TestStickSlip(AuxiliaryFunctions):
     # frozen benchmark results, and it is checked against each time the results
     # are imported. When a new benchmark is generated, this hash should be
     # updated.
-    frozen_hash = "161afa5fe587d428936d45cfe326bd600524cd2b"
+    frozen_hash = "672933dd47a6c072c8971d1fd963ced595999875"
     frozen_loaded = False
 
     def __init__(self, p):
@@ -35,11 +35,16 @@ class TestStickSlip(AuxiliaryFunctions):
 
         if mode == "CNS":
             set_dict["FRICTION_MODEL"] = "CNS"
+            dict_name = "SET_DICT_CNS"
+            set_dict[dict_name]["TAU"] = 0.5 * set_dict["SIGMA"]
+            set_dict[dict_name]["PHI_INI"] = 0.28
         elif mode == "RSF":
             set_dict["FRICTION_MODEL"] = "RSF"
             dict_name = "SET_DICT_RSF"
             set_dict[dict_name]["A"] = 0.01
             set_dict[dict_name]["B"] = 0.025
+            set_dict[dict_name]["V0"] = 0.9 * set_dict["V_PL"]
+            set_dict[dict_name]["TH_0"] = set_dict[dict_name]["DC"] / set_dict["V_PL"]
 
         p.settings(set_dict)
         p.render_mesh()
