@@ -15,7 +15,7 @@ module my_mpi
             my_mpi_tag, my_mpi_rank, my_mpi_NPROCS, is_mpi_parallel, &
             is_mpi_master, gather_allv, gather_allvdouble, &
             gather_allvdouble_root, gather_allvi_root, gather_alli, &
-            synchronize_all, sum_allreduce, max_allproc
+            synchronize_all, sum_allreduce, max_allproc, min_allproc
 
 contains
 
@@ -28,10 +28,6 @@ subroutine init_mpi()
 
   call MPI_INIT(ier)
   if (ier /= 0 ) stop 'Error initializing MPI'
-  call MPI_COMM_RANK(MPI_COMM_WORLD,MY_RANK,ier)
-  if (ier /= 0 ) stop 'Error getting MPI rank'
-  call MPI_COMM_SIZE(MPI_COMM_WORLD,NPROCS,ier)
-  if (ier /= 0 ) stop 'Error getting MPI world size'
 
   if (NPROCS<2) call MPI_FINALIZE(ier)
   if (MY_RANK==0) write(6,*) 'Number of processors = ',NPROCS
@@ -234,4 +230,16 @@ end subroutine synchronize_all
   end subroutine max_allproc
 
 !-------------------------------------------------------------------------------------------------
+!
+  subroutine min_allproc(sendbuf, recvbuf)
+
+  double precision :: sendbuf, recvbuf
+  integer ier
+
+  call MPI_ALLREDUCE(sendbuf,recvbuf,1,MPI_DOUBLE_PRECISION,MPI_MIN,MPI_COMM_WORLD,ier)
+
+  end subroutine min_allproc
+
+!-------------------------------------------------------------------------------------------------
+
 end module my_mpi
