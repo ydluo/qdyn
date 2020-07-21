@@ -153,14 +153,14 @@ plt.figure(figsize=(9, 4))
 
 # Slip rate
 plt.subplot(121)
-plt.plot(p.ot["t"] / t_yr, p.ot["v"])
+plt.plot(p.ot[0]["t"] / t_yr, p.ot[0]["v"])
 plt.xlabel("t [years]")
 plt.ylabel("V [m/s]")
 plt.yscale("log")
 
 # Shear stress
 plt.subplot(122)
-plt.plot(p.ot["t"] / t_yr, p.ot["tau"] * 1e-6)
+plt.plot(p.ot[0]["t"] / t_yr, p.ot[0]["tau"] * 1e-6)
 plt.xlabel("t [years]")
 plt.ylabel("stress [MPa]")
 

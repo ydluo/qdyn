@@ -96,18 +96,18 @@ for i, V in enumerate(Vs):
 
     # Plot results
     plt.subplot(211)
-    plt.plot(p.ot["t"]-p.ot["t"].iloc[0]+t_final, p.ot["tau"]/p.set_dict["SIGMA"])
+    plt.plot(p.ot[0]["t"]-p.ot[0]["t"].iloc[0]+t_final, p.ot[0]["tau"]/p.set_dict["SIGMA"])
     plt.subplot(212)
-    plt.plot(p.ot["t"]-p.ot["t"].iloc[0]+t_final, p.ot["theta"]*100)
+    plt.plot(p.ot[0]["t"]-p.ot[0]["t"].iloc[0]+t_final, p.ot[0]["theta"]*100)
 
-    t_all = np.hstack([t_all, p.ot["t"]-p.ot["t"].iloc[0]+t_final])
-    tau_all = np.hstack([tau_all, p.ot["tau"]])
-    phi_all = np.hstack([phi_all, p.ot["theta"]])
+    t_all = np.hstack([t_all, p.ot[0]["t"]-p.ot[0]["t"].iloc[0]+t_final])
+    tau_all = np.hstack([tau_all, p.ot[0]["tau"]])
+    phi_all = np.hstack([phi_all, p.ot[0]["theta"]])
 
     # Set starting point for next simulation
-    tau_final = p.ot["tau"].values[-1]
-    phi_final = p.ot["theta"].values[-1]
-    t_final += p.ot["t"].values[-1]
+    tau_final = p.ot[0]["tau"].values[-1]
+    phi_final = p.ot[0]["theta"].values[-1]
+    t_final += p.ot[0]["t"].values[-1]
 
 plt.subplot(211)
 plt.ylabel("friction [-]")
