@@ -15,18 +15,26 @@ subroutine init_all(pb)
   use constants, only : PI, SOLVER_TYPE
   use my_mpi, only: is_MPI_master
   use fault_stress, only : init_kernel
-  use output, only : ot_init, ox_init
   use friction, only : set_theta_star, friction_mu
   use friction_cns, only : compute_velocity, dphi_dt
   use solver, only : init_rk45
   use diffusion_solver, only: init_tp
   use ode_rk45_2, only : init_rk45_2
+  use output, only: initialize_output
 !!$  use omp_lib
 
   type(problem_type), intent(inout) :: pb
 
   integer :: n
 !  integer :: TID, NTHREADS
+
+  ! Allocate scalar (pointer) quantities
+  allocate(pb%time, pb%ivmax)
+  allocate(pb%pot, pb%pot_rate)
+  pb%time = 0d0
+  pb%ivmax = 0
+  pb%pot = 0d0
+  pb%pot_rate = 0d0
 
   call init_mesh(pb%mesh)
 
@@ -69,31 +77,32 @@ subroutine init_all(pb)
   call set_theta_star(pb)
 
   ! SEISMIC: initialise thermal pressurisation model (diffusion_solver.f90)
+  allocate(pb%P(pb%mesh%nn))
+  pb%P = 0d0
   if (pb%features%tp == 1) then
+    allocate(pb%T(pb%mesh%nn))
+    pb%T = 0d0
     call init_tp(pb)
     write(6,*) "Spectral mesh initiated"
-  else
-    allocate(pb%tp%P(pb%mesh%nn))
-    pb%tp%P = 0d0
   endif
 
   ! SEISMIC: the CNS model has the initial shear stress defined in the
   ! input file, so we can skip the initial computation of friction
   if (pb%i_rns_law /= 3) then
-    pb%tau = (pb%sigma - pb%tp%P) * friction_mu(pb%v,pb%theta,pb) + pb%coh
+    pb%tau = (pb%sigma - pb%P) * friction_mu(pb%v,pb%theta,pb) + pb%coh
   endif
   if (pb%i_rns_law == 3) then
-    pb%v = compute_velocity(pb%tau, pb%sigma-pb%tp%P, pb%theta, pb%theta2, pb)
+    pb%v = compute_velocity(pb%tau, pb%sigma-pb%P, pb%theta, pb%theta2, pb)
     if (pb%features%tp == 1) then
-      call dphi_dt( pb%v, pb%tau, pb%sigma-pb%tp%P, pb%theta, pb%theta2, &
+      call dphi_dt( pb%v, pb%tau, pb%sigma-pb%P, pb%theta, pb%theta2, &
                     pb%dtheta_dt, pb%dtheta2_dt, pb)
     endif
   endif
 
   call init_kernel( pb%lam, pb%smu, pb%mesh, pb%kernel, pb%D, pb%H, &
                     pb%i_sigma_cpl, pb%finite, pb%test_mode)
-  call ot_init(pb)
-  call ox_init(pb)
+
+  call initialize_output(pb)
 
   ! SEISMIC: initialise Runge-Kutta ODE solver, if selected
   if (SOLVER_TYPE == 2) then

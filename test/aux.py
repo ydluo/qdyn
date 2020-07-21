@@ -5,6 +5,7 @@ import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.testing import assert_allclose
+from scipy.interpolate import interp1d
 from termcolor import colored
 
 
@@ -23,12 +24,15 @@ class AuxiliaryFunctions:
 
         t_b = benchmark["t"]
         t_r = results["t"]
-        var1_int = np.interp(t_b, t_r, results["var1"])
-        var2_int = np.interp(t_b, t_r, results["var2"])
+        var1_int = interp1d(t_r, results["var1"])(t_b)
+        var2_int = interp1d(t_r, results["var2"])(t_b)
+        
+        b1_int = interp1d(t_b, benchmark["var1"])(t_b)
+        b2_int = interp1d(t_b, benchmark["var2"])(t_b)
 
         try:
-            assert_allclose(benchmark["var1"], var1_int, rtol=1e-4)
-            assert_allclose(benchmark["var2"], var2_int, rtol=1e-4)
+            assert_allclose(b1_int, var1_int, rtol=1e-4)
+            assert_allclose(b2_int, var2_int, rtol=1e-4)
             self.test_results[mode]["success"] = True
             self.test_results[mode]["success_msg"] = "%s benchmark comparison... [%s]" % (mode.upper(), colored("OK", "green"))
         except AssertionError:
@@ -41,7 +45,7 @@ class AuxiliaryFunctions:
 
         self.test_results["hash"] = self.frozen_hash
         with gzip.GzipFile(self.pickle_file, "w") as f:
-            pickle.dump(self.test_results, f, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self.test_results, f)
         pass
 
     def import_results(self):

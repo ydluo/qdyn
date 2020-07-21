@@ -5,21 +5,159 @@ module output
   implicit none
   private
 
- ! id in output file names "fort.id"
-  integer, parameter :: FID_OT = 18, FID_VMAX = 22, FID_IOT_0 = 10000
-
-  public :: screen_init, ot_read_stations, ot_init, ox_init, &
-            screen_write, ot_write, ox_write,  &
-            time_write, crack_size
+  public :: ot_read_stations, initialize_output, write_output
 
 contains
+
+!===============================================================================
+! Initialise the output modules
+
+subroutine initialize_output(pb)
+
+  use problem_class
+  use my_mpi, only: is_MPI_master, is_MPI_parallel
+  type (problem_type) :: pb
+  integer :: nbase, nobj
+
+  ! The spirit of the output module is as follows:
+  ! First, a container of pointers is created that is shared by all the output
+  ! modules (time series, snapshots, etc). Then, for each output type, the
+  ! indices pointing to the appropriate quantities are stored in a list. When
+  ! a particular output is requested, the AAAAARRRRGHHH...
+
+  ! Number of objects in containers
+  ! Base number
+  nbase = pb%nobj
+  ! Total number
+  nobj = nbase
+  ! If thermal pressurisation is requested: add 2 more objects to total
+  if (pb%features%tp == 1) then
+    nobj = nobj + 2
+  endif
+
+  ! Allocate containers
+  allocate(pb%objects_glob(nobj))
+  allocate(pb%objects_loc(nobj))
+
+  ! If parallel: initialise (allocate) global quantities
+  if (is_MPI_parallel()) then
+    call init_pb_global(pb)
+  ! If serial: point global quantities to local ones
+  else
+    ! Mesh parameters
+    pb%mesh%xglob => pb%mesh%x
+    pb%mesh%yglob => pb%mesh%y
+    pb%mesh%zglob => pb%mesh%z
+    ! Mechanical quantities
+    pb%v_glob => pb%v
+    pb%theta_glob => pb%theta
+    pb%tau_glob => pb%tau
+    pb%dtau_dt_glob => pb%dtau_dt
+    pb%slip_glob => pb%slip
+    pb%sigma_glob => pb%sigma
+    ! If thermal pressurisation is requested: P and T
+    if (pb%features%tp == 1) then
+      pb%P_glob => pb%P
+      pb%T_glob => pb%T
+    endif
+    ! Max rupture stats
+    pb%tau_max_glob => pb%tau_max
+    pb%t_rup_glob => pb%t_rup
+    pb%v_max_glob => pb%v_max
+    pb%t_vmax_glob => pb%t_vmax
+  endif
+
+  ! Assign global quantities (for output)
+
+  ! [double scalar] time, potency, potency rate
+  pb%objects_glob(1)%s => pb%time
+  pb%objects_glob(2)%s => pb%pot
+  pb%objects_glob(3)%s => pb%pot_rate
+  ! [integer] index of max slip rate
+  pb%objects_glob(1)%i => pb%ivmax
+  ! [double vector] spatial coordinates
+  pb%objects_glob(1)%v => pb%mesh%xglob
+  pb%objects_glob(2)%v => pb%mesh%yglob
+  pb%objects_glob(3)%v => pb%mesh%zglob
+  ! [double vector] mechanical quantities
+  pb%objects_glob(4)%v => pb%v_glob
+  pb%objects_glob(5)%v => pb%theta_glob
+  pb%objects_glob(6)%v => pb%tau_glob
+  pb%objects_glob(7)%v => pb%dtau_dt_glob
+  pb%objects_glob(8)%v => pb%slip_glob
+  pb%objects_glob(9)%v => pb%sigma_glob
+
+  ! If thermal pressurisation is requested, add P and T
+  if (pb%features%tp == 1) then
+    ! [double vector] pressure, temperature
+    pb%objects_glob(nbase+1)%v => pb%P_glob
+    pb%objects_glob(nbase+2)%v => pb%T_glob
+  endif
+
+  ! Assign local quantities (which need to be synchronised)
+  ! Scalars do not need to be synchronised, so can be skipped
+
+  ! [double vector] spatial coordinates
+  pb%objects_loc(1)%v => pb%mesh%x
+  pb%objects_loc(2)%v => pb%mesh%y
+  pb%objects_loc(3)%v => pb%mesh%z
+  ! [double vector] mechanical quantities
+  pb%objects_loc(4)%v => pb%v
+  pb%objects_loc(5)%v => pb%theta
+  pb%objects_loc(6)%v => pb%tau
+  pb%objects_loc(7)%v => pb%dtau_dt
+  pb%objects_loc(8)%v => pb%slip
+  pb%objects_loc(9)%v => pb%sigma
+
+  ! If thermal pressurisation is requested, add P and T
+  if (pb%features%tp == 1) then
+    ! [double vector] pressure, temperature
+    pb%objects_loc(nbase+1)%v => pb%P
+    pb%objects_loc(nbase+2)%v => pb%T
+  endif
+
+  ! Init ot, ox, screen
+  if (is_MPI_master()) call screen_init(pb)
+  call ot_init(pb)
+  call ox_init(pb)
+
+end subroutine initialize_output
+
+!===============================================================================
+! Trigger output modules
+
+subroutine write_output(pb)
+
+  use problem_class
+  type (problem_type) :: pb
+  logical :: last_call
+
+  last_call = (pb%it == pb%itstop)
+
+  ! Call to time_write could potentially be used for debugging?
+  ! call time_write(pb)
+
+  ! Call a print to screen if requested
+  if (mod(pb%it, pb%ox%ntout) == 0 .or. last_call) then
+    call screen_write(pb)
+  endif
+
+  ! Write time series if requested
+  if (mod(pb%it, pb%ot%ntout) == 0 .or. last_call) then
+    call ot_write(pb)
+  endif
+
+  ! ox_write has its own internal checks for which output to write
+  call ox_write(pb)
+
+end subroutine write_output
 
 !=====================================================================
 !output initilized field to screen
 subroutine screen_init(pb)
 
   use problem_class
-  use constants, only : PI
+  use constants, only : PI, FID_SCREEN
 
   type (problem_type), intent(inout) :: pb
 
@@ -31,21 +169,21 @@ subroutine screen_init(pb)
 
   if (pb%ot%ic<1) return
 
-    write(6,*) 'Values at selected point of the fault:'
+    write(FID_SCREEN, *) 'Values at selected point of the fault:'
     K = pb%mesh%Lfault
     if (pb%mesh%dim == 1) then
       if (.not. pb%kernel%k2f%finite) K = pb%mesh%W
     endif
     K = PI*pb%smu/K
     if (pb%mesh%dim < 2) then
-      write(6,*) 'K/Kc = ',K/(pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
-      write(6,*) 'K/Kb = ',K/(pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
+      write(FID_SCREEN, *) 'K/Kc = ',K/(pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
+      write(FID_SCREEN, *) 'K/Kb = ',K/(pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
     end if
 
   endif
 
-  write(6,*)
-  write(6,*) '    it,  dt (secs), time (yrs), v_max (m/s), sigma_max (MPa)'
+  write(FID_SCREEN, *)
+  write(FID_SCREEN, *) '    it,  dt (secs), time (yrs), v_max (m/s), sigma_max (MPa)'
 
 end subroutine screen_init
 
@@ -55,7 +193,7 @@ end subroutine screen_init
 !output one step to screen
 subroutine screen_write(pb)
 
-  use constants, only : YEAR
+  use constants, only : YEAR, FID_SCREEN
   use problem_class
   use my_mpi, only : is_MPI_parallel, is_mpi_master, max_allproc
 
@@ -66,10 +204,10 @@ subroutine screen_write(pb)
 
   if (is_MPI_parallel()) then
     call max_allproc(sigma_max,sigma_max_glob)
-    if (is_mpi_master()) write(6,'(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,&
+    if (is_mpi_master()) write(FID_SCREEN, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,&
                               pb%vmaxglob, sigma_max_glob/1.0D6
   else
-    write(6,'(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,    &
+    write(FID_SCREEN, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,    &
                             pb%vmaxglob, sigma_max/1.0D6
   endif
 
@@ -78,13 +216,15 @@ end subroutine screen_write
 
 !=====================================================================
 ! write time of every step
+! potential application: debugging?
 subroutine time_write(pb)
 
   use problem_class
+  use constants, only: FID_TIME
   use my_mpi, only: is_mpi_master
   type (problem_type), intent(inout) :: pb
 
-  if (is_mpi_master()) write(121,*) pb%time, pb%dt_did
+  if (is_mpi_master()) write(FID_TIME, *) pb%time, pb%dt_did
 
 end subroutine time_write
 
@@ -93,109 +233,255 @@ end subroutine time_write
 subroutine ot_read_stations(ot)
 
   use problem_class, only : ot_type
+  use constants, only: FID_STATIONS
 
   type (ot_type), intent(inout) :: ot
 
   integer :: nsta,ista
 
-  open(unit=200,file='stations.dat',action='read')
-  read(200,*) nsta
+  open(unit=FID_STATIONS, file='stations.dat', action='read')
+  read(FID_STATIONS, *) nsta
   allocate(ot%xsta(nsta),ot%ysta(nsta),ot%zsta(nsta))
   do ista=1,nsta
-    read(200,*) ot%xsta(ista), ot%ysta(ista), ot%zsta(ista)
+    read(FID_STATIONS, *) ot%xsta(ista), ot%ysta(ista), ot%zsta(ista)
   enddo
-  close(200)
+  close(FID_STATIONS)
 
 end subroutine ot_read_stations
+
+! !=====================================================================
+! ! write ot file header
+! subroutine ot_init_bak(pb)
+!
+!   ! Start revisions...
+!
+!   use problem_class
+!   use constants, only: BIN_OUTPUT
+!   use my_mpi, only : is_MPI_parallel, is_mpi_master, my_mpi_tag
+!   use mesh, only : mesh_get_size
+!
+!   type (problem_type), intent(inout) :: pb
+!   integer :: i,j,n,nsta,ista,ik
+!   double precision :: dmin2, d2
+!
+!   n = mesh_get_size(pb%mesh)
+!   pb%ot%lcnew = dble(n)
+!   pb%ot%llocnew = dble(n)
+!
+!   if (is_MPI_parallel()) then
+!
+!    ! find stations
+!    !PG, temporal fix, only works for one station.
+!     ! pb%ot%ic=0 !Setting all to zero
+!     ! dmin2 = 0.01d0*minval(pb%mesh%dx) ! distance tolerance = 1% grid size
+!     ! dmin2 = dmin2*dmin2
+!     ! nsta = 1 !NOTE: currently only one station implemented
+!     !
+!     ! do ista=1,nsta
+!     !   do ik=1,n
+!     !     d2 = (pb%mesh%x(ik)-pb%ot%xsta(ista))**2 &
+!     !        + (pb%mesh%y(ik)-pb%ot%ysta(ista))**2 &
+!     !        + (pb%mesh%z(ik)-pb%ot%zsta(ista))**2
+!     !     if (d2 < dmin2) then
+!     !       pb%ot%ic=ik
+!     !       write(6,*) 'Processor: ',my_mpi_tag(),', station ',ista, &
+!     !                  ' found, distance mismatch = ',d2
+!     !       exit
+!     !     endif
+!     !   enddo
+!     ! enddo
+!
+!     if (is_mpi_master() ) then
+!       pb%ot%unit = FID_OT
+!       write(pb%ot%unit,'(a)')'# macroscopic values:'
+!       write(pb%ot%unit,'(a)')'# 1=t'
+!       write(pb%ot%unit,'(a)')'# values at selected point:'
+!       write(pb%ot%unit,'(a)')'# 2=V, 3=theta, 4=V*theta/dc, 5=tau, 6=slip'
+!       if (pb%features%tp == 1) write(pb%ot%unit,'(a)')'# 7=P, 8=T'
+!       close(pb%ot%unit)
+!     endif
+!
+!    !JPA WARNING VMAX and IOT outputs not implemented yet in parallel
+!    ! TODO: why are these not implemented?
+!
+!   else
+!
+!     pb%ot%unit = FID_OT
+!     if (.not.BIN_OUTPUT) then
+!       write(pb%ot%unit,'(a)')'# macroscopic values:'
+!       write(pb%ot%unit,'(a)')'# 1=t,2=loc_size,3=crack_size,4=potcy,5=pot_rate'
+!       write(pb%ot%unit,'(a)')'# values at selected point:'
+!       write(pb%ot%unit,'(a)')'# 6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip'
+!       write(pb%ot%unit,'(a)')'# values at max(V) location:'
+!       write(pb%ot%unit,'(a)')'# 11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip, 17=sigma'
+!       if (pb%features%tp == 1) then
+!         write(pb%ot%unit,'(a)')'# 18=P, 19=T (selected point)'
+!         write(pb%ot%unit,'(a)')'# 20=P, 21=T (at max(V))'
+!       endif
+!     else
+!       open(pb%ot%unit,form='unformatted',access='stream')
+!     endif
+!
+!     write(FID_VMAX,'(a)')'# Seismicity record:'
+!     write(FID_VMAX,'(a)')'# 1=loc, 2=t, 3=v'
+!
+!     j = FID_IOT_0
+!     do i=1,n
+!       if (pb%ot%iot(i) == 1) then
+!         j = j+1
+!         write(j,'(a,i10)') '# nx= ', i
+!         write(j,'(a)') '# 1=t, 2=V, 3=theta, 4=tau, 5=slip, 6=sigma'
+!       endif
+!     enddo
+!
+!   endif
+!
+!   allocate ( pb%ot%v_pre(n), pb%ot%v_pre2(n) )
+!   pb%ot%v_pre = 0.d0
+!   pb%ot%v_pre2 = 0.d0
+!
+! end subroutine ot_init_bak
 
 !=====================================================================
 ! write ot file header
 subroutine ot_init(pb)
 
   use problem_class
-  use constants, only: BIN_OUTPUT
-  use my_mpi, only : is_MPI_parallel, is_mpi_master, my_mpi_tag
-  use mesh, only : mesh_get_size
+  use constants, only:  BIN_OUTPUT, FID_IASP, FID_OT, FID_VMAX, &
+                        FILE_IASP, FILE_OT, FILE_VMAX
+  use my_mpi, only : is_MPI_parallel, is_MPI_master, gather_allvi_root
+  use mesh, only : mesh_get_size, nnLocal_perproc, nnoffset_glob_perproc
 
   type (problem_type), intent(inout) :: pb
-  integer :: i,j,n,nsta,ista,ik
-  double precision :: dmin2, d2
+  integer :: i, id, iasp_count, iot_count, n, niasp, niot, nnGlobal
+  integer, dimension(pb%mesh%nnglob) :: iasp_buf, iot_buf
+  integer, allocatable, dimension(:) :: iasp_list, iot_list
+  logical :: call_gather
 
+  character(len=100) :: tmp
+  character(len=100), allocatable :: iot_name
+
+  call_gather = is_MPI_parallel() .and. is_MPI_master()
+
+  ! Number of mesh elements
   n = mesh_get_size(pb%mesh)
-  pb%ot%lcnew = dble(n)
-  pb%ot%llocnew = dble(n)
+  nnGlobal = pb%mesh%nnglob
 
-  if (is_MPI_parallel()) then
-
-   ! find stations
-   !PG, temporal fix, only works for one station.
-    ! pb%ot%ic=0 !Setting all to zero
-    ! dmin2 = 0.01d0*minval(pb%mesh%dx) ! distance tolerance = 1% grid size
-    ! dmin2 = dmin2*dmin2
-    ! nsta = 1 !NOTE: currently only one station implemented
-    !
-    ! do ista=1,nsta
-    !   do ik=1,n
-    !     d2 = (pb%mesh%x(ik)-pb%ot%xsta(ista))**2 &
-    !        + (pb%mesh%y(ik)-pb%ot%ysta(ista))**2 &
-    !        + (pb%mesh%z(ik)-pb%ot%zsta(ista))**2
-    !     if (d2 < dmin2) then
-    !       pb%ot%ic=ik
-    !       write(6,*) 'Processor: ',my_mpi_tag(),', station ',ista, &
-    !                  ' found, distance mismatch = ',d2
-    !       exit
-    !     endif
-    !   enddo
-    ! enddo
-
-    if (is_mpi_master() ) then
-      pb%ot%unit = FID_OT
-      write(pb%ot%unit,'(a)')'# macroscopic values:'
-      write(pb%ot%unit,'(a)')'# 1=t'
-      write(pb%ot%unit,'(a)')'# values at selected point:'
-      write(pb%ot%unit,'(a)')'# 2=V, 3=theta, 4=V*theta/dc, 5=tau, 6=slip'
-      if (pb%features%tp == 1) write(pb%ot%unit,'(a)')'# 7=P, 8=T'
-      close(pb%ot%unit)
-    endif
-
-   !JPA WARNING VMAX and IOT outputs not implemented yet in parallel
-   ! TODO: why are these not implemented?
-
-  else
-
-    pb%ot%unit = FID_OT
-    if (.not.BIN_OUTPUT) then
-      write(pb%ot%unit,'(a)')'# macroscopic values:'
-      write(pb%ot%unit,'(a)')'# 1=t,2=loc_size,3=crack_size,4=potcy,5=pot_rate'
-      write(pb%ot%unit,'(a)')'# values at selected point:'
-      write(pb%ot%unit,'(a)')'# 6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip'
-      write(pb%ot%unit,'(a)')'# values at max(V) location:'
-      write(pb%ot%unit,'(a)')'# 11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip, 17=sigma'
-      if (pb%features%tp == 1) then
-        write(pb%ot%unit,'(a)')'# 18=P, 19=T (selected point)'
-        write(pb%ot%unit,'(a)')'# 20=P, 21=T (at max(V))'
-      endif
-    else
-      open(pb%ot%unit,form='unformatted',access='stream')
-    endif
-
-    write(FID_VMAX,'(a)')'# Seismicity record:'
-    write(FID_VMAX,'(a)')'# 1=loc, 2=t, 3=v'
-
-    j = FID_IOT_0
-    do i=1,n
-      if (pb%ot%iot(i) == 1) then
-        j = j+1
-        write(j,'(a,i10)') '# nx= ', i
-        write(j,'(a)') '# 1=t, 2=V, 3=theta, 4=tau, 5=slip, 6=sigma'
-      endif
-    enddo
-
-  endif
-
-  allocate ( pb%ot%v_pre(n), pb%ot%v_pre2(n) )
+  ! Allocate slip rate history for IASP output
+  allocate(pb%ot%v_pre(nnGlobal), pb%ot%v_pre2(nnGlobal))
   pb%ot%v_pre = 0.d0
   pb%ot%v_pre2 = 0.d0
+
+  ! Number of ot output quantities
+  pb%ot%not = 9
+  ! Number of ot_vmax output quantities
+  pb%ot%not_vmax = 8
+  ! If thermal pressurisation is requested, add 2 more
+  if (pb%features%tp == 1) then
+    pb%ot%not = pb%ot%not + 2
+    pb%ot%not_vmax = pb%ot%not_vmax + 2
+  endif
+  ! Allocate space in array of pointers
+  allocate(pb%ot%fmt(pb%ot%not))
+  allocate(pb%ot%fmt_vmax(pb%ot%not_vmax))
+
+  ! Default output format
+  pb%ot%fmt = "(e15.7)"
+  ! Time needs higher precision
+  pb%ot%fmt(1) = "(e24.14)"
+
+  ! Default vmax output format
+  pb%ot%fmt_vmax = "(e15.7)"
+  ! Time needs higher precision
+  pb%ot%fmt_vmax(1) = "(e24.14)"
+  ! vmax location is an integer
+  pb%ot%fmt_vmax(2) = "(i15)"
+
+  ! If parallel:
+  if (is_MPI_parallel() .and. is_MPI_master()) then
+    ! Combine local OT indices
+    call gather_allvi_root( pb%ot%iot, n, iot_buf, nnLocal_perproc, &
+                            nnoffset_glob_perproc, nnGlobal)
+    ! Combine local IASP indices
+    call gather_allvi_root( pb%ot%iasp, n, iasp_buf, nnLocal_perproc, &
+                            nnoffset_glob_perproc, nnGlobal)
+  ! If serial:
+  elseif (.not. is_MPI_parallel()) then
+    ! Point global to local indices
+    iot_buf = pb%ot%iot
+    iasp_buf = pb%ot%iasp
+  endif
+
+  ! Get the number of OT output indices
+  niot = sum(iot_buf)
+  ! Allocate space for a list of iot indices
+  allocate(iot_list(niot))
+  iot_count = 0
+  ! Loop over all potential OT locations
+  do i=1,nnGlobal
+    ! If location is OT location
+    if (iot_buf(i) == 1) then
+      iot_count = iot_count + 1
+      iot_list(iot_count) = i
+    endif
+  enddo
+
+  ! Overwrite IOT in pb%ot
+  pb%ot%iot = iot_list
+
+  ! Get the number of IASP output indices
+  niasp = sum(iasp_buf)
+  ! Allocate space for a list of iasp indices
+  allocate(iasp_list(niasp))
+  iasp_count = 0
+  ! Loop over all potential OT locations
+  do i=1,nnGlobal
+    ! If location is OT location
+    if (iasp_buf(i) == 1) then
+      iasp_count = iasp_count + 1
+      iasp_list(iasp_count) = i
+    endif
+  enddo
+
+  ! Overwrite IASP in pb%ot
+  pb%ot%iasp = iasp_list
+
+  ! Open files, write headers
+  if (is_MPI_master()) then
+
+    ! Time series output: loop over all OT locations
+    do i=1,niot
+      id = FID_OT + pb%ot%iot(i) - 1
+      ! Write headers
+      write(tmp, "(a, i0)") FILE_OT, pb%ot%iot(i) - 1
+      iot_name = trim(tmp)
+      open(id, file=iot_name, status="replace")
+      write(id, "(a)") "# macroscopic values:"
+      write(id, "(a)") "# 1=t, 2=pot, 3=pot_rate"
+      write(id, "(a)") "# values at selected point:"
+      write(id, "(a)") "# 4=V, 5=theta, 6=tau, 7=dtau_dt, 8=slip, 9=sigma"
+      if (pb%features%tp == 1) then
+        write(id, "(a)") "# 10=P, 11=T"
+      endif
+      close(id)
+    enddo
+
+    ! Vmax output
+    open(FID_VMAX, file=FILE_VMAX, status="replace")
+    write(FID_VMAX, "(a)") "# values at max(V) location:"
+    write(FID_VMAX, "(a)") "# 1=t, 2=ivmax, 3=v, 4=theta, 5=tau, 6=dtau_dt, 7=slip, 8=sigma"
+    if (pb%features%tp == 1) then
+      write(FID_VMAX, "(a)") "# 9=P, 10=T"
+    endif
+    close(FID_VMAX)
+
+    ! IASP output
+    open(FID_IASP, file=FILE_IASP, status="replace")
+    write(FID_IASP, "(a)") "# Seismicity record:"
+    write(FID_IASP, "(a)") "# 1=i, 2=t, 3=v"
+    close(FID_IASP)
+
+  endif
 
 end subroutine ot_init
 
@@ -205,134 +491,76 @@ end subroutine ot_init
 subroutine ox_init(pb)
 
   use problem_class
+  use constants, only: FID_OX, FILE_OX
   use my_mpi, only : is_MPI_parallel, is_mpi_master
-  use mesh, only : mesh_get_size
 
   type (problem_type), intent(inout) :: pb
 
-  integer :: i, n
+  integer :: n, count_w, count_x
 
   ! Number of mesh elements
   n = pb%mesh%nn
   ! Number of ox elements
-  pb%ox%count = ceiling(n / float(pb%ox%nxout))
+  count_w = ceiling(pb%mesh%nw / float(pb%ox%nwout))
+  count_x = ceiling(pb%mesh%nx / float(pb%ox%nxout))
+  pb%ox%count = count_w * count_x
   ! Initial potency
   pb%ox%pot_pre = 0.d0
 
   ! ---------------------------------------------------------------------------
   ! Prepare data structure and headers for ox, ox_dyn, and dyn output
 
-  ! Number of ox output quantities
-  pb%ox%nox = 10
+  ! Allocate space for dynamic output that needs to be carried over
   pb%ox%nrup = 2
-  ! If thermal pressurisation is requested, add 2 more
-  if (pb%features%tp == 1) then
-    pb%ox%nox = pb%ox%nox + 2
-  endif
-  ! Allocate space in array of pointers
-  allocate(pb%ox%objects_dyn(pb%ox%nox))
-  allocate(pb%ox%objects_glob(pb%ox%nox))
-  allocate(pb%ox%objects_loc(pb%ox%nox))
-  allocate(pb%ox%objects_ox(pb%ox%nox))
   allocate(pb%ox%objects_rup(pb%ox%nrup))
-  allocate(pb%ox%fmt(pb%ox%nox))
+  ! Allocate space for the output format
+  allocate(pb%ox%fmt(pb%nobj))
   ! Default output format
   pb%ox%fmt = "(e15.7)"
   ! Time needs higher precision
-  pb%ox%fmt(4) = "(e24.14)"
-
-  ! Initialise MPI gather
-  call init_pb_global(pb)
-
-  ! Set pointers to specific output quantities
-
-  ! Proc local variables
-  ! Spatial coordinates
-  pb%ox%objects_loc(1)%p => pb%mesh%x
-  pb%ox%objects_loc(2)%p => pb%mesh%y
-  pb%ox%objects_loc(3)%p => pb%mesh%z
-  ! Time array
-  pb%ox%objects_loc(4)%p => pb%mesh%time
-  ! Mechanical quantities
-  pb%ox%objects_loc(5)%p => pb%v
-  pb%ox%objects_loc(6)%p => pb%theta
-  pb%ox%objects_loc(7)%p => pb%tau
-  pb%ox%objects_loc(8)%p => pb%dtau_dt
-  pb%ox%objects_loc(9)%p => pb%slip
-  pb%ox%objects_loc(10)%p => pb%sigma
-
-  ! Global objects (required for ox_dyn and QSB output)
-  ! Spatial coordinates
-  pb%ox%objects_glob(1)%p => pb%mesh%xglob
-  pb%ox%objects_glob(2)%p => pb%mesh%yglob
-  pb%ox%objects_glob(3)%p => pb%mesh%zglob
-  ! Time array
-  pb%ox%objects_glob(4)%p => pb%mesh%time
-  ! Mechanical quantities
-  pb%ox%objects_glob(5)%p => pb%v_glob
-  pb%ox%objects_glob(6)%p => pb%theta_glob
-  pb%ox%objects_glob(7)%p => pb%tau_glob
-  pb%ox%objects_glob(8)%p => pb%dtau_dt_glob
-  pb%ox%objects_glob(9)%p => pb%slip_glob
-  pb%ox%objects_glob(10)%p => pb%sigma_glob
-
-  ! If thermal pressurisation is requested, add P and T
-  if (pb%features%tp == 1) then
-    ! Local
-    pb%ox%objects_loc(11)%p => pb%tp%P
-    pb%ox%objects_loc(12)%p => pb%tp%T
-    ! Global
-    pb%ox%objects_glob(11)%p => pb%P_glob
-    pb%ox%objects_glob(12)%p => pb%T_glob
-  endif
+  pb%ox%fmt(1) = "(e24.14)"
 
   ! Case 1: serial execution. All quantities are local
   if (.not. is_MPI_parallel()) then
-    ! Assign local objects to ox and dynamic objects
-    do i=1,pb%ox%nox
-      pb%ox%objects_dyn(i)%p => pb%ox%objects_loc(i)%p
-      pb%ox%objects_ox(i)%p => pb%ox%objects_loc(i)%p
-    enddo
     ! Assign local tau/v to rupture object
-    pb%ox%objects_rup(1)%p => pb%tau
-    pb%ox%objects_rup(2)%p => pb%v
+    pb%ox%objects_rup(1)%v => pb%tau
+    pb%ox%objects_rup(2)%v => pb%v
 
   ! Case 2: parallel execution with output master. All quantities are global
   elseif (is_MPI_parallel() .and. is_MPI_master()) then
-    ! Assign global objects to ox and dynamic objects
-    do i=1,pb%ox%nox
-      pb%ox%objects_dyn(i)%p => pb%ox%objects_glob(i)%p
-      pb%ox%objects_ox(i)%p => pb%ox%objects_glob(i)%p
-    enddo
     ! Assign global tau/v to rupture object
-    pb%ox%objects_rup(1)%p => pb%tau_glob
-    pb%ox%objects_rup(2)%p => pb%v_glob
+    pb%ox%objects_rup(1)%v => pb%tau_glob
+    pb%ox%objects_rup(2)%v => pb%v_glob
 
   endif
+
+  ! Create ox file
+  open(FID_OX, file=FILE_OX, status="replace")
+  close(FID_OX)
 
   ! Define headers
-  pb%ox%header = '# x y z t v theta dtau tau_dot slip sigma'
+  pb%ox%header = '# t x y z v theta tau tau_dot slip sigma'
   if (pb%features%tp == 1) then
-    pb%ox%header = '# x y z t v theta dtau tau_dot slip sigma P T'
+    pb%ox%header = '# t x y z v theta tau tau_dot slip sigma P T'
   endif
-
-  ! Define output units
-
-  ! Standard ox output unit
-  pb%ox%unit = 19
 
   ! If ox_dyn is requested
   if (pb%ox%i_ox_dyn == 1) then
-    ! ox_dyn unit
-    pb%ox%ox_dyn_unit = 20000
     ! Allocate rupture quantities
-    allocate ( pb%ox%t_rup(n), pb%ox%tau_max(n), pb%ox%v_max(n), pb%ox%t_vmax(n) )
-  endif
+    allocate ( pb%t_rup(n), pb%tau_max(n), pb%v_max(n), pb%t_vmax(n) )
+    pb%t_rup = 0d0
+    pb%tau_max = 0d0
+    pb%v_max = 0d0
+    pb%t_vmax = 0d0
 
-  if (pb%DYN_FLAG == 1) then
-    ! Define output units
-    pb%ox%QSB_unit_pre = 100
-    pb%ox%QSB_unit_post = 101
+    ! If parallel, the global quantities are already allocated during
+    ! init_pb_global. If serial, point these global quantities to local ones.
+    if (.not. is_MPI_parallel()) then
+      pb%tau_max_glob => pb%tau_max
+      pb%t_rup_glob => pb%t_rup
+      pb%v_max_glob => pb%v_max
+      pb%t_vmax_glob => pb%t_vmax
+    endif
   endif
 
   ! If dynamic output is requested (ox_dyn or QSB)
@@ -353,130 +581,96 @@ end subroutine ox_init
 subroutine ot_write(pb)
 
   use problem_class
-  use constants, only : BIN_OUTPUT
-  use my_mpi, only : is_MPI_parallel, my_mpi_tag
+  use constants, only:  BIN_OUTPUT, FID_IASP, FID_OT, FID_VMAX, &
+                        FILE_IASP, FILE_OT, FILE_VMAX
+  use my_mpi, only: is_MPI_master, is_MPI_parallel
 
   type (problem_type), intent(inout) :: pb
-  integer :: i,j,ios
-  character(30) :: ot_fmt
+  integer :: i, id, iot, istart, ivmax, k, n, niasp, niot
+  logical :: call_gather
 
-  if (is_MPI_parallel()) then
-   ! if "ic" station is in this processor
-    if (pb%ot%ic>0) then
+  character(len=100) :: tmp
+  character(len=100), allocatable :: iot_name
 
-      open(pb%ot%unit,access='APPEND',status='old',iostat=ios)
-      if (ios>0) stop 'Fatal error: ot_write: Error opening a fort.18 file'
-     !JPA add test for the first time we try to open this file but it does not exist yet
-     !JPA add test to prevent appending data to a file from a previous simulation
-      ot_fmt = '(e24.16,5e14.6)'
-      if (pb%features%tp == 1) ot_fmt = '(e24.16,7e14.6)'
+  ! Skip the first 4 elements of the pointer container
+  istart = 4
+  ! Size of the container
+  k = pb%nobj
 
-      ! If thermal pressurisation is requested, output P and T
-      if (pb%features%tp == 1) then
-        write(pb%ot%unit,ot_fmt) pb%time, pb%v(pb%ot%ic), pb%theta(pb%ot%ic), &
-            pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
-            pb%tau(pb%ot%ic), pb%slip(pb%ot%ic), &
-            pb%tp%P(pb%ot%ic), pb%tp%T(pb%ot%ic)
-      else
-        write(pb%ot%unit,ot_fmt) pb%time, pb%v(pb%ot%ic), pb%theta(pb%ot%ic), &
-            pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
-            pb%tau(pb%ot%ic), pb%slip(pb%ot%ic)
-      endif
-      close(pb%ot%unit)
-    endif
-   !JPA warning: ivmax outputs not implemented in parallel yet
-
-  else
-
-    if (.not.BIN_OUTPUT) then
-
-      ot_fmt = '(e24.16,16e14.6)'
-      if (pb%features%tp == 1) ot_fmt = '(e24.16,20e14.6)'
-
-      if (pb%features%tp == 1) then
-        write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx(1),  &
-          pb%ot%lcnew*pb%mesh%dx(1), pb%ot%pot, pb%ot%pot_rate,    &
-          pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
-          pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
-          pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
-          ! for ivmax
-          pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
-          pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
-          pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), &
-          pb%sigma(pb%ot%ivmax)-pb%tp%P(pb%ot%ivmax), &
-          ! write P, T
-          pb%tp%P(pb%ot%ic), pb%tp%T(pb%ot%ic), pb%tp%P(pb%ot%ivmax), pb%tp%T(pb%ot%ivmax)
-      else
-        write(pb%ot%unit,ot_fmt) pb%time, pb%ot%llocnew*pb%mesh%dx(1),  &
-          pb%ot%lcnew*pb%mesh%dx(1), pb%ot%pot, pb%ot%pot_rate,    &
-          pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
-          pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
-          pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
-          ! for ivmax
-          pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
-          pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
-          pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
-      endif
-
-    else
-      ! macroscopic values:
-      !   1=t,2=loc_size,3=crack_size,4=potcy,5=pot_rate
-      ! values at selected point:
-      !   6=V, 7=theta, 8=V*theta/dc, 9=tau, 10=slip
-      ! values at max(V) location:
-      !   11=x, 12=V, 13=theta, 14=omeg, 15=tau, 16=slip, 17=sigma
-      ! If thermal pressurisation: 18=P, 19=T, 20=P_max, 21=T_max
-
-      if (pb%features%tp == 1) then
-        write(pb%ot%unit) pb%time, pb%ot%llocnew*pb%mesh%dx(1),  &
-          pb%ot%lcnew*pb%mesh%dx(1), pb%ot%pot, pb%ot%pot_rate,    &
-          pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
-          pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
-          pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
-          ! for ivmax
-          pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
-          pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
-          pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), &
-          pb%sigma(pb%ot%ivmax)-pb%tp%P(pb%ot%ivmax), &
-          ! write P, T
-          pb%tp%P(pb%ot%ic), pb%tp%T(pb%ot%ic), pb%tp%P(pb%ot%ivmax), pb%tp%T(pb%ot%ivmax)
-      else
-        write(pb%ot%unit) pb%time, pb%ot%llocnew*pb%mesh%dx(1),  &
-          pb%ot%lcnew*pb%mesh%dx(1), pb%ot%pot, pb%ot%pot_rate,    &
-          pb%v(pb%ot%ic), pb%theta(pb%ot%ic),  &
-          pb%v(pb%ot%ic)*pb%theta(pb%ot%ic)/pb%dc(pb%ot%ic), &
-          pb%tau(pb%ot%ic), pb%slip(pb%ot%ic),    &
-          ! for ivmax
-          pb%mesh%x(pb%ot%ivmax), pb%v(pb%ot%ivmax), pb%theta(pb%ot%ivmax),   &
-          pb%v(pb%ot%ivmax)*pb%theta(pb%ot%ivmax)/pb%dc(pb%ot%ivmax),    &
-          pb%tau(pb%ot%ivmax), pb%slip(pb%ot%ivmax), pb%sigma(pb%ot%ivmax)
-      endif
-      if (pb%it+1 == pb%itstop) close(pb%ot%unit)
-    endif
-
+  ! Check if an MPI sync is needed
+  call_gather = (is_MPI_parallel() .and. is_MPI_master())
+  ! If yes: do sync
+  if (call_gather) then
+    call pb_global(pb)
   endif
 
-  if (is_MPI_parallel()) return
- !JPA warning: the outputs below are not yet implemented in parallel
+  ! If this is master proc: write output
+  if (is_MPI_master()) then
 
- ! output slip velocity maxima at selected nodes
-  do i=1,pb%mesh%nn
-    if ((pb%ot%iasp(i) == 1) .and. (pb%ot%v_pre(i) >= pb%ot%v_th) .and.      &
-        (pb%v(i) < pb%ot%v_pre(i)) .and. (pb%ot%v_pre(i) >= pb%ot%v_pre2(i))) then
-      write(FID_VMAX,'(i10,2e24.16)') i, pb%time, pb%ot%v_pre(i)
-    endif
-  enddo
-  pb%ot%v_pre2=pb%ot%v_pre
-  pb%ot%v_pre=pb%v
+    ! Get the maximum slip rate
+    call get_ivmax(pb)
+    ivmax = pb%ivmax
+    ! Calculate potency (rate)
+    call calc_potency(pb)
 
- ! output time series at selected nodes
-  j = FID_IOT_0
-  do i=1,pb%mesh%nn
-    if (pb%ot%iot(i) == 1) then
-      j = j+1
-      write(j,'(e24.16,5e14.6)') pb%time, pb%v(i), pb%theta(i), pb%tau(i), pb%slip(i), pb%sigma(i)
-    endif
-  enddo
+    ! Number of OT locations
+    niot = size(pb%ot%iot)
+
+    ! Loop over OT locations
+    do iot=1,niot
+      id = FID_OT + pb%ot%iot(iot) - 1
+      ! Write headers
+      write(tmp, "(a, i0)") FILE_OT, pb%ot%iot(iot) - 1
+      iot_name = trim(tmp)
+      ! Open OT file
+      open(id, file=iot_name, status="old", access="append")
+      ! Write data (one line)
+      call write_ot_lines(id, pb%ot%fmt, pb%objects_glob, pb%ot%iot(iot), pb)
+      ! Close file
+      close(id)
+    enddo
+
+    ! Write vmax data
+    open(FID_VMAX, file=FILE_VMAX, status="old", access="append")
+    ! Write time
+    write(FID_VMAX, pb%ot%fmt_vmax(1), advance="no") pb%objects_glob(1)%s
+    ! Write index of vmax location
+    write(FID_VMAX, pb%ot%fmt_vmax(2), advance="no") pb%objects_glob(1)%i
+    ! Write vector data (at vmax location), except last one
+    do i=istart,k-1
+      ! Write quantity, do not advance to next line
+      ! NOTE: fmt and objects are not aligned
+      write(FID_VMAX, pb%ot%fmt_vmax(i-1), advance="no") pb%objects_glob(i)%v(ivmax)
+    enddo
+    ! Write last ot output quantity, advance to next line
+    write(FID_VMAX, pb%ot%fmt_vmax(k-1)) pb%objects_glob(k)%v(ivmax)
+    ! Close file
+    close(FID_VMAX)
+
+    ! IASP output slip velocity maxima at selected nodes
+    niasp = size(pb%ot%iasp)
+    ! Open file
+    open(FID_IASP, file=FILE_IASP, status="old", access="append")
+    ! Loop over all IASP locations
+    do i=1,niasp
+      ! Mesh index of IASP location
+      n = pb%ot%iasp(i)
+      ! Write critera:
+      !   - v1 > v_th
+      !   - v2 < v1
+      !   - v1 > v0
+      if ((pb%ot%v_pre(n) >= pb%ot%v_th) .and. &
+          (pb%v_glob(n) < pb%ot%v_pre(n)) .and. &
+          (pb%ot%v_pre(n) >= pb%ot%v_pre2(n))) then
+          write(FID_IASP, "(i10, 2e24.16)") n, pb%time, pb%ot%v_pre(n)
+      endif
+    enddo
+    close(FID_IASP)
+    ! Update v0, v1
+    pb%ot%v_pre2 = pb%ot%v_pre
+    pb%ot%v_pre = pb%v_glob
+
+  endif
 
 end subroutine ot_write
 
@@ -485,23 +679,26 @@ end subroutine ot_write
 subroutine ox_write(pb)
 
   use problem_class
+  use constants, only:  FID_MW, FID_OX, FID_OX_DYN, FID_QSB_POST, FID_QSB_PRE, &
+                        FILE_OX, FILE_OX_DYN_MAX, FILE_OX_DYN_POST, FILE_OX_DYN_PRE
   use my_mpi, only: is_MPI_parallel, is_mpi_master
 
   type (problem_type), intent(inout) :: pb
 
-  integer :: ixout, nox, nxout_dyn, unit
+  integer :: iw, ix, n, nwout_dyn, nxout_dyn, unit
   logical ::  call_gather, close_unit, dynamic, falling_edge, last_call, &
-              MPI_master, rising_edge, write_ox, write_ox_dyn, write_QSB
+              MPI_master, skip, rising_edge, write_ox, write_ox_dyn, write_QSB
   double precision, dimension(pb%mesh%nnglob) :: tau, v
+  character(len=100) :: tmp
+  character(len=100), allocatable :: file_name
 
-  nox = pb%ox%nox
+  nwout_dyn = pb%ox%nwout_dyn
   nxout_dyn = pb%ox%nxout_dyn
 
   !---------------------------------------------------------------------------
   ! Perform series of checks to see which operations need to be executed
 
   ! Is this the last call (last simulation step)?
-  ! TODO: check if this is correct, maybe pb%itstop - 1?
   last_call = (pb%it == pb%itstop)
 
   ! Is this proc MPI master? (default .true. for serial)
@@ -510,9 +707,9 @@ subroutine ox_write(pb)
   ! Check if we're crossing dynamic thresholds from below (rising edge)
   ! or from above (falling edge)
   rising_edge = ((pb%ox%dyn_stat == 0) .and. &
-                (pb%v(pb%ot%ivmax) >= pb%DYN_th_on))
+                (pb%v_glob(pb%ivmax) >= pb%DYN_th_on))
   falling_edge =  ((pb%ox%dyn_stat == 1) .and. &
-                  (pb%v(pb%ot%ivmax) <= pb%DYN_th_off))
+                  (pb%v_glob(pb%ivmax) <= pb%DYN_th_off))
   ! If we're crossing a dynamic threshold, update global dynamic state
   if (rising_edge .and. MPI_master) then
     ! Set global dynamic state to 1
@@ -520,11 +717,14 @@ subroutine ox_write(pb)
   endif
   ! We're dynamic as long as dyn_stat == 1
   dynamic = (pb%ox%dyn_stat == 1)
+  skip = (pb%ox%dyn_count <= pb%dyn_skip)
 
   ! Should this proc write ox, ox_dyn, or QSB output?
   write_ox = (mod(pb%it, pb%ox%ntout) == 0 .or. last_call) .and. MPI_master
-  write_ox_dyn = ((pb%ox%i_ox_dyn == 1) .and. dynamic) .and. MPI_master
-  write_QSB = ((pb%DYN_FLAG == 1) .and. dynamic) .and. MPI_master
+  write_ox_dyn =  ((pb%ox%i_ox_dyn == 1) .and. dynamic) .and. &
+                  MPI_master .and. .not. skip
+  write_QSB = ((pb%DYN_FLAG == 1) .and. dynamic) .and. &
+              MPI_master .and. .not. skip
 
   ! Call an MPI gather when:
   !  1. Output is requested (either regular ox or other flavour)
@@ -544,6 +744,9 @@ subroutine ox_write(pb)
     call pb_global(pb)
   endif
 
+  ! Get the maximum slip rate
+  call get_ivmax(pb)
+
   ! End MPI global gather
   !---------------------------------------------------------------------------
   ! Write regular ox output
@@ -551,13 +754,10 @@ subroutine ox_write(pb)
   if (write_ox) then
 
     ! Write ox data
-    call write_ox_lines(pb%ox%unit, pb%ox%fmt, pb%ox%objects_ox, &
+    open(FID_OX, file=FILE_OX, status="old", position="append")
+    call write_ox_lines(FID_OX, pb%ox%fmt, pb%objects_glob, &
                         pb%ox%nxout, pb%ox%nwout, pb)
-
-    ! Check if unit needs to be closed
-    if (close_unit) then
-      close(pb%ox%unit)
-    endif
+    close(FID_OX)
 
   endif
 
@@ -571,14 +771,24 @@ subroutine ox_write(pb)
     if (rising_edge) then
 
       ! Collect output quantities
-      pb%tau_max_glob = pb%tau_glob(::nxout_dyn)
-      pb%v_max_glob = pb%v_glob(::nxout_dyn)
+      do iw=1, pb%mesh%nw, nwout_dyn
+        do ix=1, pb%mesh%nx, nxout_dyn
+          n = (iw - 1) * pb%mesh%nx + ix
+          pb%tau_max_glob(n) = pb%tau_glob(n)
+          pb%v_max_glob(n) = pb%v_glob(n)
+        enddo
+      enddo
       pb%t_rup_glob = pb%time
       pb%t_vmax_glob = pb%time
+
       ! Define unit for rising edge ox output
-      unit = pb%ox%ox_dyn_unit + 3 * pb%ox%dyn_count + 1
+      unit = FID_OX_DYN + 1
       ! Write ox data
-      call write_ox_lines(unit, pb%ox%fmt, pb%ox%objects_dyn, &
+      write(tmp, "(a, i0)") FILE_OX_DYN_PRE, pb%ox%dyn_count
+      file_name = trim(tmp)
+      open(unit, file=file_name, status="replace")
+      write(unit, "(a)") pb%ox%header
+      call write_ox_lines(unit, pb%ox%fmt, pb%objects_glob, &
                           pb%ox%nxout_dyn, pb%ox%nwout_dyn, pb)
       ! Close output unit
       close(unit)
@@ -586,45 +796,65 @@ subroutine ox_write(pb)
     ! If we cross the dynamic threshold from above
     elseif (falling_edge) then
 
-      ! First: falling edge ox output
-      ! Define unit for falling edge ox output
-      unit = pb%ox%ox_dyn_unit + 3 * pb%ox%dyn_count + 2
-      ! Write ox data
-      call write_ox_lines(unit, pb%ox%fmt, pb%ox%objects_dyn, &
-                          pb%ox%nxout_dyn, pb%ox%nwout_dyn, pb)
-      ! Close output unit
-      close(unit)
+      ! Skip the first dyn_skip events
+      if (pb%ox%dyn_count > pb%dyn_skip) then
+        ! First: falling edge ox output
+        ! Define unit for falling edge ox output
+        unit = FID_OX_DYN + 2
+        write(tmp, "(a, i0)") FILE_OX_DYN_POST, pb%ox%dyn_count
+        file_name = trim(tmp)
+        ! Write ox data
+        open(unit, file=file_name, status="replace")
+        write(unit, "(a)") pb%ox%header
+        call write_ox_lines(unit, pb%ox%fmt, pb%objects_glob, &
+                            pb%ox%nxout_dyn, pb%ox%nwout_dyn, pb)
+        ! Close output unit
+        close(unit)
 
-      ! Second: max rupture stats
-      ! TODO: move this to write_ox_lines subroutine?
-      ! Define unit for max stats output
-      unit = pb%ox%ox_dyn_unit + 3 * pb%ox%dyn_count + 3
-      write(unit,'(a)') '# x y z t_rup tau_max t_vmax vmax'
-      do ixout=1,pb%mesh%nnglob,nxout_dyn
-        write(unit, '(3e15.7,4e28.20)') &
-          pb%mesh%xglob(ixout), pb%mesh%yglob(ixout), pb%mesh%zglob(ixout), &
-          pb%t_rup_glob(ixout), pb%tau_max_glob(ixout), pb%t_vmax_glob(ixout), &
-          pb%v_max_glob(ixout)
-      enddo
-      ! Close output unit
-      close(unit)
+        ! Second: max rupture stats
+        ! Define unit for max stats output
+        unit = FID_OX_DYN + 3
+        write(tmp, "(a, i0)") FILE_OX_DYN_MAX, pb%ox%dyn_count
+        file_name = trim(tmp)
+        open(unit, file=file_name, status="replace")
+        write(unit,'(a)') '# x y z t_rup tau_max t_vmax vmax'
+        ! WARNING: nx should be nxglob, but this has not been implemented yet
+        ! In general, QDYN will break when FFT_TYPE == 2
+        do iw=1, pb%mesh%nw, nwout_dyn
+          do ix=1, pb%mesh%nx, nxout_dyn
+            n = (iw - 1) * pb%mesh%nx + ix
+            write(unit, '(3e15.7,4e28.20)') &
+              pb%mesh%xglob(n), pb%mesh%yglob(n), pb%mesh%zglob(n), &
+              pb%t_rup_glob(n), pb%tau_max_glob(n), pb%t_vmax_glob(n), &
+              pb%v_max_glob(n)
+          enddo
+        enddo
+        ! Close output unit
+        close(unit)
+      endif
 
     ! No threshold crossing, but still dynamic
     else
-      tau = pb%ox%objects_rup(1)%p
-      v = pb%ox%objects_rup(2)%p
+
+      ! WARNING: %v is a placeholder for any vector, so do not replace
+      ! %v with %tau (i.e. the below is not a bug...)
+      tau = pb%ox%objects_rup(1)%v
+      v = pb%ox%objects_rup(2)%v
       ! Update max stress/slip rate for each ox element
-      do ixout=1,pb%mesh%nnglob,nxout_dyn
-        ! Mark location of rupture front (max tau at given location)
-        if (tau(ixout) > pb%tau_max_glob(ixout)) then
-          pb%tau_max_glob(ixout) = tau(ixout)
-          pb%t_rup_glob(ixout) = pb%time
-        endif
-        ! Mark location of max slip rate (at given location)
-        if (v(ixout) > pb%v_max_glob(ixout)) then
-          pb%v_max_glob(ixout) = v(ixout)
-          pb%t_vmax_glob(ixout) = pb%time
-        endif
+      do iw=1, pb%mesh%nw, nwout_dyn
+        do ix=1, pb%mesh%nx, nxout_dyn
+          n = (iw - 1) * pb%mesh%nx + ix
+          ! Mark location of rupture front (max tau at given location)
+          if (tau(n) > pb%tau_max_glob(n)) then
+            pb%tau_max_glob(n) = tau(n)
+            pb%t_rup_glob(n) = pb%time
+          endif
+          ! Mark location of max slip rate (at given location)
+          if (v(n) > pb%v_max_glob(n)) then
+            pb%v_max_glob(n) = v(n)
+            pb%t_vmax_glob(n) = pb%time
+          endif
+        enddo
       enddo
     endif
 
@@ -640,28 +870,19 @@ subroutine ox_write(pb)
 
     if (rising_edge) then
 
-      unit = pb%ox%QSB_unit_pre
+      unit = FID_QSB_PRE
       open(unit, file='DYN_PRE.txt', status='REPLACE')
-      call write_ox_lines(unit, pb%ox%fmt, pb%ox%objects_dyn, 1, 1, pb)
-      pb%ox%pot_pre = pb%ot%pot
+      call write_ox_lines(unit, pb%ox%fmt, pb%objects_glob, 1, 1, pb)
+      pb%ox%pot_pre = pb%pot
       close(unit)
 
     else if (falling_edge) then
 
-      unit = pb%ox%QSB_unit_post
+      unit = FID_QSB_PRE
       open(unit, file='DYN_POST.txt', status='REPLACE')
-      call write_ox_lines(unit, pb%ox%fmt, pb%ox%objects_dyn, 1, 1, pb)
+      call write_ox_lines(unit, pb%ox%fmt, pb%objects_glob, 1, 1, pb)
       close(unit)
 
-      ! Check for seismic moment
-      ! TODO: Why? What is this? Purpose? Relevance?
-      if ((pb%ot%pot - pb%ox%pot_pre) * pb%smu >= pb%DYN_M) then
-        pb%ox%dyn_count = pb%ox%dyn_count + 1
-        if (pb%ox%dyn_count > pb%DYN_SKIP) then
-          pb%itstop = pb%it
-          write(222,'(3i10,e24.14)') pb%it,pb%ot%ivmax,pb%ox%count,pb%time
-        endif
-      endif
     endif
 
   endif
@@ -669,6 +890,17 @@ subroutine ox_write(pb)
   ! End QSB output
   !---------------------------------------------------------------------------
   ! Check dynamic state
+
+  ! TODO: this needs to be implemented somewhere (not in QSB!!!)
+  ! ! Check for seismic moment
+  ! if ((pb%pot - pb%ox%pot_pre) * pb%smu >= pb%DYN_M) then
+  !   ! TODO: replace dyn_count with QSB count !!
+  !   pb%ox%dyn_count = pb%ox%dyn_count + 1
+  !   if (pb%ox%dyn_count > pb%DYN_SKIP) then
+  !     pb%itstop = pb%it
+  !     write(FID_MW, '(3i10,e24.14)') pb%it, pb%ivmax, pb%ox%dyn_count, pb%time
+  !   endif
+  ! endif
 
   if (falling_edge .and. MPI_master) then
     ! Set global dynamic state back to 0
@@ -685,14 +917,46 @@ subroutine ox_write(pb)
 end subroutine ox_write
 
 !=====================================================================
+! Write ot data to file
+subroutine write_ot_lines(unit, fmt, objects, iot, pb)
+
+  use problem_class
+  type (problem_type), intent(inout) :: pb
+  integer :: i, iot, istart, k, unit
+  character(len=16), dimension(pb%nobj) :: fmt
+  type(optr), dimension(pb%nobj) :: objects
+
+  ! Skip the first 4 elements of the pointer container
+  istart = 4
+  ! Size of the container
+  k = pb%nobj
+
+  ! Write time
+  write(unit, fmt(1), advance="no") objects(1)%s
+  ! Write pot, pot_rate
+  write(unit, fmt(2), advance="no") objects(2)%s
+  write(unit, fmt(3), advance="no") objects(3)%s
+  ! Loop over all ot output quantities (except last one)
+  do i=istart,k-1
+    ! Write ot output quantity, do not advance to next line
+    write(unit, fmt(i), advance="no") objects(i)%v(iot)
+  enddo
+  ! Write last ot output quantity, advance to next line
+  write(unit, fmt(k)) objects(k)%v(iot)
+
+end subroutine write_ot_lines
+
+!=====================================================================
 ! Write ox data to file
 subroutine write_ox_lines(unit, fmt, objects, nxout, nwout, pb)
 
   use problem_class
   type (problem_type), intent(inout) :: pb
-  integer :: iox, iwout, ixout, n, nw, nwout, nx, nxout, unit
-  character(len=16), dimension(pb%ox%nox) :: fmt
-  type(oxptr), dimension(pb%ox%nox) :: objects
+  integer :: iox, iwout, ixout, k, n, nw, nwout, nx, nxout, unit
+  character(len=16), dimension(pb%nobj) :: fmt
+  type(optr), dimension(pb%nobj) :: objects
+
+  k = pb%nobj
 
   ! Number of nodes to loop over (either local or global)
   nx = pb%mesh%nx
@@ -704,86 +968,80 @@ subroutine write_ox_lines(unit, fmt, objects, nxout, nwout, pb)
   do iwout=1, nw, nwout
     do ixout=1, nx, nxout
       n = (iwout - 1) * nx + ixout
-    ! Loop over all ox output quantities (except last one)
-      do iox=1,pb%ox%nox-1
+      ! Write time
+      write(unit, fmt(1), advance="no") objects(1)%s
+      ! Loop over all ox output quantities (except last one)
+      do iox=1,k-1
         ! Write ox output quantity, do not advance to next line
-        write(unit, fmt(iox), advance='no') objects(iox)%p(n)
+        write(unit, fmt(iox), advance="no") objects(iox)%v(n)
       enddo
       ! Write last ox output quantity, advance to next line
-      write(unit, fmt(pb%ox%nox)) objects(pb%ox%nox)%p(n)
+      write(unit, fmt(k)) objects(k)%v(n)
     enddo
   enddo
 
 end subroutine write_ox_lines
 
 !=====================================================================
-! distance between largest peak on the left half
-! and largest peak on the right half
-function crack_size(s,n)
+! Compute the potency (rate) on the fault, defined as:
+! 0d:  [pot/pot_rate] = [slip/v] * L
+! 1d:  [pot/pot_rate] = sum([slip/v] * dx)
+! 2d:  [pot/pot_rate] = sum([slip/v] * dx * dw)
 
-  integer :: n
-  double precision ::  s(n)
-  double precision ::  stemp,smax,s1,s2,xL,xR
-  integer :: i,iL,iR,imin
-  double precision :: crack_size
+subroutine calc_potency(pb)
 
-  if (n < 2) then
-    crack_size = 0d0
-    return
-  endif
+  use problem_class
+  use my_mpi, only: is_MPI_parallel, sum_allreduce
 
-  ! assuming minimum stressing rate at nucleation point
-  !      smin=s(1)
-  !      do i=1,n
-  !        if (s(i).le.smin) then
-  !          imin=i
-  !          smin=s(i)
-  !        endif
-  !      enddo
+  type(problem_type), intent(inout) :: pb
+  double precision, dimension(pb%mesh%nn) :: area
+  double precision, dimension(1) :: buf
+  integer :: iw, ix, n
 
-  ! WARNING: assumes one peak on x<0 and one peak on x>0
-  imin=n/2
+  pb%pot = 0d0
+  pb%pot_rate = 0d0
 
-  iL=1
-  stemp=0d0;
-  do i=1,imin
-    if (s(i) > stemp) then
-      iL = i
-      stemp = s(i)
-    end if
+  ! Step 1: define area vector
+  do iw=1, pb%mesh%nw
+    do ix=1, pb%mesh%nx
+      n = (iw - 1) * pb%mesh%nx + ix
+      area(n) = pb%mesh%dx(ix) * pb%mesh%dw(iw)
+    end do
   end do
 
-  iR=imin
-  stemp=0d0
-  do i=imin,n
-    if (s(i) >= stemp) then
-      iR = i
-      stemp = s(i)
-    end if
-  end do
+  ! Step 2: multiply [slip/v] * area and sum
+  pb%pot = sum(pb%slip * area)
+  pb%pot_rate = sum(pb%v * area)
 
+  ! Step 3: MPI sync (sum)
+  ! Note that the reduce is done in-place
+  if (is_MPI_parallel()) then
+    buf(1) = pb%pot
+    call sum_allreduce(buf, 1)
+    pb%pot = buf(1)
 
-  !iL = maxloc(s(1:imin))
-  smax=s(iL)
-  xL = dble(iL);
-  if (iL > 1) then
-    s1 = 0.5d0*( s(iL+1)-s(iL-1) )
-    s2 = s(iL-1)-2d0*s(iL)+s(iL+1)
-    if (s2 /= 0d0) xL = xL-s1/s2
+    buf(1) = pb%pot_rate
+    call sum_allreduce(buf, 1)
+    pb%pot_rate = buf(1)
   endif
 
-  !iR = maxloc(s(imin:n))
-  smax=s(iR)
-  xR = dble(iR);
-  if (iR < n) then
-    s1 = 0.5d0*( s(iR+1)-s(iR-1) )
-    s2 = s(iR-1)-2d0*s(iR)+s(iR+1)
-    if (s2 /= 0d0) xR = xR-s1/s2
-  endif
+  ! Done
 
-  crack_size = xR-xL
+end subroutine calc_potency
 
-end function crack_size
+!=====================================================================
+! Get the location of the maximum slip rate
+
+subroutine get_ivmax(pb)
+
+  use problem_class
+  use my_mpi, only: is_MPI_parallel
+
+  type(problem_type), intent(inout) :: pb
+
+  pb%ivmax = maxloc(pb%v_glob, 1)
+
+end subroutine get_ivmax
 
 !=====================================================================
 ! Initiate MPI global gather
@@ -791,6 +1049,7 @@ end function crack_size
 subroutine init_pb_global(pb)
 
   use problem_class
+  use constants, only: FID_SCREEN
 
   type(problem_type), intent(inout) :: pb
   integer :: n
@@ -822,8 +1081,8 @@ subroutine init_pb_global(pb)
 
   ! If global quantities are already allocated, something is wrong!
   else
-    write(6, *) "Error in output.f90::init_pb_global"
-    write(6, *) "Global quantities are allocated while they shouldn't be"
+    write(FID_SCREEN, *) "Error in output.f90::init_pb_global"
+    write(FID_SCREEN, *) "Global quantities are allocated while they shouldn't be"
     stop "Terminating..."
   endif
 
@@ -831,6 +1090,7 @@ end subroutine init_pb_global
 
 !=====================================================================
 ! Collect global fault nodes to master processor for outputs
+
 subroutine pb_global(pb)
 
   use problem_class
@@ -838,23 +1098,21 @@ subroutine pb_global(pb)
   use my_mpi, only: gather_allvdouble_root
 
   type(problem_type), intent(inout) :: pb
-  integer :: i, nnLocal, nnGlobal
+  integer :: i, k, nnLocal, nnGlobal
 
+  k = pb%nobj
   nnLocal = pb%mesh%nn
   nnGlobal = pb%mesh%nnglob
 
   ! Loop over proc-specific quantities
-  ! Skip: x, y, z, time
-  do i=5,pb%ox%nox
+  ! Skip x, y, z
+  do i=4,k
     ! Initialise to zero
-    write(6, *) i, size(pb%ox%objects_glob(i)%p)
-    pb%ox%objects_glob(i)%p = 0d0
+    pb%objects_glob(i)%v = 0d0
     ! Call MPI gather
-    write(6, *) i, size(pb%ox%objects_glob(i)%p)
-    call gather_allvdouble_root(  pb%ox%objects_loc(i)%p, nnLocal, &
-                                  pb%ox%objects_glob(i)%p, nnLocal_perproc, &
+    call gather_allvdouble_root(  pb%objects_loc(i)%v, nnLocal, &
+                                  pb%objects_glob(i)%v, nnLocal_perproc, &
                                   nnoffset_glob_perproc, nnGlobal)
-    write(6, *) i, size(pb%ox%objects_glob(i)%p)
   enddo
 
 end subroutine pb_global

@@ -99,17 +99,17 @@ plt.figure()
 
 # Normalised shear stress
 plt.subplot(311)
-plt.plot(p.ot["t"], p.ot["tau"] / set_dict["SIGMA"])
+plt.plot(p.ot[0]["t"], p.ot[0]["tau"] / set_dict["SIGMA"])
 plt.ylabel(r"$\tau / \sigma$ [-]")
 
 # Porosity
 plt.subplot(312)
-plt.plot(p.ot["t"], 100 * p.ot["theta"])
+plt.plot(p.ot[0]["t"], 100 * p.ot[0]["theta"])
 plt.ylabel(r"$\phi$ [%]")
 
 # Velocity
 plt.subplot(313)
-plt.plot(p.ot["t"], p.ot["v"])
+plt.plot(p.ot[0]["t"], p.ot[0]["v"])
 plt.yscale("log")
 plt.ylabel(r"$v$ [m/s]")
 plt.xlabel("time [s]")
@@ -136,15 +136,15 @@ p.read_output()
 # Plot time series
 plt.figure()
 plt.subplot(311)
-plt.plot(p.ot["t"], p.ot["tau"] / set_dict["SIGMA"])
+plt.plot(p.ot[0]["t"], p.ot[0]["tau"] / set_dict["SIGMA"])
 plt.ylabel(r"$\tau / \sigma$ [-]")
 
 plt.subplot(312)
-plt.plot(p.ot["t"], 100 * p.ot["theta"])
+plt.plot(p.ot[0]["t"], 100 * p.ot[0]["theta"])
 plt.ylabel(r"$\phi$ [%]")
 
 plt.subplot(313)
-plt.plot(p.ot["t"], p.ot["v"])
+plt.plot(p.ot[0]["t"], p.ot[0]["v"])
 plt.yscale("log")
 plt.ylabel(r"$v$ [m/s]")
 plt.xlabel("time [s]")
