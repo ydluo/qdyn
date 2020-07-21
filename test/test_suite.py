@@ -25,6 +25,9 @@ from tserice import TestTseRice
 # Width of output
 msg_width = 66
 
+# Failure check
+pass_check = True
+
 # General simulation parameters
 set_dict = {
     "FAULT_TYPE": 1,
@@ -112,6 +115,10 @@ vstep.run_test("CNS")
 # vstep.plot_results("RSF")
 # vstep.plot_results("CNS")
 
+# Update check
+pass_check = pass_check and vstep.test_results["RSF"]["success"]
+pass_check = pass_check and vstep.test_results["CNS"]["success"]
+
 # Spring-block stick-slip simulation (RSF and CNS)
 print(" - Testing spring-block (stick-slip)..")
 p.settings(set_dict)
@@ -122,6 +129,10 @@ stickslip.run_test("CNS")
 # stickslip.export_results()
 # stickslip.plot_results("RSF")
 # stickslip.plot_results("CNS")
+
+# Update check
+pass_check = pass_check and stickslip.test_results["RSF"]["success"]
+pass_check = pass_check and stickslip.test_results["CNS"]["success"]
 
 # 2D fault single asperity simulation (RSF)
 print(" - Testing single asperity (will take a few minutes)...")
@@ -134,6 +145,10 @@ single_asperity.run_test("CNS")
 # Plot results
 # single_asperity.plot_results("CNS")
 
+# Update check
+pass_check = pass_check and single_asperity.test_results["RSF"]["success"]
+pass_check = pass_check and single_asperity.test_results["CNS"]["success"]
+
 # Tse & Rice (1986) example test (RSF)
 # see https://doi.org/10.1029/JB091iB09p09452
 print(" - Testing Tse & Rice (1986) example (will take a few minutes)...")
@@ -144,6 +159,9 @@ tse_rice.run_test()
 # tse_rice.export_results()
 # Plot results
 # tse_rice.plot_results("RSF")
+
+# Update check
+pass_check = pass_check and tse_rice.test_results["RSF"]["success"]
 
 t1 = time()
 
@@ -172,3 +190,9 @@ os.remove(os.path.join(cwd, "qdyn.in"))
 for file in files:
     if file.startswith("output_"):
         os.remove(os.path.join(cwd, file))
+
+# Exit with error code
+if pass_check:
+    exit(0)
+else:
+    exit(1)
