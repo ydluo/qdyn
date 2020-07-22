@@ -23,7 +23,7 @@ install:
   # Activate it
   - source activate test
   # Install various dependencies
-  - conda install --yes numpy matplotlib pandas termcolor
+  - conda install --yes numpy scipy matplotlib pandas termcolor
   # Compile QDYN code
   - cp $TRAVIS_BUILD_DIR/utils/devel_tools/mymakedepend.perl $TRAVIS_BUILD_DIR/src
   - cd $TRAVIS_BUILD_DIR/src/
@@ -33,4 +33,4 @@ install:
 
 script:
   - cd $TRAVIS_BUILD_DIR/test/
-  - python test_suite.py
+  - "travis_wait python test_suite.py"

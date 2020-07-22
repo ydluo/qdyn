@@ -33,6 +33,8 @@ subroutine init_tests(pb)
   write(6,*) "Initiating QDYN unit test suite"
   write(6,*) ""
 
+  allocate(pb%time)
+
   ! Allocate mesh variables/parameters
   call allocate_mesh(pb)
   call initiate_parameters(pb)
@@ -163,7 +165,7 @@ subroutine allocate_mesh(pb)
   n = mesh_get_size(pb%mesh) ! number of nodes in this processor
 
   ! Allocate general parameters
-  if (allocated(pb%tau)) then
+  if (allocated(pb%mu_star)) then
     deallocate (  pb%tau, pb%sigma, pb%v, pb%theta, pb%theta2, pb%v_star, &
                   pb%ot%iot, pb%ot%iasp, pb%dc, pb%coh, pb%v_pl , pb%a, pb%b, &
                   pb%v1, pb%v2, pb%mu_star, pb%dtau_dt, pb%slip, pb%theta_star )

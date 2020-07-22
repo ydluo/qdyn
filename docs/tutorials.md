@@ -25,3 +25,4 @@ There are several documented, step-by-step tutorials available, with correspondi
 
 **Advanced**:
 
+- [Simulating a single asperity on a 3D fault](tutorial_single_asperity_3D.html)

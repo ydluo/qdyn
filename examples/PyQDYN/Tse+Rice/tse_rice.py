@@ -125,7 +125,7 @@ def setup():
 setup()
 
 #Plot some output
-plt.plot(p.ot["t"]/t_yr, p.ot["v_max"])
+plt.plot(p.ot_vmax["t"]/t_yr, p.ot_vmax["v"])
 plt.yscale("log")
 plt.ylabel(r"$V_{max}$ [m/s]")
 plt.xlabel("time [yr]")

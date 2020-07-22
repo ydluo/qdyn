@@ -131,9 +131,7 @@ subroutine init_variables(pb)
   integer :: i
 
   ! Allocate variables
-  allocate (  pb%tp%P(pb%mesh%nn), &
-              pb%tp%T(pb%mesh%nn), &
-              pb%tp%inv_w(pb%mesh%nn), &
+  allocate (  pb%tp%inv_w(pb%mesh%nn), &
               pb%tp%Pi(pb%mesh%nn*pb%tp%mesh%Nl), &
               pb%tp%Theta(pb%mesh%nn*pb%tp%mesh%Nl), &
               pb%tp%PiTheta(pb%mesh%nn*pb%tp%mesh%Nl), &
@@ -157,8 +155,8 @@ subroutine init_variables(pb)
   do i=1,pb%mesh%nn
     pb%tp%inv_rhoc = 1.0/pb%tp%rhoc(i)
     pb%tp%inv_w(i) = 1.0/pb%tp%w(i)
-    pb%tp%P(i) = pb%tp%P_a(i)
-    pb%tp%T(i) = pb%tp%T_a(i)
+    pb%P(i) = pb%tp%P_a(i)
+    pb%T(i) = pb%tp%T_a(i)
     pb%tp%dP_dt(i) = 0d0
     pb%dtheta_dt(i) = 0d0
     pb%dtheta2_dt(i) = 0d0
@@ -215,7 +213,7 @@ end subroutine update_PT
 subroutine update_PT_final(dt,pb)
 
   type(problem_type), intent(inout) :: pb
-  double precision, dimension(pb%mesh%nn) :: tau_y, phi_dot, phi, dP_dt
+  double precision, dimension(pb%mesh%nn) :: tau_y, phi_dot, phi
   double precision :: dt
 
   ! Calculate mid-point values of tau_y, phi_dot, phi between t and t+dt
@@ -263,8 +261,8 @@ subroutine solve_spectral(tau_y,phi_dot,phi,v,dt,pb)
 
   ! Loop over all fault segments
   do i=1,pb%mesh%nn
-    pb%tp%P(i) = pb%tp%P_a(i)
-    pb%tp%T(i) = pb%tp%T_a(i)
+    pb%P(i) = pb%tp%P_a(i)
+    pb%T(i) = pb%tp%T_a(i)
     pb%tp%dP_dt(i) = 0d0
 
     if (v(i) > 1e-5) then
@@ -281,7 +279,7 @@ subroutine solve_spectral(tau_y,phi_dot,phi,v,dt,pb)
         exp_T = exp(-A_t*dt)
         ! Update Ttheta(t+dt)
         pb%tp%Theta(n) = B_T*(1.0 - exp_T)/A_T + pb%tp%Theta(n)*exp_T
-        pb%tp%T(i) = pb%tp%T(i) + pb%tp%mesh%F_inv(j)*pb%tp%inv_w(i)*pb%tp%Theta(n)
+        pb%T(i) = pb%T(i) + pb%tp%mesh%F_inv(j)*pb%tp%inv_w(i)*pb%tp%Theta(n)
 
         ! Pressure-related parameters in spectral domain
         A_P = pb%tp%alpha_hy(i)*(pb%tp%mesh%lw(j)*pb%tp%inv_w(i))**2
@@ -292,7 +290,7 @@ subroutine solve_spectral(tau_y,phi_dot,phi,v,dt,pb)
         ! Pi + Lambda_prime*Theta, where Pi is the Fourier transform of P
         ! and Theta is the Fourier transform of T [see N&L, Eqn. 5 and 7]
         pb%tp%PiTheta(n) = B_P*(1.0 - exp_P)/A_P + pb%tp%PiTheta(n)*exp_P
-        pb%tp%P(i) =  pb%tp%P(i) + pb%tp%mesh%F_inv(j)*pb%tp%inv_w(i)* &
+        pb%P(i) =  pb%P(i) + pb%tp%mesh%F_inv(j)*pb%tp%inv_w(i)* &
                       (pb%tp%PiTheta(n) - pb%tp%Lam_prime(i)*pb%tp%Theta(n))
 
         ! Update dP/dt

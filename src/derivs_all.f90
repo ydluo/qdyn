@@ -35,15 +35,13 @@ subroutine derivs(time,yt,dydt,pb)
   double precision, intent(in) :: time, yt(pb%neqs*pb%mesh%nn)
   double precision, intent(out) :: dydt(pb%neqs*pb%mesh%nn)
 
-  double precision, dimension(pb%mesh%nn) :: theta, theta2, sigma, tau, v, P
+  double precision, dimension(pb%mesh%nn) :: theta, theta2, sigma, tau, v
   double precision, dimension(pb%mesh%nn) :: main_var, dmain_var, slip, dslip
   double precision, dimension(pb%mesh%nn) :: dsigma_dt, dtau_dt, dth_dt, dth2_dt
   double precision, dimension(pb%mesh%nn) :: dmu_dv, dmu_dtheta
   double precision, dimension(pb%mesh%nn) :: tau_y, dP_dt, dtau_dP
   double precision, dimension(pb%mesh%nn) :: dummy1, dummy2
   double precision :: dtau_per, dt
-
-  integer :: ind_stress_coupling, ind_localisation
 
   ! SEISMIC: initialise vectors to zero. If unitialised, each compiler
   ! may produce different results depending on its conventions
@@ -69,7 +67,7 @@ subroutine derivs(time,yt,dydt,pb)
       ! Replace porosity for dummies when using RSF
       call update_PT(tau_y, dummy1, dummy2, pb%v, dt, pb)
     endif
-    sigma = sigma - pb%tp%P
+    sigma = sigma - pb%P
     dP_dt = pb%tp%dP_dt
   endif
 

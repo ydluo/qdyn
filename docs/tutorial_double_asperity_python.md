@@ -149,7 +149,7 @@ For this tutorial, we will use an auxiliary library of functions (`plot_function
 
 ```python
 # Time series of stress, state, and maximum slip rate on the fault
-qdyn_plot.timeseries(p.ot)
+qdyn_plot.timeseries(p.ot[0])
 ```
 
 ![](img/tutorials/double_asperity/timeseries.png)
