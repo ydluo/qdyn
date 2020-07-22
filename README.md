@@ -51,6 +51,11 @@ To get started with QDYN, see [the documentation](https://ydluo.github.io/qdyn/)
 
 ## News 
 
+*July 2020* | QDYN version 2.3 has arrived! In this release we improved the output modules, making them more consistent across simulation features and paving the way for HDF5 support. See the [release notes](https://github.com/ydluo/qdyn/releases/tag/qdyn_2.2) for details.
+
+*24 June 2020* | Article published on modeling earthquake cycles on heterogeneous faults using the CNS microphysical model:
+  M. van den Ende, J. Chen, J.P. Ampuero and A. Niemeijer, *Rheological transitions facilitate fault‐spanning ruptures on seismically active and creeping faults*, J. of Geophys. Res.: Solid Earth (doi:[10.1029/2019JB019328](https://doi.org/10.1029/2019JB019328))
+
 *January 2020* | The QDYN team participated in the *Community Code Verification Exercise for Simulating Sequences of Earthquakes and Aseismic Slip (SEAS)*, funded by SCEC. The results of this community benchmark exercise are now published in [Seismological Research Letters](https://doi.org/10.1785/0220190248) (see also this [preprint on EarthArXiv](https://eartharxiv.org/2dmp5/)). A script to run these simulations in QDYN is included in the `/examples/scec_benchmarks/BP2` directory.
 
 *29 August 2019* | QDYN version 2.2 has been released! This version is now more user-friendly than QDYN has ever been, with a new documentation website, Jupyter Notebooks, and automated testing for developers. See the [release notes](https://github.com/ydluo/qdyn/releases/tag/qdyn_2.2) for details.
