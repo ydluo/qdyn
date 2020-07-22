@@ -389,6 +389,8 @@ contains
 
   subroutine rkfs_d ( f, neqn, y, t, tout, relerr, abserr, iflag, yp, h, &
     f1, f2, f3, f4, f5, savre, savae, nfe, kop, init, jflag, kflag )
+
+    use my_mpi, only: is_MPI_parallel, max_allproc, min_allproc
   !
   !*******************************************************************************
   !
@@ -464,6 +466,7 @@ contains
     double precision y(neqn)
     double precision yp(neqn)
     double precision ypk
+    double precision hminglob  ! YD
   !
   !  Check the input parameters.
   !
@@ -627,6 +630,12 @@ contains
       end if
     end do
 
+    ! YD
+    if (is_MPI_parallel()) then
+      call min_allproc(h,hminglob)
+      h = hminglob
+    endif
+
     if ( toln <= 0.0D+00 ) then
       h = 0.0D+00
     end if
@@ -772,6 +781,12 @@ contains
       eeoet = max ( eeoet, ee / et )
 
     end do
+
+  ! YD: MPI sync max err, min overhead
+    if (is_MPI_parallel()) then
+      call max_allproc(eeoet, hminglob)
+      eeoet = hminglob
+    endif
 
     esttol = abs ( h ) * eeoet * scale / 752400.0D+00
 
