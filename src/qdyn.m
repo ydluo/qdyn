@@ -518,8 +518,8 @@ function export_main_input()
     fprintf(fid,'%u   i_rns_law\n', RNS_LAW);
     fprintf(fid,'%u   i_sigma_cpl\n', SIGMA_CPL);
     fprintf(fid,'0 0 0     stress_coupling, thermal press., localisation\n');
-    fprintf(fid,'%u %u %u %u %u %u %u  ntout_ot, ntout, nt_coord, nxout, nwout, nxout_DYN, nwout_DYN, ox_DYN\n', ...
-                NTOUT_OT, NTOUT,IC,NXOUT,NWOUT,NXOUT_DYN,NWOUT_DYN,OX_DYN);
+    fprintf(fid,'%u %u %u %u %u %u %u  ntout_ot, ntout, nt_coord, nxout, nwout, nxout_DYN, nwout_DYN, ox_seq ox_DYN\n', ...
+                NTOUT_OT, NTOUT,IC,NXOUT,NWOUT,NXOUT_DYN,NWOUT_DYN,OX_SEQ,OX_DYN);
     fprintf(fid,'%.15g %.15g %.15g %.15g %.15g %.15g   beta, smu, lambda, D, H, v_th\n', ...
                 VS, MU, LAM, D, H, V_TH);
     fprintf(fid,'%.15g %.15g    Tper, Aper\n',TPER,APER);
