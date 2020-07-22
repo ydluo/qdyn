@@ -244,6 +244,7 @@ QDYN offers various optional simulation features. Set the following parameters t
 
 |  Parameter   | Description                                                  | Default value |
 | :----------: | ------------------------------------------------------------ | :-----------: |
+|   `OX_SEQ`   | Type of snapshot outputs:<br />`0` = All snapshots in a single output file (`output_ox`)<br />`1`  = One output file per snapshot (`output_ox_1`, `output_ox_2`, ...) |      `0`      |
 |   `NWOUT`    | Spatial interval for snapshot output (in number of elements along-dip) |      `1`      |
 |   `NXOUT`    | Spatial interval for snapshot output (in number of elements along-strike) |      `1`      |
 |   `NTOUT`    | Temporal interval (in number of time steps) for snapshot output |      `1`      |

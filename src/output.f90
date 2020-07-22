@@ -403,7 +403,7 @@ subroutine ox_init(pb)
 
   type (problem_type), intent(inout) :: pb
 
-  integer :: n, count_w, count_x
+  integer :: count_w, count_x, n
 
   ! Number of mesh elements
   n = pb%mesh%nn
@@ -413,6 +413,8 @@ subroutine ox_init(pb)
   pb%ox%count = count_w * count_x
   ! Initial potency
   pb%ox%pot_pre = 0.d0
+  ! Initial snapshot count
+  pb%ox%seq_count = 0
 
   ! ---------------------------------------------------------------------------
   ! Prepare data structure and headers for ox, ox_dyn, and dyn output
@@ -441,9 +443,11 @@ subroutine ox_init(pb)
 
   endif
 
-  ! Create ox file
-  open(FID_OX, file=FILE_OX, status="replace")
-  close(FID_OX)
+  ! Create ox file (if not split over multiple files)
+  if (pb%ox%i_ox_seq == 0) then
+    open(FID_OX, file=FILE_OX, status="replace")
+    close(FID_OX)
+  endif
 
   ! Define headers
   pb%ox%header = '# t x y z v theta tau tau_dot slip sigma'
@@ -594,7 +598,8 @@ subroutine ox_write(pb)
 
   integer :: iw, ix, n, nwout_dyn, nxout_dyn, unit
   logical ::  call_gather, close_unit, dynamic, falling_edge, last_call, &
-              MPI_master, skip, rising_edge, write_ox, write_ox_dyn, write_QSB
+              MPI_master, skip, rising_edge, write_ox, write_ox_dyn, &
+              write_ox_seq, write_QSB
   double precision, dimension(pb%mesh%nnglob) :: tau, v
   character(len=100) :: tmp
   character(len=100), allocatable :: file_name
@@ -630,6 +635,7 @@ subroutine ox_write(pb)
   write_ox = (mod(pb%it, pb%ox%ntout) == 0 .or. last_call) .and. MPI_master
   write_ox_dyn =  ((pb%ox%i_ox_dyn == 1) .and. dynamic) .and. &
                   MPI_master .and. .not. skip
+  write_ox_seq = write_ox .and. (pb%ox%i_ox_seq == 1) .and. MPI_master
   write_QSB = ((pb%DYN_FLAG == 1) .and. dynamic) .and. &
               MPI_master .and. .not. skip
 
@@ -660,8 +666,18 @@ subroutine ox_write(pb)
 
   if (write_ox) then
 
+    pb%ox%seq_count = pb%ox%seq_count + 1
+
+    ! Check if data needs to be written to separate file
+    if (write_ox_seq) then
+      write(tmp, "(a, a, i0)") FILE_OX, "_", pb%ox%seq_count
+      file_name = trim(tmp)
+      open(FID_OX, file=file_name, status="replace")
+    else
+      open(FID_OX, file=FILE_OX, status="old", position="append")
+    endif
+
     ! Write ox data
-    open(FID_OX, file=FILE_OX, status="old", position="append")
     call write_ox_lines(FID_OX, pb%ox%fmt, pb%objects_glob, &
                         pb%ox%nxout, pb%ox%nwout, pb)
     close(FID_OX)
@@ -694,7 +710,6 @@ subroutine ox_write(pb)
       write(tmp, "(a, i0)") FILE_OX_DYN_PRE, pb%ox%dyn_count
       file_name = trim(tmp)
       open(unit, file=file_name, status="replace")
-      write(unit, "(a)") pb%ox%header
       call write_ox_lines(unit, pb%ox%fmt, pb%objects_glob, &
                           pb%ox%nxout_dyn, pb%ox%nwout_dyn, pb)
       ! Close output unit
@@ -712,7 +727,6 @@ subroutine ox_write(pb)
         file_name = trim(tmp)
         ! Write ox data
         open(unit, file=file_name, status="replace")
-        write(unit, "(a)") pb%ox%header
         call write_ox_lines(unit, pb%ox%fmt, pb%objects_glob, &
                             pb%ox%nxout_dyn, pb%ox%nwout_dyn, pb)
         ! Close output unit
