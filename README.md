@@ -51,7 +51,7 @@ To get started with QDYN, see [the documentation](https://ydluo.github.io/qdyn/)
 
 ## News 
 
-*July 2020* | QDYN version 2.3 has arrived! In this release we improved the output modules, making them more consistent across simulation features and paving the way for HDF5 support. See the [release notes](https://github.com/ydluo/qdyn/releases/tag/qdyn_2.2) for details.
+*22 July 2020* | QDYN version 2.3 has arrived! In this release we improved the output modules, making them more consistent across simulation features and paving the way for HDF5 support. See the [release notes](https://github.com/ydluo/qdyn/releases/tag/qdyn_2.3.0) for details.
 
 *24 June 2020* | Article published on modeling earthquake cycles on heterogeneous faults using the CNS microphysical model:
   M. van den Ende, J. Chen, J.P. Ampuero and A. Niemeijer, *Rheological transitions facilitate fault‐spanning ruptures on seismically active and creeping faults*, J. of Geophys. Res.: Solid Earth (doi:[10.1029/2019JB019328](https://doi.org/10.1029/2019JB019328))
