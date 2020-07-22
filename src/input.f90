@@ -42,7 +42,7 @@ subroutine read_main(pb)
   endif
   read(15,*) pb%features%stress_coupling, pb%features%tp, pb%features%localisation
   read(15,*) pb%ot%ntout, pb%ox%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nwout, &
-             pb%ox%nxout_dyn, pb%ox%nwout_dyn, pb%ox%i_ox_dyn
+             pb%ox%nxout_dyn, pb%ox%nwout_dyn, pb%ox%i_ox_seq, pb%ox%i_ox_dyn
   read(15,*) pb%beta, pb%smu, pb%lam, pb%D, pb%H, pb%ot%v_th
   read(15,*) pb%Tper, pb%Aper
   read(15,*) pb%dt_try, pb%dt_max,pb%tmax, pb%acc
