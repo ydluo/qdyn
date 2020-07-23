@@ -15,7 +15,7 @@ module friction
   implicit none
   private
 
-  public  :: set_theta_star, friction_mu, dmu_dv_dtheta, dtheta_dt
+  public  :: set_theta_star, compute_velocity_RSF, RSF_derivs, dtheta_dt
 
 contains
 
@@ -50,26 +50,27 @@ subroutine set_theta_star(pb)
 end subroutine set_theta_star
 
 !--------------------------------------------------------------------------------------
-function friction_mu(v,theta,pb) result(mu)
+function compute_velocity_RSF(tau, sigma, theta, pb) result(v)
 
   type(problem_type), intent(in) :: pb
-  double precision, dimension(pb%mesh%nn), intent(in) :: v, theta
-  double precision, dimension(pb%mesh%nn) :: mu
+  double precision, dimension(pb%mesh%nn), intent(in) :: sigma, tau, theta
+  double precision, dimension(pb%mesh%nn) :: mu, v
+
+  mu = tau / sigma
 
   select case (pb%i_rns_law)
 
   case (0)
-    mu = pb%mu_star - pb%a*log(pb%v_star/v) + pb%b*log(theta/pb%theta_star)
+    v = pb%v_star * exp(pb%inv_a * (mu - pb%mu_star - pb%b * log(theta / pb%theta_star)))
 
   case (1)
-    mu = pb%mu_star - pb%a*log(pb%v1/v+1d0) + pb%b*log(theta/pb%theta_star+1d0)
+    v = pb%v1 / (exp(- pb%inv_a * (mu - pb%mu_star - pb%b * log(theta / pb%theta_star + 1d0))) - 1)
 
   case (2) ! SCEC 2018 benchmark
-    mu = pb%a*asinh( v/(2*pb%v_star)*exp( (pb%mu_star + pb%b*log(theta/pb%theta_star))/pb%a ) )
+    v = 2 * pb%v_star * sinh(mu * pb%inv_a) * exp(-pb%inv_a * (pb%mu_star + pb%b * log(theta / pb%theta_star)))
 
-  case (3) ! SEISMIC: CNS model
-    write (6,*) "friction.f90::friction_mu is deprecated for the CNS model"
-    stop
+  ! Add viscous creep
+  v = v + pb%inv_visc * tau
 
 ! new friction law:
 !  case(xxx)
@@ -77,10 +78,10 @@ function friction_mu(v,theta,pb) result(mu)
 !    mu = ...
 
   case default
-    stop 'friction_mu: unknown friction law type'
+    stop 'compute_velocity_RSF: unknown friction law type'
   end select
 
-end function friction_mu
+end function compute_velocity_RSF
 
 !--------------------------------------------------------------------------------------
 subroutine dtheta_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
@@ -124,27 +125,29 @@ subroutine dtheta_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
 end subroutine dtheta_dt
 
 !--------------------------------------------------------------------------------------
-subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
+subroutine RSF_derivs(dV_dtau, dV_dtheta, dV_dP, v, theta, tau, sigma, pb)
 
   type(problem_type), intent(in) :: pb
-  double precision, dimension(pb%mesh%nn), intent(in) :: v, theta
-  double precision, dimension(pb%mesh%nn), intent(out) :: dmu_dv, dmu_dtheta
-  double precision :: z(pb%mesh%nn)
+  double precision, dimension(pb%mesh%nn), intent(in) :: v, theta, tau, sigma
+  double precision, dimension(pb%mesh%nn) :: dV_dtau, dV_dtheta, dV_dP
+  double precision, dimension(pb%mesh%nn) :: dummy
 
   select case (pb%i_rns_law)
 
   case(0)
-    dmu_dtheta = pb%b / theta
-    dmu_dv = pb%a / v
+    dummy = v * pb%inv_a
+    dV_dtau = dummy / sigma
+    dV_dtheta = - dummy * pb%b / theta
 
   case(1)
-    dmu_dtheta = pb%b * pb%v2 / ( pb%v2*theta + pb%dc )
-    dmu_dv = pb%a * pb%v1 / v / ( pb%v1 + v )
+    dummy = v * (pb%v1 + v) / (pb%a * pb%v1)
+    dV_dtau = dummy / sigma
+    dV_dtheta = -dummy * pb%b / (theta + pb%theta_star)
 
   case(2) ! 2018 SCEC Benchmark
-    z = exp((pb%mu_star + pb%b * log(theta/pb%theta_star)) / pb%a) / (2*pb%v_star)
-    dmu_dv = pb%a / sqrt(1.0/z**2 + v**2)
-    dmu_dtheta = dmu_dv * (pb%b*v) / (pb%a*theta)
+    dummy = 2 * pb%v_star * exp(-pb%inv_a * (pb%mu_star + pb%b * log(theta/pb%theta_star)))
+    dV_dtau = sqrt(dummy**2 + v**2) / (pb%a * sigma)
+    dV_dtheta = - v * pb%b / (pb%a * theta)
 
   case(3) ! SEISMIC: CNS model
     write (6,*) "friction.f90::dmu_dv_dtheta is deprecated for the CNS model"
@@ -155,6 +158,12 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
     stop
   end select
 
-end subroutine dmu_dv_dtheta
+  ! Acceleration due to fluid pressure changes
+  dV_dP = dV_dtau * tau / sigma
+
+  ! Viscous creep is state-independent, so it only contributes to dV_dtau
+  dV_dtau = dV_dtau + pb%inv_visc
+
+end subroutine RSF_derivs
 
 end module friction

@@ -160,11 +160,7 @@ subroutine do_bsstep(pb)
 
   ! SEISMIC: retrieve the solution for tau in the case of the CNS model, else
   ! retreive the solution for slip velocity
-  if (pb%i_rns_law == 3) then
-    pb%tau = main_var
-  else
-    pb%v = main_var
-  endif
+  pb%tau = main_var
 
 end subroutine do_bsstep
 
@@ -174,7 +170,7 @@ end subroutine do_bsstep
 !
 subroutine update_field(pb)
 
-  use friction, only : friction_mu, dtheta_dt
+  use friction, only : compute_velocity_RSF, dtheta_dt
   use friction_cns, only : compute_velocity
   use my_mpi, only: max_allproc, is_MPI_parallel
   use diffusion_solver, only : update_PT_final
@@ -194,7 +190,7 @@ subroutine update_field(pb)
   if (pb%i_rns_law == 3) then
     pb%v = compute_velocity(pb%tau, pb%sigma-P, pb%theta, pb%theta2, pb)
   else
-    pb%tau = (pb%sigma-P) * friction_mu(pb%v,pb%theta,pb) + pb%coh
+    pb%v = compute_velocity_RSF(pb%tau, pb%sigma-P, pb%theta, pb)
   endif
 
   ! Update pb%vmaxglob (required for stopping routine)
