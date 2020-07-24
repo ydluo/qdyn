@@ -9,7 +9,7 @@ t_year = 365 * t_day
 figsize = (9, 8)
 
 
-def timeseries(ot):
+def timeseries(ot, ot_vmax):
 
     fig, axes = plt.subplots(nrows=3, ncols=1, figsize=figsize)
 
@@ -19,7 +19,7 @@ def timeseries(ot):
     axes[1].plot(ot["t"] / t_year, ot["theta"])
     axes[1].set_ylabel("state [s]")
 
-    axes[2].plot(ot["t"] / t_year, ot["v_max"])
+    axes[2].plot(ot_vmax["t"] / t_year, ot_vmax["v_max"])
     axes[2].set_ylabel("max v [m/s]")
     axes[2].set_xlabel("time [yr]")
     axes[2].set_yscale("log")
