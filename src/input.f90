@@ -152,7 +152,7 @@ subroutine read_main(pb)
     allocate ( pb%a(n), pb%inv_a(n), pb%b(n), pb%v1(n), &
                pb%v2(n), pb%mu_star(n), pb%inv_visc(n) )
     do i=1,n
-      read(15,*)pb%sigma(i), pb%v(i), pb%theta(i),  &
+      read(15,*)pb%sigma(i), pb%tau(i), pb%theta(i),  &
                 pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
                 pb%v2(i), pb%mu_star(i), pb%v_star(i), &
                 pb%ot%iot(i), pb%ot%iasp(i), pb%coh(i), pb%v_pl(i), &

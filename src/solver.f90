@@ -77,7 +77,7 @@ subroutine do_bsstep(pb)
   if (pb%i_rns_law == 3) then   ! SEISMIC: CNS model
     main_var = pb%tau
   else  ! SEISMIC: not CNS model (i.e. rate-and-state)
-    main_var = pb%v
+    main_var = pb%tau
   endif
 
   call pack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%slip, pb)
@@ -117,7 +117,7 @@ subroutine do_bsstep(pb)
 
     ! Call Runge-Kutta solver routine
     call rkf45_d( derivs_rk45, neqs, yt, pb%time, pb%tmax, &
-                  pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
+                  pb%acc, pb%abserr, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
 
     ! Basic error checking. See description of rkf45_d in ode_rk45.f90 for details
     select case (pb%rk45%iflag)
@@ -133,6 +133,7 @@ subroutine do_bsstep(pb)
       call stop_simulation(pb)
     case (6)
       write(FID_SCREEN, *) "RK45 error [6]: requested accuracy could not be achieved"
+      write(FID_SCREEN, *) "Consider adjusting the absolute tolerance"
       call stop_simulation(pb)
     case (8)
       write(FID_SCREEN, *) "RK45 error [8]: invalid input parameters"
@@ -143,7 +144,7 @@ subroutine do_bsstep(pb)
     ! Set-up Runge-Kutta solver
     pb%t_prev = pb%time
     ! Call Runge-Kutta solver routine
-    call rkf45_d2(derivs, yt, pb%time, pb%dt_max, pb%acc, 0d0, pb)
+    call rkf45_d2(derivs, yt, pb%time, pb%dt_max, pb%acc, pb%abserr, pb)
   else
     ! Unknown solver type
     write(FID_SCREEN, *) "Solver type", SOLVER_TYPE, "not recognised"
@@ -289,7 +290,7 @@ subroutine init_rk45(pb)
   call pack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%slip, pb)
 
   call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, pb%time, &
-                pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
+                pb%acc, pb%abserr, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
 
   select case (pb%rk45%iflag)
   case (3)
