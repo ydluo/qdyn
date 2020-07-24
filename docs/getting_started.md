@@ -12,13 +12,13 @@ title: Getting started
 
 - MPI (e.g. [MPICH](https://www.mpich.org/) or [Open MPI](https://www.open-mpi.org/)) linked to your Fortran compiler (`mpif90`)
 
-- Python 3+, MATLAB, or Octave. The Python wrapper relies on [NumPy](http://www.numpy.org/) and [Pandas](https://pandas.pydata.org/). The Python test suite (optional but recommended for developers) additionally requires [matplotlib](https://matplotlib.org/) and [termcolor](https://pypi.org/project/termcolor/). These dependencies are conveniently acquired through [`pip`](https://pypi.org/project/pip/):<br />
+- Python 3+, MATLAB, or Octave. The Python wrapper relies on [NumPy](http://www.numpy.org/)/[SciPy](https://scipy.org/) and [Pandas](https://pandas.pydata.org/). The Python test suite (optional but recommended for developers) additionally requires [matplotlib](https://matplotlib.org/) and [termcolor](https://pypi.org/project/termcolor/). These dependencies are conveniently acquired through [`pip`](https://pypi.org/project/pip/):<br />
   ```
-  pip install numpy pandas matplotlib termcolor
+  pip install numpy scipy pandas matplotlib termcolor
   ```
   or through [Anaconda](https://www.anaconda.com/):<br />
   ```
-  conda create -n QDYN python=3.7 numpy matplotlib pandas termcolor
+  conda create -n QDYN python=3.7 numpy scipy matplotlib pandas termcolor
   conda activate QDYN
   ```
 
