@@ -522,7 +522,6 @@ subroutine ot_write(pb)
     call get_ivmax(pb)
     ivmax = pb%ivmax
     ! Calculate potency (rate)
-    write(6, *) "Calcing potency"
     call calc_potency(pb)
 
     ! Number of OT locations
