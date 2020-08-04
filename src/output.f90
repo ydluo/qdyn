@@ -522,6 +522,7 @@ subroutine ot_write(pb)
     call get_ivmax(pb)
     ivmax = pb%ivmax
     ! Calculate potency (rate)
+    write(6, *) "Calcing potency"
     call calc_potency(pb)
 
     ! Number of OT locations
@@ -921,6 +922,7 @@ subroutine calc_potency(pb)
 
   pb%pot = 0d0
   pb%pot_rate = 0d0
+  area = 0d0
 
   ! Step 1: define area vector
   do iw=1, pb%mesh%nw
