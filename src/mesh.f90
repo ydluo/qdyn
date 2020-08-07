@@ -136,7 +136,7 @@ subroutine init_mesh_1D(m)
   integer :: i
 
   write(6,*) '1D fault, uniform grid'
-  allocate(m%dx(1), m%dw(1))
+  allocate(m%dx(m%nn), m%dw(1))
   m%nx = m%nn
   m%nw = 1
   m%dx = m%Lfault/m%nn
@@ -178,7 +178,7 @@ subroutine init_mesh_2D(m)
 
   write(6,*) '2D fault, uniform grid along-strike'
 
-  allocate(m%dx(1))
+  allocate(m%dx(m%nx))
 
 if (.not.is_MPI_parallel()) then
 

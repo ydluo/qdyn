@@ -921,6 +921,7 @@ subroutine calc_potency(pb)
 
   pb%pot = 0d0
   pb%pot_rate = 0d0
+  area = 0d0
 
   ! Step 1: define area vector
   do iw=1, pb%mesh%nw
