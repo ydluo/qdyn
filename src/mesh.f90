@@ -224,7 +224,7 @@ else
     NPROCS = my_mpi_NPROCS()
 !PG, for debugging:
     nwLocal = m%nw
-    write(6,*) 'iproc,nwLocal:',my_mpi_tag(),nwLocal
+    ! write(6,*) 'iproc,nwLocal:',my_mpi_tag(),nwLocal
     allocate(nwLocal_perproc(0:NPROCS-1))
     call gather_alli(nwLocal,nwLocal_perproc)
     allocate(nwoffset_glob_perproc(0:NPROCS-1))
@@ -233,7 +233,7 @@ else
     enddo
     nwGlobal=sum(nwLocal_perproc)
     m%nwglob = nwGlobal
-    write(6,*) 'iproc,nwGlobal:',my_mpi_tag(),nwGlobal
+    ! write(6,*) 'iproc,nwGlobal:',my_mpi_tag(),nwGlobal
 
     nnLocal= m%nx*nwLocal
     allocate(nnLocal_perproc(0:NPROCS-1))
@@ -243,9 +243,13 @@ else
     nnGlobal=nwGlobal*m%nx
     m%nnglob = nnGlobal
 
+    allocate( m%x(nnLocal), m%y(nnLocal), m%z(nnLocal), &
+              m%dw(nnLocal), m%dip(nnLocal))
+
    ! global mesh for computing the kernel and for outputs
     allocate(m%xglob(nnGlobal),m%yglob(nnGlobal),&
              m%zglob(nnGlobal),m%dwglob(nwGlobal),m%dipglob(nnGlobal))
+
     call gather_allvdouble(m%x, nnLocal,m%xglob,nnLocal_perproc,nnoffset_glob_perproc,nnGlobal)
     call gather_allvdouble(m%y, nnLocal,m%yglob,nnLocal_perproc,nnoffset_glob_perproc,nnGlobal)
     call gather_allvdouble(m%z, nnLocal,m%zglob,nnLocal_perproc,nnoffset_glob_perproc,nnGlobal)

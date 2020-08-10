@@ -20,9 +20,12 @@ contains
 subroutine solve(pb)
 
   use output, only : write_output
-  use my_mpi, only : is_MPI_parallel, finalize_mpi
+  use my_mpi, only : is_MPI_parallel, finalize_mpi, synchronize_all
 
   type(problem_type), intent(inout)  :: pb
+
+  ! Synchronise all processes
+  if (is_MPI_parallel()) call synchronize_all()
 
   ! Before the first step, update field and write output (initial state)
   call update_field(pb)

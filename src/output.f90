@@ -256,8 +256,8 @@ subroutine ot_init(pb)
   use problem_class
   use constants, only:  BIN_OUTPUT, FID_IASP, FID_OT, FID_VMAX, &
                         FILE_IASP, FILE_OT, FILE_VMAX
-  use my_mpi, only : is_MPI_parallel, is_MPI_master, gather_allvi_root
-  use mesh, only : mesh_get_size, nnLocal_perproc, nnoffset_glob_perproc
+  use my_mpi, only: is_MPI_parallel, is_MPI_master, gather_allvi_root
+  use mesh, only: mesh_get_size, nnLocal_perproc, nnoffset_glob_perproc
 
   type (problem_type), intent(inout) :: pb
   integer :: i, id, iasp_count, iot_count, n, niasp, niot, nnGlobal
@@ -305,7 +305,7 @@ subroutine ot_init(pb)
   pb%ot%fmt_vmax(2) = "(i15)"
 
   ! If parallel:
-  if (is_MPI_parallel() .and. is_MPI_master()) then
+  if (is_MPI_parallel()) then
     ! Combine local OT indices
     call gather_allvi_root( pb%ot%iot, n, iot_buf, nnLocal_perproc, &
                             nnoffset_glob_perproc, nnGlobal)
@@ -313,7 +313,7 @@ subroutine ot_init(pb)
     call gather_allvi_root( pb%ot%iasp, n, iasp_buf, nnLocal_perproc, &
                             nnoffset_glob_perproc, nnGlobal)
   ! If serial:
-  elseif (.not. is_MPI_parallel()) then
+  else
     ! Point global to local indices
     iot_buf = pb%ot%iot
     iasp_buf = pb%ot%iasp

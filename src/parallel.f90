@@ -27,6 +27,9 @@ subroutine init_mpi()
   integer :: ier
 
   call MPI_INIT(ier)
+  call MPI_COMM_SIZE(MPI_COMM_WORLD, NPROCS, ier)
+  call MPI_COMM_RANK(MPI_COMM_WORLD, MY_RANK, ier)
+
   if (ier /= 0 ) stop 'Error initializing MPI'
 
   if (NPROCS<2) call MPI_FINALIZE(ier)
