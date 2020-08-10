@@ -498,7 +498,6 @@ subroutine ot_write(pb)
 
   type (problem_type), intent(inout) :: pb
   integer :: i, id, iot, istart, ivmax, k, n, niasp, niot
-  logical :: call_gather
 
   character(len=100) :: tmp
   character(len=100), allocatable :: iot_name
@@ -508,21 +507,19 @@ subroutine ot_write(pb)
   ! Size of the container
   k = pb%nobj
 
-  ! Check if an MPI sync is needed
-  call_gather = (is_MPI_parallel() .and. is_MPI_master())
-  ! If yes: do sync
-  if (call_gather) then
+  ! If parallel: do sync
+  if (is_MPI_parallel()) then
     call pb_global(pb)
   endif
 
+  ! Get the maximum slip rate
+  call get_ivmax(pb)
+  ivmax = pb%ivmax
+  ! Calculate potency (rate)
+  call calc_potency(pb)
+
   ! If this is master proc: write output
   if (is_MPI_master()) then
-
-    ! Get the maximum slip rate
-    call get_ivmax(pb)
-    ivmax = pb%ivmax
-    ! Calculate potency (rate)
-    call calc_potency(pb)
 
     ! Number of OT locations
     niot = size(pb%ot%iot)
@@ -632,19 +629,22 @@ subroutine ox_write(pb)
   skip = (pb%ox%dyn_count <= pb%dyn_skip)
 
   ! Should this proc write ox, ox_dyn, or QSB output?
-  write_ox = (mod(pb%it, pb%ox%ntout) == 0 .or. last_call) .and. MPI_master
-  write_ox_dyn =  ((pb%ox%i_ox_dyn == 1) .and. dynamic) .and. &
-                  MPI_master .and. .not. skip
-  write_ox_seq = write_ox .and. (pb%ox%i_ox_seq == 1) .and. MPI_master
-  write_QSB = ((pb%DYN_FLAG == 1) .and. dynamic) .and. &
-              MPI_master .and. .not. skip
+  write_ox = (mod(pb%it, pb%ox%ntout) == 0 .or. last_call)
+  write_ox_dyn =  ((pb%ox%i_ox_dyn == 1) .and. dynamic) .and. .not. skip
+  write_ox_seq = write_ox .and. (pb%ox%i_ox_seq == 1)
+  write_QSB = ((pb%DYN_FLAG == 1) .and. dynamic) .and. .not. skip
 
   ! Call an MPI gather when:
   !  1. Output is requested (either regular ox or other flavour)
   !  2. AND parallel execution
-  !  3. AND this proc is MPI master
   call_gather = (write_ox .or. write_ox_dyn .or. write_QSB) .and. &
-                is_MPI_parallel() .and. MPI_master
+                is_MPI_parallel()
+
+  ! Update write output only if this proc is MPI master
+  write_ox = write_ox .and. MPI_master
+  write_ox_dyn = write_ox_dyn .and. MPI_master
+  write_ox_seq = write_ox_seq .and. MPI_master
+  write_QSB = write_QSB .and. MPI_master
 
   ! Does the output unit need to be closed?
   close_unit = last_call
