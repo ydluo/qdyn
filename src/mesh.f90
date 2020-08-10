@@ -243,9 +243,6 @@ else
     nnGlobal=nwGlobal*m%nx
     m%nnglob = nnGlobal
 
-    allocate( m%x(nnLocal), m%y(nnLocal), m%z(nnLocal), &
-              m%dw(nnLocal), m%dip(nnLocal))
-
    ! global mesh for computing the kernel and for outputs
     allocate(m%xglob(nnGlobal),m%yglob(nnGlobal),&
              m%zglob(nnGlobal),m%dwglob(nwGlobal),m%dipglob(nnGlobal))

@@ -263,12 +263,9 @@ subroutine ot_init(pb)
   integer :: i, id, iasp_count, iot_count, n, niasp, niot, nnGlobal
   integer, dimension(pb%mesh%nnglob) :: iasp_buf, iot_buf
   integer, allocatable, dimension(:) :: iasp_list, iot_list
-  logical :: call_gather
 
   character(len=100) :: tmp
   character(len=100), allocatable :: iot_name
-
-  call_gather = is_MPI_parallel() .and. is_MPI_master()
 
   ! Number of mesh elements
   n = mesh_get_size(pb%mesh)
