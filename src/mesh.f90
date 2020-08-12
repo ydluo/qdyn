@@ -119,6 +119,8 @@ subroutine init_mesh_0D(m)
   allocate(m%dx(1), m%dw(1))
   m%nx = 1
   m%nw = 1
+  m%nxglob = m%nx
+  m%nwglob = m%nw
   m%dx = m%Lfault
   m%dw = 1d0
   m%x = 0d0
@@ -154,6 +156,8 @@ subroutine init_mesh_1D(m)
   m%xglob => m%x
   m%yglob => m%y
   m%zglob => m%z
+  m%nxglob = m%nx
+  m%nwglob = m%nw
 
 end subroutine init_mesh_1D
 
@@ -215,6 +219,7 @@ if (.not.is_MPI_parallel()) then
     m%dipglob => m%dip
     m%dwglob => m%dw
     m%nwglob = m%nw
+    m%nxglob = m%nx
 
 else
 ! If MPI parallel, the mesh for each processor has been already read
