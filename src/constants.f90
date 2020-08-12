@@ -52,6 +52,9 @@ integer :: FAULT_TYPE = 0
 !   2 : Runge-Kutta-Fehlberg
 integer :: SOLVER_TYPE = 0
 
+! Input unit
+integer, parameter :: FID_IN = 15
+
 ! Output units
 integer, parameter :: FID_SCREEN = 6
 integer, parameter :: FID_OT = 18
