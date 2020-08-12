@@ -877,8 +877,8 @@ subroutine write_ox_lines(unit, fmt, objects, nxout, nwout, pb)
   k = pb%nobj
 
   ! Number of nodes to loop over (either local or global)
-  nx = pb%mesh%nx
-  nw = pb%mesh%nw
+  nx = pb%mesh%nxglob
+  nw = pb%mesh%nwglob
 
   ! Write header
   write(unit,'(a)') trim(pb%ox%header)

@@ -196,7 +196,7 @@ class qdyn:
         set_dict["DYN_M"] = 1e18			# Target seismic moment of dynamic event
 
         set_dict["NPROC"] = 1				# Number of processors, default 1 = serial (no MPI)
-        set_dict["MPI_path"] = "/usr/local/bin/mpirun"   # Path to MPI executable
+        set_dict["MPI_PATH"] = "/usr/local/bin/mpirun"   # Path to MPI executable
 
         self.set_dict = set_dict
 
@@ -303,12 +303,18 @@ class qdyn:
             mesh_dict["Y"] = np.ones(N)*settings["W"]
 
         if dim == 2:
+
             print("Warning: 2D faults currently require constant dip angle")
-            theta = settings["DIP_W"]*np.pi/180.0
-            mesh_dict["DW"] = np.ones(settings["NW"])*settings["DW"]
-            mesh_dict["DIP_W"] = np.ones(N)*settings["DIP_W"]
-            mesh_dict["X"] = (np.arange(N) % settings["NX"] + 0.5)*dx
-            mesh_dict["Y"] = (np.floor(np.arange(N)/settings["NX"]) + 0.5)*settings["DW"]*np.cos(theta)
+
+            dw = settings["W"] / settings["NW"]
+            theta = settings["DIP_W"] * np.pi / 180.0
+            mesh_dict["DIP_W"] = np.ones(N) * settings["DIP_W"]
+            mesh_dict["DW"] = np.ones(N) * dw
+            x = (np.arange(settings["NX"]) + 0.5) * dx
+            y = (np.arange(settings["NW"]) + 0.5) * dw * np.cos(theta)
+            X, Y = np.meshgrid(x, y, indexing="xy")
+            mesh_dict["X"] = X.ravel()
+            mesh_dict["Y"] = Y.ravel()
             mesh_dict["Z"] = settings["Z_CORNER"] + mesh_dict["Y"]*np.tan(theta)
 
         self.mesh_dict.update(mesh_dict)

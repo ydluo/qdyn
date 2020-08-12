@@ -5,7 +5,7 @@ module mesh
 
   type mesh_type
     integer :: dim = 0  ! dim = 1, 2 ,3 ~xD
-    integer :: nx, nw, nn, nnglob, nwglob ! along-strike, along-dip, total grid number
+    integer :: nx, nw, nn, nnglob, nwglob, nxglob ! along-strike, along-dip, total grid number
     double precision :: Lfault, W, Z_CORNER ! fault length, width, lower-left corner z (follow Okada's convention)
     double precision, allocatable :: DIP_W(:) ! along-dip grid size and dip (adjustable), nw count
     ! Local mesh coordinates
@@ -168,6 +168,7 @@ subroutine init_mesh_2D(m)
 
   use constants, only : PI
   use my_mpi, only: is_MPI_parallel, my_mpi_NPROCS, gather_alli, gather_allvdouble, my_mpi_tag
+  use my_mpi, only: is_MPI_master
 
   type(mesh_type), intent(inout) :: m
 
@@ -205,7 +206,6 @@ if (.not.is_MPI_parallel()) then
     m%x(j0+1:j0+m%nx) = m%x(1:m%nx)
     m%y(j0+1:j0+m%nx) = m%y(j0) + 0.5d0*m%dw(i-1)*cd0 + 0.5d0*m%dw(i)*cd
     m%z(j0+1:j0+m%nx) = m%z(j0) + 0.5d0*m%dw(i-1)*sd0 + 0.5d0*m%dw(i)*sd
-!    write(66,*) m%z(j0+1:j0+m%nx) !JPA Who is using this output? Shall we remove it?
     m%dip(j0+1:j0+m%nx) = m%DIP_W(i)
   end do
 
@@ -232,6 +232,7 @@ else
       nwoffset_glob_perproc(iproc)=sum(nwLocal_perproc(0:iproc))-nwLocal_perproc(iproc)
     enddo
     nwGlobal=sum(nwLocal_perproc)
+    m%nxglob = m%nx
     m%nwglob = nwGlobal
     ! write(6,*) 'iproc,nwGlobal:',my_mpi_tag(),nwGlobal
 
