@@ -498,7 +498,7 @@ class qdyn:
 
         else: # MPI parallel
 
-            MPI_path = self.set_dict["MPI_path"]
+            MPI_path = self.set_dict["MPI_PATH"]
 
             # If we're on a Windows 10 + Unix subsystem, call bash
             if self.W10_bash is True:
