@@ -74,6 +74,7 @@ subroutine init_all(pb)
   ! SEISMIC: initialise pb%tau in input.f90 to be compatible with CNS model
   allocate ( pb%dtau_dt(n), pb%slip(n), pb%theta_star(n) )
   pb%slip = 0d0
+  pb%dtau_dt = 0d0
   call set_theta_star(pb)
 
   ! SEISMIC: initialise thermal pressurisation model (diffusion_solver.f90)

@@ -18,39 +18,39 @@ subroutine read_main(pb)
   use mesh, only : read_mesh_parameters, read_mesh_nodes, mesh_get_size
   use output, only : ot_read_stations
   use my_mpi, only : my_mpi_tag, is_MPI_parallel
-  use constants, only : FAULT_TYPE, SOLVER_TYPE
+  use constants, only : FAULT_TYPE, SOLVER_TYPE, FID_IN, FID_SCREEN
 
   type(problem_type), intent(inout) :: pb
 
   double precision, dimension(:), allocatable :: read_buf
   integer :: i, j, n, N_cols, N_creep
 
-  write(6,*) 'Start reading input ...'
+  write(FID_SCREEN, *) 'Start reading input ...'
 
-  open(unit=15, file='qdyn'//trim(my_mpi_tag())//'.in', action='read')
+  open(unit=FID_IN, file='qdyn'//trim(my_mpi_tag())//'.in', action='read')
 
-  call read_mesh_parameters(15,pb%mesh)
-  write(6,*) '   Mesh input complete'
+  call read_mesh_parameters(FID_IN, pb%mesh)
+  write(FID_SCREEN, *) '   Mesh input complete'
 
-  if (pb%mesh%dim==1) read(15,*) pb%finite
-  read(15,*) pb%itheta_law
-  read(15,*) pb%i_rns_law
-  read(15,*) pb%i_sigma_cpl
+  if (pb%mesh%dim==1) read(FID_IN, *) pb%finite
+  read(FID_IN, *) pb%itheta_law
+  read(FID_IN, *) pb%i_rns_law
+  read(FID_IN, *) pb%i_sigma_cpl
   ! SEISMIC: various simulation features can be turned on (1) or off (0)
   if (pb%i_rns_law == 3) then
-    read(15,*) pb%cns_params%N_creep
+    read(FID_IN, *) pb%cns_params%N_creep
   endif
-  read(15,*) pb%features%stress_coupling, pb%features%tp, pb%features%localisation
-  read(15,*) pb%ot%ntout, pb%ox%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nwout, &
+  read(FID_IN, *) pb%features%stress_coupling, pb%features%tp, pb%features%localisation
+  read(FID_IN, *) pb%ot%ntout, pb%ox%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nwout, &
              pb%ox%nxout_dyn, pb%ox%nwout_dyn, pb%ox%i_ox_seq, pb%ox%i_ox_dyn
-  read(15,*) pb%beta, pb%smu, pb%lam, pb%D, pb%H, pb%ot%v_th
-  read(15,*) pb%Tper, pb%Aper
-  read(15,*) pb%dt_try, pb%dt_max,pb%tmax, pb%acc
-  read(15,*) pb%NSTOP
-  read(15,*) pb%DYN_FLAG,pb%DYN_SKIP
-  read(15,*) pb%DYN_M,pb%DYN_th_on,pb%DYN_th_off
-  read(15,*) FAULT_TYPE, SOLVER_TYPE
-  write(6,*) '  Flags input complete'
+  read(FID_IN, *) pb%beta, pb%smu, pb%lam, pb%D, pb%H, pb%ot%v_th
+  read(FID_IN, *) pb%Tper, pb%Aper
+  read(FID_IN, *) pb%dt_try, pb%dt_max,pb%tmax, pb%acc
+  read(FID_IN, *) pb%NSTOP
+  read(FID_IN, *) pb%DYN_FLAG,pb%DYN_SKIP
+  read(FID_IN, *) pb%DYN_M,pb%DYN_th_on,pb%DYN_th_off
+  read(FID_IN, *) FAULT_TYPE, SOLVER_TYPE
+  write(FID_SCREEN, *) '  Flags input complete'
 
   n = mesh_get_size(pb%mesh) ! number of nodes in this processor
   allocate ( pb%tau(n), pb%sigma(n), pb%v(n), pb%theta(n),  &
@@ -105,7 +105,7 @@ subroutine read_main(pb)
     do i=1,n
 
       ! Read data into buffer
-      read(15,*) read_buf(:)
+      read(FID_IN, *) read_buf(:)
 
       ! General fault parameters
       pb%sigma(i) = read_buf(1)
@@ -152,10 +152,10 @@ subroutine read_main(pb)
     allocate ( pb%a(n), pb%b(n), pb%v1(n), &
                pb%v2(n), pb%mu_star(n))
     do i=1,n
-      read(15,*)pb%sigma(i), pb%v(i), pb%theta(i),  &
-                pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
-                pb%v2(i), pb%mu_star(i), pb%v_star(i), &
-                pb%ot%iot(i), pb%ot%iasp(i), pb%coh(i), pb%v_pl(i)
+      read(FID_IN, *) pb%sigma(i), pb%v(i), pb%theta(i),  &
+                      pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
+                      pb%v2(i), pb%mu_star(i), pb%v_star(i), &
+                      pb%ot%iot(i), pb%ot%iasp(i), pb%coh(i), pb%v_pl(i)
     end do
   endif
 
@@ -166,7 +166,8 @@ subroutine read_main(pb)
   if (pb%features%localisation == 1) then
     ! Raise an error if the CNS model is not selected
     if (pb%i_rns_law /= 3) then
-      write(6,*) "Localisation of shear strain is compatible only with the CNS model (i_rns_law = 3)"
+      write(FID_SCREEN, *) &
+        "Localisation of shear strain is compatible only with the CNS model (i_rns_law = 3)"
       stop
     endif
 
@@ -182,7 +183,7 @@ subroutine read_main(pb)
     do i=1,n
 
       ! Read data into buffer
-      read(15,*) read_buf(:)
+      read(FID_IN, *) read_buf(:)
 
       ! Degree of localisation (0 <= lambda <= 1)
       pb%cns_params%lambda(i) = read_buf(1)
@@ -232,21 +233,21 @@ subroutine read_main(pb)
                 pb%tp%k_t(n), pb%tp%k_p(n), pb%tp%l(n), &
                 pb%tp%P_a(n), pb%tp%T_a(n), pb%tp%dilat_factor(n) )
     do i=1,n
-      read(15,*)pb%tp%rhoc(i), pb%tp%beta(i), pb%tp%eta(i), pb%tp%w(i), &
-                pb%tp%k_t(i), pb%tp%k_p(i), pb%tp%l(i), &
-                pb%tp%P_a(i), pb%tp%T_a(i), pb%tp%dilat_factor(i)
+      read(FID_IN, *) pb%tp%rhoc(i), pb%tp%beta(i), pb%tp%eta(i), pb%tp%w(i), &
+                      pb%tp%k_t(i), pb%tp%k_p(i), pb%tp%l(i), &
+                      pb%tp%P_a(i), pb%tp%T_a(i), pb%tp%dilat_factor(i)
     end do
   endif
   ! End reading TP model parameters
   ! </SEISMIC>
 
-  ! if (pb%mesh%dim == 2) then
-    ! call read_mesh_nodes(15,pb%mesh)
+  if (pb%mesh%dim == 2 .and. is_MPI_parallel()) then
+    call read_mesh_nodes(FID_IN, pb%mesh)
     ! call ot_read_stations(pb%ot)
-  ! endif
+  endif
 
-  close(15)
-  write(6,*) 'Input complete'
+  close(FID_IN)
+  write(FID_SCREEN, *) 'Input complete'
 
 end subroutine read_main
 
