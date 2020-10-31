@@ -36,7 +36,7 @@ subroutine initiate_RSF(pb)
   pb%theta = pb%dc / pb%v
 
   call set_theta_star(pb)
-  pb%tau = pb%sigma * friction_mu(pb%v, pb%theta, pb) + pb%coh
+  pb%tau = pb%sigma * friction_mu(pb%v, pb%theta, pb%theta2, pb) + pb%coh
 
   ! Initiate solvers
   call initiate_solver(pb)
@@ -99,10 +99,10 @@ subroutine test_rsf_friction(pb)
   call print_subresult("Steady-state slip law", subpass2)
 
   ! Steady-state friction tests: ensure that dmu = (a-b)*log(V1/V0)
-  mu = friction_mu(pb%v, pb%theta, pb)
+  mu = friction_mu(pb%v, pb%theta, x, pb)
   pb%v = 10*pb%v_star
   pb%theta = pb%dc / pb%v
-  mu2 = friction_mu(pb%v, pb%theta, pb)
+  mu2 = friction_mu(pb%v, pb%theta, x, pb)
   dmu_truth = (pb%a - pb%b)*log(10d0)
   pass = abs_assert_close(mu2-mu, dmu_truth, atol)
   pb%test%test_passed = pb%test%test_passed .and. pass
@@ -115,14 +115,14 @@ subroutine test_rsf_friction(pb)
   pb%v1 = pb%v2
   pb%i_rns_law = 1
   call set_theta_star(pb)
-  mu = friction_mu(pb%v, pb%theta, pb)
+  mu = friction_mu(pb%v, pb%theta, x, pb)
   mu_truth = pb%mu_star - (pb%a - pb%b)*log(pb%v1/pb%v + 1d0)
   subpass1 = abs_assert_close(mu, mu_truth, atol)
 
   ! For V1 = V2 << V: mu -> mu*
   pb%v = 1e5*pb%v1
   pb%theta = pb%dc / pb%v
-  mu = friction_mu(pb%v, pb%theta, pb)
+  mu = friction_mu(pb%v, pb%theta, x, pb)
   mu_truth = pb%mu_star
   subpass2 = abs_assert_close(mu, mu_truth, atol)
 
@@ -132,7 +132,7 @@ subroutine test_rsf_friction(pb)
   pb%v = pb%v2
   pb%theta = pb%dc / pb%v
   call set_theta_star(pb)
-  mu = friction_mu(pb%v, pb%theta, pb)
+  mu = friction_mu(pb%v, pb%theta, x, pb)
   mu_truth = pb%mu_star + pb%b*log(2d0)
   subpass3 = abs_assert_close(mu, mu_truth, atol)
 
@@ -158,12 +158,12 @@ subroutine test_rsf_friction(pb)
 
     pb%i_rns_law = 0
     call set_theta_star(pb)
-    mu = friction_mu(pb%v, pb%theta*randno, pb)
-    call dmu_dv_dtheta(dmu_dv, dmu_dtheta, pb%v, pb%theta*randno, pb)
+    mu = friction_mu(pb%v, pb%theta*randno, x, pb)
+    call dmu_dv_dtheta( dmu_dv, dmu_dtheta, x, pb%v, pb%theta*randno, x, pb)
     pb%i_rns_law = 2
     call set_theta_star(pb)
-    mu2 = friction_mu(pb%v, pb%theta*randno, pb)
-    call dmu_dv_dtheta(dmu_dv2, dmu_dtheta2, pb%v, pb%theta*randno, pb)
+    mu2 = friction_mu(pb%v, pb%theta*randno, x, pb)
+    call dmu_dv_dtheta( dmu_dv2, dmu_dtheta2, x, pb%v, pb%theta*randno, x, pb)
     ! Test if mu, dmu/dv, and dmu/dtheta are ok for all random values of theta
     ! If one of the assertions fails, subpass will become .false.
     subpass1 = subpass1 .and. abs_assert_close(mu, mu2, atol)

@@ -38,9 +38,9 @@ subroutine derivs(time,yt,dydt,pb)
   double precision, dimension(pb%mesh%nn) :: theta, theta2, sigma, tau, v
   double precision, dimension(pb%mesh%nn) :: main_var, dmain_var, slip, dslip
   double precision, dimension(pb%mesh%nn) :: dsigma_dt, dtau_dt, dth_dt, dth2_dt
-  double precision, dimension(pb%mesh%nn) :: dmu_dv, dmu_dtheta
+  double precision, dimension(pb%mesh%nn) :: dmu_dv, dmu_dtheta, dmu_dtheta2
   double precision, dimension(pb%mesh%nn) :: tau_y, dP_dt, dtau_dP
-  double precision, dimension(pb%mesh%nn) :: dummy1, dummy2
+  double precision, dimension(pb%mesh%nn) :: dummy1, dummy2, theta_term
   double precision :: dtau_per, dt
 
   ! SEISMIC: initialise vectors to zero. If unitialised, each compiler
@@ -91,7 +91,7 @@ subroutine derivs(time,yt,dydt,pb)
     v = main_var
 
     if (pb%features%tp == 1) then
-      tau = friction_mu(v, theta, pb)*sigma
+      tau = friction_mu(v, theta, theta2, pb)*sigma
     endif
 
     ! SEISMIC: calculate time-derivative of state variable (theta)
@@ -136,11 +136,11 @@ subroutine derivs(time,yt,dydt,pb)
     ! SEISMIC: the rate-and-state formulation computes the the time-derivative
     ! of velocity, rather than stress, so the partial derivatives of friction
     ! to velocity and theta are required
-    call dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
+    call dmu_dv_dtheta(dmu_dv,dmu_dtheta,dmu_dtheta2,v,theta,theta2,pb)
 
     ! For thermal pressurisation, the partial derivative of tau to P is -mu
     if (pb%features%tp == 1) then
-      dtau_dP = -friction_mu(v, theta, pb)
+      dtau_dP = -friction_mu(v, theta, theta2, pb)
     endif
 
     ! Time derivative of the elastic equilibrium equation
@@ -148,7 +148,13 @@ subroutine derivs(time,yt,dydt,pb)
     ! Rearranged in the following form:
     !  dv/dt = ( dtau_load/dt + dtau_elastostatic/dt - sigma*dmu/dtheta*dtheta/dt )/( sigma*dmu/dv + impedance )
 
-    dmain_var = ( dtau_per + dtau_dt - sigma*dmu_dtheta*dth_dt - dtau_dP*dP_dt ) &
+    theta_term = dmu_dtheta*dth_dt
+    if (pb%features%coh == 1) then
+      theta_term = theta_term + dmu_dtheta2 * dth2_dt
+    endif
+    theta_term = theta_term * sigma
+
+    dmain_var = ( dtau_per + dtau_dt - theta_term - dtau_dP*dP_dt ) &
                      / ( sigma*dmu_dv + pb%zimpedance )
    endif
 

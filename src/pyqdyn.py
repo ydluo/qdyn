@@ -96,6 +96,7 @@ class qdyn:
         set_dict["FEAT_STRESS_COUPL"] = 0	# Normal stress coupling
         set_dict["FEAT_TP"] = 0				# Thermal pressurisation
         set_dict["FEAT_LOCALISATION"] = 0	# Gouge zone localisation of strain (CNS only)
+        set_dict["FEAT_COH"] = 0            # Cohesion (RSF only)
 
         # Rate-and-state friction parameters
         set_dict["SET_DICT_RSF"] = {
@@ -103,7 +104,9 @@ class qdyn:
             "THETA_LAW": 1,						# State evolution law (0: aging in no-healin approximation, 1: ageing law, 2: slip law)
             "A": 0.0010,						# Direct effect parameter
             "B": 0.0011,						# Evolution effect parameter
+            "B2": 0.0011,                       # Second evolution effect parameter
             "DC": 1e-5,							# Characteristic slip distance
+            "DC2": 1e-4,                        # Characteristic slip distance
             "V1": 0.01,							# Cut-off velocity of direct effect (when RNS_LAW = 1) [m/s]
             "V2": 1e-7,							# Cut-off velocity of evolution effect (when RNS_LAW = 1) [m/s], Controls transition from weakening to strengthening. V2 should be <= V1
             "MU_SS": 0.6,						# Reference steady-state friction
@@ -111,6 +114,7 @@ class qdyn:
             "CO": 0,							# Cohesion [Pa]
             "V_0": 1.01e-5,						# Initial slip velocity [m/s]
             "TH_0": 1.0,						# Initial state [s]
+            "TH2_0": 1.0,                       # Initial second state [s]
         }
 
         # CNS microphysical model parameters
@@ -245,7 +249,7 @@ class qdyn:
             exit()
 
         mesh_params_general = ("IOT", "IASP", "V_PL", "SIGMA")
-        mesh_params_RSF = ("V_0", "TH_0", "A", "B", "DC", "V1", "V2", "MU_SS", "V_SS", "CO")
+        mesh_params_RSF = ("V_0", "TH_0", "TH2_0", "A", "B", "DC", "B2", "DC2", "V1", "V2", "MU_SS", "V_SS", "CO")
         mesh_params_CNS = ("TAU", "PHI_INI", "A_TILDE", "MU_TILDE_STAR", "Y_GR_STAR", "H", "PHI_C", "PHI0", "THICKNESS")
         mesh_params_creep = ("A", "N", "M")
         mesh_params_localisation = ("LOCALISATION", "PHI_INI_BULK")
@@ -395,7 +399,7 @@ class qdyn:
                     print("This value should be determined in render_mesh()")
                     exit()
                 input_str += "%u%s N_creep\n" % (N_creep, delimiter)
-            input_str += "%u %u %u%s stress_coupling, thermal press., localisation\n" % (settings["FEAT_STRESS_COUPL"], settings["FEAT_TP"], settings["FEAT_LOCALISATION"], delimiter)
+            input_str += "%u %u %u %u%s stress_coupling, thermal press., localisation, cohesion\n" % (settings["FEAT_STRESS_COUPL"], settings["FEAT_TP"], settings["FEAT_LOCALISATION"], settings["FEAT_COH"], delimiter)
             input_str += "%u %u %u %u %u %u %u %u %u%s ntout_ot, ntout_ox, nt_coord, nxout, nwout, nxout_DYN, nwout_DYN, ox_seq, ox_DYN\n" % (settings["NTOUT_OT"], settings["NTOUT"], settings["IC"]+1, settings["NXOUT"], settings["NWOUT"], settings["NXOUT_DYN"], settings["NWOUT_DYN"], settings["OX_SEQ"], settings["OX_DYN"], delimiter)
             input_str += "%.15g %.15g %.15g %.15g %.15g %.15g%s beta, smu, lambda, v_th\n" % (settings["VS"], settings["MU"], settings["LAM"], settings["D"], settings["HD"], settings["V_TH"], delimiter)
             input_str += "%.15g %.15g%s Tper, Aper\n" % (settings["TPER"], settings["APER"], delimiter)
@@ -422,8 +426,16 @@ class qdyn:
                     # Last couple of parameters
                     input_str += "%.15g %.15g %.15g\n" % (mesh["THICKNESS"][iloc[i]], mesh["IOT"][iloc[i]], mesh["IASP"][iloc[i]])
             else: # RSF model
-                for i in range(nloc):
-                    input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n" % (mesh["SIGMA"][iloc[i]], mesh["V_0"][iloc[i]], mesh["TH_0"][iloc[i]], mesh["A"][iloc[i]], mesh["B"][iloc[i]], mesh["DC"][iloc[i]], mesh["V1"][iloc[i]], mesh["V2"][iloc[i]], mesh["MU_SS"][iloc[i]], mesh["V_SS"][iloc[i]], mesh["IOT"][iloc[i]], mesh["IASP"][iloc[i]], mesh["CO"][iloc[i]], mesh["V_PL"][iloc[i]])
+                if settings["FEAT_COH"] == 1:
+                    for i in range(nloc):
+                        input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n" % (
+                        mesh["SIGMA"][iloc[i]], mesh["V_0"][iloc[i]], mesh["TH_0"][iloc[i]], mesh["TH2_0"][iloc[i]], mesh["A"][iloc[i]],
+                        mesh["B"][iloc[i]], mesh["DC"][iloc[i]], mesh["B2"][iloc[i]], mesh["DC2"][iloc[i]], mesh["V1"][iloc[i]], mesh["V2"][iloc[i]],
+                        mesh["MU_SS"][iloc[i]], mesh["V_SS"][iloc[i]], mesh["IOT"][iloc[i]], mesh["IASP"][iloc[i]],
+                        mesh["CO"][iloc[i]], mesh["V_PL"][iloc[i]])
+                else:
+                    for i in range(nloc):
+                        input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n" % (mesh["SIGMA"][iloc[i]], mesh["V_0"][iloc[i]], mesh["TH_0"][iloc[i]], mesh["A"][iloc[i]], mesh["B"][iloc[i]], mesh["DC"][iloc[i]], mesh["V1"][iloc[i]], mesh["V2"][iloc[i]], mesh["MU_SS"][iloc[i]], mesh["V_SS"][iloc[i]], mesh["IOT"][iloc[i]], mesh["IASP"][iloc[i]], mesh["CO"][iloc[i]], mesh["V_PL"][iloc[i]])
 
             # Check if localisation is requested
             if settings["FEAT_LOCALISATION"] == 1:
@@ -541,6 +553,9 @@ class qdyn:
         if self.set_dict["FEAT_TP"] == 1:
             nheaders_ot += 1
             quants_ot += ("P", "T")
+        if self.set_dict["FEAT_COH"] == 1:
+            nheaders_ot += 1
+            quants_ot += ("theta2",)
 
         # Vmax
         nheaders_vmax = 2
@@ -548,11 +563,16 @@ class qdyn:
         if self.set_dict["FEAT_TP"] == 1:
             nheaders_vmax += 1
             quants_vmax += ("P", "T")
+        if self.set_dict["FEAT_COH"] == 1:
+            nheaders_vmax += 1
+            quants_vmax += ("theta2",)
 
         # Standard snapshots (ox)
         quants_ox = ("t", "x", "y", "z", "v", "theta", "tau", "tau_dot", "slip", "sigma")
         if self.set_dict["FEAT_TP"] == 1:
             quants_ox += ("P", "T")
+        if self.set_dict["FEAT_COH"] == 1:
+            quants_ox += ("theta2",)
 
         # If time series data is requested
         if read_ot:

@@ -47,13 +47,17 @@ subroutine set_theta_star(pb)
     stop 'set_theta_star: unknown friction law type'
   end select
 
+  if (pb%features%coh == 1) then
+    pb%theta2_star = pb%dc2/pb%v_star
+  endif
+
 end subroutine set_theta_star
 
 !--------------------------------------------------------------------------------------
-function friction_mu(v,theta,pb) result(mu)
+function friction_mu(v,theta,theta2,pb) result(mu)
 
   type(problem_type), intent(in) :: pb
-  double precision, dimension(pb%mesh%nn), intent(in) :: v, theta
+  double precision, dimension(pb%mesh%nn), intent(in) :: v, theta, theta2
   double precision, dimension(pb%mesh%nn) :: mu
 
   select case (pb%i_rns_law)
@@ -79,6 +83,11 @@ function friction_mu(v,theta,pb) result(mu)
   case default
     stop 'friction_mu: unknown friction law type'
   end select
+
+  if (pb%features%coh == 1) then
+    mu =  pb%mu_star - pb%a*log(pb%v_star/v) + pb%b*log(theta/pb%theta_star) &
+          + pb%b2*log(theta2/pb%theta2_star + 1d0)
+  endif
 
 end function friction_mu
 
@@ -121,14 +130,21 @@ subroutine dtheta_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
 
   endif
 
+  if (pb%features%coh == 1) then
+    dth2_dt = -v * theta2 / pb%dc2
+  else
+    dth2_dt = 0d0
+  endif
+
 end subroutine dtheta_dt
 
 !--------------------------------------------------------------------------------------
-subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
+subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,dmu_dtheta2,v,theta,theta2,pb)
 
   type(problem_type), intent(in) :: pb
-  double precision, dimension(pb%mesh%nn), intent(in) :: v, theta
+  double precision, dimension(pb%mesh%nn), intent(in) :: v, theta, theta2
   double precision, dimension(pb%mesh%nn), intent(out) :: dmu_dv, dmu_dtheta
+  double precision, dimension(pb%mesh%nn), intent(out) :: dmu_dtheta2
   double precision :: z(pb%mesh%nn)
 
   select case (pb%i_rns_law)
@@ -154,6 +170,12 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
     write (6,*) "dmu_dv_dtheta: unkown friction law type"
     stop
   end select
+
+  if (pb%features%coh == 1) then
+    dmu_dtheta2 = pb%b2 / (theta2 + pb%theta2_star)
+  else
+    dmu_dtheta2 = 0d0
+  endif
 
 end subroutine dmu_dv_dtheta
 

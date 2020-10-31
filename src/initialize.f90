@@ -40,7 +40,7 @@ subroutine init_all(pb)
 
  ! number of equations
  ! Initial number of neqs is defined in problem_class.f90
-  pb%neqs = pb%neqs + pb%features%localisation
+  pb%neqs = pb%neqs + pb%features%localisation + pb%features%coh
   if (pb%features%stress_coupling == 1 .and. pb%mesh%dim == 2) then
     pb%neqs = pb%neqs + 1
   endif
@@ -73,6 +73,7 @@ subroutine init_all(pb)
   n = mesh_get_size(pb%mesh)
   ! SEISMIC: initialise pb%tau in input.f90 to be compatible with CNS model
   allocate ( pb%dtau_dt(n), pb%slip(n), pb%theta_star(n) )
+  if (pb%features%coh == 1) allocate(pb%theta2_star(n))
   pb%slip = 0d0
   pb%dtau_dt = 0d0
   call set_theta_star(pb)
@@ -90,7 +91,7 @@ subroutine init_all(pb)
   ! SEISMIC: the CNS model has the initial shear stress defined in the
   ! input file, so we can skip the initial computation of friction
   if (pb%i_rns_law /= 3) then
-    pb%tau = (pb%sigma - pb%P) * friction_mu(pb%v,pb%theta,pb) + pb%coh
+    pb%tau = (pb%sigma - pb%P) * friction_mu(pb%v,pb%theta,pb%theta2,pb) + pb%coh
   endif
   if (pb%i_rns_law == 3) then
     pb%v = compute_velocity(pb%tau, pb%sigma-pb%P, pb%theta, pb%theta2, pb)

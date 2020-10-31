@@ -40,7 +40,8 @@ subroutine read_main(pb)
   if (pb%i_rns_law == 3) then
     read(FID_IN, *) pb%cns_params%N_creep
   endif
-  read(FID_IN, *) pb%features%stress_coupling, pb%features%tp, pb%features%localisation
+  read(FID_IN, *) pb%features%stress_coupling, pb%features%tp, &
+                  pb%features%localisation, pb%features%coh
   read(FID_IN, *) pb%ot%ntout, pb%ox%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nwout, &
              pb%ox%nxout_dyn, pb%ox%nwout_dyn, pb%ox%i_ox_seq, pb%ox%i_ox_dyn
   read(FID_IN, *) pb%beta, pb%smu, pb%lam, pb%D, pb%H, pb%ot%v_th
@@ -151,12 +152,24 @@ subroutine read_main(pb)
   else
     allocate ( pb%a(n), pb%b(n), pb%v1(n), &
                pb%v2(n), pb%mu_star(n))
-    do i=1,n
-      read(FID_IN, *) pb%sigma(i), pb%v(i), pb%theta(i),  &
-                      pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
-                      pb%v2(i), pb%mu_star(i), pb%v_star(i), &
-                      pb%ot%iot(i), pb%ot%iasp(i), pb%coh(i), pb%v_pl(i)
-    end do
+
+    if (pb%features%coh == 1) then
+      allocate( pb%b2(n), pb%dc2(n), pb%theta2(n) )
+
+      do i=1,n
+        read(FID_IN, *) pb%sigma(i), pb%v(i), pb%theta(i), pb%theta2(i),  &
+                        pb%a(i), pb%b(i), pb%dc(i), pb%b2(i), pb%dc2(i), &
+                        pb%v1(i), pb%v2(i), pb%mu_star(i), pb%v_star(i), &
+                        pb%ot%iot(i), pb%ot%iasp(i), pb%coh(i), pb%v_pl(i)
+      end do
+    else
+      do i=1,n
+        read(FID_IN, *) pb%sigma(i), pb%v(i), pb%theta(i),  &
+                        pb%a(i), pb%b(i), pb%dc(i), pb%v1(i), &
+                        pb%v2(i), pb%mu_star(i), pb%v_star(i), &
+                        pb%ot%iot(i), pb%ot%iasp(i), pb%coh(i), pb%v_pl(i)
+      end do
+    endif
   endif
 
   ! <SEISMIC>
@@ -205,10 +218,16 @@ subroutine read_main(pb)
     deallocate(read_buf)
   ! Else, set lambda and theta2 to dummy values
   else
-    allocate(pb%cns_params%lambda(n), pb%theta2(n))
+    if (pb%features%coh == 0) then
+      allocate(pb%theta2(n))
+      do i=1,n
+        pb%theta2(i) = 0d0
+      end do
+    endif
+
+    allocate(pb%cns_params%lambda(n))
     do i=1,n
       pb%cns_params%lambda(i) = 1d0
-      pb%theta2(i) = 0d0
     end do
   endif
   ! End reading localisation model parameters

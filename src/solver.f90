@@ -197,7 +197,7 @@ subroutine update_field(pb)
   if (pb%i_rns_law == 3) then
     pb%v = compute_velocity(pb%tau, pb%sigma-P, pb%theta, pb%theta2, pb)
   else
-    pb%tau = (pb%sigma-P) * friction_mu(pb%v,pb%theta,pb) + pb%coh
+    pb%tau = (pb%sigma-P) * friction_mu(pb%v,pb%theta,pb%theta2,pb) + pb%coh
   endif
 
   ! Update pb%vmaxglob (required for stopping routine)

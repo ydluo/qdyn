@@ -28,7 +28,7 @@ subroutine pack(yt, theta, main_var, sigma, theta2, slip, pb)
   double precision, dimension(pb%neqs*pb%mesh%nn), intent(out) :: yt
   double precision, dimension(pb%mesh%nn), intent(in) :: theta, main_var, sigma
   double precision, dimension(pb%mesh%nn), intent(in) :: theta2, slip
-  integer :: nmax, ind_stress_coupling, ind_localisation, ind_tp
+  integer :: nmax, ind_stress_coupling, ind_localisation, ind_tp, ind_coh
 
   ! pb%neqs is defined in problem_class.f90
   nmax = pb%neqs*pb%mesh%nn
@@ -37,6 +37,7 @@ subroutine pack(yt, theta, main_var, sigma, theta2, slip, pb)
   ind_stress_coupling = 3 + pb%features%stress_coupling
   ind_localisation = ind_stress_coupling + pb%features%localisation
   ind_tp = ind_localisation + pb%features%tp
+  ind_coh = ind_tp + pb%features%coh
 
   yt(1:nmax:pb%neqs) = theta
   yt(2:nmax:pb%neqs) = main_var
@@ -50,6 +51,10 @@ subroutine pack(yt, theta, main_var, sigma, theta2, slip, pb)
     yt(ind_localisation:nmax:pb%neqs) = theta2
   endif
 
+  if (pb%features%coh == 1) then
+    yt(ind_coh:nmax:pb%neqs) = theta2
+  endif
+
 end subroutine pack
 
 !===============================================================================
@@ -61,13 +66,14 @@ subroutine unpack(yt, theta, main_var, sigma, theta2, slip, pb)
   double precision, dimension(pb%neqs*pb%mesh%nn), intent(in) :: yt
   double precision, dimension(pb%mesh%nn) :: theta, main_var, sigma
   double precision, dimension(pb%mesh%nn) :: theta2, slip
-  integer :: nmax, ind_stress_coupling, ind_localisation, ind_tp
+  integer :: nmax, ind_stress_coupling, ind_localisation, ind_tp, ind_coh
 
   ! pb%neqs is defined in problem_class.f90
   nmax = pb%neqs*pb%mesh%nn
   ind_stress_coupling = 3 + pb%features%stress_coupling
   ind_localisation = ind_stress_coupling + pb%features%localisation
   ind_tp = ind_localisation + pb%features%tp
+  ind_coh = ind_tp + pb%features%coh
 
   theta = yt(1:nmax:pb%neqs)
   main_var = yt(2:nmax:pb%neqs)
@@ -83,6 +89,10 @@ subroutine unpack(yt, theta, main_var, sigma, theta2, slip, pb)
     theta2 = yt(ind_localisation:nmax:pb%neqs)
   else
     theta2 = 0d0
+  endif
+
+  if (pb%features%coh == 1) then
+    theta2 = yt(ind_coh:nmax:pb%neqs)
   endif
 
 end subroutine unpack

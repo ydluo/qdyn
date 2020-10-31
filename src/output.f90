@@ -17,7 +17,7 @@ subroutine initialize_output(pb)
   use problem_class
   use my_mpi, only: is_MPI_master, is_MPI_parallel
   type (problem_type) :: pb
-  integer :: nbase, nobj
+  integer :: nbase, nobj, nobj_tp, nobj_coh
 
   ! The spirit of the output module is as follows:
   ! First, a container of pointers is created that is shared by all the output
@@ -30,14 +30,24 @@ subroutine initialize_output(pb)
   nbase = pb%nobj
   ! Total number
   nobj = nbase
+  nobj_tp = 0
+  nobj_coh = 0
   ! If thermal pressurisation is requested: add 2 more objects to total
   if (pb%features%tp == 1) then
-    nobj = nobj + 2
+    nobj_tp = 2
+    nobj = nobj + nobj_tp
+  endif
+
+  if (pb%features%coh == 1) then
+    nobj_coh = 1
+    nobj = nobj + nobj_coh
   endif
 
   ! Allocate containers
   allocate(pb%objects_glob(nobj))
   allocate(pb%objects_loc(nobj))
+
+  pb%nobj = nobj
 
   ! If parallel: initialise (allocate) global quantities
   if (is_MPI_parallel()) then
@@ -59,6 +69,10 @@ subroutine initialize_output(pb)
     if (pb%features%tp == 1) then
       pb%P_glob => pb%P
       pb%T_glob => pb%T
+    endif
+
+    if (pb%features%coh == 1) then
+      pb%theta2_glob => pb%theta2
     endif
     ! Max rupture stats
     pb%tau_max_glob => pb%tau_max
@@ -94,6 +108,10 @@ subroutine initialize_output(pb)
     pb%objects_glob(nbase+2)%v => pb%T_glob
   endif
 
+  if (pb%features%coh == 1) then
+    pb%objects_glob(nbase+nobj_tp+1)%v => pb%theta2_glob
+  endif
+
   ! Assign local quantities (which need to be synchronised)
   ! Scalars do not need to be synchronised, so can be skipped
 
@@ -114,6 +132,10 @@ subroutine initialize_output(pb)
     ! [double vector] pressure, temperature
     pb%objects_loc(nbase+1)%v => pb%P
     pb%objects_loc(nbase+2)%v => pb%T
+  endif
+
+  if (pb%features%coh == 1) then
+    pb%objects_loc(nbase+nobj_tp+1)%v => pb%theta2
   endif
 
   ! Init ot, ox, screen
@@ -285,6 +307,11 @@ subroutine ot_init(pb)
     pb%ot%not = pb%ot%not + 2
     pb%ot%not_vmax = pb%ot%not_vmax + 2
   endif
+
+  if (pb%features%coh == 1) then
+    pb%ot%not = pb%ot%not + 1
+    pb%ot%not_vmax = pb%ot%not_vmax + 1
+  endif
   ! Allocate space in array of pointers
   allocate(pb%ot%fmt(pb%ot%not))
   allocate(pb%ot%fmt_vmax(pb%ot%not_vmax))
@@ -367,6 +394,9 @@ subroutine ot_init(pb)
       if (pb%features%tp == 1) then
         write(id, "(a)") "# 10=P, 11=T"
       endif
+      if (pb%features%coh == 1) then
+        write(id, "(a)") "# 10=theta2"
+      endif
       close(id)
     enddo
 
@@ -376,6 +406,9 @@ subroutine ot_init(pb)
     write(FID_VMAX, "(a)") "# 1=t, 2=ivmax, 3=v, 4=theta, 5=tau, 6=dtau_dt, 7=slip, 8=sigma"
     if (pb%features%tp == 1) then
       write(FID_VMAX, "(a)") "# 9=P, 10=T"
+    endif
+    if (pb%features%coh == 1) then
+      write(FID_VMAX, "(a)") "# 9=theta2"
     endif
     close(FID_VMAX)
 

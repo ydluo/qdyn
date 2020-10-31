@@ -70,7 +70,7 @@ module problem_class
   ! cohesion: time-dependent cohesion (CNS model)
   ! localisation: localisation of deformation (CNS model)
   type features_type
-    integer :: stress_coupling, tp, localisation
+    integer :: stress_coupling=0, tp=0, localisation=0, coh=0
   end type features_type
   ! End of features structure
 
@@ -114,9 +114,10 @@ module problem_class
     double precision, pointer ::  tau(:) => null(), dtau_dt(:) => null(), &
                                   sigma(:) => null(), slip(:) => null(), &
                                   v(:) => null(), theta(:) => null(), &
-                                  P(:) => null(), T(:) => null()
+                                  P(:) => null(), T(:) => null(), &
+                                  theta2(:) => null()
     double precision, dimension(:), allocatable :: dtheta_dt, dtheta2_dt
-    double precision, dimension(:), allocatable :: theta2, alpha
+    double precision, dimension(:), allocatable :: alpha
     double precision, pointer ::  tau_max(:) => null(), t_rup(:) => null(), &
                                   v_max(:) => null(), t_vmax(:) => null()
     double precision, pointer :: pot => null(), pot_rate => null()
@@ -125,7 +126,8 @@ module problem_class
    ! Friction properties
     double precision, dimension(:), allocatable ::  a, b, dc, v1, v2, &
                                                     mu_star, v_star, &
-                                                    theta_star, coh, v_pl
+                                                    theta_star, coh, v_pl, &
+                                                    b2, dc2, theta2_star
     integer :: itheta_law=1, i_rns_law=1, neqs=3
    ! Elastic properties
     double precision :: beta=0d0, smu=0d0, lam=0d0, D=0d0, H=0d0, zimpedance=0d0
@@ -145,7 +147,8 @@ module problem_class
     double precision, pointer ::  tau_glob(:) => null(), dtau_dt_glob(:) => null(), &
                                   sigma_glob(:) => null(), slip_glob(:) => null(), &
                                   v_glob(:) => null(), theta_glob(:) => null(), &
-                                  P_glob(:) => null(), T_glob(:) => null()
+                                  P_glob(:) => null(), T_glob(:) => null(), &
+                                  theta2_glob(:) => null()
     double precision, pointer ::  tau_max_glob(:) => null(), t_rup_glob(:) => null(), &
                                   v_max_glob(:) => null(), t_vmax_glob(:) => null()
     logical :: allocated_glob = .false.
