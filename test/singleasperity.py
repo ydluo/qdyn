@@ -14,7 +14,7 @@ class TestSingleAsperity(AuxiliaryFunctions):
     # frozen benchmark results, and it is checked against each time the results
     # are imported. When a new benchmark is generated, this hash should be
     # updated.
-    frozen_hash = "5ba3c6b00831e4a98196031cd333d18cc9d6aeed"
+    frozen_hash = "ed8645b9584ab24be87f908143d13dce0a336a71"
     frozen_loaded = False
 
     def __init__(self, p):
