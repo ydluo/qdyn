@@ -19,7 +19,7 @@ def timeseries(ot, ot_vmax):
     axes[1].plot(ot["t"] / t_year, ot["theta"])
     axes[1].set_ylabel("state [s]")
 
-    axes[2].plot(ot_vmax["t"] / t_year, ot_vmax["v_max"])
+    axes[2].plot(ot_vmax["t"] / t_year, ot_vmax["v"])
     axes[2].set_ylabel("max v [m/s]")
     axes[2].set_xlabel("time [yr]")
     axes[2].set_yscale("log")
