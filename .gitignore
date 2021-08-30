@@ -1,0 +1,36 @@
+# ignore objects and archives, anywhere in the tree.
+
+mymakedepend.perl
+!utils/devel_tools/mymakedepend.perl
+
+# Fortran compiled files
+qdyn
+*.mod
+*.o
+
+# Output files
+fort.*
+output_iasp
+output_ot_*
+output_ox
+output_vmax
+
+# Simulation products
+*.in
+mesh_dict.tar.gz
+set_dict.tar.gz
+
+# Jekyll auto-generated files
+_site/
+.sass-cache/
+
+# Python files
+__pycache__/
+.ipynb_checkpoints/
+*.pyc
+
+# PyCharm files
+.idea/
+
+# Atom files
+.atom-build.json
