@@ -35,6 +35,9 @@ subroutine initialize_output(pb)
     nobj = nobj + 2
   endif
 
+  ! Overwrite number of objects to output
+  pb%nobj = nobj
+
   ! Allocate containers
   allocate(pb%objects_glob(nobj))
   allocate(pb%objects_loc(nobj))
