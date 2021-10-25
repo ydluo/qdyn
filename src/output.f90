@@ -33,7 +33,13 @@ subroutine initialize_output(pb)
   ! If thermal pressurisation is requested: add 2 more objects to total
   if (pb%features%tp == 1) then
     nobj = nobj + 2
+  ! Else if fluid injection is requested: add 1 more object to total
+  elseif (pb%features%injection == 1) then
+    nobj = nobj + 1
   endif
+
+  ! Overwrite number of objects to output
+  pb%nobj = nobj
 
   ! Allocate containers
   allocate(pb%objects_glob(nobj))
@@ -59,6 +65,9 @@ subroutine initialize_output(pb)
     if (pb%features%tp == 1) then
       pb%P_glob => pb%P
       pb%T_glob => pb%T
+    ! If fluid injection is requested: P
+    elseif (pb%features%injection == 1) then
+      pb%P_glob => pb%P
     endif
     ! Max rupture stats
     pb%tau_max_glob => pb%tau_max
@@ -92,6 +101,10 @@ subroutine initialize_output(pb)
     ! [double vector] pressure, temperature
     pb%objects_glob(nbase+1)%v => pb%P_glob
     pb%objects_glob(nbase+2)%v => pb%T_glob
+  ! Else if fluid injection is requested, add P
+  elseif (pb%features%injection == 1) then
+    ! [double vector] pressure
+    pb%objects_glob(nbase+1)%v => pb%P_glob
   endif
 
   ! Assign local quantities (which need to be synchronised)
@@ -114,6 +127,10 @@ subroutine initialize_output(pb)
     ! [double vector] pressure, temperature
     pb%objects_loc(nbase+1)%v => pb%P
     pb%objects_loc(nbase+2)%v => pb%T
+  ! Else if fluid injection is requested, add P
+  elseif (pb%features%injection == 1) then
+    ! [double vector] pressure
+    pb%objects_loc(nbase+1)%v => pb%P
   endif
 
   ! Init ot, ox, screen
@@ -284,7 +301,12 @@ subroutine ot_init(pb)
   if (pb%features%tp == 1) then
     pb%ot%not = pb%ot%not + 2
     pb%ot%not_vmax = pb%ot%not_vmax + 2
+  ! If thermal pressurisation is requested, add 2 more
+  elseif (pb%features%injection == 1) then
+    pb%ot%not = pb%ot%not + 1
+    pb%ot%not_vmax = pb%ot%not_vmax + 1
   endif
+
   ! Allocate space in array of pointers
   allocate(pb%ot%fmt(pb%ot%not))
   allocate(pb%ot%fmt_vmax(pb%ot%not_vmax))
@@ -366,6 +388,8 @@ subroutine ot_init(pb)
       write(id, "(a)") "# 4=V, 5=theta, 6=tau, 7=dtau_dt, 8=slip, 9=sigma"
       if (pb%features%tp == 1) then
         write(id, "(a)") "# 10=P, 11=T"
+      elseif (pb%features%injection == 1) then
+        write(id, "(a)") "# 10=P"
       endif
       close(id)
     enddo
@@ -376,6 +400,8 @@ subroutine ot_init(pb)
     write(FID_VMAX, "(a)") "# 1=t, 2=ivmax, 3=v, 4=theta, 5=tau, 6=dtau_dt, 7=slip, 8=sigma"
     if (pb%features%tp == 1) then
       write(FID_VMAX, "(a)") "# 9=P, 10=T"
+    elseif (pb%features%injection == 1) then
+      write(FID_VMAX, "(a)") "# 9=P"
     endif
     close(FID_VMAX)
 
@@ -450,6 +476,8 @@ subroutine ox_init(pb)
   pb%ox%header = '# t x y z v theta tau tau_dot slip sigma'
   if (pb%features%tp == 1) then
     pb%ox%header = '# t x y z v theta tau tau_dot slip sigma P T'
+  elseif (pb%features%injection == 1) then
+      pb%ox%header = '# t x y z v theta tau tau_dot slip sigma P'
   endif
 
   ! If ox_dyn is requested
@@ -984,6 +1012,8 @@ subroutine init_pb_global(pb)
     ! If thermal pressurisation is requested, allocate P and T
     if (pb%features%tp == 1) then
       allocate(pb%P_glob(n), pb%T_glob(n))
+    elseif (pb%features%injection == 1) then
+      allocate(pb%P_glob(n))
     endif
 
     ! Allocate rupture max stats

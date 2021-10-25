@@ -48,7 +48,7 @@ OPT = -O3 -Wall
 PREPROC = -cpp
 #PG, KAUST server
 # CFLAGS = -B/usr/lib/x86_64-linux-gnu
-#CFLAGS = '' 
+#CFLAGS = ''
 
 travis: F90 = mpif90
 	OPT = -O3 -Wall

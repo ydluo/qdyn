@@ -46,7 +46,7 @@ subroutine read_main(pb)
              pb%ox%nxout_dyn, pb%ox%nwout_dyn, pb%ox%i_ox_seq, pb%ox%i_ox_dyn
   read(FID_IN, *) pb%beta, pb%smu, pb%lam, pb%D, pb%H, pb%ot%v_th
   read(FID_IN, *) pb%Tper, pb%Aper
-  read(FID_IN, *) pb%dt_try, pb%dt_max,pb%tmax, pb%acc
+  read(FID_IN, *) pb%dt_try, pb%dt_max, pb%tmax, pb%acc
   read(FID_IN, *) pb%NSTOP
   read(FID_IN, *) pb%DYN_FLAG,pb%DYN_SKIP
   read(FID_IN, *) pb%DYN_M,pb%DYN_th_on,pb%DYN_th_off
@@ -54,7 +54,24 @@ subroutine read_main(pb)
 
   ! MvdE: if fluid injection (analytical) is requested, read parameters
   if (pb%features%injection == 1) then
-    read(FID_IN, *) pb%injection%x0, pb%injection%t0, pb%injection%c
+
+    ! Check if mesh dimensionality is correct
+    if (pb%mesh%dim /= 1) then
+      write(FID_SCREEN, *) &
+        "Fluid injection is only implemented for MESHDIM == 1"
+      stop
+    endif
+
+    ! Check if thermal pressurisation is also active
+    if (pb%features%tp == 1) then
+      write(FID_SCREEN, *) &
+        "Fluid injection is not compatible with thermal pressurisation"
+      stop
+    endif
+
+    ! Source location, source time, injection rate, diffusivity
+    read(FID_IN, *) pb%injection%source, pb%injection%x0, pb%injection%t0, &
+                    pb%injection%c, pb%injection%k
   endif
 
   write(FID_SCREEN, *) '  Flags input complete'

@@ -161,7 +161,9 @@ class qdyn:
 
         # Analytical fluid injection
         set_dict["SET_DICT_INJECTION"] = {
-            "C": 0.0,                       # Rate of fluid injection [Pa/s]
+            "SOURCE": 0,                    # Injection source type (0: constant volume; 1: constant rate)
+            "C": 0.0,                       # Rate of fluid injection
+            "K": 1.0,                       # Hydraulic diffusivity [m2/s]
             "X0": 0.0,                      # Location of fluid injection (point source)
             "T0": 0.0,                      # Start of fluid injection
         }
@@ -403,7 +405,7 @@ class qdyn:
                     print("This value should be determined in render_mesh()")
                     exit()
                 input_str += "%u%s N_creep\n" % (N_creep, delimiter)
-            input_str += "%u %u %u%s stress_coupling, thermal press., localisation\n" % (settings["FEAT_STRESS_COUPL"], settings["FEAT_TP"], settings["FEAT_LOCALISATION"], delimiter)
+            input_str += "%u %u %u %u%s stress_coupling, thermal press., localisation, injection\n" % (settings["FEAT_STRESS_COUPL"], settings["FEAT_TP"], settings["FEAT_LOCALISATION"], settings["FEAT_INJECTION"], delimiter)
             input_str += "%u %u %u %u %u %u %u %u %u%s ntout_ot, ntout_ox, nt_coord, nxout, nwout, nxout_DYN, nwout_DYN, ox_seq, ox_DYN\n" % (settings["NTOUT_OT"], settings["NTOUT"], settings["IC"]+1, settings["NXOUT"], settings["NWOUT"], settings["NXOUT_DYN"], settings["NWOUT_DYN"], settings["OX_SEQ"], settings["OX_DYN"], delimiter)
             input_str += "%.15g %.15g %.15g %.15g %.15g %.15g%s beta, smu, lambda, v_th\n" % (settings["VS"], settings["MU"], settings["LAM"], settings["D"], settings["HD"], settings["V_TH"], delimiter)
             input_str += "%.15g %.15g%s Tper, Aper\n" % (settings["TPER"], settings["APER"], delimiter)
@@ -415,7 +417,7 @@ class qdyn:
 
             # Add fluid injection parameters: x0, t0, injection rate
             if settings["FEAT_INJECTION"] == 1:
-                input_str += "%.15g %.15g %.15g" % (settings["SET_DICT_INJECTION"]["X0"], settings["SET_DICT_INJECTION"]["T0"], settings["SET_DICT_INJECTION"]["C"])
+                input_str += "%u %.15g %.15g %.15g %.15g%s x0, t0, rate\n" % (settings["SET_DICT_INJECTION"]["SOURCE"], settings["SET_DICT_INJECTION"]["X0"], settings["SET_DICT_INJECTION"]["T0"], settings["SET_DICT_INJECTION"]["C"], settings["SET_DICT_INJECTION"]["K"], delimiter)
 
             # Loop over all fault segments that are hosted on this processor node
             for i in range(nwLocal[iproc]):
@@ -554,6 +556,10 @@ class qdyn:
             nheaders_ot += 1
             quants_ot += ("P", "T")
 
+        if self.set_dict["FEAT_INJECTION"] == 1:
+            nheaders_ot += 1
+            quants_ot += ("P",)
+
         # Vmax
         nheaders_vmax = 2
         quants_vmax = ("t", "ivmax", "v", "theta", "tau", "dtau_dt", "slip", "sigma")
@@ -561,10 +567,17 @@ class qdyn:
             nheaders_vmax += 1
             quants_vmax += ("P", "T")
 
+        if self.set_dict["FEAT_INJECTION"] == 1:
+            nheaders_vmax += 1
+            quants_vmax += ("P",)
+
         # Standard snapshots (ox)
         quants_ox = ("t", "x", "y", "z", "v", "theta", "tau", "tau_dot", "slip", "sigma")
         if self.set_dict["FEAT_TP"] == 1:
             quants_ox += ("P", "T")
+
+        if self.set_dict["FEAT_INJECTION"] == 1:
+            quants_ox += ("P",)
 
         # If time series data is requested
         if read_ot:

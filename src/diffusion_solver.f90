@@ -318,12 +318,42 @@ end subroutine solve_spectral
 !===============================================================================
 subroutine analytical_diffusion(x, t, P, dP_dt, pb)
 
+  use constants, only : PI
+
   type(problem_type), intent(inout) :: pb
   double precision, dimension(pb%mesh%nn) :: x, P, dP_dt
-  double precision :: t
+  double precision, dimension(pb%mesh%nn) :: alpha, inv_alpha, x_alpha, exp_term
+  double precision :: t, inv_sqrt_pi
 
-  P = pb%injection%c * t
-  dP_dt = pb%injection%c
+  inv_sqrt_pi = 1.0 / sqrt(PI)
+
+  alpha = sqrt(4 * pb%injection%k * (t - pb%injection%t0))
+  inv_alpha = 1 / alpha
+
+  ! Constant volume injection
+  if (pb%injection%source == 0) then
+    x_alpha = ((x - pb%injection%x0) * inv_alpha)**2
+    x_alpha = min(x_alpha, 90d0)
+    exp_term = exp(-x_alpha)
+    P = inv_sqrt_pi * inv_alpha * exp_term
+    dP_dt = 0.5 * inv_sqrt_pi * (inv_alpha**3) * (1 + 2 * x_alpha) * exp_term
+  ! Constant injection rate
+  elseif (pb%injection%source == 1) then
+    x_alpha = abs(x - pb%injection%x0) * inv_alpha
+    x_alpha = min(x_alpha, 9.5)
+    exp_term = exp(-x_alpha**2) - sqrt(PI) * x_alpha * erfc(x_alpha)
+    P = 0.5 * inv_sqrt_pi * (1 / pb%injection%k) * alpha * exp_term
+
+    ! For the pressure rate we need a different scaled distance
+    x_alpha = ((x - pb%injection%x0) * inv_alpha)**2
+    dP_dt = inv_sqrt_pi * inv_alpha * exp(-x_alpha)
+  endif
+
+  ! Scale pressure and pressure rate with injection rate
+  P = pb%injection%c * P
+  dP_dt = pb%injection%c * dP_dt
+
+  ! if (t > 0) stop
 
 end subroutine analytical_diffusion
 

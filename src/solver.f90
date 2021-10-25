@@ -65,14 +65,16 @@ subroutine do_bsstep(pb)
   use ode_rk45, only: rkf45_d
   use ode_rk45_2, only: rkf45_d2
   use constants, only: FID_SCREEN, SOLVER_TYPE
-  use diffusion_solver, only: update_PT_final
+  use diffusion_solver, only: update_PT_final, analytical_diffusion
 
   type(problem_type), intent(inout) :: pb
 
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt_prev
-  double precision, dimension(pb%mesh%nn) :: main_var
+  double precision, dimension(pb%mesh%nn) :: main_var, dummy
   integer :: ik, neqs
+
+  dummy = 0d0
 
   neqs = pb%neqs * pb%mesh%nn
 
@@ -161,6 +163,11 @@ subroutine do_bsstep(pb)
   call unpack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%slip, pb)
   if (pb%features%tp == 1) call update_PT_final(pb%dt_did, pb)
 
+  ! Update fluid pressure
+  if (pb%features%injection == 1) then
+    call analytical_diffusion(pb%mesh%x, pb%time, pb%P, dummy, pb)
+  endif
+
   ! SEISMIC: retrieve the solution for tau in the case of the CNS model, else
   ! retreive the solution for slip velocity
   if (pb%i_rns_law == 3) then
@@ -189,7 +196,7 @@ subroutine update_field(pb)
 
   ! SEISMIC: obtain P at the previous time step
   P = 0d0
-  if (pb%features%tp == 1) P = pb%P
+  if ((pb%features%tp == 1) .OR. (pb%features%injection == 1)) P = pb%P
 
   ! SEISMIC: in case of the CNS model, re-compute the slip velocity with
   ! the final value of tau, sigma, and porosity. Otherwise, use the standard

@@ -65,7 +65,8 @@ module problem_class
   ! End of the TP model structure
 
   type injection_type
-    double precision :: c = 0d0, x0 = 0d0, t0 = 0d0
+    integer :: source = -1
+    double precision :: c = 0d0, x0 = 0d0, t0 = 0d0, k = 1d0
   end type injection_type
 
   ! SEISMIC: requested features structure
