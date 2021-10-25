@@ -64,13 +64,17 @@ module problem_class
   end type tp_type
   ! End of the TP model structure
 
+  type injection_type
+    double precision :: c = 0d0, x0 = 0d0, t0 = 0d0
+  end type injection_type
+
   ! SEISMIC: requested features structure
   ! stress_coupling: normal stress variations at subduction interfaces
   ! tp: thermal pressurisation
   ! cohesion: time-dependent cohesion (CNS model)
   ! localisation: localisation of deformation (CNS model)
   type features_type
-    integer :: stress_coupling, tp, localisation
+    integer :: stress_coupling, tp, localisation, injection
   end type features_type
   ! End of features structure
 
@@ -158,6 +162,7 @@ module problem_class
     ! SEISMIC: added structures
     type (cns_type) :: cns_params
     type (tp_type) :: tp
+    type (injection_type) :: injection
     type (features_type) :: features
     type (rk45_type) :: rk45
     type (rk45_2_type) :: rk45_2

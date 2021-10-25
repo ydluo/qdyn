@@ -40,7 +40,8 @@ subroutine read_main(pb)
   if (pb%i_rns_law == 3) then
     read(FID_IN, *) pb%cns_params%N_creep
   endif
-  read(FID_IN, *) pb%features%stress_coupling, pb%features%tp, pb%features%localisation
+  read(FID_IN, *) pb%features%stress_coupling, pb%features%tp, &
+                  pb%features%localisation, pb%features%injection
   read(FID_IN, *) pb%ot%ntout, pb%ox%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nwout, &
              pb%ox%nxout_dyn, pb%ox%nwout_dyn, pb%ox%i_ox_seq, pb%ox%i_ox_dyn
   read(FID_IN, *) pb%beta, pb%smu, pb%lam, pb%D, pb%H, pb%ot%v_th
@@ -50,6 +51,12 @@ subroutine read_main(pb)
   read(FID_IN, *) pb%DYN_FLAG,pb%DYN_SKIP
   read(FID_IN, *) pb%DYN_M,pb%DYN_th_on,pb%DYN_th_off
   read(FID_IN, *) FAULT_TYPE, SOLVER_TYPE
+
+  ! MvdE: if fluid injection (analytical) is requested, read parameters
+  if (pb%features%injection == 1) then
+    read(FID_IN, *) pb%injection%x0, pb%injection%t0, pb%injection%c
+  endif
+
   write(FID_SCREEN, *) '  Flags input complete'
 
   n = mesh_get_size(pb%mesh) ! number of nodes in this processor

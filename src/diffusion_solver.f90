@@ -32,7 +32,7 @@ module diffusion_solver
   implicit none
   private
 
-  public :: init_tp, update_PT, update_PT_final
+  public :: init_tp, update_PT, update_PT_final, analytical_diffusion
 
 contains
 
@@ -309,5 +309,22 @@ subroutine solve_spectral(tau_y,phi_dot,phi,v,dt,pb)
   enddo
 
 end subroutine solve_spectral
+
+
+!===============================================================================
+! MvdE: analytical solution for fluid injection at a point x0, given t and x
+! of a fault element. It currently only supports a constant injection rate.
+! Returns the pressure P at (x, t) and the pressure rate (dP/dt).
+!===============================================================================
+subroutine analytical_diffusion(x, t, P, dP_dt, pb)
+
+  type(problem_type), intent(inout) :: pb
+  double precision, dimension(pb%mesh%nn) :: x, P, dP_dt
+  double precision :: t
+
+  P = pb%injection%c * t
+  dP_dt = pb%injection%c
+
+end subroutine analytical_diffusion
 
 end module diffusion_solver

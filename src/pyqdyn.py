@@ -96,6 +96,7 @@ class qdyn:
         set_dict["FEAT_STRESS_COUPL"] = 0	# Normal stress coupling
         set_dict["FEAT_TP"] = 0				# Thermal pressurisation
         set_dict["FEAT_LOCALISATION"] = 0	# Gouge zone localisation of strain (CNS only)
+        set_dict["FEAT_INJECTION"] = 0      # Fluid injection (analytical)
 
         # Rate-and-state friction parameters
         set_dict["SET_DICT_RSF"] = {
@@ -156,6 +157,13 @@ class qdyn:
             "P_A": 0.0,							# Ambient fluid pressure [Pa]
             "T_A": 293.0,						# Ambient temperature [K]
             "DILAT_FACTOR": 0.0,                # Factor > 0 to control amount of dilatancy hardening
+        }
+
+        # Analytical fluid injection
+        set_dict["SET_DICT_INJECTION"] = {
+            "C": 0.0,                       # Rate of fluid injection [Pa/s]
+            "X0": 0.0,                      # Location of fluid injection (point source)
+            "T0": 0.0,                      # Start of fluid injection
         }
 
         # Benjamin Idini's damage model
@@ -404,6 +412,10 @@ class qdyn:
             input_str += "%u %u%s DYN_FLAG, DYN_SKIP\n" % (settings["DYN_FLAG"], settings["DYN_SKIP"], delimiter)
             input_str += "%.15g %.15g %.15g%s M0, DYN_th_on, DYN_th_off\n" % (settings["DYN_M"], settings["DYN_TH_ON"], settings["DYN_TH_OFF"], delimiter)
             input_str += "%i %i%s FAULT_TYPE, SOLVER\n" % (settings["FAULT_TYPE"], settings["SOLVER"], delimiter)
+
+            # Add fluid injection parameters: x0, t0, injection rate
+            if settings["FEAT_INJECTION"] == 1:
+                input_str += "%.15g %.15g %.15g" % (settings["SET_DICT_INJECTION"]["X0"], settings["SET_DICT_INJECTION"]["T0"], settings["SET_DICT_INJECTION"]["C"])
 
             # Loop over all fault segments that are hosted on this processor node
             for i in range(nwLocal[iproc]):

@@ -28,7 +28,7 @@ subroutine derivs(time,yt,dydt,pb)
   use fault_stress, only : compute_stress
   use friction, only : dtheta_dt, dmu_dv_dtheta, friction_mu
   use friction_cns, only : compute_velocity, CNS_derivs
-  use diffusion_solver, only : update_PT
+  use diffusion_solver, only : update_PT, analytical_diffusion
   use utils, only : pack, unpack
 
   type(problem_type), intent(inout) :: pb
@@ -71,6 +71,11 @@ subroutine derivs(time,yt,dydt,pb)
     dP_dt = pb%tp%dP_dt
   endif
 
+  if (pb%features%injection == 1) then
+    call analytical_diffusion(pb%mesh%x, time, pb%P, dP_dt, pb)
+    sigma = sigma - pb%P
+  endif
+
   if (pb%i_rns_law == 3) then
     ! SEISMIC: the CNS model is solved for stress, not for velocity, so we
     ! compute the velocity and use that to compute dtau_dt, which is stored
@@ -90,7 +95,7 @@ subroutine derivs(time,yt,dydt,pb)
     ! velocity is stored in yt(2::pb%neqs), and tau is not used (set to zero)
     v = main_var
 
-    if (pb%features%tp == 1) then
+    if ((pb%features%tp == 1) .OR. (pb%features%injection == 1)) then
       tau = friction_mu(v, theta, pb)*sigma
     endif
 
@@ -139,7 +144,7 @@ subroutine derivs(time,yt,dydt,pb)
     call dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
 
     ! For thermal pressurisation, the partial derivative of tau to P is -mu
-    if (pb%features%tp == 1) then
+    if ((pb%features%tp == 1) .OR. (pb%features%injection == 1)) then
       dtau_dP = -friction_mu(v, theta, pb)
     endif
 

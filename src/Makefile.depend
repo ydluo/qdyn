@@ -12,7 +12,7 @@ main.o: derivs_all.o initialize.o input.o parallel.o problem_class.o solver.o \
 	unittests.o
 mesh.o: constants.o parallel.o
 ode_bs.o: derivs_all.o parallel.o problem_class.o
-ode_rk45.o: derivs_all.o
+ode_rk45.o: derivs_all.o parallel.o
 ode_rk45_2.o: problem_class.o
 okada.o: constants.o
 output.o: constants.o mesh.o parallel.o problem_class.o
