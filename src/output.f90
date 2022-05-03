@@ -34,6 +34,10 @@ subroutine initialize_output(pb)
   if (pb%features%tp == 1) then
     nobj = nobj + 2
   endif
+  ! If fluid injection is requested: add 1 more object to total
+  if (pb%features%injection == 1) then
+    nobj = nobj + 1
+  endif
 
   ! Overwrite number of objects to output
   pb%nobj = nobj
@@ -62,6 +66,10 @@ subroutine initialize_output(pb)
     if (pb%features%tp == 1) then
       pb%P_glob => pb%P
       pb%T_glob => pb%T
+    endif
+    ! If fluid injection is requested: P
+    if (pb%features%injection == 1) then
+      pb%P_glob => pb%P
     endif
     ! Max rupture stats
     pb%tau_max_glob => pb%tau_max
@@ -97,6 +105,12 @@ subroutine initialize_output(pb)
     pb%objects_glob(nbase+2)%v => pb%T_glob
   endif
 
+  ! If fluid injection is requested, add P
+  if (pb%features%injection == 1) then
+    ! [double vector] pressure
+    pb%objects_glob(nbase+1)%v => pb%P_glob
+  endif
+
   ! Assign local quantities (which need to be synchronised)
   ! Scalars do not need to be synchronised, so can be skipped
 
@@ -117,6 +131,12 @@ subroutine initialize_output(pb)
     ! [double vector] pressure, temperature
     pb%objects_loc(nbase+1)%v => pb%P
     pb%objects_loc(nbase+2)%v => pb%T
+  endif
+
+  ! If fluid injection is requested, add P
+  if (pb%features%injection == 1) then
+    ! [double vector] pressure
+    pb%objects_loc(nbase+1)%v => pb%P
   endif
 
   ! Init ot, ox, screen
@@ -288,6 +308,11 @@ subroutine ot_init(pb)
     pb%ot%not = pb%ot%not + 2
     pb%ot%not_vmax = pb%ot%not_vmax + 2
   endif
+  ! If fluid injection is requested, add 1 more
+  if (pb%features%injection == 1) then
+    pb%ot%not = pb%ot%not + 1
+    pb%ot%not_vmax = pb%ot%not_vmax + 1
+  endif
   ! Allocate space in array of pointers
   allocate(pb%ot%fmt(pb%ot%not))
   allocate(pb%ot%fmt_vmax(pb%ot%not_vmax))
@@ -367,8 +392,13 @@ subroutine ot_init(pb)
       write(id, "(a)") "# 1=t, 2=pot, 3=pot_rate"
       write(id, "(a)") "# values at selected point:"
       write(id, "(a)") "# 4=V, 5=theta, 6=tau, 7=dtau_dt, 8=slip, 9=sigma"
+      ! Add header for thermal pressurisation
       if (pb%features%tp == 1) then
         write(id, "(a)") "# 10=P, 11=T"
+      endif
+      ! Add header for fluid injection
+      if (pb%features%injection == 1) then
+        write(id, "(a)") "# 10=P"
       endif
       close(id)
     enddo
@@ -377,8 +407,13 @@ subroutine ot_init(pb)
     open(FID_VMAX, file=FILE_VMAX, status="replace")
     write(FID_VMAX, "(a)") "# values at max(V) location:"
     write(FID_VMAX, "(a)") "# 1=t, 2=ivmax, 3=v, 4=theta, 5=tau, 6=dtau_dt, 7=slip, 8=sigma"
+    ! Add header for thermal pressurisation
     if (pb%features%tp == 1) then
       write(FID_VMAX, "(a)") "# 9=P, 10=T"
+    endif
+    ! Add header for fluid injection
+    if (pb%features%injection == 1) then
+      write(FID_VMAX, "(a)") "# 9=P"
     endif
     close(FID_VMAX)
 
@@ -451,8 +486,13 @@ subroutine ox_init(pb)
 
   ! Define headers
   pb%ox%header = '# t x y z v theta tau tau_dot slip sigma'
+  ! Thermal pressurisation
   if (pb%features%tp == 1) then
     pb%ox%header = '# t x y z v theta tau tau_dot slip sigma P T'
+  endif
+  ! Fluid injection
+  if (pb%features%injection == 1) then
+    pb%ox%header = '# t x y z v theta tau tau_dot slip sigma P'
   endif
 
   ! If ox_dyn is requested
@@ -987,6 +1027,10 @@ subroutine init_pb_global(pb)
     ! If thermal pressurisation is requested, allocate P and T
     if (pb%features%tp == 1) then
       allocate(pb%P_glob(n), pb%T_glob(n))
+    endif
+    ! If fluid injection is requested, allocate P
+    if (pb%features%injection == 1) then
+      allocate(pb%P_glob(n))
     endif
 
     ! Allocate rupture max stats

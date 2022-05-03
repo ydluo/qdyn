@@ -32,9 +32,23 @@ module diffusion_solver
   implicit none
   private
 
-  public :: init_tp, update_PT, update_PT_final
+  public :: init_tp, update_PT, update_PT_final, update_P_constant
 
 contains
+
+!===============================================================================
+! Routine to update the fluid pressure assuming a constant pressurisation rate
+!===============================================================================
+subroutine update_P_constant(time, pb)
+
+  type(problem_type), intent(inout) :: pb
+  double precision, intent(in) :: time
+
+  ! Get current time (including RK step!)
+  ! Return time x dP_dt
+  pb%P = time * pb%injection%dP_dt + pb%injection%P_a
+
+end subroutine update_P_constant
 
 !===============================================================================
 ! SEISMIC: initialisation routine for the thermal pressurisation model

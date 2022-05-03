@@ -28,7 +28,7 @@ subroutine derivs(time,yt,dydt,pb)
   use fault_stress, only : compute_stress
   use friction, only : dtheta_dt, dmu_dv_dtheta, friction_mu
   use friction_cns, only : compute_velocity, CNS_derivs
-  use diffusion_solver, only : update_PT
+  use diffusion_solver, only : update_PT, update_P_constant
   use utils, only : pack, unpack
 
   type(problem_type), intent(inout) :: pb
@@ -69,6 +69,17 @@ subroutine derivs(time,yt,dydt,pb)
     endif
     sigma = sigma - pb%P
     dP_dt = pb%tp%dP_dt
+  endif
+
+  ! When fluid injection is requested (incompatible with TP), update P
+  ! and calculate the effective stress sigma_e = sigma - P
+  if (pb%features%injection == 1) then
+    ! Update fluid pressure
+    call update_P_constant(time, pb)
+    ! Update effective stress
+    sigma = sigma - pb%P
+    ! Set pressure time derivative
+    dP_dt = pb%injection_dP_dt
   endif
 
   if (pb%i_rns_law == 3) then

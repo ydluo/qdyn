@@ -40,7 +40,8 @@ subroutine read_main(pb)
   if (pb%i_rns_law == 3) then
     read(FID_IN, *) pb%cns_params%N_creep
   endif
-  read(FID_IN, *) pb%features%stress_coupling, pb%features%tp, pb%features%localisation
+  read(FID_IN, *) pb%features%stress_coupling, pb%features%tp, &
+                  pb%features%localisation, pb%features%injection
   read(FID_IN, *) pb%ot%ntout, pb%ox%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nwout, &
              pb%ox%nxout_dyn, pb%ox%nwout_dyn, pb%ox%i_ox_seq, pb%ox%i_ox_dyn
   read(FID_IN, *) pb%beta, pb%smu, pb%lam, pb%D, pb%H, pb%ot%v_th
@@ -240,6 +241,26 @@ subroutine read_main(pb)
   endif
   ! End reading TP model parameters
   ! </SEISMIC>
+
+  ! Read input parameters for the fluid injection model.
+  !
+  !   dP_dt:  constant rate of pressure increase [Pa/s]
+  !   P_a:    ambient (constant) fluid pressure [Pa]
+  !
+  if (pb%features%injection == 1) then
+
+    if (pb%features%tp == 1) then
+      write(FID_SCREEN, *) &
+        "The fluid injection module is incompatible with the thermal pressurisation module"
+      stop
+    endif
+
+    allocate (pb%injection%dP_dt(n), pb%injection%P_a(n))
+    do i=1,n
+      read(FID_IN, *) pb%injection%dP_dt(i), pb%injection%P_a(i)
+    end do
+  endif
+  ! End reading fluid injection model parameters
 
   if (pb%mesh%dim == 2 .and. is_MPI_parallel()) then
     call read_mesh_nodes(FID_IN, pb%mesh)
