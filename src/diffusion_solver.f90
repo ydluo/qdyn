@@ -39,14 +39,16 @@ contains
 !===============================================================================
 ! Routine to update the fluid pressure assuming a constant pressurisation rate
 !===============================================================================
-subroutine update_P_constant(time, pb)
+subroutine update_P_constant(time, dP_dt, pb)
 
   type(problem_type), intent(inout) :: pb
   double precision, intent(in) :: time
+  double precision, dimension(pb%mesh%nn) :: dP_dt
 
-  ! Get current time (including RK step!)
-  ! Return time x dP_dt
+  ! Update the fluid pressure using a linear time model
   pb%P = time * pb%injection%dP_dt + pb%injection%P_a
+  ! Update the time derivative accordingly (constant)
+  dP_dt = pb%injection%dP_dt
 
 end subroutine update_P_constant
 

@@ -74,12 +74,10 @@ subroutine derivs(time,yt,dydt,pb)
   ! When fluid injection is requested (incompatible with TP), update P
   ! and calculate the effective stress sigma_e = sigma - P
   if (pb%features%injection == 1) then
-    ! Update fluid pressure
-    call update_P_constant(time, pb)
+    ! Update fluid pressure and its time derivative
+    call update_P_constant(time, dP_dt, pb)
     ! Update effective stress
     sigma = sigma - pb%P
-    ! Set pressure time derivative
-    dP_dt = pb%injection%dP_dt
   endif
 
   if (pb%i_rns_law == 3) then
@@ -150,7 +148,7 @@ subroutine derivs(time,yt,dydt,pb)
     call dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
 
     ! For thermal pressurisation, the partial derivative of tau to P is -mu
-    if (pb%features%tp == 1) then
+    if ((pb%features%tp == 1) .or. (pb%features%injection == 1)) then
       dtau_dP = -friction_mu(v, theta, pb)
     endif
 

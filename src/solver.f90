@@ -72,7 +72,10 @@ subroutine do_bsstep(pb)
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt, dydt, yt_scale
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt_prev
   double precision, dimension(pb%mesh%nn) :: main_var
+  double precision, dimension(pb%mesh%nn) :: dummy
   integer :: ik, neqs
+
+  dummy = 0d0
 
   neqs = pb%neqs * pb%mesh%nn
 
@@ -160,7 +163,7 @@ subroutine do_bsstep(pb)
 
   call unpack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%slip, pb)
   if (pb%features%tp == 1) call update_PT_final(pb%dt_did, pb)
-  if (pb%features%injection == 1) call update_P_constant(pb%time, pb)
+  if (pb%features%injection == 1) call update_P_constant(pb%time, dummy, pb)
 
   ! SEISMIC: retrieve the solution for tau in the case of the CNS model, else
   ! retreive the solution for slip velocity
