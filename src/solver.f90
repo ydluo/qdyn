@@ -65,7 +65,7 @@ subroutine do_bsstep(pb)
   use ode_rk45, only: rkf45_d
   use ode_rk45_2, only: rkf45_d2
   use constants, only: FID_SCREEN, SOLVER_TYPE
-  use diffusion_solver, only: update_PT_final
+  use diffusion_solver, only: update_PT_final, update_P_constant
 
   type(problem_type), intent(inout) :: pb
 
@@ -160,6 +160,7 @@ subroutine do_bsstep(pb)
 
   call unpack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%slip, pb)
   if (pb%features%tp == 1) call update_PT_final(pb%dt_did, pb)
+  if (pb%features%injection == 1) call update_P_constant(pb%time, pb)
 
   ! SEISMIC: retrieve the solution for tau in the case of the CNS model, else
   ! retreive the solution for slip velocity
@@ -189,7 +190,7 @@ subroutine update_field(pb)
 
   ! SEISMIC: obtain P at the previous time step
   P = 0d0
-  if (pb%features%tp == 1) P = pb%P
+  if ((pb%features%tp == 1) .or. (pb%features%injection == 1)) P = pb%P
 
   ! SEISMIC: in case of the CNS model, re-compute the slip velocity with
   ! the final value of tau, sigma, and porosity. Otherwise, use the standard

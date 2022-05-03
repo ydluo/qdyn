@@ -160,7 +160,7 @@ class qdyn:
         }
 
         # Fluid injection model
-        set_dict["SET_DICT_INJECTION"] {
+        set_dict["SET_DICT_INJECTION"] = {
             "DP_DT": 0.0,                       # Fluid injection rate [Pa/s]
             "P_A": 0.0,                         # Ambient fluid pressure (constant) [Pa]
         }
@@ -414,7 +414,7 @@ class qdyn:
                     print("This value should be determined in render_mesh()")
                     exit()
                 input_str += "%u%s N_creep\n" % (N_creep, delimiter)
-            input_str += "%u %u %u%s stress_coupling, thermal press., localisation\n" % (settings["FEAT_STRESS_COUPL"], settings["FEAT_TP"], settings["FEAT_LOCALISATION"], settings["FEAT_INJECTION"], delimiter)
+            input_str += "%u %u %u %u%s stress_coupling, thermal press., localisation, injection\n" % (settings["FEAT_STRESS_COUPL"], settings["FEAT_TP"], settings["FEAT_LOCALISATION"], settings["FEAT_INJECTION"], delimiter)
             input_str += "%u %u %u %u %u %u %u %u %u%s ntout_ot, ntout_ox, nt_coord, nxout, nwout, nxout_DYN, nwout_DYN, ox_seq, ox_DYN\n" % (settings["NTOUT_OT"], settings["NTOUT"], settings["IC"]+1, settings["NXOUT"], settings["NWOUT"], settings["NXOUT_DYN"], settings["NWOUT_DYN"], settings["OX_SEQ"], settings["OX_DYN"], delimiter)
             input_str += "%.15g %.15g %.15g %.15g %.15g %.15g%s beta, smu, lambda, v_th\n" % (settings["VS"], settings["MU"], settings["LAM"], settings["D"], settings["HD"], settings["V_TH"], delimiter)
             input_str += "%.15g %.15g%s Tper, Aper\n" % (settings["TPER"], settings["APER"], delimiter)

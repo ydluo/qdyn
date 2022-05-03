@@ -79,7 +79,7 @@ subroutine derivs(time,yt,dydt,pb)
     ! Update effective stress
     sigma = sigma - pb%P
     ! Set pressure time derivative
-    dP_dt = pb%injection_dP_dt
+    dP_dt = pb%injection%dP_dt
   endif
 
   if (pb%i_rns_law == 3) then
