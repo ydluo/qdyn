@@ -136,7 +136,7 @@ As an alternative to the MATLAB wrapper, users can chose to generate their input
 |     `MU`      | Shear modulus (Pa)                                           |    `30e9`     |
 |     `LAM`     | Elastic modulus lambda for 3D simulations (Pa)               |    `30e9`     |
 |     `VS`      | Shear wave speed (m/s). If `VS=0`, radiation damping is turned off |    `3000`     |
-|    `V_PL`     | Plastic loading velocity (e.g. plate velocity; m/s)          |    `1e-9`     |
+|    `V_PL`     | Plate loading velocity, i.e. long-term slip velocity (m/s)          |    `1e-9`     |
 |      `D`      | Damage level = $1 - \frac{\mathrm{damaged~shear~modulus}}{\mathrm{intact~shear~modulus}}$<br /><br />This feature is currently implemented only for `MESHDIM = 1` and `FINITE = 0` |      `0`      |
 |     `HD`      | If `D > 0`, half-thickness of the fault damage zone (m)<br />If `D = 0`, half-thickness of an elastic slab bisected by a fault<br /><br />This feature is currently implemented only for `MESHDIM = 1` and `FINITE = 0` |      `0`      |
 |      `L`      | If `MESHDIM = 1`, `L` is the fault length (or spatial period; m)<br />If `MESHDIM = 0`, `MU/L` is the spring stiffness |      `1`      |
