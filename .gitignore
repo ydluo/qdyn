@@ -34,3 +34,6 @@ __pycache__/
 
 # Atom files
 .atom-build.json
+
+# VS Code
+.vscode/

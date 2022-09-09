@@ -304,7 +304,9 @@ class qdyn:
 
         if dim == 2:
 
-            print("Warning: 2D faults currently require constant dip angle")
+            # print("Warning: 2D faults currently require constant dip angle")
+            # Generate a default mesh with constant dip angle
+            # This can be modified with compute_mesh_coords
 
             dw = settings["W"] / settings["NW"]
             theta = settings["DIP_W"] * np.pi / 180.0
@@ -321,6 +323,131 @@ class qdyn:
         self.mesh_rendered = True
 
         return True
+
+    def compute_mesh_coords(self, mesh_dict, dip, dw=None):
+        """
+        This function computes the 3D cartesian coordinates of the discretised
+        fault nodes (centres) and overwrites the mesh dictionary. Since the
+        dip can be variable (only along-dip), the mesh coordinates are set iteratively
+        according to the following procedure:
+
+        1. The mesh is constructed row-by-row with contiguous along-strike entries (FFT-axis)
+        2. The base of the fault is located as a depth Z_CORNER
+        3. Starting at the base of the fault, the coordinates of each subsequent row are
+           computed with a fixed dip angle and along-dip spacing. The along-dip spacing does
+           not need to be uniform or continuous
+
+        IMPORTANT: the first element of the dip angle and spacing vectors (`dip` and `dw`)
+        are taken to be at the base of the fault, located at Z_CORNER depth. Moreover, the 
+        use of the FFT requires that the along-strike direction is uniform and co-linear, 
+        which implies that the strike be constant (zero) and that the dip be constant 
+        along-strike. Hence, an initial check is performed to verify that the length of the 
+        input vectors equals zero (scalar value) or equals Nw (number of elements along-dip).
+
+        Adopted convention for the coordinate frame:
+          x = along-strike direction
+          y = perpendicular to x in the horizontal plane
+          z = vertical (negative from the surface down)
+          (w = along-dip direction)
+
+        Adopted convention for the indexation:
+          matrix[i, j] = vector[i*Nx + j]  (0 <= i < Nw, 0 <= j < Nx)
+          vector[n] = matrix[n // Nx, n % Nx]  (0 <= n < Nw * Nx)
+          matrix.shape = (Nw, Nx)
+          vector.shape = (Nw * Nx,)
+          Nw: elements along-dip
+          Nx: elements along-strike
+
+        Starting point of the mesh (first element): 
+        (x, y, z) = ( dx/2, dw[0]*cos(dip[0])/2, Z_CORNER + dw[0]*sin(dip[0])/2 )
+        """
+
+        settings = self.set_dict
+
+        Nx = settings["NX"]
+        Nw = settings["NW"]
+        L = settings["L"]
+        W = settings["W"]
+        Z_corner = settings["Z_CORNER"]
+
+        def check_vectorise(x, name):
+            """ Helper routine to perform sanity checks on `x`, followed by vectorisation """
+
+            # Numeric types to check against
+            types = (
+                int, float, 
+                np.int, np.int16, np.int32, np.int64, 
+                np.float, np.float32, np.float64
+            )
+
+            # Loop over types to check against type(x)
+            scalar = False
+            for t in types:
+                scalar = scalar or isinstance(x, t)
+
+            # If the dip is a scalar: convert to vector
+            if scalar:
+                x = np.ones(Nw, dtype=float) * x
+
+            # Check that the length of the dip vector equals Nw
+            if len(x) != Nw:
+                print(f"The input vector `{name}` needs to be of length `NW` or be a scalar")
+                exit()
+            
+            return x
+
+        dx = L / Nx  # Along-strike spacing
+        if dw is None:
+            dw = W / Nw  # Along-dip spacing
+
+        # Perform sanity checks and create vectors (if needed)
+        dip = check_vectorise(dip, name="dip")
+        dw = check_vectorise(dw, name="dw")
+
+        # Compute trigonometric function of the dip angle
+        dip = np.deg2rad(dip)
+        cd = np.cos(dip) * dw
+        sd = np.sin(dip) * dw
+
+        # Since the strike is constant, x always ranges from dx/2 to L-dx/2
+        x = np.tile(np.linspace(0.5 * dx, L - 0.5 * dx, Nx), Nw)
+
+        """
+        The y and z vectors are the result of a summation, starting at the base
+        Writing out the summation (starting at n = 0), we get:
+
+        y[n] = y[0] + 0.5 * dw[0] * cos(dip[0]) + \sum_{k=1}^{n-1} dw[k] * cos(dip[k]) + 0.5 * dw[n] * cos(dip[n])
+        z[n] = z[0] + 0.5 * dw[0] * sin(dip[0]) + \sum_{k=1}^{n-1} dw[k] * sin(dip[k]) + 0.5 * dw[n] * sin(dip[n])
+
+        Instead of iterating, we use NumPy's cumsum function in a clever way to represent the partial sum
+        """
+
+        ccd = np.hstack([0, 0, np.cumsum(cd[1:-1])])
+        csd = np.hstack([0, 0, np.cumsum(sd[1:-1])])
+
+        y = cd[0] + 0.5 * cd + ccd
+        y[0] = 0.5 * cd[0]
+
+        z = sd[0] + 0.5 * sd + csd
+        z[0] = 0.5 * sd[0]
+        z += Z_corner
+
+        def reshape_ravel(a, shape):
+            return np.tile(a, shape).T.ravel()
+
+        # Tiling (= repeating along-strike)
+        shape = (Nx, 1)
+
+        y = reshape_ravel(y, shape)
+        z = reshape_ravel(z, shape)
+
+        mesh_dict["X"] = x
+        mesh_dict["Y"] = y
+        mesh_dict["Z"] = z
+        mesh_dict["DIP_W"] = reshape_ravel(np.rad2deg(dip), shape)
+        mesh_dict["DW"] = reshape_ravel(dw, shape)
+
+        pass
 
     def write_input(self):
 

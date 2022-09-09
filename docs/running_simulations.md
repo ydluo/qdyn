@@ -232,7 +232,7 @@ QDYN offers various optional simulation features. Set the following parameters t
 |    `N`    | Number of fault elements if `MESHDIM=1`. It must be a power of 2. |     `-1`      |
 |   `NX`    | Number of fault elements along strike if `MESHDIM=2`. It must be a power of 2 if FFT is used along strike (`FFT_TYPE=1` in `constants.f90`) |      `1`      |
 |   `NW`    | Number of fault elements along dip if `MESHDIM=2`. It must be a power of 2 if FFT is used along dip (`FFT_TYPE=2` in `constants.f90`) |     `-1`      |
-| `NPROCS`  | Number of processors if running in parallel and with MPI (only implemented for `MESHDIM=2` and `FFT_TYPE=1`) |      `1`      |
+| `NPROC`  | Number of processors if running in parallel and with MPI (only implemented for `MESHDIM=2` and `FFT_TYPE=1`) |      `1`      |
 | `MPI_PATH`  | Full path to the MPI binary (`which mpirun`). For WSL, this path is likely `/usr/bin/mpirun` |      `/usr/local/bin/mpirun`      |
 |   `DW`    | Along-dip length (m) of each element, from deep to shallow   |      `1`      |
 |  `TMAX`   | Threshold for stopping criterion:<br />Final simulation time (s) when `NSTOP=0`<br />Slip velocity threshold (m/s) when `NSTOP=3` |               |
