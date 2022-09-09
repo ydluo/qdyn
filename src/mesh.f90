@@ -183,6 +183,10 @@ subroutine init_mesh_2D(m)
   ! Number of elements along-strike is the same for all procs (serial or parallel)
   m%nxglob = m%nx
 
+  ! MvdE: is m%dx used elsewhere in the code? For the FFT?
+  allocate(m%dx(m%nx))
+  m%dx = m%Lfault/m%nx
+
   ! Serial mode: point global parameters to local parameters
   if (.not.is_MPI_parallel()) then
     m%xglob => m%x
@@ -203,10 +207,6 @@ subroutine init_mesh_2D(m)
     allocate(nwoffset_glob_perproc(0:NPROCS-1))
     allocate(nnLocal_perproc(0:NPROCS-1))
     allocate(nnoffset_glob_perproc(0:NPROCS-1))
-    
-    ! MvdE: is m%dx used elsewhere in the code? For the FFT?
-    allocate(m%dx(m%nx))
-    m%dx = m%Lfault/m%nx
     
     ! Number of elements along-dip (this proc)
     nwLocal = m%nw
