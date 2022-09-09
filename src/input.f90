@@ -241,7 +241,7 @@ subroutine read_main(pb)
   ! End reading TP model parameters
   ! </SEISMIC>
 
-  if (pb%mesh%dim == 2 .and. is_MPI_parallel()) then
+  if (pb%mesh%dim == 2) then
     call read_mesh_nodes(FID_IN, pb%mesh)
     ! call ot_read_stations(pb%ot)
   endif

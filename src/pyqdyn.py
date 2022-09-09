@@ -474,6 +474,9 @@ class qdyn:
         nwLocal[Nprocs-1] += settings["NW"] % Nprocs
         nnLocal = 0
 
+        # Number of elements along-strike
+        Nx = settings["NX"]
+
         # Number of creep mechanisms
         N_creep = settings["SET_DICT_CNS"]["N_CREEP"]
 
@@ -491,10 +494,10 @@ class qdyn:
 
             # Input specific to 3D faults
             if settings["MESHDIM"] == 2:
-                input_str += "%u %u%s NX, NW\n" % (settings["NX"], nwLocal[iproc], delimiter)
+                input_str += "%u %u%s NX, NW\n" % (Nx, nwLocal[iproc], delimiter)
                 input_str += "%.15g %.15g %.15g%s L, W, Z_CORNER\n" % (settings["L"], settings["W"], settings["Z_CORNER"], delimiter)
                 for i in range(nwLocal[iproc]):
-                    input_str += "%.15g %.15g \n" % (mesh["DW"][i], mesh["DIP_W"][i])
+                    input_str += "%.15g %.15g \n" % (mesh["DW"][i*Nx], mesh["DIP_W"][i*Nx])
             else:
                 input_str += "%u%s NN\n" % (settings["N"], delimiter)
                 input_str += "%.15g %.15g%s L, W\n" % (settings["L"], settings["W"], delimiter)
