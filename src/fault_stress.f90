@@ -48,13 +48,19 @@ module fault_stress
   public :: init_kernel, compute_stress, kernel_type, export_kernel
 
 contains
-! K is stiffness, different in sign with convention in Dieterich (1992)
-! compute shear stress rate from elastic interactions
+
+! K is the stiffness matrix to compute shear stresses induced by elastic interactions:
 !   tau = - K*slip
 !   dtau_dt = - K*slip_velocity
 !
+! K_n is the stiffness to compute normal stress changes as:
+!   sigma = - K_n*slip
+!
+! In QDYN, slip is always positive. 
+! Positive tau is a shear stress increase. 
+! Positive sigma means compressive.
+!
 ! To account for steady plate velocity, the input velocity must be v-vpl:
-!   tau = - K*( slip - Vpl*t )
 !   dtau_dt = - K*( v - Vpl )
 
 !=============================================================
