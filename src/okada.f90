@@ -24,6 +24,33 @@ contains
 !        2 thrust dip-slip
 !       -2 normal dip-slip
 !
+! Notes on sign conventions:
+!
+! The coordinate system is the one dfined by Okada (1992, https://doi.org/10.1785/BSSA0820021018)
+! see also the second figure in https://www.bosai.go.jp/e/dc3d.html :
+!   x = horizontal, along-strike
+!   y = horizontal, normal to strike, pointing in the direction opposite to the fault dip direction
+!   z = vertical, pointing up
+! Note that z < 0 under ground, and the fault dips towards y < 0.
+!
+! The normal vector of the fault (n_f) is defined to point upwards.
+! It is the outward normal vector of the footwall side of the fault.
+! In compute_kernel, sigma is the normal stress change in the direction n_f, thus:
+!   sigma > 0 means dilatant,
+!   sigma < 0 means compressive.
+!
+! The stress drop direction vector (n_dir) is opposite to the direction of slip,
+! where slip is defined as the displacement of the hanging wall relative to the footwall.
+! In other words, n_dir is the direction of relative motion of the footwall.
+! In compute_kernel, tau is the shear stress change in the direction n_dir.
+! Because n_dir is opposite to slip, tau is the shear stress DROP, thus:
+!   tau > 0 is a stress drop (typically inside the slip area)
+!   tau < 0 is a stress increase (typically outside the slip area)
+!
+! In QDYN, slip is always positive, tau = - K*slip and sigma = - K_n*slip.
+!   Because of the minus sign, which is there for analogy with a spring, 
+!   the sign convention of QDYN's tau and sigma is opposite to that of compute_kernel's tau and sigma.
+!
 subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau,sigma,mode)
 
   use constants, only : PI 
@@ -65,8 +92,8 @@ subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau,sigm
       Ustrike = 0d0
       Udip = -1d0
       n_dir(1) = 0d0
-      n_dir(2) = -cos(O_DIP/180d0*PI)
-      n_dir(3) = -sin(O_DIP/180d0*PI)
+      n_dir(2) = -cos(O_DIP/180d0*PI) ! WARNING (JPA): remove minus sign (footwall moves up)
+      n_dir(3) = -sin(O_DIP/180d0*PI) ! WARNING (JPA): remove minus sign
     case default
       stop 'FATAL ERROR in okada.compute_kernel : mode should be +/- 1 (strike-slip) or 2 (thrust)'
   end select
