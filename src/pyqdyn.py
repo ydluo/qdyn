@@ -22,6 +22,7 @@ TODO:
 from __future__ import print_function
 
 import gzip
+from multiprocessing.sharedctypes import Value
 import os
 import pickle
 import re
@@ -34,6 +35,9 @@ from pandas import read_csv
 
 # import antigravity	# xkcd.com/353/
 
+
+class MeshError(Exception):
+    pass
 
 class qdyn:
 
@@ -237,12 +241,11 @@ class qdyn:
             self.set_dict["NW"] = N
 
         if dim == 2:
-            N = self.set_dict["NX"]*self.set_dict["NW"]
+            N = self.set_dict["NX"] * self.set_dict["NW"]
             self.set_dict["N"] = N
 
         if N < 1:
-            print("Number of mesh elements needs to be set before rendering mesh, unless MESHDIM = 0 (spring-block)")
-            exit()
+            raise MeshError("Number of mesh elements needs to be set before rendering mesh, unless MESHDIM = 0 (spring-block)")
 
         mesh_params_general = ("IOT", "IASP", "V_PL", "SIGMA")
         mesh_params_RSF = ("V_0", "TH_0", "A", "B", "DC", "V1", "V2", "MU_SS", "V_SS", "CO")
@@ -272,8 +275,7 @@ class qdyn:
                     param_no = "%s%i" % (param, i)
                     mesh_dict[param_no] = np.ones(N)*settings["SET_DICT_CNS"][param][i]
         else:
-            print("FRICTION_MODEL '%s' not recognised. Supported models: RSF, CNS" % (settings["FRICTION_MODEL"]))
-            exit()
+            raise ValueError("FRICTION_MODEL '%s' not recognised. Supported models: RSF, CNS" % (settings["FRICTION_MODEL"]))
 
         # Populate mesh with localisation parameters
         if settings["FEAT_LOCALISATION"] == 1:
@@ -374,25 +376,24 @@ class qdyn:
             """ Helper routine to perform sanity checks on `x`, followed by vectorisation """
 
             # Numeric types to check against
-            types = (
+            scalar_types = (
                 int, float, 
                 np.int, np.int16, np.int32, np.int64, 
                 np.float, np.float32, np.float64
             )
 
-            # Loop over types to check against type(x)
+            # Loop over scalar types to check against type(x)
             scalar = False
-            for t in types:
+            for t in scalar_types:
                 scalar = scalar or isinstance(x, t)
 
-            # If the dip is a scalar: convert to vector
+            # If the input is a scalar: convert to vector
             if scalar:
                 x = np.ones(Nw, dtype=float) * x
 
-            # Check that the length of the dip vector equals Nw
+            # Check that the length of the vector equals Nw
             if len(x) != Nw:
-                print(f"The input vector `{name}` needs to be of length `NW` or be a scalar")
-                exit()
+                raise MeshError(f"The input vector `{name}` needs to be of length `NW` or be a scalar")
             
             return x
 
@@ -452,8 +453,7 @@ class qdyn:
     def write_input(self):
 
         if self.mesh_rendered == False:
-            print("The mesh has not yet been rendered!")
-            exit()
+            raise MeshError("The mesh has not yet been rendered. Call render_mesh() before write_input()")
 
         # Optionally, output can be created to an external working directory
         # This is still experimental...
@@ -521,9 +521,7 @@ class qdyn:
             if settings["FRICTION_MODEL"] == "CNS":
                 # Raise an error when the default value has not been overwritten
                 if N_creep == -1:
-                    print("The number of creep mechanisms was not set properly!")
-                    print("This value should be determined in render_mesh()")
-                    exit()
+                    raise MeshError("The number of creep mechanisms was not set properly. This value should be determined in render_mesh()")
                 input_str += "%u%s N_creep\n" % (N_creep, delimiter)
             input_str += "%u %u %u%s stress_coupling, thermal press., localisation\n" % (settings["FEAT_STRESS_COUPL"], settings["FEAT_TP"], settings["FEAT_LOCALISATION"], delimiter)
             input_str += "%u %u %u %u %u %u %u %u %u%s ntout_ot, ntout_ox, nt_coord, nxout, nwout, nxout_DYN, nwout_DYN, ox_seq, ox_DYN\n" % (settings["NTOUT_OT"], settings["NTOUT"], settings["IC"]+1, settings["NXOUT"], settings["NWOUT"], settings["NXOUT_DYN"], settings["NWOUT_DYN"], settings["OX_SEQ"], settings["OX_DYN"], delimiter)
@@ -558,8 +556,7 @@ class qdyn:
             # Check if localisation is requested
             if settings["FEAT_LOCALISATION"] == 1:
                 if settings["FRICTION_MODEL"] != "CNS":
-                    print("Localisation is compatible only with the CNS friction model")
-                    exit()
+                    raise ValueError("Localisation is compatible only with the CNS friction model")
                 for i in range(nloc):
                     # Basic parameters (degree of localisation, initial bulk porosity)
                     input_str += "%.15g %.15g " % (mesh["LOCALISATION"][iloc[i]], mesh["PHI_INI_BULK"][iloc[i]])
@@ -592,8 +589,7 @@ class qdyn:
     def run(self, test=False, unit=False):
 
         if not self.qdyn_input_written and unit is False:
-            print("Input file has not yet been written. First call write_input() to render QDyn input file")
-            exit()
+            raise AssertionError("Input file has not yet been written. First call write_input() to render QDyn input file")
 
         # Executable file (including path)
         qdyn_exec = os.path.join(self.qdyn_path, "qdyn")
