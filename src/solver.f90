@@ -4,6 +4,7 @@ module solver
 
   use problem_class, only : problem_type
   use utils, only : pack, unpack
+  use logger, only : log_screen
 
   implicit none
   private
@@ -73,6 +74,7 @@ subroutine do_bsstep(pb)
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt_prev
   double precision, dimension(pb%mesh%nn) :: main_var
   integer :: ik, neqs
+  character(255) :: msg
 
   neqs = pb%neqs * pb%mesh%nn
 
@@ -90,8 +92,8 @@ subroutine do_bsstep(pb)
   ! the (2) Runge-Kutta-Fehlberg method
   if (SOLVER_TYPE == 0) then
     ! Default value of SOLVER_TYPE has not been altered
-    write(FID_SCREEN, *) "The default solver type (0) has not been altered, and no solver was picked"
-    write(FID_SCREEN, *) "Check the input script and define a solver type > 0"
+    call log_screen("The default solver type (0) has not been altered, and no solver was picked")
+    call log_screen("Check the input script and define a solver type > 0")
     stop
 
   elseif (SOLVER_TYPE == 1) then
@@ -125,20 +127,20 @@ subroutine do_bsstep(pb)
     ! Basic error checking. See description of rkf45_d in ode_rk45.f90 for details
     select case (pb%rk45%iflag)
     case (3)
-      write(FID_SCREEN, *) "RK45 error [3]: relative error tolerance too small"
+      call log_screen("RK45 error [3]: relative error tolerance too small")
       call stop_simulation(pb)
     case (4)
       ! write(FID_SCREEN, *) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
       yt = yt_prev
       goto 100
     case (5)
-      write(FID_SCREEN, *) "RK45 error [5]: solution vanished, relative error test is not possible"
+      call log_screen("RK45 error [5]: solution vanished, relative error test is not possible")
       call stop_simulation(pb)
     case (6)
-      write(FID_SCREEN, *) "RK45 error [6]: requested accuracy could not be achieved"
+      call log_screen("RK45 error [6]: requested accuracy could not be achieved")
       call stop_simulation(pb)
     case (8)
-      write(FID_SCREEN, *) "RK45 error [8]: invalid input parameters"
+      call log_screen("RK45 error [8]: invalid input parameters")
       call stop_simulation(pb)
     end select
 
@@ -149,7 +151,8 @@ subroutine do_bsstep(pb)
     call rkf45_d2(derivs, yt, pb%time, pb%dt_max, pb%acc, 0d0, pb)
   else
     ! Unknown solver type
-    write(FID_SCREEN, *) "Solver type", SOLVER_TYPE, "not recognised"
+    write(msg, *) "Solver type", SOLVER_TYPE, "not recognised"
+    call log_screen(msg)
     stop
   endif
 
@@ -223,6 +226,7 @@ subroutine check_stop(pb)
   type(problem_type), intent(inout) :: pb
 
   double precision, save :: vmax_old = 0d0, vmax_older = 0d0
+  character(255) :: msg
 
   if (pb%itstop>0) return
 
@@ -234,7 +238,7 @@ subroutine check_stop(pb)
 
    ! STOP soon after end of slip localization
     case (1)
-      write(FID_SCREEN, *) "Stop criterion 1 (end of slip localization) is deprecated"
+      call log_screen("Stop criterion 1 (end of slip localization) is deprecated")
       stop "Terminating..."
 
    ! STOP 10 ox snapshots after maximum slip rate
@@ -249,7 +253,8 @@ subroutine check_stop(pb)
       if (pb%vmaxglob > pb%tmax) call stop_simulation(pb)
 
     case default
-      write(FID_SCREEN, *) "Stop criterion ", pb%NSTOP, " not implemented"
+      write(msg, *) "Stop criterion ", pb%NSTOP, " not implemented"
+      call log_screen(msg)
       stop "Terminating..."
 
   end select
@@ -280,7 +285,7 @@ subroutine init_rk45(pb)
   double precision, dimension(pb%mesh%nn) :: main_var
   integer :: nwork
 
-  write (FID_SCREEN, *) "Initialising RK45 solver"
+  call log_screen("Initialising RK45 solver")
 
   nwork = 3 + 6*pb%neqs*pb%mesh%nn
   pb%rk45%iflag = -1
@@ -300,22 +305,22 @@ subroutine init_rk45(pb)
 
   select case (pb%rk45%iflag)
   case (3)
-    write(FID_SCREEN, *) "RK45 error [3]: relative error tolerance too small"
+    call log_screen("RK45 error [3]: relative error tolerance too small")
     stop
   case (4)
-    ! write(FID_SCREEN, *) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
+    ! call log_screen("RK45 warning [4]: integration took more than 3000 derivative evaluations")
   case (5)
-    write(FID_SCREEN, *) "RK45 error [5]: solution vanished, relative error test is not possible"
+    call log_screen("RK45 error [5]: solution vanished, relative error test is not possible")
     stop
   case (6)
-    write(FID_SCREEN, *) "RK45 error [6]: requested accuracy could not be achieved"
+    call log_screen("RK45 error [6]: requested accuracy could not be achieved")
     stop
   case (8)
-    write(FID_SCREEN, *) "RK45 error [8]: invalid input parameters"
+    call log_screen("RK45 error [8]: invalid input parameters")
     stop
   end select
 
-write(FID_SCREEN, *) "Finished initialising RK45 solver"
+call log_screen("Finished initialising RK45 solver")
 
 end subroutine init_rk45
 

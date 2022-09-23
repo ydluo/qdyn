@@ -17,6 +17,7 @@ subroutine read_main(pb)
   use problem_class
   use mesh, only : read_mesh_parameters, read_mesh_nodes, mesh_get_size
   use output, only : ot_read_stations
+  use logger, only : log_screen
   use my_mpi, only : my_mpi_tag, is_MPI_parallel
   use constants, only : FAULT_TYPE, SOLVER_TYPE, FID_IN, FID_SCREEN
 
@@ -25,12 +26,12 @@ subroutine read_main(pb)
   double precision, dimension(:), allocatable :: read_buf
   integer :: i, j, n, N_cols, N_creep
 
-  write(FID_SCREEN, *) 'Start reading input ...'
+  call log_screen("Start reading input...")
 
   open(unit=FID_IN, file='qdyn'//trim(my_mpi_tag())//'.in', action='read')
 
   call read_mesh_parameters(FID_IN, pb%mesh)
-  write(FID_SCREEN, *) '   Mesh input complete'
+  call log_screen("   Mesh input complete")
 
   if (pb%mesh%dim==1) read(FID_IN, *) pb%finite
   read(FID_IN, *) pb%itheta_law
@@ -50,7 +51,8 @@ subroutine read_main(pb)
   read(FID_IN, *) pb%DYN_FLAG,pb%DYN_SKIP
   read(FID_IN, *) pb%DYN_M,pb%DYN_th_on,pb%DYN_th_off
   read(FID_IN, *) FAULT_TYPE, SOLVER_TYPE
-  write(FID_SCREEN, *) '  Flags input complete'
+
+  call log_screen("  Flags input complete")
 
   n = mesh_get_size(pb%mesh) ! number of nodes in this processor
   allocate ( pb%tau(n), pb%sigma(n), pb%v(n), pb%theta(n),  &
@@ -166,8 +168,7 @@ subroutine read_main(pb)
   if (pb%features%localisation == 1) then
     ! Raise an error if the CNS model is not selected
     if (pb%i_rns_law /= 3) then
-      write(FID_SCREEN, *) &
-        "Localisation of shear strain is compatible only with the CNS model (i_rns_law = 3)"
+      call log_screen("Localisation of shear strain is compatible only with the CNS model (i_rns_law = 3)")
       stop
     endif
 
@@ -247,7 +248,7 @@ subroutine read_main(pb)
   endif
 
   close(FID_IN)
-  write(FID_SCREEN, *) 'Input complete'
+  call log_screen("Input complete")
 
 end subroutine read_main
 

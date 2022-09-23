@@ -1,6 +1,8 @@
 ! Bulirsch-Stoer ODE solver from Numerical Recipes
 module ode_bs
 
+  use logger, only : log_screen
+
   implicit none
   private
 
@@ -36,6 +38,7 @@ contains
                 yerr(nv),ysav(nv),yseq(nv),errmaxglob
       logical, save :: first = .true.
       logical :: reduct
+      character(255) :: msg
 
       red = 0d0 ! SEISMIC: initialise red to be safe
 
@@ -73,7 +76,8 @@ contains
         xnew=x+h
 !       if (xnew == x) then
         if (x+1.e10*h == x) then  !NOTE: different than original code (above). Why???
-          write(6,*)'dt_did,t= ',h,x
+          write(msg, *) 'dt_did,t= ', h, x
+          call log_screen(msg)
           stop 'step size underflow in bsstep'
 !JPA: make it a safe MPI stop: all procs should stop if at least one has an error
         endif

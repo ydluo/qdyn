@@ -11,6 +11,7 @@ module friction
   !   All friction properties can be spatially non-uniform
 
   use problem_class, only : problem_type
+  use logger, only : log_screen
 
   implicit none
   private
@@ -68,7 +69,7 @@ function friction_mu(v,theta,pb) result(mu)
     mu = pb%a*asinh( v/(2*pb%v_star)*exp( (pb%mu_star + pb%b*log(theta/pb%theta_star))/pb%a ) )
 
   case (3) ! SEISMIC: CNS model
-    write (6,*) "friction.f90::friction_mu is deprecated for the CNS model"
+    call log_screen("friction.f90::friction_mu is deprecated for the CNS model")
     stop
 
 ! new friction law:
@@ -147,11 +148,11 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
     dmu_dtheta = dmu_dv * (pb%b*v) / (pb%a*theta)
 
   case(3) ! SEISMIC: CNS model
-    write (6,*) "friction.f90::dmu_dv_dtheta is deprecated for the CNS model"
+    call log_screen("friction.f90::dmu_dv_dtheta is deprecated for the CNS model")
     stop
 
   case default
-    write (6,*) "dmu_dv_dtheta: unkown friction law type"
+    call log_screen("dmu_dv_dtheta: unkown friction law type")
     stop
   end select
 

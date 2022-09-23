@@ -10,9 +10,11 @@ program main
   use my_mpi, only: init_mpi
   use derivs_all
   use unittests, only: init_tests, kernel_export
+  use logger, only : log_screen
 
   type(problem_type), pointer :: pb
   character(len=32) :: arg = "none"
+  character(len=255) :: msg
   allocate(pb)
 
   odepb => pb
@@ -30,7 +32,8 @@ program main
       call kernel_export(pb)
       stop
     else
-      write(6,*) "Argument not recognised: ", arg
+      write(msg, *) "Argument not recognised: ", arg
+      call log_screen(msg)
       stop
     endif
   endif
