@@ -497,7 +497,8 @@ class qdyn:
                 input_str += "%u %u%s NX, NW\n" % (Nx, nwLocal[iproc], delimiter)
                 input_str += "%.15g %.15g %.15g%s L, W, Z_CORNER\n" % (settings["L"], settings["W"], settings["Z_CORNER"], delimiter)
                 for i in range(nwLocal[iproc]):
-                    input_str += "%.15g %.15g \n" % (mesh["DW"][i*Nx], mesh["DIP_W"][i*Nx])
+                    n = (i + np.sum(nwLocal[:iproc])) * Nx
+                    input_str += "%.15g %.15g \n" % (mesh["DW"][n], mesh["DIP_W"][n])
             else:
                 input_str += "%u%s NN\n" % (settings["N"], delimiter)
                 input_str += "%.15g %.15g%s L, W\n" % (settings["L"], settings["W"], delimiter)

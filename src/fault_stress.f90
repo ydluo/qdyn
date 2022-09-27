@@ -300,6 +300,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
     nn = (n-1)*m%nx+1
     ! note that if serial (no MPI) the glob arrays point to the local arrays
     y_src = m%yglob(nn)
+    ! MvdE: z, dip, and dw are constant for each row. Reduce size from nn to just n
     z_src = m%zglob(nn)
     dip_src = m%dipglob(nn)
     dw_src = m%dwglob(n)
