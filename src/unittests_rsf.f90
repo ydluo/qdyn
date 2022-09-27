@@ -54,7 +54,7 @@ subroutine test_rsf_friction(pb)
   double precision, dimension(pb%mesh%nn) :: dtheta, mu, mu2
   double precision, dimension(pb%mesh%nn) :: dmu_dv, dmu_dv2
   double precision, dimension(pb%mesh%nn) :: dmu_dtheta, dmu_dtheta2
-  double precision, dimension(pb%mesh%nn) :: x, zero, mu_truth, dmu_truth
+  double precision, dimension(pb%mesh%nn) :: zero, mu_truth, dmu_truth
   double precision :: atol, rtol, randno
   integer :: num_tests, num_passed, i
   logical :: pass, subpass1, subpass2, subpass3
@@ -83,12 +83,12 @@ subroutine test_rsf_friction(pb)
   ! Steady-state tests: ensure that dtheta/dt = 0 for theta = Dc/V
   ! Subtest ageing law
   pb%itheta_law = 1
-  call dtheta_dt(pb%v, x, x, pb%theta, x, dtheta, x, pb)
+  call dtheta_dt(pb%v, pb%theta, dtheta, pb)
   subpass1 = abs_assert_close(dtheta, zero, atol)
 
   ! Subtest slip law
   pb%itheta_law = 2
-  call dtheta_dt(pb%v, x, x, pb%theta, x, dtheta, x, pb)
+  call dtheta_dt(pb%v, pb%theta, dtheta, pb)
   subpass2 = abs_assert_close(dtheta, zero, atol)
 
   ! Collect results of subtests and print to screen

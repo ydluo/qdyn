@@ -39,18 +39,25 @@ subroutine derivs(time,yt,dydt,pb)
   double precision, dimension(pb%mesh%nn) :: main_var, dmain_var, slip, dslip
   double precision, dimension(pb%mesh%nn) :: dsigma_dt, dtau_dt, dth_dt, dth2_dt
   double precision, dimension(pb%mesh%nn) :: dmu_dv, dmu_dtheta
-  double precision, dimension(pb%mesh%nn) :: tau_y, dP_dt, dtau_dP
+  double precision, dimension(pb%mesh%nn) :: tau_y, dP_dt, dtau_dsigma
   double precision, dimension(pb%mesh%nn) :: dummy1, dummy2
   double precision :: dtau_per, dt
+
+  logical :: vary_sigma = .false.
 
   ! SEISMIC: initialise vectors to zero. If unitialised, each compiler
   ! may produce different results depending on its conventions
   tau = 0d0
+  dtau_dt = 0d0
+  dsigma_dt = 0d0
   dP_dt = 0d0
-  dtau_dP = 0d0
+  dtau_dsigma = 0d0
   dummy1 = 0d0
   dummy2 = 1d0
   tau_y = 0d0
+
+  ! Check if the normal stress is updated
+  vary_sigma = (pb%features%tp == 1) .or. (pb%features%stress_coupling == 1)
 
   call unpack(yt, theta, main_var, sigma, theta2, slip, pb)
 
@@ -83,19 +90,33 @@ subroutine derivs(time,yt,dydt,pb)
     ! The subroutine below calculates the slip velocity, time-derivatives of
     ! the porosity (theta), and partial derivatives required for radiation
     ! damping. These operations are combined into one subroutine for efficiency
-    call CNS_derivs(v, dth_dt, dth2_dt, dmu_dv, dmu_dtheta, dtau_dP, tau, &
+    call CNS_derivs(v, dth_dt, dth2_dt, dmu_dv, dmu_dtheta, dtau_dsigma, tau, &
                     sigma, theta, theta2, pb)
   else
     ! SEISMIC: for the classical rate-and-state model formulation, the slip
     ! velocity is stored in yt(2::pb%neqs), and tau is not used (set to zero)
     v = main_var
 
-    if (pb%features%tp == 1) then
-      tau = friction_mu(v, theta, pb)*sigma
+    if (vary_sigma) then
+      ! Partial derivative of shear stress to effective normal stress is the friction
+      dtau_dsigma = friction_mu(v, theta, pb)
+
+      ! Check that dtau/dsigma is finite (not guaranteed during intermediate solver steps)
+      ! If NaN: approximate by shear stress / normal stress in previous step
+      if (any(isnan(dtau_dsigma))) then
+        dtau_dsigma = pb%tau / sigma
+      endif
+
+      ! When pb%features%tp == 1 then vary_sigma == .true. by definition
+      if (pb%features%tp == 1) then
+        ! The absolute shear stress = friction * effective normal stress
+        tau = dtau_dsigma * sigma
+      endif
     endif
 
     ! SEISMIC: calculate time-derivative of state variable (theta)
-    call dtheta_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
+    call dtheta_dt(v, theta, dth_dt, pb)
+
   endif
 
   ! compute shear stress rate from elastic interactions, for 0D, 1D & 2D
@@ -131,24 +152,19 @@ subroutine derivs(time,yt,dydt,pb)
     ! dtau/dt = ( k[Vlp - Vs] - eta*dV/dtheta * dtheta/dt)/(1 + eta*dV/dtau)
     ! See [VdE], Section 3.2
     dmain_var = (dtau_dt + dtau_per - pb%zimpedance* &
-    (dmu_dtheta*dth_dt + dtau_dP*dP_dt)) /(1 + pb%zimpedance*dmu_dv)
+    (dmu_dtheta*dth_dt + dtau_dsigma*(dsigma_dt - dP_dt))) /(1 + pb%zimpedance*dmu_dv)
   else
     ! SEISMIC: the rate-and-state formulation computes the the time-derivative
     ! of velocity, rather than stress, so the partial derivatives of friction
     ! to velocity and theta are required
     call dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
 
-    ! For thermal pressurisation, the partial derivative of tau to P is -mu
-    if (pb%features%tp == 1) then
-      dtau_dP = -friction_mu(v, theta, pb)
-    endif
-
     ! Time derivative of the elastic equilibrium equation
     !  dtau_load/dt + dtau_elastostatic/dt -impedance*dv/dt = sigma*( dmu/dv*dv/dt + dmu/dtheta*dtheta/dt )
     ! Rearranged in the following form:
     !  dv/dt = ( dtau_load/dt + dtau_elastostatic/dt - sigma*dmu/dtheta*dtheta/dt )/( sigma*dmu/dv + impedance )
 
-    dmain_var = ( dtau_per + dtau_dt - sigma*dmu_dtheta*dth_dt - dtau_dP*dP_dt ) &
+    dmain_var = ( dtau_per + dtau_dt - sigma*dmu_dtheta*dth_dt - dtau_dsigma*(dsigma_dt - dP_dt) ) &
                      / ( sigma*dmu_dv + pb%zimpedance )
    endif
 
