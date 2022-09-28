@@ -11,6 +11,7 @@ module friction
   !   All friction properties can be spatially non-uniform
 
   use problem_class, only : problem_type
+  use logger, only : log_screen
 
   implicit none
   private
@@ -68,7 +69,7 @@ function friction_mu(v,theta,pb) result(mu)
     mu = pb%a*asinh( v/(2*pb%v_star)*exp( (pb%mu_star + pb%b*log(theta/pb%theta_star))/pb%a ) )
 
   case (3) ! SEISMIC: CNS model
-    write (6,*) "friction.f90::friction_mu is deprecated for the CNS model"
+    call log_screen("friction.f90::friction_mu is deprecated for the CNS model")
     stop
 
 ! new friction law:
@@ -83,43 +84,32 @@ function friction_mu(v,theta,pb) result(mu)
 end function friction_mu
 
 !--------------------------------------------------------------------------------------
-subroutine dtheta_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
-
-  use friction_cns, only : dphi_dt
+subroutine dtheta_dt(v, theta, dth_dt, pb)
 
   type(problem_type), intent(in) :: pb
-  double precision, dimension(pb%mesh%nn), intent(in) :: v, tau, sigma
-  double precision, dimension(pb%mesh%nn), intent(in) :: theta, theta2
-  double precision, dimension(pb%mesh%nn) :: dth_dt, dth2_dt, omega
+  double precision, dimension(pb%mesh%nn), intent(in) :: v, theta
+  double precision, dimension(pb%mesh%nn) :: dth_dt, omega
 
-  ! SEISMIC: If the CNS model is selected
-  if (pb%i_rns_law == 3) then
-    call dphi_dt(v,tau,sigma,theta,theta2,dth_dt,dth2_dt,pb)
-  ! SEISMIC: Else, the RSF model is selected (with various theta laws)
-  else
+  omega = v * theta / pb%dc
+  select case (pb%itheta_law)
 
-    omega = v * theta / pb%dc
-    select case (pb%itheta_law)
+  case(0) ! "aging" in the no-healing approximation
+    dth_dt = -omega
 
-    case(0) ! "aging" in the no-healing approximation
-      dth_dt = -omega
+  case(1) ! "aging" law
+    dth_dt = 1.d0-omega
 
-    case(1) ! "aging" law
-      dth_dt = 1.d0-omega
+  case(2) ! "slip" law
+    dth_dt = -omega*log(omega)
 
-    case(2) ! "slip" law
-      dth_dt = -omega*log(omega)
+! new friction law:
+!  case(xxx)
+!    implement here your state evolution law: dtheta/dt = g(v,theta)
+!    dth_dt = ...
 
-  ! new friction law:
-  !  case(xxx)
-  !    implement here your state evolution law: dtheta/dt = g(v,theta)
-  !    dth_dt = ...
-
-    case default
-      stop 'dtheta_dt: unknown state evolution law type'
-    end select
-
-  endif
+  case default
+    stop 'dtheta_dt: unknown state evolution law type'
+  end select
 
 end subroutine dtheta_dt
 
@@ -147,11 +137,11 @@ subroutine dmu_dv_dtheta(dmu_dv,dmu_dtheta,v,theta,pb)
     dmu_dtheta = dmu_dv * (pb%b*v) / (pb%a*theta)
 
   case(3) ! SEISMIC: CNS model
-    write (6,*) "friction.f90::dmu_dv_dtheta is deprecated for the CNS model"
+    call log_screen("friction.f90::dmu_dv_dtheta is deprecated for the CNS model")
     stop
 
   case default
-    write (6,*) "dmu_dv_dtheta: unkown friction law type"
+    call log_screen("dmu_dv_dtheta: unkown friction law type")
     stop
   end select
 

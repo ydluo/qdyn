@@ -86,7 +86,7 @@ end subroutine dphi_dt
 ! SEISMIC: the subroutine below was written to optimise/reduce function calls,
 ! and to improve code handling (less code duplication, hopefully fewer bugs).
 !===============================================================================
-subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dv_dP, &
+subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dv_dsigma, &
                         tau, sigma, phi, phi2, pb )
 
   use constants, only : PI
@@ -97,7 +97,7 @@ subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dv_dP, &
 
   ! Output variables
   double precision, dimension(pb%mesh%nn) :: v, dth_dt, dth2_dt
-  double precision, dimension(pb%mesh%nn) :: dv_dtau, dv_dphi, dv_dP
+  double precision, dimension(pb%mesh%nn) :: dv_dtau, dv_dphi, dv_dsigma
 
   ! Internal variables
   double precision, dimension(pb%mesh%nn) :: tan_psi, denom, dummy_var
@@ -156,9 +156,9 @@ subroutine CNS_derivs(  v, dth_dt, dth2_dt, dv_dtau, dv_dphi, dv_dP, &
   dv_dphi = L_sb*(dv_dphi_creep + &
             y_dot_gr*2*pb%cns_params%H*pb%cns_params%a_tilde*(sigma**2 + tau**2)*denom**2)
 
-  ! When thermal pressurisation is requested, update dV_dP
+  ! When thermal pressurisation is requested, update dV_dsigma
   if (pb%features%tp == 1) then
-    dv_dP = pb%cns_params%L*y_dot_gr*tau*(1 + tan_psi**2)*pb%cns_params%a_tilde*denom**2
+    dv_dsigma = -pb%cns_params%L*y_dot_gr*tau*(1 + tan_psi**2)*pb%cns_params%a_tilde*denom**2
   endif
 
 end subroutine CNS_derivs

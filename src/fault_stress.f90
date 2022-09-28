@@ -3,6 +3,7 @@
 module fault_stress
 
   use fftsg, only : OouraFFT_type
+  use logger, only : log_screen
 
   implicit none
   private
@@ -79,12 +80,12 @@ subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt,test_mode)
   ! NOTE: i_sigma_cpl is redundant (now stored as pb%features%sigma_coupling)
   ! and should be removed
 
-  if (.not. test_mode) write(6,*) 'Intializing kernel: ...'
+  if (.not. test_mode) call log_screen("Intializing kernel: ...")
 
   if (m%dim==2) then
     k%kind =3+FFT_TYPE
     if (m%nx < 4) then
-      write(6,*) 'nx < 4, FFT disabled'
+      call log_screen("nx < 4, FFT disabled")
       k%kind = 3
     endif
   else
@@ -110,7 +111,7 @@ subroutine init_kernel(lambda,mu,m,k,D,H,i_sigma_cpl,k2_opt,test_mode)
     call init_kernel_3D_fft2d(k%k3f2,lambda,mu,m) ! 3D with 2DFFT
   end select
 
-  if (.not. test_mode) write(6,*) 'Kernel intialized'
+  if (.not. test_mode) call log_screen("Kernel intialized")
 
 end subroutine init_kernel
 
@@ -120,7 +121,7 @@ subroutine init_kernel_1D(k,mu,L)
   double precision, intent(out) :: k
   double precision, intent(in) :: mu,L
 
-  write(6,*) 'Single degree-of-freedom spring-block system'
+  call log_screen("Single degree-of-freedom spring-block system")
   k = mu/L
 
 end subroutine init_kernel_1D
@@ -142,6 +143,7 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt,test_mode)
   integer, intent(in) :: k2_opt
   integer :: i
   logical :: test_mode
+  character(255) :: msg
 
   if (k2_opt<2) then
     k%finite = (k2_opt==1)
@@ -157,7 +159,7 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt,test_mode)
   allocate (k%kernel(k%nnfft))
   k%kernel = 0d0
 
-  if (.not. test_mode) write(6,*) 'FFT applied'
+  if (.not. test_mode) call log_screen("FFT applied")
 
  ! FINITE = 0
   if (.not. k%finite) then
@@ -216,7 +218,10 @@ subroutine init_kernel_2D(k,mu,m,D,H, k2_opt,test_mode)
   else
 
    ! Read the term in brackets of equation 40 from kernel file pre-computed by src/TabKernelFiniteFlt.m
-    if (.not. test_mode) write(6,*) 'Reading kernel ',SRC_PATH,'/kernel_I.tab'
+    if (.not. test_mode) then
+      write(msg, *) "Reading kernel", SRC_PATH, "/kernel_I.tab"
+      call log_screen(msg)
+    endif
     open(57,file=SRC_PATH//'/kernel_I.tab')
     do i=1,k%nnfft/2-1
       read(57,*,end=100) k%kernel(2*i+1) ! store in odd indices of kernel FFT
@@ -282,10 +287,8 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   double precision, allocatable :: tmp(:), tmp_n(:)   ! for FFT
   integer :: i, j, ii, jj, n, nn, IRET, iproc, NPROCS
 
-  if (is_mpi_master()) then
-    write(6,*) 'Generating 3D kernel...'
-    write(6,*) 'OouraFFT applied along-strike'
-  endif
+  call log_screen("Generating 3D kernel...")
+  call log_screen("OouraFFT applied along-strike")
 
   k%nx = m%nx
   k%nxfft = 2*m%nx ! fft convolution requires twice longer array
@@ -303,6 +306,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
     nn = (n-1)*m%nx+1
     ! note that if serial (no MPI) the glob arrays point to the local arrays
     y_src = m%yglob(nn)
+    ! MvdE: z, dip, and dw are constant for each row. Reduce size from nn to just n
     z_src = m%zglob(nn)
     dip_src = m%dipglob(nn)
     dw_src = m%dwglob(n)
@@ -374,16 +378,20 @@ subroutine init_kernel_3D_fft2d(k,lambda,mu,m)
   double precision :: Im, Ip, Jm, Jp, ImJp, ImJm, IpJp, IpJm, T1, T2, T3, T4, koef
   double precision, parameter :: PI = 3.14159265358979d0
   integer :: i, j
+  character(255) :: msg
 
-  write(6,*) 'Generating 3D kernel...'
-  write(6,*) 'Ooura FFT2 applied for fault plane'
+  call log_screen("Generating 3D kernel...")
+  call log_screen("Ooura FFT2 applied for fault plane")
+
   k%nw = m%nw
   k%nx = m%nx
   k%nwfft = 2 * m%nw ! fft convolution requires twice longer array
   k%nxfft = 2 * m%nx
   allocate(k%kernel(k%nxfft,k%nwfft))
   allocate(Kij(k%nxfft,k%nwfft))
-  write(6,*) 'Allocated for FFT2 Dimensions of ', k%nxfft, ' x ', k%nwfft
+
+  write(msg, *) "Allocated for FFT2 Dimensions of ", k%nxfft, "x", k%nwfft
+  call log_screen(msg)
 
   koef = 2.0d0 * (lambda + mu) / (lambda + 2.0d0*mu)
 
@@ -440,9 +448,10 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling,unstructured)
 
   double precision :: tau, sigma_n
   integer :: i, j, ii, IRET
+  character(255) :: msg
 
-  write(6,*) 'Generating 3D kernel...'
-  write(6,*) 'NO FFT applied'
+  call log_screen("Generating 3D kernel...")
+  call log_screen("No FFT applied")
 
  !kernel(i,j): response at i of source at j
 
@@ -457,7 +466,8 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling,unstructured)
                m%x(i),m%y(i),m%z(i),m%dip(i), &
                IRET,tau,sigma_n,FAULT_TYPE)
         if (IRET /= 0) then
-          write(6,*) '!!WARNING!! : Kernel Singular, set value to 0,(i,j)',i,j
+          write(msg, *) "!!WARNING!! : Kernel Singular, set value to 0,(i,j)", i, j
+          call log_screen(msg)
           tau = 0d0
           sigma_n = 0d0
         end if
@@ -478,7 +488,8 @@ subroutine init_kernel_3D(k,lambda,mu,m,sigma_coupling,unstructured)
                m%x(ii),m%y(ii),m%z(ii),m%dip(ii), &
                IRET,tau,sigma_n,FAULT_TYPE)
         if (IRET /= 0) then
-          write(6,*) '!!WARNING!! : Kernel Singular, set value to 0,(i,j)',i,j
+          write(msg, *) "!!WARNING!! : Kernel Singular, set value to 0,(i,j)", i, j
+          call log_screen(msg)
           tau = 0d0
           sigma_n = 0d0
         end if
@@ -851,7 +862,7 @@ subroutine export_kernel(lambda, mu, m, k, D, H, i_sigma_cpl, k2_opt)
   double precision, intent(in) :: lambda, mu, D, H
   integer, intent(in) :: i_sigma_cpl, k2_opt
   integer :: i
-  character(len=200) :: filename, dir
+  character(len=200) :: filename, dir, msg
 
   dir = SRC_PATH//"/../test/kernels/"
 
@@ -870,7 +881,8 @@ subroutine export_kernel(lambda, mu, m, k, D, H, i_sigma_cpl, k2_opt)
       filename = "kernel_infinite_symmetric.dat"
     endif
 
-    write(6,*) "Exporting 2D kernel to", filename
+    write(msg, *) "Exporting 2D kernel to", filename
+    call log_screen(msg)
     open(unit=99, file=trim(dir)//filename, action="write", status="replace")
     do i = 1, k%k2f%nnfft
       write(99, fmt="(e24.16)") k%k2f%kernel(i)
@@ -878,7 +890,7 @@ subroutine export_kernel(lambda, mu, m, k, D, H, i_sigma_cpl, k2_opt)
     close(99)
 
   case default
-    write(6,*) "Kernel export only supported for 2D kernels"
+    call log_screen("Kernel export only supported for 2D kernels")
   end select
 
 end subroutine export_kernel

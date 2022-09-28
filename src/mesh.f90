@@ -1,5 +1,7 @@
 module mesh
 
+  use logger, only : log_screen
+
   implicit none
   private
 
@@ -61,7 +63,8 @@ subroutine read_mesh_parameters(iin,m)
     end do
 
   case default
-    write(6,*) 'mesh dimension should be 0, 1 or 2'
+    call log_screen("mesh dimension should be 0, 1 or 2")
+    stop
 
   end select
 
@@ -96,7 +99,7 @@ subroutine init_mesh(m)
 
   type(mesh_type), intent(inout) :: m
 
-  write(6,*) 'Initializing mesh ...'
+  call log_screen("Initializing mesh...")
 
   m%nnglob = m%nn
 
@@ -114,7 +117,7 @@ subroutine init_mesh_0D(m)
 
   type(mesh_type), intent(inout) :: m
 
-  write(6,*) 'Spring-block System'
+  call log_screen("Spring-block System")
   allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn))
   allocate(m%dx(1), m%dw(1))
   m%nx = 1
@@ -137,7 +140,7 @@ subroutine init_mesh_1D(m)
 
   integer :: i
 
-  write(6,*) '1D fault, uniform grid'
+  call log_screen("1D fault, uniform grid")
   allocate(m%dx(m%nn), m%dw(1))
   m%nx = m%nn
   m%nw = 1
@@ -175,89 +178,73 @@ subroutine init_mesh_2D(m)
   use my_mpi, only: is_MPI_master
 
   type(mesh_type), intent(inout) :: m
-
-  double precision :: cd, sd, cd0, sd0
-  integer :: i, j, j0
   integer :: iproc, nwLocal, nnLocal, nwGlobal, nnGlobal, NPROCS
   integer, allocatable :: nwLocal_perproc(:), nwoffset_glob_perproc(:)
 
-  write(6,*) '2D fault, uniform grid along-strike'
+  call log_screen("2D fault, uniform grid along-strike")
 
+  ! Number of elements along-strike is the same for all procs (serial or parallel)
+  m%nxglob = m%nx
+
+  ! MvdE: is m%dx used elsewhere in the code? For the FFT?
   allocate(m%dx(m%nx))
-
-if (.not.is_MPI_parallel()) then
-
   m%dx = m%Lfault/m%nx
-  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%dip(m%nn))
 
-  ! set x, y, z, dip of first row
-  cd = cos(m%DIP_W(1)/180d0*PI)
-  sd = sin(m%DIP_W(1)/180d0*PI)
-  do j = 1,m%nx
-    m%x(j) = 0d0+(0.5d0+dble(j-1))*m%dx(1)
-  end do
-  m%y(1:m%nx) = 0d0+0.5d0*m%dw(1)*cd
-  m%z(1:m%nx) = m%Z_CORNER+0.5d0*m%dw(1)*sd
-  m%dip(1:m%nx) = m%DIP_W(1)
-
-  ! set x, y, z, dip of row 2 to nw
-  do i = 2,m%nw
-    cd0 = cd
-    sd0 = sd
-    cd = cos(m%DIP_W(i)/180d0*PI)
-    sd = sin(m%DIP_W(i)/180d0*PI)
-    j0 = (i-1)*m%nx
-    m%x(j0+1:j0+m%nx) = m%x(1:m%nx)
-    m%y(j0+1:j0+m%nx) = m%y(j0) + 0.5d0*m%dw(i-1)*cd0 + 0.5d0*m%dw(i)*cd
-    m%z(j0+1:j0+m%nx) = m%z(j0) + 0.5d0*m%dw(i-1)*sd0 + 0.5d0*m%dw(i)*sd
-    m%dip(j0+1:j0+m%nx) = m%DIP_W(i)
-  end do
-
+  ! Serial mode: point global parameters to local parameters
+  if (.not.is_MPI_parallel()) then
     m%xglob => m%x
     m%yglob => m%y
     m%zglob => m%z
     m%dipglob => m%dip
     m%dwglob => m%dw
     m%nwglob = m%nw
-    m%nxglob = m%nx
+    
 
-else
-! If MPI parallel, the mesh for each processor has been already read
-! from qdynxxx.in and initialized in input.f90
-! Here we gather the whole fault to compute the kernel
-    m%dx = m%Lfault/m%nx
+  ! Parallel mode: gather mesh node locations for computing the kernel
+  else
+
     NPROCS = my_mpi_NPROCS()
-!PG, for debugging:
-    nwLocal = m%nw
-    ! write(6,*) 'iproc,nwLocal:',my_mpi_tag(),nwLocal
-    allocate(nwLocal_perproc(0:NPROCS-1))
-    call gather_alli(nwLocal,nwLocal_perproc)
-    allocate(nwoffset_glob_perproc(0:NPROCS-1))
-    do iproc=0,NPROCS-1
-      nwoffset_glob_perproc(iproc)=sum(nwLocal_perproc(0:iproc))-nwLocal_perproc(iproc)
-    enddo
-    nwGlobal=sum(nwLocal_perproc)
-    m%nxglob = m%nx
-    m%nwglob = nwGlobal
-    ! write(6,*) 'iproc,nwGlobal:',my_mpi_tag(),nwGlobal
 
-    nnLocal= m%nx*nwLocal
+    ! Allocations
+    allocate(nwLocal_perproc(0:NPROCS-1))
+    allocate(nwoffset_glob_perproc(0:NPROCS-1))
     allocate(nnLocal_perproc(0:NPROCS-1))
-    nnLocal_perproc = nwLocal_perproc * m%nx
     allocate(nnoffset_glob_perproc(0:NPROCS-1))
+    
+    ! Number of elements along-dip (this proc)
+    nwLocal = m%nw
+    ! Collecte nw from other nodes
+    call gather_alli(nwLocal, nwLocal_perproc)
+    
+    ! Get offsets for all nodes (in terms of nw)
+    do iproc = 0, NPROCS - 1
+      nwoffset_glob_perproc(iproc) = sum(nwLocal_perproc(0:iproc)) - nwLocal_perproc(iproc)
+    enddo
+
+    ! Global number of elements along-dip
+    nwGlobal = sum(nwLocal_perproc)
+    m%nwglob = nwGlobal
+
+    ! Local number of nodes
+    nnLocal = m%nx * nwLocal
+    ! Number of nodes for local to all procs
+    nnLocal_perproc = nwLocal_perproc * m%nx
+    ! Offsets for all procs
     nnoffset_glob_perproc = nwoffset_glob_perproc * m%nx
-    nnGlobal=nwGlobal*m%nx
+    ! Global number of nodes
+    nnGlobal = nwGlobal * m%nx
     m%nnglob = nnGlobal
 
-   ! global mesh for computing the kernel and for outputs
+   ! Allocate global mesh for computing the kernel and for outputs
     allocate(m%xglob(nnGlobal),m%yglob(nnGlobal),&
              m%zglob(nnGlobal),m%dwglob(nwGlobal),m%dipglob(nnGlobal))
 
-    call gather_allvdouble(m%x, nnLocal,m%xglob,nnLocal_perproc,nnoffset_glob_perproc,nnGlobal)
-    call gather_allvdouble(m%y, nnLocal,m%yglob,nnLocal_perproc,nnoffset_glob_perproc,nnGlobal)
-    call gather_allvdouble(m%z, nnLocal,m%zglob,nnLocal_perproc,nnoffset_glob_perproc,nnGlobal)
-    call gather_allvdouble(m%dip, nnLocal,m%dipglob,nnLocal_perproc,nnoffset_glob_perproc,nnGlobal)
-    call gather_allvdouble(m%dw, nwLocal,m%dwglob,nwLocal_perproc,nwoffset_glob_perproc,nwGlobal)
+    ! Gather mesh nodes
+    call gather_allvdouble(m%x,   nnLocal, m%xglob,   nnLocal_perproc, nnoffset_glob_perproc, nnGlobal)
+    call gather_allvdouble(m%y,   nnLocal, m%yglob,   nnLocal_perproc, nnoffset_glob_perproc, nnGlobal)
+    call gather_allvdouble(m%z,   nnLocal, m%zglob,   nnLocal_perproc, nnoffset_glob_perproc, nnGlobal)
+    call gather_allvdouble(m%dip, nnLocal, m%dipglob, nnLocal_perproc, nnoffset_glob_perproc, nnGlobal)
+    call gather_allvdouble(m%dw,  nwLocal, m%dwglob,  nwLocal_perproc, nwoffset_glob_perproc, nwGlobal)
 
 endif
 

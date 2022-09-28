@@ -22,6 +22,7 @@ TODO:
 from __future__ import print_function
 
 import gzip
+from multiprocessing.sharedctypes import Value
 import os
 import pickle
 import re
@@ -36,6 +37,9 @@ from pandas import read_csv
 
 __version__ = "2.4.0"
 
+
+class MeshError(Exception):
+    pass
 
 class qdyn:
 
@@ -239,12 +243,11 @@ class qdyn:
             self.set_dict["NW"] = N
 
         if dim == 2:
-            N = self.set_dict["NX"]*self.set_dict["NW"]
+            N = self.set_dict["NX"] * self.set_dict["NW"]
             self.set_dict["N"] = N
 
         if N < 1:
-            print("Number of mesh elements needs to be set before rendering mesh, unless MESHDIM = 0 (spring-block)")
-            exit()
+            raise MeshError("Number of mesh elements needs to be set before rendering mesh, unless MESHDIM = 0 (spring-block)")
 
         mesh_params_general = ("IOT", "IASP", "V_PL", "SIGMA")
         mesh_params_RSF = ("V_0", "TH_0", "A", "B", "DC", "V1", "V2", "MU_SS", "V_SS", "CO")
@@ -274,8 +277,7 @@ class qdyn:
                     param_no = "%s%i" % (param, i)
                     mesh_dict[param_no] = np.ones(N)*settings["SET_DICT_CNS"][param][i]
         else:
-            print("FRICTION_MODEL '%s' not recognised. Supported models: RSF, CNS" % (settings["FRICTION_MODEL"]))
-            exit()
+            raise ValueError("FRICTION_MODEL '%s' not recognised. Supported models: RSF, CNS" % (settings["FRICTION_MODEL"]))
 
         # Populate mesh with localisation parameters
         if settings["FEAT_LOCALISATION"] == 1:
@@ -306,7 +308,9 @@ class qdyn:
 
         if dim == 2:
 
-            print("Warning: 2D faults currently require constant dip angle")
+            # print("Warning: 2D faults currently require constant dip angle")
+            # Generate a default mesh with constant dip angle
+            # This can be modified with compute_mesh_coords
 
             dw = settings["W"] / settings["NW"]
             theta = settings["DIP_W"] * np.pi / 180.0
@@ -324,11 +328,134 @@ class qdyn:
 
         return True
 
+    def compute_mesh_coords(self, mesh_dict, dip, dw=None):
+        """
+        This function computes the 3D cartesian coordinates of the discretised
+        fault nodes (centres) and overwrites the mesh dictionary. Since the
+        dip can be variable (only along-dip), the mesh coordinates are set iteratively
+        according to the following procedure:
+
+        1. The mesh is constructed row-by-row with contiguous along-strike entries (FFT-axis)
+        2. The base of the fault is located as a depth Z_CORNER
+        3. Starting at the base of the fault, the coordinates of each subsequent row are
+           computed with a fixed dip angle and along-dip spacing. The along-dip spacing does
+           not need to be uniform or continuous
+
+        IMPORTANT: the first element of the dip angle and spacing vectors (`dip` and `dw`)
+        are taken to be at the base of the fault, located at Z_CORNER depth. Moreover, the 
+        use of the FFT requires that the along-strike direction is uniform and co-linear, 
+        which implies that the strike be constant (zero) and that the dip be constant 
+        along-strike. Hence, an initial check is performed to verify that the length of the 
+        input vectors equals zero (scalar value) or equals Nw (number of elements along-dip).
+
+        Adopted convention for the coordinate frame:
+          x = along-strike direction
+          y = perpendicular to x in the horizontal plane
+          z = vertical (negative from the surface down)
+          (w = along-dip direction)
+
+        Adopted convention for the indexation:
+          matrix[i, j] = vector[i*Nx + j]  (0 <= i < Nw, 0 <= j < Nx)
+          vector[n] = matrix[n // Nx, n % Nx]  (0 <= n < Nw * Nx)
+          matrix.shape = (Nw, Nx)
+          vector.shape = (Nw * Nx,)
+          Nw: elements along-dip
+          Nx: elements along-strike
+
+        Starting point of the mesh (first element): 
+        (x, y, z) = ( dx/2, dw[0]*cos(dip[0])/2, Z_CORNER + dw[0]*sin(dip[0])/2 )
+        """
+
+        settings = self.set_dict
+
+        Nx = settings["NX"]
+        Nw = settings["NW"]
+        L = settings["L"]
+        W = settings["W"]
+        Z_corner = settings["Z_CORNER"]
+
+        def check_vectorise(x, name):
+            """ Helper routine to perform sanity checks on `x`, followed by vectorisation """
+
+            # Numeric types to check against
+            scalar_types = (
+                int, float, 
+                np.int, np.int16, np.int32, np.int64, 
+                np.float, np.float32, np.float64
+            )
+
+            # Loop over scalar types to check against type(x)
+            scalar = False
+            for t in scalar_types:
+                scalar = scalar or isinstance(x, t)
+
+            # If the input is a scalar: convert to vector
+            if scalar:
+                x = np.ones(Nw, dtype=float) * x
+
+            # Check that the length of the vector equals Nw
+            if len(x) != Nw:
+                raise MeshError(f"The input vector `{name}` needs to be of length `NW` or be a scalar")
+            
+            return x
+
+        dx = L / Nx  # Along-strike spacing
+        if dw is None:
+            dw = W / Nw  # Along-dip spacing
+
+        # Perform sanity checks and create vectors (if needed)
+        dip = check_vectorise(dip, name="dip")
+        dw = check_vectorise(dw, name="dw")
+
+        # Compute trigonometric function of the dip angle
+        dip = np.deg2rad(dip)
+        cd = np.cos(dip) * dw
+        sd = np.sin(dip) * dw
+
+        # Since the strike is constant, x always ranges from dx/2 to L-dx/2
+        x = np.tile(np.linspace(0.5 * dx, L - 0.5 * dx, Nx), Nw)
+
+        """
+        The y and z vectors are the result of a summation, starting at the base
+        Writing out the summation (starting at n = 0), we get:
+
+        y[n] = y[0] + 0.5 * dw[0] * cos(dip[0]) + \sum_{k=1}^{n-1} dw[k] * cos(dip[k]) + 0.5 * dw[n] * cos(dip[n])
+        z[n] = z[0] + 0.5 * dw[0] * sin(dip[0]) + \sum_{k=1}^{n-1} dw[k] * sin(dip[k]) + 0.5 * dw[n] * sin(dip[n])
+
+        Instead of iterating, we use NumPy's cumsum function in a clever way to represent the partial sum
+        """
+
+        ccd = np.hstack([0, 0, np.cumsum(cd[1:-1])])
+        csd = np.hstack([0, 0, np.cumsum(sd[1:-1])])
+
+        y = cd[0] + 0.5 * cd + ccd
+        y[0] = 0.5 * cd[0]
+
+        z = sd[0] + 0.5 * sd + csd
+        z[0] = 0.5 * sd[0]
+        z += Z_corner
+
+        def reshape_ravel(a, shape):
+            return np.tile(a, shape).T.ravel()
+
+        # Tiling (= repeating along-strike)
+        shape = (Nx, 1)
+
+        y = reshape_ravel(y, shape)
+        z = reshape_ravel(z, shape)
+
+        mesh_dict["X"] = x
+        mesh_dict["Y"] = y
+        mesh_dict["Z"] = z
+        mesh_dict["DIP_W"] = reshape_ravel(np.rad2deg(dip), shape)
+        mesh_dict["DW"] = reshape_ravel(dw, shape)
+
+        pass
+
     def write_input(self):
 
         if self.mesh_rendered == False:
-            print("The mesh has not yet been rendered!")
-            exit()
+            raise MeshError("The mesh has not yet been rendered. Call render_mesh() before write_input()")
 
         # Optionally, output can be created to an external working directory
         # This is still experimental...
@@ -349,6 +476,9 @@ class qdyn:
         nwLocal[Nprocs-1] += settings["NW"] % Nprocs
         nnLocal = 0
 
+        # Number of elements along-strike
+        Nx = settings["NX"]
+
         # Number of creep mechanisms
         N_creep = settings["SET_DICT_CNS"]["N_CREEP"]
 
@@ -366,10 +496,11 @@ class qdyn:
 
             # Input specific to 3D faults
             if settings["MESHDIM"] == 2:
-                input_str += "%u %u%s NX, NW\n" % (settings["NX"], nwLocal[iproc], delimiter)
+                input_str += "%u %u%s NX, NW\n" % (Nx, nwLocal[iproc], delimiter)
                 input_str += "%.15g %.15g %.15g%s L, W, Z_CORNER\n" % (settings["L"], settings["W"], settings["Z_CORNER"], delimiter)
                 for i in range(nwLocal[iproc]):
-                    input_str += "%.15g %.15g \n" % (mesh["DW"][i], mesh["DIP_W"][i])
+                    n = (i + np.sum(nwLocal[:iproc])) * Nx
+                    input_str += "%.15g %.15g \n" % (mesh["DW"][n], mesh["DIP_W"][n])
             else:
                 input_str += "%u%s NN\n" % (settings["N"], delimiter)
                 input_str += "%.15g %.15g%s L, W\n" % (settings["L"], settings["W"], delimiter)
@@ -393,9 +524,7 @@ class qdyn:
             if settings["FRICTION_MODEL"] == "CNS":
                 # Raise an error when the default value has not been overwritten
                 if N_creep == -1:
-                    print("The number of creep mechanisms was not set properly!")
-                    print("This value should be determined in render_mesh()")
-                    exit()
+                    raise MeshError("The number of creep mechanisms was not set properly. This value should be determined in render_mesh()")
                 input_str += "%u%s N_creep\n" % (N_creep, delimiter)
             input_str += "%u %u %u%s stress_coupling, thermal press., localisation\n" % (settings["FEAT_STRESS_COUPL"], settings["FEAT_TP"], settings["FEAT_LOCALISATION"], delimiter)
             input_str += "%u %u %u %u %u %u %u %u %u%s ntout_ot, ntout_ox, nt_coord, nxout, nwout, nxout_DYN, nwout_DYN, ox_seq, ox_DYN\n" % (settings["NTOUT_OT"], settings["NTOUT"], settings["IC"]+1, settings["NXOUT"], settings["NWOUT"], settings["NXOUT_DYN"], settings["NWOUT_DYN"], settings["OX_SEQ"], settings["OX_DYN"], delimiter)
@@ -430,8 +559,7 @@ class qdyn:
             # Check if localisation is requested
             if settings["FEAT_LOCALISATION"] == 1:
                 if settings["FRICTION_MODEL"] != "CNS":
-                    print("Localisation is compatible only with the CNS friction model")
-                    exit()
+                    raise ValueError("Localisation is compatible only with the CNS friction model")
                 for i in range(nloc):
                     # Basic parameters (degree of localisation, initial bulk porosity)
                     input_str += "%.15g %.15g " % (mesh["LOCALISATION"][iloc[i]], mesh["PHI_INI_BULK"][iloc[i]])
@@ -464,8 +592,7 @@ class qdyn:
     def run(self, test=False, unit=False):
 
         if not self.qdyn_input_written and unit is False:
-            print("Input file has not yet been written. First call write_input() to render QDyn input file")
-            exit()
+            raise AssertionError("Input file has not yet been written. First call write_input() to render QDyn input file")
 
         # Executable file (including path)
         qdyn_exec = os.path.join(self.qdyn_path, "qdyn")
