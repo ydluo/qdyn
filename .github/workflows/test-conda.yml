@@ -1,0 +1,39 @@
+name: Test QDYN (conda)
+
+on: [push]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 5
+      fail-fast: true
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.9
+    - name: Add conda to system path
+      run: |
+        # $CONDA is an environment variable pointing to the root of the miniconda directory
+        echo $CONDA/bin >> $GITHUB_PATH
+    - name: Install dependencies
+      run: |
+        # conda env update --file environment.yml --name base
+        conda update --yes
+        conda install --yes numpy scipy matplotlib pandas termcolor
+    - name: Install compiler
+      run: sudo apt install -y gfortran libopenmpi-dev
+    - name: Compile FORTRAN code
+      run: |
+        cd ./src
+        chmod +x mymakedepend.perl
+        ./mymakedepend.perl
+        make clean && make travis
+    - name: Run test suite
+      run: |
+        cd ./test
+        python test_suite.py
+        
