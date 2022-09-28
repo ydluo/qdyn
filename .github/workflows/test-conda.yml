@@ -25,6 +25,8 @@ jobs:
         conda install --yes numpy scipy matplotlib pandas termcolor
     - name: Install compiler
       run: sudo apt install -y gfortran libopenmpi-dev
+    - name: Copy mymakedepend
+      run: cp ./utils/devel_tools/mymakedepend.perl ./src
     - name: Compile FORTRAN code
       working-directory: ./src
       run: |
