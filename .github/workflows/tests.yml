@@ -3,7 +3,7 @@ name: Test QDYN (conda)
 on: [push]
 
 jobs:
-  build-linux:
+  test-linux:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 5
@@ -11,10 +11,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python 3.9
+    - name: Set up Python
       uses: actions/setup-python@v3
       with:
-        python-version: 3.9
+        python-version: 3.7
     - name: Add conda to system path
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory
@@ -32,7 +32,7 @@ jobs:
       run: |
         chmod +x mymakedepend.perl
         ./mymakedepend.perl
-        make clean && make travis
+        make clean && make test
     - name: Run test suite
       working-directory: ./test
       run: python test_suite.py
