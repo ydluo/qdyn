@@ -35,6 +35,8 @@ from pandas import read_csv
 
 # import antigravity	# xkcd.com/353/
 
+__version__ = "2.4.0"
+
 
 class MeshError(Exception):
     pass
