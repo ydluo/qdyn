@@ -26,13 +26,12 @@ jobs:
     - name: Install compiler
       run: sudo apt install -y gfortran libopenmpi-dev
     - name: Compile FORTRAN code
+      working-directory: ./src
       run: |
-        cd ./src
         chmod +x mymakedepend.perl
         ./mymakedepend.perl
         make clean && make travis
     - name: Run test suite
-      run: |
-        cd ./test
-        python test_suite.py
+      working-directory: ./test
+      run: python test_suite.py
         
