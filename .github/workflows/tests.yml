@@ -26,7 +26,7 @@ jobs:
     - name: Install compiler
       run: sudo apt install -y gfortran libopenmpi-dev
     - name: Copy mymakedepend
-      run: cp ./utils/devel_tools/mymakedepend.perl ./qdyn
+      run: cp ./qdyn/utils/devel_tools/mymakedepend.perl ./qdyn
     - name: Compile FORTRAN code
       working-directory: ./qdyn
       run: |
