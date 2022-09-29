@@ -4,7 +4,7 @@ mymakedepend.perl
 !utils/devel_tools/mymakedepend.perl
 
 # Fortran compiled files
-qdyn
+qdyn/qdyn
 *.mod
 *.o
 
