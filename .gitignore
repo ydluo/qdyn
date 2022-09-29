@@ -1,7 +1,7 @@
 # ignore objects and archives, anywhere in the tree.
 
 mymakedepend.perl
-!utils/devel_tools/mymakedepend.perl
+!qdyn/utils/devel_tools/mymakedepend.perl
 
 # Fortran compiled files
 qdyn/qdyn
