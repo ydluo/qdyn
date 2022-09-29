@@ -135,33 +135,33 @@ pass_check = pass_check and stickslip.test_results["RSF"]["success"]
 pass_check = pass_check and stickslip.test_results["CNS"]["success"]
 
 # 2D fault single asperity simulation (RSF)
-print(" - Testing single asperity (will take a few minutes)...")
-p.settings(set_dict)
-single_asperity = TestSingleAsperity(p)
-single_asperity.import_results()
-single_asperity.run_test("RSF")
-single_asperity.run_test("CNS")
+# print(" - Testing single asperity (will take a few minutes)...")
+# p.settings(set_dict)
+# single_asperity = TestSingleAsperity(p)
+# single_asperity.import_results()
+# single_asperity.run_test("RSF")
+# single_asperity.run_test("CNS")
 # single_asperity.export_results()
 # Plot results
 # single_asperity.plot_results("CNS")
 
 # Update check
-pass_check = pass_check and single_asperity.test_results["RSF"]["success"]
-pass_check = pass_check and single_asperity.test_results["CNS"]["success"]
+# pass_check = pass_check and single_asperity.test_results["RSF"]["success"]
+# pass_check = pass_check and single_asperity.test_results["CNS"]["success"]
 
 # Tse & Rice (1986) example test (RSF)
 # see https://doi.org/10.1029/JB091iB09p09452
-print(" - Testing Tse & Rice (1986) example (will take a few minutes)...")
-p.settings(set_dict)
-tse_rice = TestTseRice(p)
-tse_rice.import_results()
-tse_rice.run_test()
+# print(" - Testing Tse & Rice (1986) example (will take a few minutes)...")
+# p.settings(set_dict)
+# tse_rice = TestTseRice(p)
+# tse_rice.import_results()
+# tse_rice.run_test()
 # tse_rice.export_results()
 # Plot results
 # tse_rice.plot_results("RSF")
 
 # Update check
-pass_check = pass_check and tse_rice.test_results["RSF"]["success"]
+# pass_check = pass_check and tse_rice.test_results["RSF"]["success"]
 
 t1 = time()
 
@@ -174,11 +174,11 @@ print("     %s" % vstep.test_results["CNS"]["success_msg"])
 print(" - Spring-block (stick-slip)")
 print("     %s" % stickslip.test_results["RSF"]["success_msg"])
 print("     %s" % stickslip.test_results["CNS"]["success_msg"])
-print(" - Single asperity")
-print("     %s" % single_asperity.test_results["RSF"]["success_msg"])
-print("     %s" % single_asperity.test_results["CNS"]["success_msg"])
-print(" - Tse & Rice (1986) example")
-print("     %s" % tse_rice.test_results["RSF"]["success_msg"])
+# print(" - Single asperity")
+# print("     %s" % single_asperity.test_results["RSF"]["success_msg"])
+# print("     %s" % single_asperity.test_results["CNS"]["success_msg"])
+# print(" - Tse & Rice (1986) example")
+# print("     %s" % tse_rice.test_results["RSF"]["success_msg"])
 print("".join(["="]*msg_width))
 
 print("Finished in %.2f s" % (t1 - t0))
