@@ -50,7 +50,7 @@ PREPROC = -cpp
 # CFLAGS = -B/usr/lib/x86_64-linux-gnu
 #CFLAGS = '' 
 
-travis: F90 = mpif90
+test: F90 = mpif90
 	OPT = -O3 -Wall
 	PREPROC = -cpp
 
@@ -62,7 +62,7 @@ OBJS := $(patsubst %.f90,%.o,$(wildcard *.f90))
 #OBJS := $($(wildcard *.f90):.f90=.o)
 
 all: $(EXEC)
-travis: $(EXEC)
+test: $(EXEC)
 
 $(EXEC): $(OBJS)
 	$(F90) $(OPT) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
