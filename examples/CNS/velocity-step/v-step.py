@@ -1,24 +1,12 @@
 # Importing some required modules
 import gzip
-import os
 import pickle
-import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Go up in the directory tree
-upup = [os.pardir]*4
-qdyn_dir = os.path.join(*upup)
-# Get QDYN src directory
-src_dir = os.path.abspath(
-    os.path.join(
-        os.path.join(__file__, qdyn_dir), "src")
-)
-# Append src directory to Python path
-sys.path.append(src_dir)
 # Import QDYN wrapper
-from pyqdyn import qdyn
+from qdyn.pyqdyn import qdyn
 from numpy.testing import assert_allclose
 
 # QDYN class object

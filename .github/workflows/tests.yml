@@ -23,12 +23,13 @@ jobs:
       run: |
         # conda env update --file environment.yml --name base
         conda install --yes numpy scipy matplotlib pandas termcolor
+        pip install -e .
     - name: Install compiler
       run: sudo apt install -y gfortran libopenmpi-dev
     - name: Copy mymakedepend
-      run: cp ./utils/devel_tools/mymakedepend.perl ./src
+      run: cp ./qdyn/utils/devel_tools/mymakedepend.perl ./qdyn
     - name: Compile FORTRAN code
-      working-directory: ./src
+      working-directory: ./qdyn
       run: |
         chmod +x mymakedepend.perl
         ./mymakedepend.perl
