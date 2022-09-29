@@ -1,22 +1,12 @@
 # Importing some required modules
 import os
-import sys
 from time import time
 from termcolor import colored
 import warnings
 warnings.filterwarnings("ignore")
-# Go up in the directory tree
-upup = [os.pardir]*2
-qdyn_dir = os.path.join(*upup)
-# Get QDYN src directory
-src_dir = os.path.abspath(
-    os.path.join(
-        os.path.join(__file__, qdyn_dir), "src")
-)
-# Append src directory to Python path
-sys.path.append(src_dir)
+
 # Import QDYN wrapper
-from pyqdyn import qdyn
+from qdyn.pyqdyn import qdyn
 from vstep import TestVstep
 from stickslip import TestStickSlip
 from singleasperity import TestSingleAsperity
