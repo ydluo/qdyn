@@ -10,52 +10,15 @@ This section describes some of the details of the various methods and options fo
 
 ## Using the wrapper
 
-The core of QDYN is a Fortran code. While the format of its input and output files is well defined, we find it more convenient to set up the input parameters, perform simulations, and read the output data within a MATLAB (`qdyn.m`) or Python (`pyqdyn.py`) environment. The operation of both these wrappers is detailed below.
+The core of QDYN is a Fortran code. While the format of its input and output files is well defined, we find it more convenient to set up the input parameters, perform simulations, and read the output data within a Python (`pyqdyn.py`) environment. The operation of the Python wrapper is detailed below.
 
-### MATLAB wrapper
+### Note to MATLAB users
 
-You first need to set in MATLAB the full path to the `src` directory, for instance:
-
-```
-addpath ~/qdyn-read-only/src
-```
-
-> **Tip for Mac users**: if you get an error message related to `gfortran` libraries (e.g. `libgfortran.3.dylib`) when running `qdyn` in MATLAB, execute:
->
-> ```
-> setenv('DYLD_LIBRARY_PATH', '/usr/local/bin')
-> ```
->
-> The second argument should be the path to your `gfortran` libraries (sometimes set to `/opt/local/lib/libgcc`).
-
-The general usage syntax is:
-
-```
-[pars, ot, ox] = qdyn(mode, [parsin], ['Property', Value, ...])
-```
-
-The default input values can be listed by executing:
-
-```
-pars = qdyn('set')
-```
-
-Permitted arguments for `mode` are:
-
-|   Value   | Description                                                  |
-| :-------: | ------------------------------------------------------------ |
-|  `'set'`  | Outputs the default parameter structure (`pars`) or overrides it with fields present in the structure `parsin` or with *Property-Value* pairs |
-| `'write'` | Sets parameters and writes the QDYN input file               |
-|  `'run'`  | Sets parameters, writes the input file, and runs the simulation |
-| `'read'`  | Reads parameters and outputs from a previous simulation      |
-
-The `[parsin]` list is a structure to override the default parameters, using *Property-Value* pairs. See the [section on input parameters](#simulation-input-parameters) below.
-
-
+Support for MATLAB was discontinued since version `2.4.0`. Prior versions that include (partial) MATLAB support can be accessed from the [release page](https://github.com/ydluo/qdyn/releases).
 
 ### Python wrapper
 
-As an alternative to the MATLAB wrapper, users can chose to generate their input files through a Python wrapper, called `pyqdyn.py`. While the variable naming conventions are the same as in the MATLAB wrapper, the data structures and operation modes are somewhat different. The Python wrapper relies heavily on dictionary objects for both the simulation parameters and the generated mesh. A basic operation workflow looks as follows:
+Users can chose to generate their input files through a Python wrapper, called `pyqdyn.py`. The Python wrapper relies heavily on dictionary objects for both the simulation parameters and the generated mesh. A basic operation workflow looks as follows:
 
 1. After importing the `pyqdyn.py` module, instantiate QDYN as: `p = qdyn()`
 
@@ -97,7 +60,7 @@ As an alternative to the MATLAB wrapper, users can chose to generate their input
    p.render_mesh()
    ```
 
-4. The mesh is now populated the values defined in `set_dict` (along with the default settings, if left unchanged). Individual mesh node parameters can be accessed through `p.mesh_dict["PARAM"][element]`, where `"PARAM"` is a given variable name (see [input parameters](#simulation-input-parameters)), and `element` is the index of the node (note that Python index count starts at 0, and not at 1 like in MATLAB). The mesh is stored as a set of NumPy arrays, so slicing and vector operations are permitted (for instance: `p.mesh_dict["SIGMA"][50:100] = 10e6`).
+4. The mesh is now populated the values defined in `set_dict` (along with the default settings, if left unchanged). Individual mesh node parameters can be accessed through `p.mesh_dict["PARAM"][element]`, where `"PARAM"` is a given variable name (see [input parameters](#simulation-input-parameters)), and `element` is the index of the node (note that Python index count starts at 0). The mesh is stored as a set of NumPy arrays, so slicing and vector operations are permitted (for instance: `p.mesh_dict["SIGMA"][50:100] = 10e6`).
 
 5. Write the input file and run the simulation as:
 
@@ -140,7 +103,7 @@ As an alternative to the MATLAB wrapper, users can chose to generate their input
 |      `D`      | Damage level = $1 - \frac{\mathrm{damaged~shear~modulus}}{\mathrm{intact~shear~modulus}}$<br /><br />This feature is currently implemented only for `MESHDIM = 1` and `FINITE = 0` |      `0`      |
 |     `HD`      | If `D > 0`, half-thickness of the fault damage zone (m)<br />If `D = 0`, half-thickness of an elastic slab bisected by a fault<br /><br />This feature is currently implemented only for `MESHDIM = 1` and `FINITE = 0` |      `0`      |
 |      `L`      | If `MESHDIM = 1`, `L` is the fault length (or spatial period; m)<br />If `MESHDIM = 0`, `MU/L` is the spring stiffness |      `1`      |
-|   `FINITE`    | Boundary conditions when `MESHDIM=1`:<br />`0` = **Periodic fault**: the fault is infinitely long, but slip is spatially periodic with period `L`, loaded by steady displacement at distance `W` from the fault.<br />`1` = **Finite fault**: the fault is infinitely long, but only a segment of length `L` is explicitly governed by a [friction law](model_assumptions.html#fault-rheology). The remainder of the fault has steady slip at a rate `V_PL`. If running the code with this option gives the error message `kernel file src/kernel_I.tab is too short`, you should create a larger kernel file with the MATLAB function `TabKernelFiniteFit.m`.<br />`2` = **Symmetric periodic fault**: like option `0`, but slip is symmetric relative to the first element.<br />`3` = **Symmetric finite fault**: like option `1`, but slip is symmetric relative to the first element. This can be used to simulate a free surface adjacent to the first element. |      `1`      |
+|   `FINITE`    | Boundary conditions when `MESHDIM=1`:<br />`0` = **Periodic fault**: the fault is infinitely long, but slip is spatially periodic with period `L`, loaded by steady displacement at distance `W` from the fault.<br />`1` = **Finite fault**: the fault is infinitely long, but only a segment of length `L` is explicitly governed by a [friction law](model_assumptions.html#fault-rheology). The remainder of the fault has steady slip at a rate `V_PL`. If running the code with this option gives the error message `kernel file qdyn/kernel_I.tab is too short`, you should create a larger kernel file with the MATLAB function `TabKernelFiniteFit.m`.<br />`2` = **Symmetric periodic fault**: like option `0`, but slip is symmetric relative to the first element.<br />`3` = **Symmetric finite fault**: like option `1`, but slip is symmetric relative to the first element. This can be used to simulate a free surface adjacent to the first element. |      `1`      |
 |      `W`      | Out-of-plane seismogenic width of the fault (m), only if `MESHDIM=1` and `FINITE=0`, following the "2.5D" approximation introduced in appendix A.2 of [Luo and Ampuero (2017)](http://dx.doi.org/10.1016/j.tecto.2017.11.006). **Note** that the approximation assumes that the grid size is `> W`. |      `50e3`      |
 |    `DIP_W`    | Fault dip angle (degree). This parameter is only used when `MESHDIM=2`. If depth-dependent, values must be given from deeper to shallower depth. |      `90`      |
 |  `Z_CORNER`   | Fault bottom depth (m; negative down)                        |      `0`      |
@@ -256,7 +219,7 @@ QDYN offers various optional simulation features. Set the following parameters t
 | `DYN_TH_ON`  | Peak slip rate threshold (m/s) to define the beginning of a dynamic event |    `1e-2`     |
 | `DYN_TH_OFF` | Peak slip rate threshold (m/s) to define the end of a dynamic event. It is recommended to have `DYN_TH_ON >> DYN_TH_OFF`, so that small fluctuations in slip rate during the main event do not "trigger" new events. |    `1e-4`     |
 |     `IC`     | Index of selected element for time series output             |      `0`      |
-|    `IOT`     | Indices of elements for additional time series output. This is a vector of length $N$ (with $N$ being the number of fault elements) with default values set to zero. To enable time series output for element `i`, set `IOT(i) = 1` (MATLAB) or `set_dict["IOT"][i] = 1` (Python). Each element has a separate output file named `output_ot_xxxx`, where `xxxx` is the index that corresponds with `i` (starting at 0). For instance, if `IOT = [0, 0, 1, 1]`, the output of elements `i = 2` and `i = 3` are in files `output_ot_2` and `output_ot_3`, respectively. |      `0`      |
+|    `IOT`     | Indices of elements for additional time series output. This is a vector of length $N$ (with $N$ being the number of fault elements) with default values set to zero. To enable time series output for element `i`, set `set_dict["IOT"][i] = 1` (Python). Each element has a separate output file named `output_ot_xxxx`, where `xxxx` is the index that corresponds with `i` (starting at 0). For instance, if `IOT = [0, 0, 1, 1]`, the output of elements `i = 2` and `i = 3` are in files `output_ot_2` and `output_ot_3`, respectively. |      `0`      |
 |    `V_TH`    | Velocity threshold (m/s) to output peak slip velocities. |      `0.01`      |
 |    `IASP`    | Vector (of length = number of elements) indicating on which elements to output peak slip velocities. If `IASP(i)=1`, the following information about all velocity maxima at element `i` that exceed the threshold `V_TH` are output in file `output_iasp`: location (index), time, peak slip velocity. If `IASP(i)=0`, element `i` is ignored in the `output_iasp` output file. |      `0`      |
 
@@ -277,52 +240,52 @@ QDYN offers various optional simulation features. Set the following parameters t
 **Time-series output** (`output_ot_x`)
 
 
-|   MATLAB    |    Python    | Description                                                  |
-| :---------: | :----------: | ------------------------------------------------------------ |
-|     `t`     |     `t`      | Simulation time (s)                                          |
-|     `p`     |   `potcy`    | Seismic potency (m$^3$)                                      |
-|   `pdot`    |  `pot_rate`  | Seismic potency rate (m$^3$/s)                               |
-|    `vc`     |     `v`      | Slip rate (m/s)                                              |
-|    `thc`    |   `theta`    | State. For RSF simulations, this is the state parameter $\theta$ (s), for CNS simulations this is porosity (-). |
-|   `tauc`    |    `tau`     | Shear stress (Pa)                                            |
-|   `dtauc`   |  `dtau_dt`   | Shear stress rate (Pa/s)                                     |
-|    `dc`     |    `slip`    | Slip (m)                                                     |
-|  `sigma`    |   `sigma`    | Effective normal stress (Pa). If `FEAT_TP = 1`, it is total normal stress |
-|     `P`     |     `P`      | Fluid pressure (Pa; only for `FEAT_TP = 1`)                  |
-|     `T`     |     `T`      | Temperature (K; only for `FEAT_TP = 1`)                      |
+|     Key      | Description                                                  |
+| :----------: | ------------------------------------------------------------ |
+|     `t`      | Simulation time (s)                                          |
+|   `potcy`    | Seismic potency (m$^3$)                                      |
+|  `pot_rate`  | Seismic potency rate (m$^3$/s)                               |
+|     `v`      | Slip rate (m/s)                                              |
+|   `theta`    | State. For RSF simulations, this is the state parameter $\theta$ (s), for CNS simulations this is porosity (-). |
+|    `tau`     | Shear stress (Pa)                                            |
+|  `dtau_dt`   | Shear stress rate (Pa/s)                                     |
+|    `slip`    | Slip (m)                                                     |
+|   `sigma`    | Effective normal stress (Pa). If `FEAT_TP = 1`, it is total normal stress |
+|     `P`      | Fluid pressure (Pa; only for `FEAT_TP = 1`)                  |
+|     `T`      | Temperature (K; only for `FEAT_TP = 1`)                      |
 
 
 **Time-series output at `Vmax`** (`output_vmax`)
 
-|   MATLAB    |    Python    | Description                                                  |
-| :---------: | :----------: | ------------------------------------------------------------ |
-|     `t`     |     `t`      | Simulation time (s)                                          |
-|     `x`     |   `ivmax`    | Location index of maximum slip rate                          |
-|    `vc`     |     `v`      | Slip rate (m/s)                                              |
-|    `thc`    |   `theta`    | State. For RSF simulations, this is the state parameter $\theta$ (s), for CNS simulations this is porosity (-). |
-|   `tauc`    |    `tau`     | Shear stress (Pa)                                            |
-|   `tauc`    |  `dtau_dt`   | Shear stress rate (Pa/s)                                     |
-|    `dc`     |    `slip`    | Slip (m)                                                     |
-|  `sigma`    |   `sigma`    | Effective normal stress (Pa). If `FEAT_TP = 1`, it is total normal stress |
-|     `P`     |     `P`      | Fluid pressure (Pa; only for `FEAT_TP = 1`)                  |
-|     `T`     |     `T`      | Temperature (K; only for `FEAT_TP = 1`)                      |
+|     Key      | Description                                                  |
+| :----------: | ------------------------------------------------------------ |
+|     `t`      | Simulation time (s)                                          |
+|   `ivmax`    | Location index of maximum slip rate                          |
+|     `v`      | Slip rate (m/s)                                              |
+|   `theta`    | State. For RSF simulations, this is the state parameter $\theta$ (s), for CNS simulations this is porosity (-). |
+|    `tau`     | Shear stress (Pa)                                            |
+|  `dtau_dt`   | Shear stress rate (Pa/s)                                     |
+|    `slip`    | Slip (m)                                                     |
+|   `sigma`    | Effective normal stress (Pa). If `FEAT_TP = 1`, it is total normal stress |
+|     `P`      | Fluid pressure (Pa; only for `FEAT_TP = 1`)                  |
+|     `T`      | Temperature (K; only for `FEAT_TP = 1`)                      |
 
 **Snapshot output** (`output_ox`, `output_ox_dyn`)
 
-| MATLAB  |  Python   | Description                                                  |
-| :-----: | :-------: | ------------------------------------------------------------ |
-|   `t`   |    `t`    | Simulation time (t)                                          |
-|   `x`   |    `x`    | Fault x-coordinates (m)                                      |
-|   `y`   |    `y`    | Fault y-coordinates (m)                                      |
-|   `z`   |    `z`    | Fault z-coordinates (m)                                      |
-|   `v`   |    `v`    | Slip rate (m/s)                                              |
-|  `th`   |  `theta`  | State variable. or RSF simulations, this is the state parameter $\theta$ (s), for CNS simulations this is porosity (-). |
-| `dtau`  |  `tau`    | Shear stress (Pa)                                            |
-| `dtaud` | `dtau_dt` | Shear stress rate (Pa/s)                                     |
-|   `d`   |  `slip`   | Slip (m)                                                     |
-| `sigma` |  `sigma`  | Effective normal stress (Pa). If `FEAT_TP = 1`, it is total normal stress |
-|   `P`   |    `P`    | Fluid pressure (Pa; only for `FEAT_TP = 1`)                  |
-|   `T`   |    `T`    | Temperature (K; only for `FEAT_TP = 1`)                      |
+|   Key     | Description                                                  |
+| :-------: | ------------------------------------------------------------ |
+|    `t`    | Simulation time (t)                                          |
+|    `x`    | Fault x-coordinates (m)                                      |
+|    `y`    | Fault y-coordinates (m)                                      |
+|    `z`    | Fault z-coordinates (m)                                      |
+|    `v`    | Slip rate (m/s)                                              |
+|  `theta`  | State variable. or RSF simulations, this is the state parameter $\theta$ (s), for CNS simulations this is porosity (-). |
+|  `tau`    | Shear stress (Pa)                                            |
+| `dtau_dt` | Shear stress rate (Pa/s)                                     |
+|  `slip`   | Slip (m)                                                     |
+|  `sigma`  | Effective normal stress (Pa). If `FEAT_TP = 1`, it is total normal stress |
+|    `P`    | Fluid pressure (Pa; only for `FEAT_TP = 1`)                  |
+|    `T`    | Temperature (K; only for `FEAT_TP = 1`)                      |
 
 
 

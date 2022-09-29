@@ -15,23 +15,8 @@ In this tutorial, we'll run a series of spring-block (1D fault) simulations with
 import matplotlib.pyplot as plt
 import numpy as np
 
-import os
-import sys
-
-# Add QDYN source directory to PATH
-# Go up in the directory tree
-upup = [os.pardir]*2
-qdyn_dir = os.path.join(*upup)
-# Get QDYN src directory
-src_dir = os.path.abspath(
-    os.path.join(
-        os.path.join(os.path.abspath(""), qdyn_dir), "src")
-)
-# Append src directory to Python path
-sys.path.append(src_dir)
-
 # Import QDYN wrapper
-from pyqdyn import qdyn
+from qdyn.pyqdyn import qdyn
 ```
 
 The simulation parameters are accessible after instantiation of the QDYN class as a Python dictionary object. We first define a number of global simulation parameters:
