@@ -38,7 +38,7 @@ To get started with QDYN, see [the documentation](https://ydluo.github.io/qdyn/)
 
 - faults surrounded by damaged zones
 
-- MATLAB and Python wrappers, and graphic output display utilities
+- Python wrapper and graphic output display utilities
 
 - parallelized for shared memory systems (OpenMP)
 

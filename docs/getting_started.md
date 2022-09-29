@@ -12,13 +12,13 @@ title: Getting started
 
 - MPI (e.g. [MPICH](https://www.mpich.org/) or [Open MPI](https://www.open-mpi.org/)) linked to your Fortran compiler (`mpif90`)
 
-- Python 3+, MATLAB, or Octave. The Python wrapper relies on [NumPy](http://www.numpy.org/)/[SciPy](https://scipy.org/) and [Pandas](https://pandas.pydata.org/). The Python test suite (optional but recommended for developers) additionally requires [matplotlib](https://matplotlib.org/) and [termcolor](https://pypi.org/project/termcolor/). These dependencies are conveniently acquired through [`pip`](https://pypi.org/project/pip/):<br />
+- Python 3+. The Python wrapper relies on [NumPy](http://www.numpy.org/)/[SciPy](https://scipy.org/) and [Pandas](https://pandas.pydata.org/). The Python test suite (optional but recommended for developers) additionally requires [matplotlib](https://matplotlib.org/) and [termcolor](https://pypi.org/project/termcolor/). These dependencies are conveniently acquired through [`pip`](https://pypi.org/project/pip/):<br />
   ```
   pip install numpy scipy pandas matplotlib termcolor
   ```
   or through [Anaconda](https://www.anaconda.com/):<br />
   ```
-  conda create -n QDYN python=3.7 numpy scipy matplotlib pandas termcolor
+  conda create -n QDYN numpy scipy matplotlib pandas termcolor
   conda activate QDYN
   ```
 
@@ -41,12 +41,13 @@ development code.
 
 ## Installing QDYN
 
-1. Navigate to the `src` directory
-2. Modify the section "User Settings" of the  `Makefile` following the instructions and examples therein:
-    *  In section 1, set the variable `EXEC_PATH = [target path to your executable file]`. If you set the default value (recommended) the executable file `qdyn` is placed in the `src` directory. If you change this variable, you must set the `EXEC_PATH` input variable accordingly when calling `qdyn` from the wrappers (`qdyn.m` or `pyqdyn.py`).
+1. Install the QDYN Python package by running `pip install -e .` (including the dot) from the QDYN root directory
+2. Navigate to the `qdyn` directory
+3. Modify the section "User Settings" of the  `Makefile` following the instructions and examples therein:
+    *  In section 1, set the variable `EXEC_PATH = [target path to your executable file]`. If you set the default value (recommended) the executable file `qdyn` is placed in the `qdyn` directory. If you change this variable, you must set the `EXEC_PATH` input variable accordingly when calling `qdyn` from the wrapper (`pyqdyn.py`).
     *  In section 2, adjust your Fortran compiler settings: set the variables `F90 = [your compiler]`, `OPT = [your compiler optimization flags]` and `PREPROC = [your compiler preprocessing flags]`. Settings for several commonly used compilers are provided. Note that the specific optimization flags need to be set to enable parallelization through OpenMP.
-3. Set the parameters in the section "User Settings" of `constants.f90` following the instructions therein
-4. Run `make`
+4. Set the parameters in the section "User Settings" of `constants.f90` following the instructions therein
+5. Run `make`
 
 
 
@@ -75,11 +76,13 @@ As of 2017, Windows 10 officially supports a bash command line environment by in
 
 3. Download QDYN as instructed above. Note that Windows does not have access to the Linux file system, so in order to exchange files between the subsystem and Windows, it is recommended to download QDYN to (and run simulations from) a local Windows directory (e.g. C:\Users\bob\qdyn). The Windows file system can be accessed in the Linux subsystem as:  `cd /mnt/c/Users/bob/qdyn`
 
-4. Navigate to the QDYN `src` directory and compile QDYN as described above
+4. Navigate to the QDYN root directory and install the Python package: `pip install -e .` (including the dot)
 
-5. In the case that the required Python or command line MATLAB/Octave packages are installed on the Linux subsystem, QDYN can be called directly from a wrapper. If none of these software packages are available, generate a `qdyn.in` file in Windows (through a wrapper), navigate within the subsystem to the location of  `qdyn.in` (e.g.  `cd /mnt/c/Users/bob/test_simulation`) and run: `/mnt/c/Users/bob/qdyn/src/qdyn`
+5. Navigate to the QDYN `qdyn` directory and compile QDYN as described above
 
-6. QDYN should now be running within the Linux subsystem, creating output files in C:\Users\bob\test_simulation that can be accessed by Windows for further processing.
+6. In the case that the required Python packages are installed on the Linux subsystem, QDYN can be called directly from a wrapper. If none of these software packages are available, generate a `qdyn.in` file in Windows (through a wrapper), navigate within the subsystem to the location of  `qdyn.in` (e.g. `cd /mnt/c/Users/bob/test_simulation`) and run: `/mnt/c/Users/bob/qdyn/src/qdyn`
 
-7. The Python wrapper (`pyqdyn.py`) also has built-in functionalities to call the subsystem directly from a Windows 10 environment. In order to set-up and run QDYN simulations from the Python wrapper, set
+7. QDYN should now be running within the Linux subsystem, creating output files in C:\Users\bob\test_simulation that can be accessed by Windows for further processing.
+
+8. The Python wrapper (`pyqdyn.py`) also has built-in functionalities to call the subsystem directly from a Windows 10 environment. In order to set-up and run QDYN simulations from the Python wrapper, set
     `qdyn.W10_bash = True`. When doing so, the wrapper will automatically switch between the Windows and Linux environments.

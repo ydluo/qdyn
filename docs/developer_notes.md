@@ -12,7 +12,7 @@ The QDYN team welcomes contributions from the community, which is facilitated by
 - Push the commits to your forked repository
 - Create a pull request to merge your code with that in the QDYN repository
 
-When the pull request is made, [Travis CI](https://travis-ci.com/) will assess the validity of the code by compiling the code and running the testing suite. The core developers will ensure that the pull request will be merged with the appropriate branch (e.g. `release/2.3.4`).
+When the pull request is made, a GitHub Actions workflow will be triggered to assess the validity of the code by compiling the code and running the testing suite. The core developers will ensure that the pull request will be merged with the appropriate branch (e.g. `release/2.3.4`).
 
 For large modifications or new features, please contact the QDYN team or [open an issue](https://github.com/ydluo/qdyn/issues) on GitHub to discuss the implementation strategy.
 

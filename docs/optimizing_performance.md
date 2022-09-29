@@ -7,7 +7,7 @@ title: Optimizing performance
 
 ## Running simulations outside the wrapper
 
-To run simulations outside the MATLAB/Python environment, e.g. when computing on an HPC cluster: run first the wrapper only to generate the input file `qdyn.in`, then run the `qdyn` executable outside the wrapper.
+To run simulations outside the Python environment, e.g. when computing on an HPC cluster: run first the wrapper only to generate the input file `qdyn.in`, then run the `qdyn` executable outside the wrapper.
 
 ## Managing parallel computing
 

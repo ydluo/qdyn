@@ -11,7 +11,7 @@ QDYN is a boundary element software to simulate earthquake cycles (seismic and a
 
 QDYN includes various forms of rate-and-state friction and state evolution laws, and handles non-planar fault geometry in 3D and 2D media, as well as spring-block simulations. Loading is controlled by remote displacement, steady creep or oscillatory load. In 3D it handles free surface effects in a half-space, including normal stress coupling. The medium surrounding the fault is linear, isotropic and elastic, and may be uniform or (in 2D) contain a damaged layer.
 
-QDYN implements adaptive time stepping, shared-memory parallelization, and can deal with multi-scale earthquake cycle simulations with fine details in both time and space. It is equipped with user-friendly MATLAB and Python interfaces and graphical output utilities.
+QDYN implements adaptive time stepping, shared-memory parallelization, and can deal with multi-scale earthquake cycle simulations with fine details in both time and space. It is equipped with a user-friendly Python interface and graphical output utilities.
 
 
 
@@ -33,7 +33,7 @@ QDYN implements adaptive time stepping, shared-memory parallelization, and can d
 - Tectonic and transient loads
 - Normal stress coupling
 - Faults surrounded by damaged zones
-- MATLAB and python wrappers, and graphic output display utilities
+- Python wrapper and graphic output display utilities
 - Parallelized for shared memory systems (OpenMP)
 - Parallelized for distributed memory systems (MPI)
 
@@ -51,7 +51,7 @@ Before submitting an issue please make sure that:
 
 When submitting a new issue, please include all information needed to reproduce your problem: input files, operating system, compiler, QDYN version (git hash).
 
-
+**Note** to MATLAB users: support for MATLAB was discontinued since version `2.4.0`. Prior versions that include (partial) MATLAB support can be accessed from the [release page](https://github.com/ydluo/qdyn/releases).
 
 ## Acknowledgements
 
