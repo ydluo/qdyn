@@ -283,6 +283,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   type(mesh_type), intent(in) :: m
   logical, intent(in) :: sigma_coupling
 
+  double precision :: x_src, x_obs
   double precision :: tau,sigma_n, y_src, z_src, dip_src, dw_src, y_obs, z_obs,dip_obs
   double precision, allocatable :: tmp(:), tmp_n(:)   ! for FFT
   integer :: i, j, ii, jj, n, nn, IRET, iproc, NPROCS
@@ -305,6 +306,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   do n=1,k%nwGlobal
     nn = (n-1)*m%nx+1
     ! note that if serial (no MPI) the glob arrays point to the local arrays
+    x_src = m%xglob(nn)
     y_src = m%yglob(nn)
     ! MvdE: z, dip, and dw are constant for each row. Reduce size from nn to just n
     z_src = m%zglob(nn)
@@ -312,12 +314,19 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
     dw_src = m%dwglob(n)
     do j=1,k%nwLocal
       jj = (j-1)*m%nx+1
+      x_obs = m%x(jj)
       y_obs = m%y(jj)
       z_obs = m%z(jj)
       dip_obs = m%dip(jj)
       do i=-m%nx+1,m%nx
+        ! MvdE: the FFT will be applied along the x-coordinate, and so the x-coordinate
+        ! of the observer should be as x = 0. The relative x-coordinate for the i-th
+        ! element (-Nx+1 <= i <= Nx) should therefore be i*dx + x_src - x_obs.
+        ! For some reason this results in an "opposite" response, and it seems that
+        ! i*dx - x_src + x_obs produces correct results. Perhaps this is due to the
+        ! FFT convention (rotating either clockwise or counter-clockwise)?
         call compute_kernel(lambda,mu, &
-                i*m%dx(1), y_src, z_src, dip_src, m%dx(1), dw_src,   &
+                i*m%dx(1)-x_src+x_obs, y_src, z_src, dip_src, m%dx(1), dw_src,   &
                 0d0, y_obs, z_obs, dip_obs, &
                 IRET,tau,sigma_n,FAULT_TYPE)
         ii = i+1
