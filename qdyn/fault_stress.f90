@@ -369,6 +369,12 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   !    call save_array(m%xglob,m%yglob,m%zglob,m%zglob,my_mpi_rank(),'glo',k%nwGlobal,k%nx)
   ! endif
 
+! CRP: testing normal stress coupling
+  if (sigma_coupling) then
+    call log_screen("sigma_coupling=1") 
+  else
+    call log_screen("sigma_coupling=0")
+  endif
 
 end subroutine init_kernel_3D_fft
 

@@ -92,8 +92,8 @@ subroutine compute_kernel(LAM,MU,SX,SY,SZ,S_DIP,L,W,OX,OY,OZ,O_DIP,IRET,tau,sigm
       Ustrike = 0d0
       Udip = -1d0
       n_dir(1) = 0d0
-      n_dir(2) = -cos(O_DIP/180d0*PI) ! WARNING (JPA): remove minus sign (footwall moves up)
-      n_dir(3) = -sin(O_DIP/180d0*PI) ! WARNING (JPA): remove minus sign
+      n_dir(2) = cos(O_DIP/180d0*PI) ! no minus sign (footwall moves up)
+      n_dir(3) = sin(O_DIP/180d0*PI) ! no minus sign
     case default
       stop 'FATAL ERROR in okada.compute_kernel : mode should be +/- 1 (strike-slip) or 2 (thrust)'
   end select
