@@ -106,7 +106,7 @@ subroutine init_all(pb)
   endif
 
   call init_kernel( pb%lam, pb%smu, pb%mesh, pb%kernel, pb%D, pb%H, &
-                    pb%i_sigma_cpl, pb%finite, pb%test_mode)
+                    pb%features%stress_coupling, pb%finite, pb%test_mode)
 
   call initialize_output(pb)
 
