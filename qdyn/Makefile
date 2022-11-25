@@ -21,7 +21,7 @@ EXEC_PATH = /home/crodriguezpiceda/buildqdyn/qdyn_2_4_0/
 F90 = mpiifort
 # OPT = -O3 -ip -ipo
 # For parallel runs with OpenMP:
-OPT = -O3 -ip -ipo -parallel -qopenmp -par-threshold:50
+OPT = -O3 -ip -ipo -parallel -qopenmp -par-threshold:50 -g -traceback
 #-no-inline-factor
 #OPT = -O3 -pg -g
 #OPT = -O3
@@ -52,7 +52,7 @@ PREPROC = -fpp
 #CFLAGS = '' 
 
 test: F90 = mpiifort
-	OPT = -O3 -ip -ipo -parallel -qopenmp -par-threshold:50
+	OPT = -O3 -ip -ipo -parallel -qopenmp -par-threshold:50 -g -traceback
 	PREPROC = -fpp
 
 #== END USER SETTINGS =============================================
