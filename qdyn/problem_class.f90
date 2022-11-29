@@ -33,7 +33,7 @@ module problem_class
   type ox_type
     integer :: ntout=0, nrup=-1
     integer :: count, dyn_count, dyn_stat, i_ox_dyn, i_ox_seq, seq_count
-    integer :: nwout, nwout_dyn, nxout, nxout_dyn
+    integer :: nwout, nwout_dyn, nwout_last, nxout, nxout_dyn, nx_outlast
     double precision :: pot_pre
     character(len=256) :: header
     character(len=16), dimension(:), allocatable :: fmt

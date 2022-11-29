@@ -398,7 +398,7 @@ end subroutine ot_init
 subroutine ox_init(pb)
 
   use problem_class
-  use constants, only: FID_OX, FILE_OX
+  use constants, only: FID_OX, FILE_OX, FID_OX_LAST, FILE_OX_LAST
   use my_mpi, only : is_MPI_parallel, is_mpi_master
 
   type (problem_type), intent(inout) :: pb
@@ -447,6 +447,12 @@ subroutine ox_init(pb)
   if (pb%ox%i_ox_seq == 0) then
     open(FID_OX, file=FILE_OX, status="replace")
     close(FID_OX)
+  endif
+
+  ! Create ox file for last snapshot 
+  if (pb%ox%i_ox_seq == 0) then
+    open(FID_OX_LAST, file=FILE_OX_LAST, status="replace")
+    close(FID_OX_LAST)
   endif
 
   ! Define headers
@@ -584,18 +590,20 @@ end subroutine ot_write
 
 !=====================================================================
 ! Export snapshots
+! Do not confuse with subrutine write_ox (writing snapshots)
+
 subroutine ox_write(pb)
 
   use problem_class
-  use constants, only:  FID_MW, FID_OX, FID_OX_DYN, FID_QSB_POST, FID_QSB_PRE, &
-                        FILE_OX, FILE_OX_DYN_MAX, FILE_OX_DYN_POST, FILE_OX_DYN_PRE
+  use constants, only:  FID_MW, FID_OX, FID_OX_LAST, FID_OX_DYN, FID_QSB_POST, FID_QSB_PRE, &
+                        FILE_OX, FILE_OX_LAST, FILE_OX_DYN_MAX, FILE_OX_DYN_POST, FILE_OX_DYN_PRE
   use my_mpi, only: is_MPI_parallel, is_mpi_master
 
   type (problem_type), intent(inout) :: pb
 
   integer :: iw, ix, n, nwout_dyn, nxout_dyn, unit
   logical ::  call_gather, close_unit, dynamic, falling_edge, last_call, &
-              MPI_master, skip, rising_edge, write_ox, write_ox_dyn, &
+              MPI_master, skip, rising_edge, write_ox, write_ox_last, write_ox_dyn, &
               write_ox_seq, write_QSB
   double precision, dimension(pb%mesh%nnglob) :: tau, v
   character(len=100) :: tmp
@@ -630,6 +638,7 @@ subroutine ox_write(pb)
 
   ! Should this proc write ox, ox_dyn, or QSB output?
   write_ox = (mod(pb%it, pb%ox%ntout) == 0 .or. last_call)
+  write_ox_last = (mod(pb%it, pb%ox%ntout) == 0 .or. last_call)
   write_ox_dyn =  ((pb%ox%i_ox_dyn == 1) .and. dynamic) .and. .not. skip
   write_ox_seq = write_ox .and. (pb%ox%i_ox_seq == 1)
   write_QSB = ((pb%DYN_FLAG == 1) .and. dynamic) .and. .not. skip
@@ -637,11 +646,12 @@ subroutine ox_write(pb)
   ! Call an MPI gather when:
   !  1. Output is requested (either regular ox or other flavour)
   !  2. AND parallel execution
-  call_gather = (write_ox .or. write_ox_dyn .or. write_QSB) .and. &
+  call_gather = (write_ox .or. write_ox_last .or. write_ox_dyn .or. write_QSB) .and. &
                 is_MPI_parallel()
 
   ! Update write output only if this proc is MPI master
   write_ox = write_ox .and. MPI_master
+  write_ox = write_ox_last .and. MPI_master
   write_ox_dyn = write_ox_dyn .and. MPI_master
   write_ox_seq = write_ox_seq .and. MPI_master
   write_QSB = write_QSB .and. MPI_master
@@ -685,6 +695,24 @@ subroutine ox_write(pb)
   endif
 
   ! End regular ox output
+  !---------------------------------------------------------------------------
+  ! Write ox_last output
+  
+  ! Last snapshot of simulation. It is useful to have a snapshot with the 
+  ! full mesh resolution in case of needing to re-start the simulation not from
+  ! the beggining. This avoids the need to generate an output of all the snapshots
+  ! with the full resolution.
+  
+  if (write_ox_last) then
+    open(FID_OX_LAST, file=FILE_OX_LAST, status="replace")
+    
+    ! Write ox data
+    call write_lastox_lines(FID_OX_LAST, pb%ox%fmt, pb%objects_glob, &
+                             pb%mesh%nx, pb%mesh%nw, pb)
+    close(FID_OX_LAST)
+  
+  endif
+
   !---------------------------------------------------------------------------
   ! Write ox_dyn output
 
@@ -904,6 +932,45 @@ subroutine write_ox_lines(unit, fmt, objects, nxout, nwout, pb)
 end subroutine write_ox_lines
 
 !=====================================================================
+! Write ox data to file (for last snapshot)
+! Unlike write_ox_lines, the output has the full resolution of the mesh
+
+subroutine write_lastox_lines(unit, fmt, objects, nxout, nwout, pb)
+
+  use problem_class
+  type (problem_type), intent(inout) :: pb
+  integer :: iox, iwout, ixout, k, n, nw, nwout, nx, nxout, unit
+  character(len=16), dimension(pb%nobj) :: fmt
+  type(optr), dimension(pb%nobj) :: objects
+
+  k = pb%nobj
+
+  ! Number of nodes to loop over (either local or global)
+  nx = pb%mesh%nxglob
+  nw = pb%mesh%nwglob
+
+  ! Write header
+  write(unit,'(a)') trim(pb%ox%header)
+  ! Loop over all ox elements
+  do iwout=1, nw
+    do ixout=1, nx
+      n = (iwout - 1) * nx + ixout
+      ! Write time
+      write(unit, fmt(1), advance="no") objects(1)%s
+      ! Loop over all ox output quantities (except last one)
+      do iox=1,k-1
+        ! Write ox output quantity, do not advance to next line
+        write(unit, fmt(iox), advance="no") objects(iox)%v(n)
+      enddo
+      ! Write last ox output quantity, advance to next line
+      write(unit, fmt(k)) objects(k)%v(n)
+    enddo
+  enddo
+
+end subroutine write_lastox_lines
+
+!=====================================================================
+
 ! Compute the potency (rate) on the fault, defined as:
 ! 0d:  [pot/pot_rate] = [slip/v] * L
 ! 1d:  [pot/pot_rate] = sum([slip/v] * dx)
