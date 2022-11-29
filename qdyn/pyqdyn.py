@@ -662,7 +662,7 @@ class qdyn:
     # Read QDYN output data
     def read_output(self, mirror=False, read_ot=True, filename_ot="output_ot",
                     filename_vmax="output_vmax", read_ox=True,
-                    filename_ox="output_ox", read_ox_dyn=False,):
+                    filename_ox="output_ox", read_ox_dyn=False, filename_ox_last="output_ox_last", read_ox_last=False):
 
         # Output file contents depends on the requested features
         # Time series (ot)
@@ -712,6 +712,7 @@ class qdyn:
             self.ot_vmax = None
             self.N_iot = 0
 
+        # Standard snapshots
         if read_ox:
 
             # Read snapshot output
@@ -731,6 +732,27 @@ class qdyn:
         else:
             self.ox = None
 
+        # Last snapshot
+        if read_ox_last == True:
+
+            # Read snapshot output
+            data_ox_last = read_csv(filename_ox_last, header=None, names=quants_ox, delim_whitespace=True, comment="#")
+
+            # Store snapshot data in self.ox
+            self.ox_last = data_ox_last
+
+            # Sanitise output (check for near-infinite numbers, etc.)
+            self.ox_last = self.ox_last.apply(pd.to_numeric, errors="coerce")
+
+            # If free surface was generated manually (i.e. without FINITE = 2 or 3),
+            # take only half data set (symmetric around first element)
+            if mirror == True:
+                data_ox_last = data_ox_last.loc[(data_ox_last["x"] > 0)]
+                self.ox_last = data_ox_last
+        else:
+            self.ox_last = None
+
+        # Dynamic snapshot
         if read_ox_dyn == True:
 
             ox_dyn_files_pre = np.array([file for file in os.listdir(".") if file.startswith("output_dyn_pre")])
