@@ -121,6 +121,7 @@ subroutine initialize_output(pb)
 
   ! Init ot, ox, screen
   if (is_MPI_master()) call screen_init(pb)
+  if (is_MPI_master()) call screen_init_log(pb)
   call ot_init(pb)
   call ox_init(pb)
 
@@ -143,6 +144,7 @@ subroutine write_output(pb)
   ! Call a print to screen if requested
   if (mod(pb%it, pb%ox%ntout) == 0 .or. last_call) then
     call screen_write(pb)
+    call screen_write_log(pb)
   endif
 
   ! Write time series if requested
@@ -156,8 +158,8 @@ subroutine write_output(pb)
 end subroutine write_output
 
 !=====================================================================
-!output initilized field to screen
-subroutine screen_init(pb)
+!output initilized field to log file
+subroutine screen_init_log(pb)
 
   use problem_class
   use constants, only : PI, FID_SCREEN, FILE_SCREEN
@@ -167,9 +169,13 @@ subroutine screen_init(pb)
   double precision :: K
 
   ! Create log file
-  open(FID_SCREEN, file=FILE_SCREEN)
+
+  if (pb%restart==0) then
+    open(FID_SCREEN, file=FILE_SCREEN)
+  elseif (pb%restart==1) then
   ! TO DO: if restart, append in existing log file
-  ! open(FID_SCREEN, file=FILE_SCREEN, status = "old", position="append")
+    open(FID_SCREEN, file=FILE_SCREEN, status = "old", position="append")
+  endif
 
   ! SEISMIC: skip calculating critical stiffness for CNS model
   ! Is not very useful
@@ -194,13 +200,16 @@ subroutine screen_init(pb)
   write(FID_SCREEN, *) '    it,  dt (secs), time (yrs), v_max (m/s), sigma_max (MPa)'
 
   close(FID_SCREEN)
-end subroutine screen_init
+
+
+
+end subroutine screen_init_log
 
 
 
 !=====================================================================
-!output one step to screen
-subroutine screen_write(pb)
+!output one step to log file
+subroutine screen_write_log(pb)
 
   use constants, only : YEAR, FID_SCREEN, FILE_SCREEN
   use problem_class
@@ -228,6 +237,68 @@ subroutine screen_write(pb)
     close(FID_SCREEN)
   endif
   
+
+end subroutine screen_write_log
+
+
+!=====================================================================
+!output initilized field to screen
+subroutine screen_init(pb)
+
+  use problem_class
+  use constants, only : PI, FID_SCREEN
+
+  type (problem_type), intent(inout) :: pb
+
+  double precision :: K
+
+  ! SEISMIC: skip calculating critical stiffness for CNS model
+  ! Is not very useful
+  if (pb%i_rns_law /= 3) then
+
+  if (pb%ot%ic<1) return
+
+    write(FID_SCREEN, *) 'Values at selected point of the fault:'
+    K = pb%mesh%Lfault
+    if (pb%mesh%dim == 1) then
+      if (.not. pb%kernel%k2f%finite) K = pb%mesh%W
+    endif
+    K = PI*pb%smu/K
+    if (pb%mesh%dim < 2) then
+      write(FID_SCREEN, *) 'K/Kc = ',K/(pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
+      write(FID_SCREEN, *) 'K/Kb = ',K/(pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
+    end if
+
+  endif
+
+  write(FID_SCREEN, *)
+  write(FID_SCREEN, *) '    it,  dt (secs), time (yrs), v_max (m/s), sigma_max (MPa)'
+
+end subroutine screen_init
+
+
+
+!=====================================================================
+!output one step to screen
+subroutine screen_write(pb)
+
+  use constants, only : YEAR, FID_SCREEN
+  use problem_class
+  use my_mpi, only : is_MPI_parallel, is_mpi_master, max_allproc
+
+  type (problem_type), intent(in) :: pb
+  double precision :: sigma_max, sigma_max_glob
+
+  sigma_max = maxval(pb%sigma)
+
+  if (is_MPI_parallel()) then
+    call max_allproc(sigma_max,sigma_max_glob)
+    if (is_mpi_master()) write(FID_SCREEN, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,&
+                              pb%vmaxglob, sigma_max_glob/1.0D6
+  else
+    write(FID_SCREEN, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,    &
+                            pb%vmaxglob, sigma_max/1.0D6
+  endif
 
 end subroutine screen_write
 

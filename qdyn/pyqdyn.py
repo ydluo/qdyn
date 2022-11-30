@@ -103,6 +103,7 @@ class qdyn:
         set_dict["FEAT_STRESS_COUPL"] = 0	# Normal stress coupling
         set_dict["FEAT_TP"] = 0				# Thermal pressurisation
         set_dict["FEAT_LOCALISATION"] = 0	# Gouge zone localisation of strain (CNS only)
+        set_dict["FEAT_RESTART"] = 0        # Restart simulation from last snapshot of a previous simulation
 
         # Rate-and-state friction parameters
         set_dict["SET_DICT_RSF"] = {
@@ -472,6 +473,10 @@ class qdyn:
         Nprocs = settings["NPROC"]
         delimiter = "    "
 
+        # Add restart
+        restart = settings["FEAT_RESTART"]
+
+
         # Define chunk size for each processor
         nwLocal = (settings["NW"]//Nprocs)*np.ones(Nprocs, dtype=int)
         nwLocal[Nprocs-1] += settings["NW"] % Nprocs
@@ -494,6 +499,7 @@ class qdyn:
             # Start building the contents of our QDYN input file (input_str)
             input_str = ""
             input_str += "%u%s meshdim\n" % (settings["MESHDIM"], delimiter)
+            
 
             # Input specific to 3D faults
             if settings["MESHDIM"] == 2:
@@ -521,6 +527,10 @@ class qdyn:
             # Some more general settings
             # Note that i_sigma_law is replaced by the feature stress_coupling, but is kept for compatibility
             input_str += "%u%s i_sigma_law\n" % (settings["SIGMA_CPL"], delimiter)
+
+            # Check RESTART ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            input_str += "%u%s restart\n" % (settings["FEAT_RESTART"], delimiter)
+
             # If the CNS model is used, define the number of creep mechanisms
             if settings["FRICTION_MODEL"] == "CNS":
                 # Raise an error when the default value has not been overwritten

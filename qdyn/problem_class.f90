@@ -162,6 +162,10 @@ module problem_class
     type (rk45_type) :: rk45
     type (rk45_2_type) :: rk45_2
     type (test_type) :: test
+
+    ! Restart
+    integer :: restart
+     
   end type problem_type
 
 end module problem_class
