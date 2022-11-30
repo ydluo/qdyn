@@ -439,7 +439,7 @@ subroutine ot_init(pb)
   ! Overwrite IASP in pb%ot
   pb%ot%iasp = iasp_list
 
-  ! Open files, write headers
+  ! Open files, write headers (if not restarting the simulation from a previous simulation)
   if (is_MPI_master()) then
 
     ! Time series output: loop over all OT locations
@@ -448,31 +448,37 @@ subroutine ot_init(pb)
       ! Write headers
       write(tmp, "(a, i0)") FILE_OT, pb%ot%iot(i) - 1
       iot_name = trim(tmp)
-      open(id, file=iot_name, status="replace")
-      write(id, "(a)") "# macroscopic values:"
-      write(id, "(a)") "# 1=t, 2=pot, 3=pot_rate"
-      write(id, "(a)") "# values at selected point:"
-      write(id, "(a)") "# 4=V, 5=theta, 6=tau, 7=dtau_dt, 8=slip, 9=sigma"
-      if (pb%features%tp == 1) then
-        write(id, "(a)") "# 10=P, 11=T"
-      endif
+      if (pb%restart==0) then
+        open(id, file=iot_name, status="replace")
+        write(id, "(a)") "# macroscopic values:"
+        write(id, "(a)") "# 1=t, 2=pot, 3=pot_rate"
+        write(id, "(a)") "# values at selected point:"
+        write(id, "(a)") "# 4=V, 5=theta, 6=tau, 7=dtau_dt, 8=slip, 9=sigma"
+        if (pb%features%tp == 1) then
+          write(id, "(a)") "# 10=P, 11=T"
+        endif
+      endif 
       close(id)
     enddo
 
     ! Vmax output
-    open(FID_VMAX, file=FILE_VMAX, status="replace")
-    write(FID_VMAX, "(a)") "# values at max(V) location:"
-    write(FID_VMAX, "(a)") "# 1=t, 2=ivmax, 3=v, 4=theta, 5=tau, 6=dtau_dt, 7=slip, 8=sigma"
-    if (pb%features%tp == 1) then
-      write(FID_VMAX, "(a)") "# 9=P, 10=T"
+    if (pb%restart==0) then
+      open(FID_VMAX, file=FILE_VMAX, status="replace")
+      write(FID_VMAX, "(a)") "# values at max(V) location:"
+      write(FID_VMAX, "(a)") "# 1=t, 2=ivmax, 3=v, 4=theta, 5=tau, 6=dtau_dt, 7=slip, 8=sigma"
+      if (pb%features%tp == 1) then
+        write(FID_VMAX, "(a)") "# 9=P, 10=T"
+      endif
     endif
     close(FID_VMAX)
 
     ! IASP output
-    open(FID_IASP, file=FILE_IASP, status="replace")
-    write(FID_IASP, "(a)") "# Seismicity record:"
-    write(FID_IASP, "(a)") "# 1=i, 2=t, 3=v"
-    close(FID_IASP)
+    if (pb%restart==0) then
+      open(FID_IASP, file=FILE_IASP, status="replace")
+      write(FID_IASP, "(a)") "# Seismicity record:"
+      write(FID_IASP, "(a)") "# 1=i, 2=t, 3=v"
+      close(FID_IASP)
+    endif
 
   endif
 
@@ -531,11 +537,13 @@ subroutine ox_init(pb)
 
   ! Create ox file (if not split over multiple files)
   if (pb%ox%i_ox_seq == 0) then
-    open(FID_OX, file=FILE_OX, status="replace")
-    close(FID_OX)
+    if (pb%restart==0) then
+      open(FID_OX, file=FILE_OX, status="replace")
+      close(FID_OX)
+    endif
   endif
 
-  ! Create ox file for last snapshot 
+  ! CRP: Create ox file for last snapshot 
   if (pb%ox%i_ox_seq == 0) then
     open(FID_OX_LAST, file=FILE_OX_LAST, status="replace")
     close(FID_OX_LAST)
