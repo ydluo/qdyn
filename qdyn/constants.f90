@@ -78,5 +78,6 @@ character(*), parameter :: FILE_OX_DYN_MAX = "output_dyn_max_"
 character(*), parameter :: FILE_OT = "output_ot_"
 character(*), parameter :: FILE_IASP = "output_iasp"
 character(*), parameter :: FILE_VMAX = "output_vmax"
+character(*), parameter :: FILE_SCREEN = "log"
 
 end module constants

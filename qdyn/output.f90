@@ -160,11 +160,16 @@ end subroutine write_output
 subroutine screen_init(pb)
 
   use problem_class
-  use constants, only : PI, FID_SCREEN
+  use constants, only : PI, FID_SCREEN, FILE_SCREEN
 
   type (problem_type), intent(inout) :: pb
 
   double precision :: K
+
+  ! Create log file
+  open(FID_SCREEN, file=FILE_SCREEN)
+  ! TO DO: if restart, append in existing log file
+  ! open(FID_SCREEN, file=FILE_SCREEN, status = "old", position="append")
 
   ! SEISMIC: skip calculating critical stiffness for CNS model
   ! Is not very useful
@@ -188,6 +193,7 @@ subroutine screen_init(pb)
   write(FID_SCREEN, *)
   write(FID_SCREEN, *) '    it,  dt (secs), time (yrs), v_max (m/s), sigma_max (MPa)'
 
+  close(FID_SCREEN)
 end subroutine screen_init
 
 
@@ -196,23 +202,32 @@ end subroutine screen_init
 !output one step to screen
 subroutine screen_write(pb)
 
-  use constants, only : YEAR, FID_SCREEN
+  use constants, only : YEAR, FID_SCREEN, FILE_SCREEN
   use problem_class
   use my_mpi, only : is_MPI_parallel, is_mpi_master, max_allproc
 
   type (problem_type), intent(in) :: pb
   double precision :: sigma_max, sigma_max_glob
 
+  character(len=100) :: tmp
+
   sigma_max = maxval(pb%sigma)
 
   if (is_MPI_parallel()) then
     call max_allproc(sigma_max,sigma_max_glob)
-    if (is_mpi_master()) write(FID_SCREEN, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,&
+    if (is_mpi_master()) then
+      open(FID_SCREEN, file=FILE_SCREEN, status="old", position="append")
+      write(FID_SCREEN, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,&
                               pb%vmaxglob, sigma_max_glob/1.0D6
+      close(FID_SCREEN)
+    endif
   else
+    open(FID_SCREEN, file=FILE_SCREEN, status="old", position="append")
     write(FID_SCREEN, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,    &
                             pb%vmaxglob, sigma_max/1.0D6
+    close(FID_SCREEN)
   endif
+  
 
 end subroutine screen_write
 
@@ -698,10 +713,10 @@ subroutine ox_write(pb)
   !---------------------------------------------------------------------------
   ! Write ox_last output
   
-  ! Last snapshot of simulation. It is useful to have a snapshot with the 
+  ! Snapshot of the last time-step of the simulation. It is useful to have a snapshot with the 
   ! full mesh resolution in case of needing to re-start the simulation not from
   ! the beggining. This avoids the need to generate an output of all the snapshots
-  ! with the full resolution.
+  ! with the full resolution
   
   if (write_ox_last) then
     open(FID_OX_LAST, file=FILE_OX_LAST, status="replace")

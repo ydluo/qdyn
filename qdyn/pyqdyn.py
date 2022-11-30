@@ -660,7 +660,10 @@ class qdyn:
 
 
     # Read QDYN output data
-    def read_output(self, mirror=False, read_ot=True, filename_ot="output_ot",
+    # This modified function allows to retrieve the outputs from a folder other than the one of the python script
+    # It can also read the output of the last snapshot
+
+    def read_output(self, mirror=False, path_output=None, read_ot=True, filename_ot="output_ot",
                     filename_vmax="output_vmax", read_ox=True,
                     filename_ox="output_ox", read_ox_dyn=False, filename_ox_last="output_ox_last", read_ox_last=False):
 
@@ -696,11 +699,21 @@ class qdyn:
             self.ot = [None] * N_iot
 
             for n, i in enumerate(iot):
+
+                # Check output directory
+                if path_output!=None:
+                    filename_ot = path_output + filename_ot
+
                 filename_iot = "%s_%i" % (filename_ot, i)
+
                 self.ot[n] = read_csv(
                     filename_iot, header=None, skiprows=nheaders_ot,
                     names=quants_ot, delim_whitespace=True
                 )
+
+            # Check output directory
+            if path_output!=None:
+                filename_vmax = path_output + filename_vmax
 
             self.ot_vmax = read_csv(
                 filename_vmax, header=None, skiprows=nheaders_vmax,
@@ -716,6 +729,10 @@ class qdyn:
         if read_ox:
 
             # Read snapshot output
+            # Check output directory
+            if path_output!= None:
+                filename_ox= path_output + filename_ox
+
             data_ox = read_csv(filename_ox, header=None, names=quants_ox, delim_whitespace=True, comment="#")
 
             # Store snapshot data in self.ox
@@ -736,6 +753,9 @@ class qdyn:
         if read_ox_last == True:
 
             # Read snapshot output
+            # Check output directory
+            if path_output!= None:
+                filename_ox_last = path_output + filename_ox_last
             data_ox_last = read_csv(filename_ox_last, header=None, names=quants_ox, delim_whitespace=True, comment="#")
 
             # Store snapshot data in self.ox
@@ -755,9 +775,15 @@ class qdyn:
         # Dynamic snapshot
         if read_ox_dyn == True:
 
-            ox_dyn_files_pre = np.array([file for file in os.listdir(".") if file.startswith("output_dyn_pre")])
-            ox_dyn_files_post = np.array([file for file in os.listdir(".") if file.startswith("output_dyn_post")])
-            ox_dyn_files_rup = np.array([file for file in os.listdir(".") if file.startswith("output_dyn_max")])
+            # Check directory
+            if path_output != None:
+                ox_dyn_files_pre = np.array([file for file in os.listdir(path_output) if file.startswith("output_dyn_pre")])
+                ox_dyn_files_post = np.array([file for file in os.listdir(path_output) if file.startswith("output_dyn_post")])
+                ox_dyn_files_rup = np.array([file for file in os.listdir(path_output) if file.startswith("output_dyn_max")])
+            else:                
+                ox_dyn_files_pre = np.array([file for file in os.listdir(".") if file.startswith("output_dyn_pre")])
+                ox_dyn_files_post = np.array([file for file in os.listdir(".") if file.startswith("output_dyn_post")])
+                ox_dyn_files_rup = np.array([file for file in os.listdir(".") if file.startswith("output_dyn_max")])
 
             # Read snapshot output
             data_ox_dyn_pre = [None] * len(ox_dyn_files_pre)
@@ -795,6 +821,7 @@ class qdyn:
             self.ox_dyn_pre = data_ox_dyn_pre
             self.ox_dyn_post = data_ox_dyn_post
             self.ox_dyn_rup = data_ox_dyn_rup
+            
 
         return True
 
