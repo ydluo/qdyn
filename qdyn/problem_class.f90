@@ -165,7 +165,8 @@ module problem_class
 
     ! Restart
     integer :: restart
-     
+    double precision :: restart_time
+
   end type problem_type
 
 end module problem_class

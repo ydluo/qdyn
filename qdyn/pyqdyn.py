@@ -104,6 +104,7 @@ class qdyn:
         set_dict["FEAT_TP"] = 0				# Thermal pressurisation
         set_dict["FEAT_LOCALISATION"] = 0	# Gouge zone localisation of strain (CNS only)
         set_dict["FEAT_RESTART"] = 0        # Restart simulation from last snapshot of a previous simulation
+        set_dict["RESTART_TIME"] = 0        # Restart time of the simulation [s] 
 
         # Rate-and-state friction parameters
         set_dict["SET_DICT_RSF"] = {
@@ -475,6 +476,7 @@ class qdyn:
 
         # Add restart
         restart = settings["FEAT_RESTART"]
+        restart_time = settings["RESTART_TIME"]
 
 
         # Define chunk size for each processor
@@ -530,6 +532,7 @@ class qdyn:
 
             # Check RESTART ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             input_str += "%u%s restart\n" % (settings["FEAT_RESTART"], delimiter)
+            input_str += "%.15g%s restart time\n" % (settings["RESTART_TIME"], delimiter)
 
             # If the CNS model is used, define the number of creep mechanisms
             if settings["FRICTION_MODEL"] == "CNS":

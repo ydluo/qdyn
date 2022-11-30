@@ -37,7 +37,8 @@ subroutine initialize_output(pb)
 
   ! Overwrite number of objects to output
   pb%nobj = nobj
-
+  
+    
   ! Allocate containers
   allocate(pb%objects_glob(nobj))
   allocate(pb%objects_loc(nobj))
@@ -71,6 +72,11 @@ subroutine initialize_output(pb)
   endif
 
   ! Assign global quantities (for output)
+
+  ! overwrite time if restart with last simulation
+  if(pb%restart==1) then
+    pb%time=pb%time+pb%restart_time
+  endif
 
   ! [double scalar] time, potency, potency rate
   pb%objects_glob(1)%s => pb%time
