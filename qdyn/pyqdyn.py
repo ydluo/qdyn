@@ -862,6 +862,12 @@ class qdyn:
 
 
 
-
+    # Return time of last snapshot of a simulation
+    #  (used when restarting a simulation from a previous model)
+    def restart_time(self):
+        last_ox = open("output_ox_last", "r")
+        line = last_ox.readlines()
+        last_time = float(line[2].split()[0])
+        return last_time
 
 
