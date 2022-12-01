@@ -474,10 +474,6 @@ class qdyn:
         Nprocs = settings["NPROC"]
         delimiter = "    "
 
-        # Add restart
-        restart = settings["FEAT_RESTART"]
-        restart_time = settings["RESTART_TIME"]
-
 
         # Define chunk size for each processor
         nwLocal = (settings["NW"]//Nprocs)*np.ones(Nprocs, dtype=int)
