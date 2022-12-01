@@ -21,9 +21,15 @@ subroutine initialize_output(pb)
 
   ! The spirit of the output module is as follows:
   ! First, a container of pointers is created that is shared by all the output
-  ! modules (time series, snapshots, etc). Then, for each output type, the
+  ! submodules (time series, snapshots, etc). Then, for each output type, the
   ! indices pointing to the appropriate quantities are stored in a list. When
-  ! a particular output is requested, the AAAAARRRRGHHH...
+  ! a particular output is requested, the corresponding submodule calls for the
+  ! appropiate quantity stored in the list. The time value that is output in
+  ! each time-step depends on the flag "restart" that was set in the input file.
+  ! If the simulation starts at 0s ("restart" = 0), then all the output files
+  ! are created from scratch/rewritten. Otherwise, if the simulation is intended
+  ! to start from the last time-step of a previous simulation ("restart"=1), then
+  ! the output is appended to the existing output files from this previous simulation.   
 
   ! Number of objects in containers
   ! Base number
@@ -73,7 +79,7 @@ subroutine initialize_output(pb)
 
   ! Assign global quantities (for output)
 
-  ! overwrite time if restart with last simulation
+  ! overwrite time if restart with time of last simulation
   if(pb%restart==1) then
     pb%time=pb%time+pb%restart_time
   endif
@@ -179,7 +185,7 @@ subroutine screen_init_log(pb)
   if (pb%restart==0) then
     open(FID_SCREEN, file=FILE_SCREEN)
   elseif (pb%restart==1) then
-  ! TO DO: if restart, append in existing log file
+  ! If restart with time of last simulation, append in existing log file
     open(FID_SCREEN, file=FILE_SCREEN, status = "old", position="append")
   endif
 
@@ -445,7 +451,7 @@ subroutine ot_init(pb)
   ! Overwrite IASP in pb%ot
   pb%ot%iasp = iasp_list
 
-  ! Open files, write headers (if not restarting the simulation from a previous simulation)
+  ! Open files, write headers (if not restarting the simulation with time of last simulation)
   if (is_MPI_master()) then
 
     ! Time series output: loop over all OT locations
@@ -549,7 +555,7 @@ subroutine ox_init(pb)
     endif
   endif
 
-  ! CRP: Create ox file for last snapshot 
+  ! Create ox file for last snapshot 
   if (pb%ox%i_ox_seq == 0) then
     open(FID_OX_LAST, file=FILE_OX_LAST, status="replace")
     close(FID_OX_LAST)
