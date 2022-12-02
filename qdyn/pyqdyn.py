@@ -684,20 +684,20 @@ class qdyn:
         # Output file contents depends on the requested features
         # Time series (ot)
         nheaders_ot = 4
-        quants_ot = ("t", "potcy", "pot_rate", "v", "theta", "tau", "dtau_dt", "slip", "sigma")
+        quants_ot = ("t", "potcy", "pot_rate", "v", "theta", "tau", "dtau_dt", "slip", "sigma", "fault_label")
         if self.set_dict["FEAT_TP"] == 1:
             nheaders_ot += 1
             quants_ot += ("P", "T")
 
         # Vmax
         nheaders_vmax = 2
-        quants_vmax = ("t", "ivmax", "v", "theta", "tau", "dtau_dt", "slip", "sigma")
+        quants_vmax = ("t", "ivmax", "v", "theta", "tau", "dtau_dt", "slip", "sigma", "fault_label")
         if self.set_dict["FEAT_TP"] == 1:
             nheaders_vmax += 1
             quants_vmax += ("P", "T")
 
         # Standard snapshots (ox)
-        quants_ox = ("t", "x", "y", "z", "v", "theta", "tau", "tau_dot", "slip", "sigma")
+        quants_ox = ("t", "x", "y", "z", "v", "theta", "tau", "tau_dot", "slip", "sigma", "fault_label")
         if self.set_dict["FEAT_TP"] == 1:
             quants_ox += ("P", "T")
 

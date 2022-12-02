@@ -487,7 +487,7 @@ subroutine ot_init(pb)
     if (pb%restart==0) then
       open(FID_VMAX, file=FILE_VMAX, status="replace")
       write(FID_VMAX, "(a)") "# values at max(V) location:"
-      write(FID_VMAX, "(a)") "# 1=t, 2=ivmax, 3=v, 4=theta, 5=tau, 6=dtau_dt, 7=slip, 8=sigma"
+      write(FID_VMAX, "(a)") "# 1=t, 2=ivmax, 3=v, 4=theta, 5=tau, 6=dtau_dt, 7=slip, 8=sigma 9=fault_label"
       if (pb%features%tp == 1) then
         write(FID_VMAX, "(a)") "# 9=P, 10=T"
       endif
@@ -498,7 +498,7 @@ subroutine ot_init(pb)
     if (pb%restart==0) then
       open(FID_IASP, file=FILE_IASP, status="replace")
       write(FID_IASP, "(a)") "# Seismicity record:"
-      write(FID_IASP, "(a)") "# 1=i, 2=t, 3=v"
+      write(FID_IASP, "(a)") "# 1=i, 2=t, 3=v, 4=fault_label"
       close(FID_IASP)
     endif
 
@@ -514,6 +514,7 @@ subroutine ox_init(pb)
   use problem_class
   use constants, only: FID_OX, FILE_OX, FID_OX_LAST, FILE_OX_LAST
   use my_mpi, only : is_MPI_parallel, is_mpi_master
+  use logger, only:log_screen
 
   type (problem_type), intent(inout) :: pb
 
@@ -692,7 +693,7 @@ subroutine ot_write(pb)
       if ((pb%ot%v_pre(n) >= pb%ot%v_th) .and. &
           (pb%v_glob(n) < pb%ot%v_pre(n)) .and. &
           (pb%ot%v_pre(n) >= pb%ot%v_pre2(n))) then
-          write(FID_IASP, "(i10, 2e24.16)") n, pb%time, pb%ot%v_pre(n)
+          write(FID_IASP, "(i10, 2e24.16)") n, pb%time, pb%ot%v_pre(n), pb%mesh%fault_label(n)
       endif
     enddo
     close(FID_IASP)
