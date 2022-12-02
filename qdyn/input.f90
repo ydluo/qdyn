@@ -249,13 +249,15 @@ subroutine read_main(pb)
   ! </SEISMIC>
   
   ! CRP: Before: read_mesh_nodes was only called with 2D mesh
-  if (pb%mesh%dim == 2) then
-    call read_mesh_nodes(FID_IN, pb%mesh)
-    ! call ot_read_stations(pb%ot)
-  endif
+  ! if (pb%mesh%dim == 2) then
+  !   call read_mesh_nodes(FID_IN, pb%mesh)
+  !   ! call ot_read_stations(pb%ot)
+  ! endif
 
-  ! CRP: test call read_mesh_nodes for all mesh types
-  !call read_mesh_nodes(FID_IN, pb%mesh)
+  ! CRP: Instead, call read_mesh_nodes for all mesh types so the fault label can
+  ! be written in the outputs for all fault dimensionalities
+  call read_mesh_nodes(FID_IN, pb%mesh)
+
   close(FID_IN)
   call log_screen("Input complete")
 
