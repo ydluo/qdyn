@@ -58,6 +58,7 @@ subroutine initialize_output(pb)
     pb%mesh%xglob => pb%mesh%x
     pb%mesh%yglob => pb%mesh%y
     pb%mesh%zglob => pb%mesh%z
+    pb%mesh%fault_label_glob => pb%mesh%fault_label
     ! Mechanical quantities
     pb%v_glob => pb%v
     pb%theta_glob => pb%theta
@@ -101,6 +102,8 @@ subroutine initialize_output(pb)
   pb%objects_glob(7)%v => pb%dtau_dt_glob
   pb%objects_glob(8)%v => pb%slip_glob
   pb%objects_glob(9)%v => pb%sigma_glob
+  ! [double vector] fault label
+  pb%objects_glob(10)%v => pb%mesh%fault_label_glob
 
   ! If thermal pressurisation is requested, add P and T
   if (pb%features%tp == 1) then
@@ -123,6 +126,8 @@ subroutine initialize_output(pb)
   pb%objects_loc(7)%v => pb%dtau_dt
   pb%objects_loc(8)%v => pb%slip
   pb%objects_loc(9)%v => pb%sigma
+  ! [double vector] fault label
+  pb%objects_loc(10)%v => pb%mesh%fault_label_loc
 
   ! If thermal pressurisation is requested, add P and T
   if (pb%features%tp == 1) then
@@ -331,6 +336,7 @@ end subroutine time_write
 
 
 !=====================================================================
+! CRP: Is this subrutine used somewhere?
 subroutine ot_read_stations(ot)
 
   use problem_class, only : ot_type
@@ -881,7 +887,7 @@ subroutine ox_write(pb)
             write(unit, '(3e15.7,4e28.20)') &
               pb%mesh%xglob(n), pb%mesh%yglob(n), pb%mesh%zglob(n), &
               pb%t_rup_glob(n), pb%tau_max_glob(n), pb%t_vmax_glob(n), &
-              pb%v_max_glob(n)
+              pb%v_max_glob(n) pb%mesh%fault_label(n)
           enddo
         enddo
         ! Close output unit

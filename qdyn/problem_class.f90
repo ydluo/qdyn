@@ -107,7 +107,7 @@ module problem_class
     ! Containers for local and global quantities
     type(optr), dimension(:), allocatable :: objects_glob, objects_loc
     ! Number of objects in the containers
-    integer :: nobj=9
+    integer :: nobj=10
 
     ! Basic variables
     ! NOTE: if theta2 needs to be in output sequence, add here

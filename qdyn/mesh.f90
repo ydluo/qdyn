@@ -12,12 +12,14 @@ module mesh
     double precision, allocatable :: DIP_W(:) ! along-dip grid size and dip (adjustable), nw count
     ! Local mesh coordinates
     double precision, pointer :: x(:) => null(), y(:) => null(), z(:) => null()
+    double precision, pointer :: fault_label(:) => null()
     ! Local dip, and along-strike and along-dip size of grid cells (nx*nw count)
     ! TODO: grid sizes should be constant in order for FFT to work!
     double precision, pointer :: dip(:) => null(), dx(:) => null(), dw(:) => null()
     ! Global mesh coordinates (nx*nwglobal count)
     double precision, pointer :: xglob(:) => null(), yglob(:) => null(), zglob(:) => null()
     double precision, pointer :: dipglob(:) => null(), dwglob(:) => null()
+    double precision, pointer :: fault_label_glob(:) => null()
   end type mesh_type
 
   ! SEISMIC: discretisation of spectral domain for diffusion solver
@@ -80,9 +82,9 @@ subroutine read_mesh_nodes(iin,m)
 
   integer :: i
 
-  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%dip(m%nn))
+  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%dip(m%nn), m%fault_label(m%nn))
   do i=1,m%nn
-    read(iin,*) m%x(i),m%y(i),m%z(i),m%dip(i)
+    read(iin,*) m%x(i),m%y(i),m%z(i),m%dip(i), m%fault_label(i)
   enddo
 
 end subroutine read_mesh_nodes
@@ -129,7 +131,7 @@ subroutine init_mesh_0D(m)
   m%x = 0d0
   m%y = 0d0
   m%z = 0d0
-
+  m%fault_label = 1d0
 end subroutine init_mesh_0D
 
 !--------------------------------------------------------
@@ -198,7 +200,7 @@ subroutine init_mesh_2D(m)
     m%dipglob => m%dip
     m%dwglob => m%dw
     m%nwglob = m%nw
-    
+    m%fault_label_glob => m%fault_label
 
   ! Parallel mode: gather mesh node locations for computing the kernel
   else
@@ -237,7 +239,7 @@ subroutine init_mesh_2D(m)
 
    ! Allocate global mesh for computing the kernel and for outputs
     allocate(m%xglob(nnGlobal),m%yglob(nnGlobal),&
-             m%zglob(nnGlobal),m%dwglob(nwGlobal),m%dipglob(nnGlobal))
+             m%zglob(nnGlobal),m%dwglob(nwGlobal),m%dipglob(nnGlobal), m%fault_label_glob(nnGlobal))
 
     ! Gather mesh nodes
     call gather_allvdouble(m%x,   nnLocal, m%xglob,   nnLocal_perproc, nnoffset_glob_perproc, nnGlobal)
@@ -245,6 +247,7 @@ subroutine init_mesh_2D(m)
     call gather_allvdouble(m%z,   nnLocal, m%zglob,   nnLocal_perproc, nnoffset_glob_perproc, nnGlobal)
     call gather_allvdouble(m%dip, nnLocal, m%dipglob, nnLocal_perproc, nnoffset_glob_perproc, nnGlobal)
     call gather_allvdouble(m%dw,  nwLocal, m%dwglob,  nwLocal_perproc, nwoffset_glob_perproc, nwGlobal)
+    call gather_allvdouble(m%fault_label,  nnLocal, m%fault_label_glob,  nnLocal_perproc, nnoffset_glob_perproc, nnGlobal)
 
 endif
 

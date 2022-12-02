@@ -97,7 +97,8 @@ class qdyn:
         set_dict["TPER"] = 31536000			# Period of additional time-dependent oscillatory shear stress loading [s]
         set_dict["APER"] = 0				# Amplitude of additional time-dependent oscillatory shear stress loading [Pa]
         set_dict["DIP_W"] = 90				# Fault dip in 3D
-        set_dict["Z_CORNER"] = 0			# 3D
+        set_dict["Z_CORNER"] = 0			# 3D (Base of the fault)
+        set_dict["FAULT_LABEL"] = 1         # Label of the fault (int) 
 
         # Optional simulation features
         set_dict["FEAT_STRESS_COUPL"] = 0	# Normal stress coupling
@@ -206,6 +207,7 @@ class qdyn:
 
         set_dict["NPROC"] = 1				# Number of processors, default 1 = serial (no MPI)
         set_dict["MPI_PATH"] = "/usr/local/bin/mpirun"   # Path to MPI executable
+
 
         self.set_dict = set_dict
 
@@ -325,6 +327,9 @@ class qdyn:
             mesh_dict["X"] = X.ravel()
             mesh_dict["Y"] = Y.ravel()
             mesh_dict["Z"] = settings["Z_CORNER"] + mesh_dict["Y"]*np.tan(theta)
+        
+        # Populate mesh with fault labels
+        mesh_dict["FAULT_LABEL"] = np.ones(N)*settings["FAULT_LABEL"]
 
         self.mesh_dict.update(mesh_dict)
         self.mesh_rendered = True
@@ -586,7 +591,7 @@ class qdyn:
 
             # Add mesh grid location information
             for i in range(nloc):
-                input_str += "%.15g %.15g %.15g %.15g\n" % (mesh["X"][iloc[i]], mesh["Y"][iloc[i]], mesh["Z"][iloc[i]], mesh["DIP_W"][iloc[i]])
+                input_str += "%.15g %.15g %.15g %.15g %.15g\n" % (mesh["X"][iloc[i]], mesh["Y"][iloc[i]], mesh["Z"][iloc[i]], mesh["DIP_W"][iloc[i]], mesh["FAULT_LABEL"][iloc[i]])
 
             nnLocal += settings["NX"]*nwLocal[iproc]
 
