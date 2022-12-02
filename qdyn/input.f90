@@ -25,6 +25,7 @@ subroutine read_main(pb)
 
   double precision, dimension(:), allocatable :: read_buf
   integer :: i, j, n, N_cols, N_creep
+  character :: myString
 
   call log_screen("Start reading input...")
 
@@ -246,12 +247,15 @@ subroutine read_main(pb)
   endif
   ! End reading TP model parameters
   ! </SEISMIC>
-
+  
+  ! CRP: Before: read_mesh_nodes was only called with 2D mesh
   if (pb%mesh%dim == 2) then
     call read_mesh_nodes(FID_IN, pb%mesh)
     ! call ot_read_stations(pb%ot)
   endif
 
+  ! CRP: test call read_mesh_nodes for all mesh types
+  !call read_mesh_nodes(FID_IN, pb%mesh)
   close(FID_IN)
   call log_screen("Input complete")
 

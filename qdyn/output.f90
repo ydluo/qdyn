@@ -127,7 +127,7 @@ subroutine initialize_output(pb)
   pb%objects_loc(8)%v => pb%slip
   pb%objects_loc(9)%v => pb%sigma
   ! [double vector] fault label
-  pb%objects_loc(10)%v => pb%mesh%fault_label_loc
+  pb%objects_loc(10)%v => pb%mesh%fault_label
 
   ! If thermal pressurisation is requested, add P and T
   if (pb%features%tp == 1) then
@@ -384,9 +384,9 @@ subroutine ot_init(pb)
   pb%ot%v_pre2 = 0.d0
 
   ! Number of ot output quantities
-  pb%ot%not = 9
+  pb%ot%not = 10
   ! Number of ot_vmax output quantities
-  pb%ot%not_vmax = 8
+  pb%ot%not_vmax = 9
   ! If thermal pressurisation is requested, add 2 more
   if (pb%features%tp == 1) then
     pb%ot%not = pb%ot%not + 2
@@ -400,6 +400,8 @@ subroutine ot_init(pb)
   pb%ot%fmt = "(e15.7)"
   ! Time needs higher precision
   pb%ot%fmt(1) = "(e24.14)"
+  ! TO DO: right format for fault label
+  !pb%ot%fmt(10) = "(e15.0)"
 
   ! Default vmax output format
   pb%ot%fmt_vmax = "(e15.7)"
@@ -407,6 +409,8 @@ subroutine ot_init(pb)
   pb%ot%fmt_vmax(1) = "(e24.14)"
   ! vmax location is an integer
   pb%ot%fmt_vmax(2) = "(i15)"
+  ! TO DO: right format for fault label in vmax
+  !pb%ot%fmt_vmax(9) = "(e15.0)"
 
   ! If parallel:
   if (is_MPI_parallel()) then
@@ -471,7 +475,7 @@ subroutine ot_init(pb)
         write(id, "(a)") "# macroscopic values:"
         write(id, "(a)") "# 1=t, 2=pot, 3=pot_rate"
         write(id, "(a)") "# values at selected point:"
-        write(id, "(a)") "# 4=V, 5=theta, 6=tau, 7=dtau_dt, 8=slip, 9=sigma"
+        write(id, "(a)") "# 4=V, 5=theta, 6=tau, 7=dtau_dt, 8=slip, 9=sigma, 10=fault_label"
         if (pb%features%tp == 1) then
           write(id, "(a)") "# 10=P, 11=T"
         endif
@@ -568,9 +572,9 @@ subroutine ox_init(pb)
   endif
 
   ! Define headers
-  pb%ox%header = '# t x y z v theta tau tau_dot slip sigma'
+  pb%ox%header = '# t x y z v theta tau tau_dot slip sigma fault_label'
   if (pb%features%tp == 1) then
-    pb%ox%header = '# t x y z v theta tau tau_dot slip sigma P T'
+    pb%ox%header = '# t x y z v theta tau tau_dot slip sigma fault_label P T'
   endif
 
   ! If ox_dyn is requested
@@ -887,7 +891,7 @@ subroutine ox_write(pb)
             write(unit, '(3e15.7,4e28.20)') &
               pb%mesh%xglob(n), pb%mesh%yglob(n), pb%mesh%zglob(n), &
               pb%t_rup_glob(n), pb%tau_max_glob(n), pb%t_vmax_glob(n), &
-              pb%v_max_glob(n) pb%mesh%fault_label(n)
+              pb%v_max_glob(n), pb%mesh%fault_label(n)
           enddo
         enddo
         ! Close output unit
