@@ -514,7 +514,6 @@ subroutine ox_init(pb)
   use problem_class
   use constants, only: FID_OX, FILE_OX, FID_OX_LAST, FILE_OX_LAST
   use my_mpi, only : is_MPI_parallel, is_mpi_master
-  use logger, only:log_screen
 
   type (problem_type), intent(inout) :: pb
 
@@ -892,7 +891,7 @@ subroutine ox_write(pb)
             write(unit, '(3e15.7,4e28.20)') &
               pb%mesh%xglob(n), pb%mesh%yglob(n), pb%mesh%zglob(n), &
               pb%t_rup_glob(n), pb%tau_max_glob(n), pb%t_vmax_glob(n), &
-              pb%v_max_glob(n), pb%mesh%fault_label(n)
+              pb%v_max_glob(n), pb%mesh%fault_label_glob(n)
           enddo
         enddo
         ! Close output unit
