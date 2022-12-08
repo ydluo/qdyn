@@ -23,7 +23,7 @@ subroutine initialize_output(pb)
   ! First, a container of pointers is created that is shared by all the output
   ! submodules (time series, snapshots, etc). Then, for each output type, the
   ! indices pointing to the appropriate quantities are stored in a list. When
-  ! a particular output is requested, the corresponding submodule calls for the
+  ! a particular output is requested, the corresponding submodule         ls for the
   ! appropiate quantity stored in the list. The time value that is output in
   ! each time-step depends on the flag "restart" that was set in the input file.
   ! If the simulation starts at 0s ("restart" = 0), then all the output files
@@ -48,6 +48,12 @@ subroutine initialize_output(pb)
   ! Allocate containers
   allocate(pb%objects_glob(nobj))
   allocate(pb%objects_loc(nobj))
+
+  ! overwrite time and slip if restart with time and slip of last simulation
+  if(pb%restart==1) then
+    pb%time = pb%time + pb%restart_time
+    pb%slip = pb%slip + pb%restart_slip
+  endif
 
   ! If parallel: initialise (allocate) global quantities
   if (is_MPI_parallel()) then
@@ -79,11 +85,6 @@ subroutine initialize_output(pb)
   endif
 
   ! Assign global quantities (for output)
-
-  ! overwrite time if restart with time of last simulation
-  if(pb%restart==1) then
-    pb%time=pb%time+pb%restart_time
-  endif
 
   ! [double scalar] time, potency, potency rate
   pb%objects_glob(1)%s => pb%time
@@ -141,6 +142,9 @@ subroutine initialize_output(pb)
   if (is_MPI_master()) call screen_init_log(pb)
   call ot_init(pb)
   call ox_init(pb)
+
+  ! Fault label frequency (it only needs to be called once)
+  !call read_fault_labels(pb)
 
 end subroutine initialize_output
 
@@ -637,8 +641,11 @@ subroutine ot_write(pb)
   ! Get the maximum slip rate
   call get_ivmax(pb)
   ivmax = pb%ivmax
-  ! Calculate potency (rate)
+  !! Calculate potency (rate)
   call calc_potency(pb)
+
+  ! Potency faultf
+  call calc_potency_fault(pb)
 
   ! If this is master proc: write output
   if (is_MPI_master()) then
@@ -1134,6 +1141,197 @@ subroutine calc_potency(pb)
 
 end subroutine calc_potency
 
+!=====================================================================
+
+! Compute the potency (rate) for each fault, defined as:
+! 0d:  [pot/pot_rate] = [delta_slip/v] * L
+! 1d:  [pot/pot_rate] = sum([delta_slip/v] * dx)
+! 2d:  [pot/pot_rate] = sum([delta_slip/v] * dx * dw)
+! delta_slip is the difference of slip between two consecutive time-steps
+! labels is an array with the unique values of fault labels
+! n_labels is the frequency of fault labels in the mesh
+
+subroutine calc_potency_fault(pb)
+
+  use problem_class
+  use my_mpi, only: is_MPI_parallel, sum_allreduce, is_mpi_master
+  use constants, only: FID_SCREEN
+
+  type(problem_type), intent(inout) :: pb
+  double precision, dimension(pb%mesh%nn) :: area, slip_dt, pot_dt, pot_rate_dt, index_label_min, index_label_max
+  double precision, dimension(pb%nfault) :: pot_fault, pot_rate_fault
+  !integer, dimension(:), allocatable :: labels, n_labels 
+  double precision, dimension(1) :: buf
+  integer :: iw, ix, n, lbl
+  !, max_label
+
+  pot_dt = 0d0
+  pot_rate_dt = 0d0
+  pot_fault = 0d0
+  pot_rate_fault = 0d0
+  area = 0d0
+
+  ! Step 1: define area vector
+  do iw=1, pb%mesh%nw
+    do ix=1, pb%mesh%nx
+      n = (iw - 1) * pb%mesh%nx + ix
+      area(n) = pb%mesh%dx(ix) * pb%mesh%dw(iw)
+    end do
+  end do
+
+  ! Step 2: Calculate vector of delta slip as dt*v
+  slip_dt = pb%dt_did * pb%v
+  !write(FID_SCREEN, *) 'delta_slip = ', slip_dt
+
+  ! Step 3: calculate potency and potency rate
+  ! multiply [slip/v] * area
+  pot_dt = slip_dt * area
+  ! if (is_mpi_master()) then
+  !   write(FID_SCREEN, *) 'slip_dt = ', slip_dt
+  !   write(FID_SCREEN, *) 'area = ', area
+  ! endif
+  pot_rate_dt = pb%v * area
+
+  ! ! Step 4: sum potency and potency rate per fault
+  ! do n=1, pb%mesh%nn
+  !   ! Check fault label
+  !   lbl = pb%mesh%fault_label(n)
+  !   ! sum potency
+  !   pot_fault(lbl) = pot_fault(lbl) + pot_dt(n)
+  !   pot_rate_fault(lbl) = pot_rate_fault(lbl) + pot_rate_dt(n)
+  ! end do
+
+    ! Step 4: sum potency and potency rate per fault
+  do n=1, pb%mesh%nn
+    ! Check fault label
+    lbl = pb%mesh%fault_label(n)
+    ! sum potency
+    pot_fault(lbl) = pot_fault(lbl) + pot_dt(n)
+    pot_rate_fault(lbl) = pot_rate_fault(lbl) + pot_rate_dt(n)
+  end do
+
+  ! if (is_MPI_parallel()) then
+  !   if (is_mpi_master()) write(FID_SCREEN, *) 'pot_fault = ', pot_fault(1)
+  ! else
+  !   write(FID_SCREEN, *) 'pot_fault = ', pot_fault(1)
+  ! endif
+
+  do n=1, pb%nfault
+    if (is_MPI_parallel()) then
+      buf(1)=pot_fault(n)
+      call sum_allreduce(buf(1), 1)
+      pot_fault(n) = buf(1)
+      if (is_mpi_master()) then
+        !  write(FID_SCREEN, *) 'pot_fault 1 = ', pot_fault(1)
+        write(FID_SCREEN, *) 'pot_fault 2 = ', pot_fault(2)
+      endif
+    else
+      ! write(FID_SCREEN, *) 'pot_fault = ', pot_fault(n)
+    endif
+  enddo
+
+  ! ! Step 4: sum potency and potency rate per fault
+  ! do i=1, size(cumsum_freq_labels)
+  !   if (i == 1) then
+  !     pb%pot_fault(i) = sum(pb%pot_dt(1:cumsum_freq_labels(i)))
+  !     pb%pot_rate_fault(i) = sum(pb%pot_rate_dt(1:cumsum_freq_labels(i)))
+  !   else
+  !     pb%pot_fault(i) = sum(pb%pot_dt(cumsum_freq_labels(i-1):cumsum_freq_labels(i)))
+  !     pb%pot_rate_fault(i) = sum(pb%pot_rate_dt(cumsum_freq_labels(i-1):cumsum_freq_labels(i)))
+  !   enddo
+
+
+  ! Step 3: CHECK FOR FAULTS!. MPI sync (sum)
+  ! Note that the reduce is done in-place
+!   if (is_MPI_parallel()) then
+!     buf(pb%nfault) = pb%pot_fault
+!     call sum_allreduce(buf, 1)
+!     pb%pot_fault = buf(pb%nfault)
+!     buf(pb%nfault) = pb%pot_rate_fault
+!     call sum_allreduce(buf, 1)
+!     pb%pot_rate_fault = buf(pb%nfault)
+!  endif
+    ! do i=1, max_label
+    !   index_label_min = minloc(pb%mesh%fault_label, mask=(pb%mesh%fault_label==i))
+    !   index_label_max = maxloc(pb%mesh%fault_label, mask=(pb%mesh%fault_label==i))
+    !   write(FID_SCREEN, *) 'indexmin', index_label_min
+    !   write(FID_SCREEN, *) 'indexmax', index_label_max
+    ! enddo
+
+ 
+
+  ! Done
+
+end subroutine calc_potency_fault
+
+!=====================================================================
+! subroutine read_fault_labels(pb)
+!   ! Read vector with fault labels and output vector with 
+!   ! cumulative frequency of fault labels.
+!   ! Subroutine used to loop over fault labels
+
+!   use problem_class
+
+!   type(problem_type), intent(inout) :: pb
+!   integer :: i
+
+!   ! Vector with unique values of fault labels
+!   pb%unique_labels = unique(pb%labels)
+
+!   ! Vector with frequency of fault labels
+!   do i=1, size(pb%unique_labels)
+!     pb%freq_labels(i) = count(pb%fault_label==pb%unique_labels(i))
+!   enddo
+
+!   ! Vector of cumulative frequency of fault labels
+!   do i=1, size(pb%freq_labels)
+!     pb%cumsum_freq_labels(i) = sum(pb%freq_labels(1:i))
+!   enddo
+
+!   ! Done
+
+! end subroutine read_fault_labels
+
+!======================================================================
+! subroutine unique(vec,vec_unique)  
+!   ! Return only the unique values from vec. (used to get the unique values of fault labels)
+!   ! Equivalent to Matlab's unique function
+!   ! Based on https://degenerateconic.com/unique.html
+
+!   implicit none
+  
+!   integer,dimension(:),intent(in) :: vec  
+!   integer,dimension(:),allocatable,intent(out) :: vec_unique
+  
+!   integer :: i,num  
+!   logical,dimension(size(vec)) :: mask
+  
+!   mask = .false.
+  
+!   do i=1,size(vec)
+  
+!       !count the number of occurrences of this element:  
+!       num = count( vec(i)==vec )
+  
+!       if (num==1) then  
+!           !there is only one, flag it:  
+!           mask(i) = .true.  
+!       else  
+!           !flag this value only if it hasn't already been flagged:  
+!           if (.not. any(vec(i)==vec .and. mask) ) mask(i) = .true.  
+!       end if
+  
+!   end do
+  
+!   !return only flagged elements:  
+!   allocate( vec_unique(count(mask)) )  
+!   vec_unique = pack( vec, mask )
+  
+!   !if you also need it sorted, then do so.  
+!   ! For example, with slatec routine:  
+!   !call ISORT (vec_unique, [0], size(vec_unique), 1)
+  
+!   end subroutine unique  
 !=====================================================================
 ! Get the location of the maximum slip rate
 

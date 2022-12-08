@@ -99,13 +99,15 @@ class qdyn:
         set_dict["DIP_W"] = 90				# Fault dip in 3D
         set_dict["Z_CORNER"] = 0			# 3D (Base of the fault)
         set_dict["FAULT_LABEL"] = 1         # Label of the fault (int) 
+        set_dict["N_FAULTS"] = 1            # Number of faults (int)
 
         # Optional simulation features
         set_dict["FEAT_STRESS_COUPL"] = 0	# Normal stress coupling
         set_dict["FEAT_TP"] = 0				# Thermal pressurisation
         set_dict["FEAT_LOCALISATION"] = 0	# Gouge zone localisation of strain (CNS only)
         set_dict["FEAT_RESTART"] = 0        # Restart simulation from last snapshot of a previous simulation
-        set_dict["RESTART_TIME"] = 0        # Restart time of the simulation [s] 
+        set_dict["RESTART_TIME"] = 0        # Restart time of the simulation [s]
+        set_dict["RESTART_SLIP"] = 0        # Restart slip of the simulation [m] 
 
         # Rate-and-state friction parameters
         set_dict["SET_DICT_RSF"] = {
@@ -331,8 +333,12 @@ class qdyn:
         # Populate mesh with fault labels
         mesh_dict["FAULT_LABEL"] = np.ones(N)*settings["FAULT_LABEL"]
 
+        # Recalculate number of faults if necessary
+        mesh_dict["N_FAULTS"] = len(np.unique(settings["FAULT_LABEL"]))
+
         self.mesh_dict.update(mesh_dict)
         self.mesh_rendered = True
+
 
         return True
 
@@ -491,6 +497,9 @@ class qdyn:
         # Number of creep mechanisms
         N_creep = settings["SET_DICT_CNS"]["N_CREEP"]
 
+        # Recalculate number of faults if necessary
+        settings["N_FAULTS"] = len(np.unique(mesh["FAULT_LABEL"]))
+
         # Loop over processor nodes
         for iproc in range(Nprocs):
             nloc = nwLocal[iproc]*settings["NX"]	# number of fault elements hosted on node
@@ -531,9 +540,13 @@ class qdyn:
             # Note that i_sigma_law is replaced by the feature stress_coupling, but is kept for compatibility
             input_str += "%u%s i_sigma_law\n" % (settings["SIGMA_CPL"], delimiter)
 
-            # Check RESTART ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            # Check restart
             input_str += "%u%s restart\n" % (settings["FEAT_RESTART"], delimiter)
             input_str += "%.15g%s restart time\n" % (settings["RESTART_TIME"], delimiter)
+            input_str += "%.15g%s restart slip\n" % (settings["RESTART_SLIP"], delimiter)
+
+            # Number of faults
+            input_str += "%.15g%s fault number\n" % (settings["N_FAULTS"], delimiter)
 
             # If the CNS model is used, define the number of creep mechanisms
             if settings["FRICTION_MODEL"] == "CNS":
@@ -550,6 +563,9 @@ class qdyn:
             input_str += "%u %u%s DYN_FLAG, DYN_SKIP\n" % (settings["DYN_FLAG"], settings["DYN_SKIP"], delimiter)
             input_str += "%.15g %.15g %.15g%s M0, DYN_th_on, DYN_th_off\n" % (settings["DYN_M"], settings["DYN_TH_ON"], settings["DYN_TH_OFF"], delimiter)
             input_str += "%i %i%s FAULT_TYPE, SOLVER\n" % (settings["FAULT_TYPE"], settings["SOLVER"], delimiter)
+
+            # Write number of elements of each fault
+            
 
             # Loop over all fault segments that are hosted on this processor node
             for i in range(nwLocal[iproc]):
@@ -871,4 +887,11 @@ class qdyn:
         last_time = float(line[2].split()[0])
         return last_time
 
+    # Return slip of last snapshot of a simulation
+    #  (used when restarting a simulation from a previous model)
+    def restart_slip(self):
+        last_ox = open("output_ox_last", "r")
+        line = last_ox.readlines()
+        last_slip = float(line[2].split()[8])
+        return last_slip
 

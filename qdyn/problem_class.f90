@@ -1,4 +1,4 @@
-!define problem
+!define problemmesh_type
 
 module problem_class
 
@@ -119,7 +119,13 @@ module problem_class
     double precision, dimension(:), allocatable :: theta2, alpha
     double precision, pointer ::  tau_max(:) => null(), t_rup(:) => null(), &
                                   v_max(:) => null(), t_vmax(:) => null()
+    ! Potency variables
     double precision, pointer :: pot => null(), pot_rate => null()
+  
+    ! Fault label variables
+    !double precision, dimension(:), allocatable :: unique_labels, freq_labels, cumsum_freq_labels
+    ! Fault potency variables
+    double precision, dimension(:), allocatable :: pot_fault, pot_rate_fault
    ! Boundary conditions
     integer :: i_sigma_cpl=0, finite=0
    ! Friction properties
@@ -165,7 +171,10 @@ module problem_class
 
     ! Restart
     integer :: restart
-    double precision :: restart_time
+    double precision :: restart_time, restart_slip
+
+    ! Number of fault labels
+    integer :: nfault
 
   end type problem_type
 

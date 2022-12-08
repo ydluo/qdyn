@@ -317,7 +317,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
       x_obs = m%x(jj)
       y_obs = m%y(jj)
       z_obs = m%z(jj)
-      dip_obs = m%dip(jj)
+      dip_obs = m%dip(jj) 
       do i=-m%nx+1,m%nx
         ! MvdE: the FFT will be applied along the x-coordinate, and so the x-coordinate
         ! of the observer should be as x = 0. The relative x-coordinate for the i-th
