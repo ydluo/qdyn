@@ -82,6 +82,7 @@ subroutine initialize_output(pb)
   ! overwrite time if restart with time of last simulation
   if(pb%restart==1) then
     pb%time=pb%time+pb%restart_time
+    pb%slip = pb%slip + pb%restart_slip
   endif
 
   ! [double scalar] time, potency, potency rate

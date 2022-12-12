@@ -52,7 +52,7 @@ class qdyn:
     qdyn_path = os.path.abspath(
         os.path.join(os.path.realpath(__file__), os.pardir)
     )
-    
+    qdyn_path = "/home/crodriguezpiceda/buildqdyn/qdyn_lastox_gnu"
     # Working directory can be kept empty, except for special cases
     work_dir = ""
     # Flag for using the bash environment in Windows 10
@@ -104,7 +104,8 @@ class qdyn:
         set_dict["FEAT_TP"] = 0				# Thermal pressurisation
         set_dict["FEAT_LOCALISATION"] = 0	# Gouge zone localisation of strain (CNS only)
         set_dict["FEAT_RESTART"] = 0        # Restart simulation from last snapshot of a previous simulation
-        set_dict["RESTART_TIME"] = 0        # Restart time of the simulation [s] 
+        set_dict["RESTART_TIME"] = 0        # Restart time of the simulation [s]
+        set_dict["RESTART_SLIP"] = 0        # Restart slip of the simulation [m] 
 
         # Rate-and-state friction parameters
         set_dict["SET_DICT_RSF"] = {
@@ -526,9 +527,10 @@ class qdyn:
             # Note that i_sigma_law is replaced by the feature stress_coupling, but is kept for compatibility
             input_str += "%u%s i_sigma_law\n" % (settings["SIGMA_CPL"], delimiter)
 
-            # Check RESTART ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            # Check RESTART
             input_str += "%u%s restart\n" % (settings["FEAT_RESTART"], delimiter)
             input_str += "%.15g%s restart time\n" % (settings["RESTART_TIME"], delimiter)
+            input_str += "%.15g%s restart slip\n" % (settings["RESTART_SLIP"], delimiter)
 
             # If the CNS model is used, define the number of creep mechanisms
             if settings["FRICTION_MODEL"] == "CNS":
@@ -866,4 +868,11 @@ class qdyn:
         last_time = float(line[2].split()[0])
         return last_time
 
+    # Return slip of last snapshot of a simulation
+    #  (used when restarting a simulation from a previous model)
+    def restart_slip(self):
+        last_ox = open("output_ox_last", "r")
+        line = last_ox.readlines()
+        last_slip = float(line[2].split()[8])
+        return last_slip
 

@@ -41,6 +41,7 @@ subroutine read_main(pb)
   ! Read restart variable 
   read(FID_IN, *) pb%restart
   read(FID_IN, *) pb%restart_time
+  read(FID_IN, *) pb%restart_slip
 
   ! SEISMIC: various simulation features can be turned on (1) or off (0)
   if (pb%i_rns_law == 3) then
