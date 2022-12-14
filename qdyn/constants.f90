@@ -68,7 +68,7 @@ integer, parameter :: FID_TIME = 121
 integer, parameter :: FID_STATIONS = 200
 integer, parameter :: FID_MW = 222
 integer, parameter :: FID_OX_DYN = 20000
-integer, parameter :: FID_FPTCY = 40000
+integer, parameter :: FID_FAULT = 40000
 
 ! Output names
 character(*), parameter :: FILE_OX = "output_ox"
@@ -80,6 +80,6 @@ character(*), parameter :: FILE_OT = "output_ot_"
 character(*), parameter :: FILE_IASP = "output_iasp"
 character(*), parameter :: FILE_VMAX = "output_vmax"
 character(*), parameter :: FILE_SCREEN = "log"
-character(*), parameter :: FILE_FPTCY = "output_fault_ptcy"
+character(*), parameter :: FILE_FAULT = "output_fault"
 
 end module constants

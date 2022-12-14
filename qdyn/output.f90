@@ -365,8 +365,8 @@ end subroutine ot_read_stations
 subroutine ot_init(pb)
 
   use problem_class
-  use constants, only:  BIN_OUTPUT, FID_IASP, FID_OT, FID_VMAX, &
-                        FILE_IASP, FILE_OT, FILE_VMAX
+  use constants, only:  BIN_OUTPUT, FID_IASP, FID_OT, FID_VMAX, FID_FAULT, &
+                        FILE_IASP, FILE_OT, FILE_VMAX, FILE_FAULT
   use my_mpi, only: is_MPI_parallel, is_MPI_master, gather_allvi_root
   use mesh, only: mesh_get_size, nnLocal_perproc, nnoffset_glob_perproc
 
@@ -391,6 +391,8 @@ subroutine ot_init(pb)
   pb%ot%not = 10
   ! Number of ot_vmax output quantities
   pb%ot%not_vmax = 9
+  ! Number of ot_fault output quantities
+  pb%ot%not_fault = 3
   ! If thermal pressurisation is requested, add 2 more
   if (pb%features%tp == 1) then
     pb%ot%not = pb%ot%not + 2
@@ -399,6 +401,7 @@ subroutine ot_init(pb)
   ! Allocate space in array of pointers
   allocate(pb%ot%fmt(pb%ot%not))
   allocate(pb%ot%fmt_vmax(pb%ot%not_vmax))
+  allocate(pb%ot%fmt_fault(pb%ot%not_fault))
 
   ! Default output format
   pb%ot%fmt = "(e15.7)"
@@ -415,6 +418,9 @@ subroutine ot_init(pb)
   pb%ot%fmt_vmax(2) = "(i15)"
   ! TO DO: right format for fault label in vmax
   !pb%ot%fmt_vmax(9) = "(e15.0)"
+
+  ! Default fault output format
+  pb%ot%fmt_fault = "(e15.7)"
 
   ! If parallel:
   if (is_MPI_parallel()) then
@@ -506,6 +512,24 @@ subroutine ot_init(pb)
       close(FID_IASP)
     endif
 
+    ! Fault output
+    if (pb%restart==0) then
+      open(FID_FAULT, file=FILE_FAULT, status="replace")
+      write(FID_FAULT, "(a)") "# fault values:"
+      write(FID_FAULT, "(a)", advance="no") "# 1=t "
+      do i=1, pb%nfault
+        write(FID_FAULT, "(a, i0)", advance="no") " 2=pot_", i
+      enddo
+      do i=1, pb%nfault
+        write(FID_FAULT, "(a, i0)", advance="no") " 3=pot_rate_", i
+      enddo
+      do i=1, pb%nfault
+        write(FID_FAULT, "(a, i0)", advance="no") " 4=slip_dt_", i
+      enddo
+
+      close(FID_FAULT)
+
+    endif
   endif
 
 end subroutine ot_init
@@ -618,8 +642,8 @@ end subroutine ox_init
 subroutine ot_write(pb)
 
   use problem_class
-  use constants, only:  BIN_OUTPUT, FID_IASP, FID_OT, FID_VMAX, &
-                        FILE_IASP, FILE_OT, FILE_VMAX
+  use constants, only:  BIN_OUTPUT, FID_IASP, FID_OT, FID_VMAX, FID_FAULT, &
+                        FILE_IASP, FILE_OT, FILE_VMAX, FILE_FAULT
   use my_mpi, only: is_MPI_master, is_MPI_parallel
 
   type (problem_type), intent(inout) :: pb
@@ -707,6 +731,10 @@ subroutine ot_write(pb)
     pb%ot%v_pre2 = pb%ot%v_pre
     pb%ot%v_pre = pb%v_glob
 
+    ! Write fault data (potency, potency rate and slip_dt)
+    open(FID_FAULT, file=FILE_FAULT, status="old", position="append")
+    call write_fault_lines(FID_FAULT, pb%ot%fmt, pb%ot%fmt_fault, pb%objects_glob, pb%pot_fault, pb%pot_rate_fault, pb%slip_dt_fault, pb)
+    close(FID_FAULT)
   endif
 
 end subroutine ot_write
@@ -1019,6 +1047,41 @@ subroutine write_ot_lines(unit, fmt, objects, iot, pb)
 end subroutine write_ot_lines
 
 !=====================================================================
+! Write fault data (potency, potency rate and delta slip) to file
+subroutine write_fault_lines(unit, fmt, fmt_fault, objects, pot_fault, pot_rate_fault, slip_dt_fault, pb)
+
+  use problem_class
+  type (problem_type), intent(inout) :: pb
+  integer :: i, unit
+  character(len=16), dimension(pb%nobj) :: fmt, fmt_fault
+  type(optr), dimension(pb%nobj) :: objects
+  double precision, dimension(pb%nfault) :: pot_fault, pot_rate_fault, slip_dt_fault
+
+  ! Write time
+  write(unit, fmt(1), advance="no") objects(1)%s
+  ! ! Write pot_fault and pot_rate_fault (do not advance to next line)
+  ! write(unit, fmt_fault(1), advance="no") pot_fault
+  ! write(unit, fmt_fault(2), advance="no") pot_rate_fault
+  ! ! Write slip_dt fault (advance to next line)
+  ! write(unit, fmt_fault(3)) slip_dt_fault
+
+  do i=1, pb%nfault
+    ! Write pot_fault and pot_rate_fault (do not advance to next line)
+    write(unit, fmt_fault(1), advance="no") pot_fault(i)
+    write(unit, fmt_fault(2), advance="no") pot_rate_fault(i)
+    
+    if (i/=pb%nfault) then
+      ! Write slip_dt fault (do not advance to next line)
+      write(unit, fmt_fault(3), advance="no") slip_dt_fault(i)
+    else
+    ! Write slip_dt fault (advance to next line)
+      write(unit, fmt_fault(3)) slip_dt_fault(i)
+    endif
+  enddo
+
+end subroutine write_fault_lines
+
+!=====================================================================
 ! Write ox data to file
 subroutine write_ox_lines(unit, fmt, objects, nxout, nwout, pb)
 
@@ -1159,16 +1222,15 @@ subroutine calc_potency_fault(pb)
 
   type(problem_type), intent(inout) :: pb
   double precision, dimension(pb%mesh%nn) :: area, slip_dt, pot_dt, pot_rate_dt, index_label_min, index_label_max
-  double precision, dimension(pb%nfault) :: pot_fault, pot_rate_fault
-  !integer, dimension(:), allocatable :: labels, n_labels 
+  double precision, dimension(pb%nfault) :: pot_fault, pot_rate_fault, slip_dt_fault
   double precision, dimension(1) :: buf
   integer :: iw, ix, n, lbl
-  !, max_label
 
   pot_dt = 0d0
   pot_rate_dt = 0d0
   pot_fault = 0d0
   pot_rate_fault = 0d0
+  slip_dt_fault = 0d0
   area = 0d0
 
   ! Step 1: define area vector
@@ -1181,85 +1243,40 @@ subroutine calc_potency_fault(pb)
 
   ! Step 2: Calculate vector of delta slip as dt*v
   slip_dt = pb%dt_did * pb%v
-  !write(FID_SCREEN, *) 'delta_slip = ', slip_dt
 
   ! Step 3: calculate potency and potency rate
   ! multiply [slip/v] * area
   pot_dt = slip_dt * area
-  ! if (is_mpi_master()) then
-  !   write(FID_SCREEN, *) 'slip_dt = ', slip_dt
-  !   write(FID_SCREEN, *) 'area = ', area
-  ! endif
   pot_rate_dt = pb%v * area
 
-  ! ! Step 4: sum potency and potency rate per fault
-  ! do n=1, pb%mesh%nn
-  !   ! Check fault label
-  !   lbl = pb%mesh%fault_label(n)
-  !   ! sum potency
-  !   pot_fault(lbl) = pot_fault(lbl) + pot_dt(n)
-  !   pot_rate_fault(lbl) = pot_rate_fault(lbl) + pot_rate_dt(n)
-  ! end do
-
-    ! Step 4: sum potency and potency rate per fault
+  ! Step 4: sum potency, potency rate and delta slip per fault
   do n=1, pb%mesh%nn
     ! Check fault label
     lbl = pb%mesh%fault_label(n)
-    ! sum potency
+    ! sum potency, potency rate and delta slip
     pot_fault(lbl) = pot_fault(lbl) + pot_dt(n)
     pot_rate_fault(lbl) = pot_rate_fault(lbl) + pot_rate_dt(n)
+    slip_dt_fault(lbl) = slip_dt_fault(lbl) + slip_dt(n)
   end do
 
-  ! if (is_MPI_parallel()) then
-  !   if (is_mpi_master()) write(FID_SCREEN, *) 'pot_fault = ', pot_fault(1)
-  ! else
-  !   write(FID_SCREEN, *) 'pot_fault = ', pot_fault(1)
-  ! endif
-
+  ! reduce for MPI
   do n=1, pb%nfault
     if (is_MPI_parallel()) then
       buf(1)=pot_fault(n)
       call sum_allreduce(buf(1), 1)
       pot_fault(n) = buf(1)
       if (is_mpi_master()) then
-        !  write(FID_SCREEN, *) 'pot_fault 1 = ', pot_fault(1)
+        write(FID_SCREEN, *) 'slip_dt_fault 2 = ', slip_dt_fault(2)
         write(FID_SCREEN, *) 'pot_fault 2 = ', pot_fault(2)
       endif
     else
-      ! write(FID_SCREEN, *) 'pot_fault = ', pot_fault(n)
     endif
   enddo
 
-  ! ! Step 4: sum potency and potency rate per fault
-  ! do i=1, size(cumsum_freq_labels)
-  !   if (i == 1) then
-  !     pb%pot_fault(i) = sum(pb%pot_dt(1:cumsum_freq_labels(i)))
-  !     pb%pot_rate_fault(i) = sum(pb%pot_rate_dt(1:cumsum_freq_labels(i)))
-  !   else
-  !     pb%pot_fault(i) = sum(pb%pot_dt(cumsum_freq_labels(i-1):cumsum_freq_labels(i)))
-  !     pb%pot_rate_fault(i) = sum(pb%pot_rate_dt(cumsum_freq_labels(i-1):cumsum_freq_labels(i)))
-  !   enddo
-
-
-  ! Step 3: CHECK FOR FAULTS!. MPI sync (sum)
-  ! Note that the reduce is done in-place
-!   if (is_MPI_parallel()) then
-!     buf(pb%nfault) = pb%pot_fault
-!     call sum_allreduce(buf, 1)
-!     pb%pot_fault = buf(pb%nfault)
-!     buf(pb%nfault) = pb%pot_rate_fault
-!     call sum_allreduce(buf, 1)
-!     pb%pot_rate_fault = buf(pb%nfault)
-!  endif
-    ! do i=1, max_label
-    !   index_label_min = minloc(pb%mesh%fault_label, mask=(pb%mesh%fault_label==i))
-    !   index_label_max = maxloc(pb%mesh%fault_label, mask=(pb%mesh%fault_label==i))
-    !   write(FID_SCREEN, *) 'indexmin', index_label_min
-    !   write(FID_SCREEN, *) 'indexmax', index_label_max
-    ! enddo
-
- 
-
+  ! assign variables to problem class variables
+  pb%pot_fault = pot_fault
+  pb%pot_rate_fault = pot_rate_fault
+  pb%slip_dt_fault = slip_dt_fault
   ! Done
 
 end subroutine calc_potency_fault

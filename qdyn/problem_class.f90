@@ -23,9 +23,9 @@ module problem_class
   type ot_type
     double precision :: v_th
     double precision, dimension(:), allocatable :: xsta, ysta, zsta, v_pre, v_pre2
-    integer :: ic=-1, ntout=0, not=-1, not_vmax=-1
+    integer :: ic=-1, ntout=0, not=-1, not_vmax=-1, not_fault = -1
     integer, dimension(:), allocatable :: iasp, iot
-    character(len=16), dimension(:), allocatable :: fmt, fmt_vmax
+    character(len=16), dimension(:), allocatable :: fmt, fmt_vmax, fmt_fault
     type(optr), dimension(:), allocatable :: objects_ot, objects_vmax
   end type ot_type
 
@@ -121,11 +121,8 @@ module problem_class
                                   v_max(:) => null(), t_vmax(:) => null()
     ! Potency variables
     double precision, pointer :: pot => null(), pot_rate => null()
-  
-    ! Fault label variables
-    !double precision, dimension(:), allocatable :: unique_labels, freq_labels, cumsum_freq_labels
-    ! Fault potency variables
-    double precision, dimension(:), allocatable :: pot_fault, pot_rate_fault
+    ! Fault variables
+    double precision, dimension(:), allocatable :: pot_fault, pot_rate_fault, slip_dt_fault
    ! Boundary conditions
     integer :: i_sigma_cpl=0, finite=0
    ! Friction properties
