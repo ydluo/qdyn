@@ -695,10 +695,11 @@ class qdyn:
 
     def read_output(self, mirror=False, path_output=None, read_ot=True, filename_ot="output_ot",
                     filename_vmax="output_vmax", read_ox=True,
-                    filename_ox="output_ox", read_ox_dyn=False, filename_ox_last="output_ox_last", read_ox_last=False):
+                    filename_ox="output_ox", read_ox_dyn=False, filename_ox_last="output_ox_last", read_ox_last=False,
+                    filename_fault="output_fault", read_fault=False):
 
         # Output file contents depends on the requested features
-        # Time series (ot)
+        ## Time series (ot)
         nheaders_ot = 4
         quants_ot = ("t", "potcy", "pot_rate", "v", "theta", "tau", "dtau_dt", "slip", "sigma", "fault_label")
         if self.set_dict["FEAT_TP"] == 1:
@@ -716,6 +717,14 @@ class qdyn:
         quants_ox = ("t", "x", "y", "z", "v", "theta", "tau", "tau_dot", "slip", "sigma", "fault_label")
         if self.set_dict["FEAT_TP"] == 1:
             quants_ox += ("P", "T")
+        
+        # Fault time-series
+        nheaders_fault = 2
+        # 1=t  2=pot_1 2=pot_2 3=pot_rate_1 3=pot_rate_2 4=slip_dt_1 4=slip_dt_2
+        #quants_pot = ["pot_" + str(n) for n in np.arange(1,nfaults+1)]
+        #quants_potrate = ["pot_rate_" + str(n) for n in np.arange(1,nfaults+1)]
+        #quants_slipdt = ["slip_dt_" + str(n) for n in np.arange(1,nfaults+1)]
+        quants_fault = ("t", "potcy_fault", "pot_rate_fault", "slip_dt_fault")
 
         # If time series data is requested
         if read_ot:
@@ -755,7 +764,7 @@ class qdyn:
             self.ot_vmax = None
             self.N_iot = 0
 
-        # Standard snapshots
+        ## Standard snapshots
         if read_ox:
 
             # Read snapshot output
@@ -779,7 +788,7 @@ class qdyn:
         else:
             self.ox = None
 
-        # Last snapshot
+        ## Last snapshot
         if read_ox_last == True:
 
             # Read snapshot output
@@ -802,7 +811,7 @@ class qdyn:
         else:
             self.ox_last = None
 
-        # Dynamic snapshot
+        ## Dynamic snapshot
         if read_ox_dyn == True:
 
             # Check directory
@@ -851,9 +860,30 @@ class qdyn:
             self.ox_dyn_pre = data_ox_dyn_pre
             self.ox_dyn_post = data_ox_dyn_post
             self.ox_dyn_rup = data_ox_dyn_rup
-            
+
+
+        # If fault data is requested
+
+        if read_fault:
+
+            N_faults = self.set_dict["N_FAULTS"]
+            self.fault = [None] * N_faults
+
+            # Check output directory
+            if path_output!=None:
+                filename_fault = path_output + filename_fault 
+            for n in np.arange(1,N_faults+1):
+                col_list = [0, n, n + N_faults, n + 2*N_faults] # Use columns of one fault only
+                print(n)
+                print(col_list)
+                self.fault[n-1] = read_csv(
+                filename_fault, header=None, skiprows=nheaders_fault, usecols=col_list,
+                names=quants_fault, delim_whitespace=True
+                )
 
         return True
+
+
 
     # Read other time series data, when they are available
     def read_other_output(self, i):

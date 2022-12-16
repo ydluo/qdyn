@@ -516,15 +516,15 @@ subroutine ot_init(pb)
     if (pb%restart==0) then
       open(FID_FAULT, file=FILE_FAULT, status="replace")
       write(FID_FAULT, "(a)") "# fault values:"
-      write(FID_FAULT, "(a)", advance="no") "# 1=t "
+      write(FID_FAULT, "(a)", advance="no") "# t "
       do i=1, pb%nfault
-        write(FID_FAULT, "(a, i0)", advance="no") " 2=pot_", i
+        write(FID_FAULT, "(a, i0)", advance="no") " pot_", i
       enddo
       do i=1, pb%nfault
-        write(FID_FAULT, "(a, i0)", advance="no") " 3=pot_rate_", i
+        write(FID_FAULT, "(a, i0)", advance="no") " pot_rate_", i
       enddo
       do i=1, pb%nfault
-        write(FID_FAULT, "(a, i0)", advance="no") " 4=slip_dt_", i
+        write(FID_FAULT, "(a, i0)", advance="no") " slip_dt_", i
       enddo
 
       close(FID_FAULT)
@@ -1059,11 +1059,6 @@ subroutine write_fault_lines(unit, fmt, fmt_fault, objects, pot_fault, pot_rate_
 
   ! Write time
   write(unit, fmt(1), advance="no") objects(1)%s
-  ! ! Write pot_fault and pot_rate_fault (do not advance to next line)
-  ! write(unit, fmt_fault(1), advance="no") pot_fault
-  ! write(unit, fmt_fault(2), advance="no") pot_rate_fault
-  ! ! Write slip_dt fault (advance to next line)
-  ! write(unit, fmt_fault(3)) slip_dt_fault
 
   do i=1, pb%nfault
     ! Write pot_fault and pot_rate_fault (do not advance to next line)
