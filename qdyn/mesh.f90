@@ -13,6 +13,7 @@ module mesh
     ! Local mesh coordinates
     double precision, pointer :: x(:) => null(), y(:) => null(), z(:) => null()
     double precision, pointer :: fault_label(:) => null()
+    double precision, pointer :: restart_slip(:) => null()
     ! Local dip, and along-strike and along-dip size of grid cells (nx*nw count)
     ! TODO: grid sizes should be constant in order for FFT to work!
     double precision, pointer :: dip(:) => null(), dx(:) => null(), dw(:) => null()
@@ -20,6 +21,7 @@ module mesh
     double precision, pointer :: xglob(:) => null(), yglob(:) => null(), zglob(:) => null()
     double precision, pointer :: dipglob(:) => null(), dwglob(:) => null()
     double precision, pointer :: fault_label_glob(:) => null()
+    double precision, pointer :: restart_slip_glob(:) => null()
   end type mesh_type
 
   ! SEISMIC: discretisation of spectral domain for diffusion solver
@@ -82,9 +84,9 @@ subroutine read_mesh_nodes(iin,m)
 
   integer :: i
 
-  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%dip(m%nn), m%fault_label(m%nn))
+  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%dip(m%nn), m%fault_label(m%nn), m%restart_slip(m%nn))
   do i=1,m%nn
-    read(iin,*) m%x(i),m%y(i),m%z(i),m%dip(i), m%fault_label(i)
+    read(iin,*) m%x(i),m%y(i),m%z(i),m%dip(i), m%fault_label(i), m%restart_slip(i)
   enddo
 
 end subroutine read_mesh_nodes
@@ -121,7 +123,7 @@ subroutine init_mesh_0D(m)
   type(mesh_type), intent(inout) :: m
 
   call log_screen("Spring-block System")
-  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%fault_label(m%nn))
+  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%fault_label(m%nn), m%restart_slip(m%nn))
   allocate(m%dx(1), m%dw(1))
   m%nx = 1
   m%nw = 1
@@ -133,6 +135,7 @@ subroutine init_mesh_0D(m)
   m%y = 0d0
   m%z = 0d0
   m%fault_label = 1d0
+  m%restart_slip= 0d0
 
 end subroutine init_mesh_0D
 
@@ -150,7 +153,7 @@ subroutine init_mesh_1D(m)
   m%nw = 1
   m%dx = m%Lfault/m%nn
   m%dw = 1d0
-  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%fault_label(m%nn))
+  allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%fault_label(m%nn), m%restart_slip(m%nn))
   do i=1,m%nn
     m%x(i) = (i-m%nn*0.5d0-0.5d0)*m%dx(1)
     ! Assuming nn is even (usually a power of 2),
@@ -158,7 +161,8 @@ subroutine init_mesh_1D(m)
     ! are located at x=-dx/2 and x=dx/2, respectively
     m%y(i) = 0d0
     m%z(i) = 0d0
-    m%fault_label(i) = 0d0
+    m%fault_label(i) = 1d0
+    m%restart_slip(i) = 0d0
   enddo
 
   m%xglob => m%x
@@ -166,7 +170,9 @@ subroutine init_mesh_1D(m)
   m%zglob => m%z
   m%nxglob = m%nx
   m%nwglob = m%nw
-  m%fault_label_glob => m%x
+  m%fault_label_glob => m%fault_label
+  m%restart_slip_glob => m%restart_slip
+
 end subroutine init_mesh_1D
 
 !--------------------------------------------------------
@@ -204,6 +210,7 @@ subroutine init_mesh_2D(m)
     m%dwglob => m%dw
     m%nwglob = m%nw
     m%fault_label_glob => m%fault_label
+    m%restart_slip_glob => m%restart_slip
 
   ! Parallel mode: gather mesh node locations for computing the kernel
   else
@@ -242,7 +249,7 @@ subroutine init_mesh_2D(m)
 
    ! Allocate global mesh for computing the kernel and for outputs
     allocate(m%xglob(nnGlobal),m%yglob(nnGlobal),&
-             m%zglob(nnGlobal),m%dwglob(nwGlobal),m%dipglob(nnGlobal), m%fault_label_glob(nnGlobal))
+             m%zglob(nnGlobal),m%dwglob(nwGlobal),m%dipglob(nnGlobal), m%fault_label_glob(nnGlobal), m%restart_slip_glob(nnGlobal))
 
     ! Gather mesh nodes
     call gather_allvdouble(m%x,   nnLocal, m%xglob,   nnLocal_perproc, nnoffset_glob_perproc, nnGlobal)
@@ -251,6 +258,7 @@ subroutine init_mesh_2D(m)
     call gather_allvdouble(m%dip, nnLocal, m%dipglob, nnLocal_perproc, nnoffset_glob_perproc, nnGlobal)
     call gather_allvdouble(m%dw,  nwLocal, m%dwglob,  nwLocal_perproc, nwoffset_glob_perproc, nwGlobal)
     call gather_allvdouble(m%fault_label,  nnLocal, m%fault_label_glob,  nnLocal_perproc, nnoffset_glob_perproc, nnGlobal)
+    call gather_allvdouble(m%restart_slip,  nnLocal, m%restart_slip_glob,  nnLocal_perproc, nnoffset_glob_perproc, nnGlobal)
 
 endif
 

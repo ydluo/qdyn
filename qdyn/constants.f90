@@ -54,6 +54,8 @@ integer :: SOLVER_TYPE = 0
 
 ! Input unit
 integer, parameter :: FID_IN = 15
+! Additional input unit (output_ox_last) if restarting model
+! integer, parameter :: FID_IN_LAST = 16
 
 ! Output units
 integer, parameter :: FID_SCREEN = 6

@@ -42,7 +42,7 @@ subroutine read_main(pb)
   ! Read restart variable 
   read(FID_IN, *) pb%restart
   read(FID_IN, *) pb%restart_time
-  read(FID_IN, *) pb%restart_slip
+  !read(FID_IN, *) pb%restart_slip
 
   ! Read number of faults
   read(FID_IN, *) pb%nfault
@@ -267,5 +267,52 @@ subroutine read_main(pb)
 
 end subroutine read_main
 
+! subroutine read_lastox(pb)
+!   ! CRP: <RESTART>
+!   ! Read slip from last snapshot file output_last_ox. 
+!   ! This value will be used to compute the slip when restarting a model from
+!   ! a previous simulation
+
+!   use problem_class
+!   use logger, only : log_screen
+!   use constants, only : FID_IN_LAST, FID_SCREEN
+
+!   integer :: i, nn
+!   character :: header
+!   ! These are unused values
+!   double precision :: t, x, y, z,  v, theta, tau, tau_dot, sigma
+
+
+!   type(problem_type), intent(inout) :: pb
+
+!   if(pb%restart==1) then
+!     call log_screen("Start reading last snapshot...")
+
+!     ! open last snapshot
+!     open(unit=FID_IN_LAST, file='output_ox_last', action='read')
+    
+!     ! define number of mesh nodes
+!     nn = pb%mesh%nn
+!     write(FID_SCREEN, *) 'mesh elements = ', nn
+    
+!     ! read header
+!     read(FID_IN_LAST, *) header
+    
+!     ! allocate memory for the restart slip
+!     allocate(pb%restart_slip(nn))
+
+!     do i=1,nn
+!       ! read column with slip values. The remaining columns are unused.
+!       read(FID_IN_LAST, *) t, x, y, z,  v, theta, tau, tau_dot, pb%restart_slip(i), sigma
+!     enddo
+
+!     ! debugging: print restart_slip
+!     write(FID_SCREEN, *) 'restart_slip = ', pb%restart_slip
+
+!     close(FID_IN_LAST)
+!     call log_screen("Input last snapshot complete")  
+!   endif
+
+! end subroutine read_lastox
 
 end module input

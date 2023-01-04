@@ -16,6 +16,7 @@ subroutine initialize_output(pb)
 
   use problem_class
   use my_mpi, only: is_MPI_master, is_MPI_parallel
+  use constants, only : PI, FID_SCREEN, FILE_SCREEN
   type (problem_type) :: pb
   integer :: nbase, nobj
 
@@ -23,13 +24,19 @@ subroutine initialize_output(pb)
   ! First, a container of pointers is created that is shared by all the output
   ! submodules (time series, snapshots, etc). Then, for each output type, the
   ! indices pointing to the appropriate quantities are stored in a list. When
-  ! a particular output is requested, the corresponding submodule         ls for the
+  ! a particular output is requested, the corresponding submodule calls for the
   ! appropiate quantity stored in the list. The time value that is output in
   ! each time-step depends on the flag "restart" that was set in the input file.
   ! If the simulation starts at 0s ("restart" = 0), then all the output files
   ! are created from scratch/rewritten. Otherwise, if the simulation is intended
   ! to start from the last time-step of a previous simulation ("restart"=1), then
-  ! the output is appended to the existing output files from this previous simulation.   
+  ! the output is appended to the existing output files from this previous simulation.
+
+  ! Possible bug?: when restarting a model, all the outputs display a repeated time-step.
+  ! This corresponds to the following snapshot time-step after the restart_time. For now,
+  ! the duplicate lines are ignored when reading the outputs with the python wrapper.
+  ! However, in the future the best would be to fix this issue from the fortran code
+
 
   ! Number of objects in containers
   ! Base number
@@ -52,7 +59,9 @@ subroutine initialize_output(pb)
   ! overwrite time and slip if restart with time and slip of last simulation
   if(pb%restart==1) then
     pb%time = pb%time + pb%restart_time
-    pb%slip = pb%slip + pb%restart_slip
+    !pb%slip = pb%slip + pb%restart_slip
+    pb%slip = pb%slip + pb%mesh%restart_slip
+    !write(FID_SCREEN, *) 'restart_slip = ', pb%mesh%restart_slip
   endif
 
   ! If parallel: initialise (allocate) global quantities
@@ -65,7 +74,7 @@ subroutine initialize_output(pb)
     pb%mesh%yglob => pb%mesh%y
     pb%mesh%zglob => pb%mesh%z
     pb%mesh%fault_label_glob => pb%mesh%fault_label
-    ! Mechanical quantities
+    ! Mechanical quantitiesß
     pb%v_glob => pb%v
     pb%theta_glob => pb%theta
     pb%tau_glob => pb%tau
@@ -142,9 +151,6 @@ subroutine initialize_output(pb)
   if (is_MPI_master()) call screen_init_log(pb)
   call ot_init(pb)
   call ox_init(pb)
-
-  ! Fault label frequency (it only needs to be called once)
-  !call read_fault_labels(pb)
 
 end subroutine initialize_output
 
@@ -1205,9 +1211,11 @@ end subroutine calc_potency
 ! 0d:  [pot/pot_rate] = [delta_slip/v] * L
 ! 1d:  [pot/pot_rate] = sum([delta_slip/v] * dx)
 ! 2d:  [pot/pot_rate] = sum([delta_slip/v] * dx * dw)
-! delta_slip is the difference of slip between two consecutive time-steps
+! slip_dt is the difference of slip between two consecutive time-steps
 ! labels is an array with the unique values of fault labels
 ! n_labels is the frequency of fault labels in the mesh
+! returns 3 vectors with the potency, potency rate and slip_dt of the faults
+! (one element per fault)
 
 subroutine calc_potency_fault(pb)
 
@@ -1276,74 +1284,6 @@ subroutine calc_potency_fault(pb)
 
 end subroutine calc_potency_fault
 
-!=====================================================================
-! subroutine read_fault_labels(pb)
-!   ! Read vector with fault labels and output vector with 
-!   ! cumulative frequency of fault labels.
-!   ! Subroutine used to loop over fault labels
-
-!   use problem_class
-
-!   type(problem_type), intent(inout) :: pb
-!   integer :: i
-
-!   ! Vector with unique values of fault labels
-!   pb%unique_labels = unique(pb%labels)
-
-!   ! Vector with frequency of fault labels
-!   do i=1, size(pb%unique_labels)
-!     pb%freq_labels(i) = count(pb%fault_label==pb%unique_labels(i))
-!   enddo
-
-!   ! Vector of cumulative frequency of fault labels
-!   do i=1, size(pb%freq_labels)
-!     pb%cumsum_freq_labels(i) = sum(pb%freq_labels(1:i))
-!   enddo
-
-!   ! Done
-
-! end subroutine read_fault_labels
-
-!======================================================================
-! subroutine unique(vec,vec_unique)  
-!   ! Return only the unique values from vec. (used to get the unique values of fault labels)
-!   ! Equivalent to Matlab's unique function
-!   ! Based on https://degenerateconic.com/unique.html
-
-!   implicit none
-  
-!   integer,dimension(:),intent(in) :: vec  
-!   integer,dimension(:),allocatable,intent(out) :: vec_unique
-  
-!   integer :: i,num  
-!   logical,dimension(size(vec)) :: mask
-  
-!   mask = .false.
-  
-!   do i=1,size(vec)
-  
-!       !count the number of occurrences of this element:  
-!       num = count( vec(i)==vec )
-  
-!       if (num==1) then  
-!           !there is only one, flag it:  
-!           mask(i) = .true.  
-!       else  
-!           !flag this value only if it hasn't already been flagged:  
-!           if (.not. any(vec(i)==vec .and. mask) ) mask(i) = .true.  
-!       end if
-  
-!   end do
-  
-!   !return only flagged elements:  
-!   allocate( vec_unique(count(mask)) )  
-!   vec_unique = pack( vec, mask )
-  
-!   !if you also need it sorted, then do so.  
-!   ! For example, with slatec routine:  
-!   !call ISORT (vec_unique, [0], size(vec_unique), 1)
-  
-!   end subroutine unique  
 !=====================================================================
 ! Get the location of the maximum slip rate
 

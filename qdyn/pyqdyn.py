@@ -1,4 +1,3 @@
-
 """
                     .: PyQDYN: Python wrapper for QDYN :.
 
@@ -336,6 +335,9 @@ class qdyn:
         # Recalculate number of faults if necessary
         mesh_dict["N_FAULTS"] = len(np.unique(settings["FAULT_LABEL"]))
 
+        # Populate mesh with values of restart slip
+        mesh_dict["RESTART_SLIP"] = np.ones(N)*settings["RESTART_SLIP"]
+
         self.mesh_dict.update(mesh_dict)
         self.mesh_rendered = True
 
@@ -543,7 +545,7 @@ class qdyn:
             # Check restart
             input_str += "%u%s restart\n" % (settings["FEAT_RESTART"], delimiter)
             input_str += "%.15g%s restart time\n" % (settings["RESTART_TIME"], delimiter)
-            input_str += "%.15g%s restart slip\n" % (settings["RESTART_SLIP"], delimiter)
+            #input_str += "%.15g%s restart slip\n" % (settings["RESTART_SLIP"], delimiter)
 
             # Number of faults
             input_str += "%.15g%s fault number\n" % (settings["N_FAULTS"], delimiter)
@@ -563,8 +565,6 @@ class qdyn:
             input_str += "%u %u%s DYN_FLAG, DYN_SKIP\n" % (settings["DYN_FLAG"], settings["DYN_SKIP"], delimiter)
             input_str += "%.15g %.15g %.15g%s M0, DYN_th_on, DYN_th_off\n" % (settings["DYN_M"], settings["DYN_TH_ON"], settings["DYN_TH_OFF"], delimiter)
             input_str += "%i %i%s FAULT_TYPE, SOLVER\n" % (settings["FAULT_TYPE"], settings["SOLVER"], delimiter)
-
-            # Write number of elements of each fault
             
 
             # Loop over all fault segments that are hosted on this processor node
@@ -605,9 +605,9 @@ class qdyn:
                 for i in range(nloc):
                     input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n" % (mesh["RHOC"][iloc[i]], mesh["BETA"][iloc[i]], mesh["ETA"][iloc[i]], mesh["HALFW"][iloc[i]], mesh["K_T"][iloc[i]], mesh["K_P"][iloc[i]], mesh["LAM"][iloc[i]], mesh["P_A"][iloc[i]], mesh["T_A"][iloc[i]], mesh["DILAT_FACTOR"][iloc[i]])
 
-            # Add mesh grid location information
+            # Add mesh grid location information + restart_slip values
             for i in range(nloc):
-                input_str += "%.15g %.15g %.15g %.15g %.15g\n" % (mesh["X"][iloc[i]], mesh["Y"][iloc[i]], mesh["Z"][iloc[i]], mesh["DIP_W"][iloc[i]], mesh["FAULT_LABEL"][iloc[i]])
+                input_str += "%.15g %.15g %.15g %.15g %.15g %.15g\n" % (mesh["X"][iloc[i]], mesh["Y"][iloc[i]], mesh["Z"][iloc[i]], mesh["DIP_W"][iloc[i]], mesh["FAULT_LABEL"][iloc[i]], mesh["RESTART_SLIP"][iloc[i]])
 
             nnLocal += settings["NX"]*nwLocal[iproc]
 
@@ -692,6 +692,9 @@ class qdyn:
     # Read QDYN output data
     # This modified function allows to retrieve the outputs from a folder other than the one of the python script
     # It can also read the output of the last snapshot
+    # CRP: When restarting a model, some of the time-steps appear duplicated in the output files. These time-steps correspond
+    # to the 1st snapshot after restarting the simulation. For now, the workaround is to discard the duplicated rows when
+    # reading the output files with the wrapper
 
     def read_output(self, mirror=False, path_output=None, read_ot=True, filename_ot="output_ot",
                     filename_vmax="output_vmax", read_ox=True,
@@ -750,6 +753,9 @@ class qdyn:
                     names=quants_ot, delim_whitespace=True
                 )
 
+                # Discard duplicate rows from duplicate time-steps
+                self.ot[n] = self.ot[n].drop_duplicates(subset=["t"], keep="first") 
+
             # Check output directory
             if path_output!=None:
                 filename_vmax = path_output + filename_vmax
@@ -758,6 +764,8 @@ class qdyn:
                 filename_vmax, header=None, skiprows=nheaders_vmax,
                 names=quants_vmax, delim_whitespace=True
             )
+            # Discard duplicate rows from duplicate time-steps
+            self.ot_vmax = self.ot_vmax.drop_duplicates(subset=["t"], keep="first") 
 
         else:
             self.ot = None
@@ -780,6 +788,9 @@ class qdyn:
             # Sanitise output (check for near-infinite numbers, etc.)
             self.ox = self.ox.apply(pd.to_numeric, errors="coerce")
 
+            # Discard duplicate rows from duplicate time-steps
+            self.ox = self.ox.drop_duplicates(subset=["t", "x", "y", "z"], keep="first") 
+
             # If free surface was generated manually (i.e. without FINITE = 2 or 3),
             # take only half data set (symmetric around first element)
             if mirror == True:
@@ -795,6 +806,7 @@ class qdyn:
             # Check output directory
             if path_output!= None:
                 filename_ox_last = path_output + filename_ox_last
+
             data_ox_last = read_csv(filename_ox_last, header=None, names=quants_ox, delim_whitespace=True, comment="#")
 
             # Store snapshot data in self.ox
@@ -839,6 +851,9 @@ class qdyn:
                 )
                 # Sanitise output (check for near-infinite numbers, etc.)
                 data_ox_dyn_pre[i] = data_ox_dyn_pre[i].apply(pd.to_numeric, errors="coerce")
+            
+                # Discard duplicate rows from duplicate time-steps
+                data_ox_dyn_pre[i] = data_ox_dyn_pre[i].drop_duplicates(subset=["t", "x", "y", "z"], keep="first")
 
                 # Read pre-rupture file
                 data_ox_dyn_post[i] = read_csv(
@@ -848,6 +863,9 @@ class qdyn:
                 # Sanitise output (check for near-infinite numbers, etc.)
                 data_ox_dyn_post[i] = data_ox_dyn_post[i].apply(pd.to_numeric, errors="coerce")
 
+                # Discard duplicate rows from duplicate time-steps
+                data_ox_dyn_post[i] = data_ox_dyn_post[i].drop_duplicates(subset=["t", "x", "y", "z"], keep="first")
+
                 # Rupture stats file
                 data_ox_dyn_rup[i] = read_csv(
                     ox_dyn_files_rup[i], header=None, names=quants_rup,
@@ -855,6 +873,9 @@ class qdyn:
                 )
                 # Sanitise output (check for near-infinite numbers, etc.)
                 data_ox_dyn_rup[i] = data_ox_dyn_rup[i].apply(pd.to_numeric, errors="coerce")
+
+                # Discard duplicate rows from duplicate time-steps
+                data_ox_dyn_rup[i] = data_ox_dyn_rup[i].drop_duplicates(subset=["t", "x", "y", "z"], keep="first") 
 
             # Store snapshot data in self.ox
             self.ox_dyn_pre = data_ox_dyn_pre
@@ -880,6 +901,8 @@ class qdyn:
                 filename_fault, header=None, skiprows=nheaders_fault, usecols=col_list,
                 names=quants_fault, delim_whitespace=True
                 )
+                # Discard duplicate rows from duplicate time-steps
+                self.fault[n-1] = self.fault[n-1].drop_duplicates(subset=["t"], keep="first") 
 
         return True
 
@@ -912,16 +935,8 @@ class qdyn:
     # Return time of last snapshot of a simulation
     #  (used when restarting a simulation from a previous model)
     def restart_time(self):
-        last_ox = open("output_ox_last", "r")
-        line = last_ox.readlines()
-        last_time = float(line[2].split()[0])
+        with open("output_ox_last", "r") as file:
+            line = file.readlines()
+            last_time = float(line[2].split()[0])
         return last_time
-
-    # Return slip of last snapshot of a simulation
-    #  (used when restarting a simulation from a previous model)
-    def restart_slip(self):
-        last_ox = open("output_ox_last", "r")
-        line = last_ox.readlines()
-        last_slip = float(line[2].split()[8])
-        return last_slip
 

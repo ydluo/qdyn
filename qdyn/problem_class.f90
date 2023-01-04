@@ -168,7 +168,8 @@ module problem_class
 
     ! Restart
     integer :: restart
-    double precision :: restart_time, restart_slip
+    double precision :: restart_time
+    !double precision, pointer :: restart_slip(:) => null()
 
     ! Number of fault labels
     integer :: nfault

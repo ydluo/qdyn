@@ -40,6 +40,7 @@ program main
 
   call init_mpi()
   call read_main(pb)
+  !call read_lastox(pb)
   call init_all(pb)
   call solve(pb)
 
