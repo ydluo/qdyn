@@ -886,24 +886,36 @@ class qdyn:
         # If fault data is requested
 
         if read_fault:
-
+            
+            # Number of faults
             N_faults = self.set_dict["N_FAULTS"]
+
+            # List where each element is a DataFrame with the output of one fault
             self.fault = [None] * N_faults
 
             # Check output directory
             if path_output!=None:
                 filename_fault = path_output + filename_fault 
-            for n in np.arange(1,N_faults+1):
-                col_list = [0, n, n + N_faults, n + 2*N_faults] # Use columns of one fault only
-                print(n)
+
+            # Number of columns with fault output (excluding time)
+            N_cols = 3 * N_faults
+
+            # Counter of fault number for loop
+            n = 0
+            
+            # Read the output file in groups of columns corresponding to each fault
+            for i in range(1,N_cols+1,3):
+                # Column list for one fault (time, potency, potency rate and delta slip)
+                col_list = [0] + list(range(i, i+3))
                 print(col_list)
-                self.fault[n-1] = read_csv(
+                # Read output file
+                self.fault[n] = read_csv(
                 filename_fault, header=None, skiprows=nheaders_fault, usecols=col_list,
                 names=quants_fault, delim_whitespace=True
                 )
                 # Discard duplicate rows from duplicate time-steps
-                self.fault[n-1] = self.fault[n-1].drop_duplicates(subset=["t"], keep="first") 
-
+                self.fault[n] = self.fault[n].drop_duplicates(subset=["t"], keep="first")
+                n =+1
         return True
 
 
