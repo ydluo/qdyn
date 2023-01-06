@@ -1275,7 +1275,6 @@ subroutine calc_potency_fault(pb)
   ! potency rate = velocity * area 
   pot_dt = slip_dt * area
   pot_rate_dt = pb%v * area
-  !pot_rate_dt = pot_dt/pb%dt_did
 
   ! Step 4: sum potency, potency rate and delta slip per fault
   do n=1, pb%mesh%nn
@@ -1286,21 +1285,6 @@ subroutine calc_potency_fault(pb)
     pot_rate_fault(lbl) = pot_rate_fault(lbl) + pot_rate_dt(n)
     slip_dt_fault(lbl) = slip_dt_fault(lbl) + slip_dt(n)
   end do
-
-  ! reduce for MPI
-  ! do n=1, pb%nfault
-  !   if (is_MPI_parallel()) then
-  !     buf(1)=pot_fault(n)
-  !     call sum_allreduce(buf(1), 1)
-  !     pot_fault(n) = buf(1)
-  !     if (is_mpi_master()) then
-  !       write(FID_SCREEN, *) 'slip_dt_fault 1 = ', slip_dt_fault(1)
-  !       write(FID_SCREEN, *) 'pot_fault 1 = ', pot_fault(1)
-  !       write(FID_SCREEN, *) 'pot_rate_fault 1 = ', pot_rate_fault(1)
-  !     endif
-  !   else
-  !   endif
-  ! enddo
 
   ! reduce potency, potency rate and delta slip for MPI
   do n=1, pb%nfault
@@ -1316,17 +1300,18 @@ subroutine calc_potency_fault(pb)
       buf_slip_dt(1)=slip_dt_fault(n)
       call sum_allreduce(buf_slip_dt(1), 1)
       slip_dt_fault(n) = buf_slip_dt(1)
+
     endif
   enddo
 
   ! debugging: print values of slip_dt, pot and pot_rate
-  if (is_mpi_master()) then
-    write(FID_SCREEN, *) 'slip_dt_fault 1 = ', slip_dt_fault(1)
-    write(FID_SCREEN, *) 'pot_fault 1 = ', pot_fault(1)
-    write(FID_SCREEN, *) 'pot_rate_fault 1 = ', pot_rate_fault(1)
-  endif
+  ! if (is_mpi_master()) then
+  !   write(FID_SCREEN, *) 'slip_dt_fault 1 = ', slip_dt_fault(1)
+  !   write(FID_SCREEN, *) 'pot_fault 1 = ', pot_fault(1)
+  !   write(FID_SCREEN, *) 'pot_rate_fault 1 = ', pot_rate_fault(1)
+  ! endif
 
-  ! assign variables to problem class variables
+  ! assign quantities to problem class variables
   pb%pot_fault = pot_fault
   pb%pot_rate_fault = pot_rate_fault
   pb%slip_dt_fault = slip_dt_fault

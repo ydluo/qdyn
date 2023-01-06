@@ -723,10 +723,6 @@ class qdyn:
         
         # Fault time-series
         nheaders_fault = 2
-        # 1=t  2=pot_1 2=pot_2 3=pot_rate_1 3=pot_rate_2 4=slip_dt_1 4=slip_dt_2
-        #quants_pot = ["pot_" + str(n) for n in np.arange(1,nfaults+1)]
-        #quants_potrate = ["pot_rate_" + str(n) for n in np.arange(1,nfaults+1)]
-        #quants_slipdt = ["slip_dt_" + str(n) for n in np.arange(1,nfaults+1)]
         quants_fault = ("t", "potcy_fault", "pot_rate_fault", "slip_dt_fault")
 
         # If time series data is requested
@@ -907,7 +903,7 @@ class qdyn:
             for i in range(1,N_cols+1,3):
                 # Column list for one fault (time, potency, potency rate and delta slip)
                 col_list = [0] + list(range(i, i+3))
-                print(col_list)
+
                 # Read output file
                 self.fault[n] = read_csv(
                 filename_fault, header=None, skiprows=nheaders_fault, usecols=col_list,
