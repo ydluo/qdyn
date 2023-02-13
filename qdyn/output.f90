@@ -443,40 +443,44 @@ subroutine ot_init(pb)
     iasp_buf = pb%ot%iasp
   endif
 
-  ! Get the number of OT output indices
-  niot = sum(iot_buf)
-  ! Allocate space for a list of iot indices
-  allocate(iot_list(niot))
-  iot_count = 0
-  ! Loop over all potential OT locations
-  do i=1,nnGlobal
-    ! If location is OT location
-    if (iot_buf(i) == 1) then
-      iot_count = iot_count + 1
-      iot_list(iot_count) = i
-    endif
-  enddo
+  if (is_MPI_master()) then
 
-  ! Overwrite IOT in pb%ot
-  pb%ot%iot = iot_list
+    ! Get the number of OT output indices
+    niot = sum(iot_buf)
+    ! Allocate space for a list of iot indices
+    allocate(iot_list(niot))
+    iot_count = 0
+    ! Loop over all potential OT locations
+    do i=1,nnGlobal
+      ! If location is OT location
+      if (iot_buf(i) == 1) then
+        iot_count = iot_count + 1
+        iot_list(iot_count) = i
+      endif
+    enddo
 
-  ! Get the number of IASP output indices
-  niasp = sum(iasp_buf)
-  ! Allocate space for a list of iasp indices
-  allocate(iasp_list(niasp))
-  iasp_count = 0
-  ! Loop over all potential OT locations
-  do i=1,nnGlobal
-    ! If location is OT location
-    if (iasp_buf(i) == 1) then
-      iasp_count = iasp_count + 1
-      iasp_list(iasp_count) = i
-    endif
-  enddo
+    ! Overwrite IOT in pb%ot
+    pb%ot%iot = iot_list
 
-  ! Overwrite IASP in pb%ot
-  pb%ot%iasp = iasp_list
+    ! Get the number of IASP output indices
+    niasp = sum(iasp_buf)
+    ! Allocate space for a list of iasp indices
+    allocate(iasp_list(niasp))
+    iasp_count = 0
+    ! Loop over all potential OT locations
+    do i=1,nnGlobal
+      ! If location is OT location
+      if (iasp_buf(i) == 1) then
+        iasp_count = iasp_count + 1
+        iasp_list(iasp_count) = i
+      endif
+    enddo
 
+    ! Overwrite IASP in pb%ot
+    pb%ot%iasp = iasp_list
+
+  endif
+  
   ! Open files, write headers (if not restarting the simulation with time of last simulation)
   if (is_MPI_master()) then
 
