@@ -15,7 +15,7 @@ figsize = (9, 8)
 
 def timeseries(ot, ot_vmax):
 
-    fig, axes = plt.subplots(nrows=3, ncols=1, figsize=figsize)
+    fig, axes = plt.subplots(nrows=4, ncols=1, figsize=figsize)
 
     axes[0].plot(ot["t"] / t_year, ot["tau"])
     axes[0].set_ylabel("tau [Pa]")
@@ -23,10 +23,13 @@ def timeseries(ot, ot_vmax):
     axes[1].plot(ot["t"] / t_year, ot["theta"])
     axes[1].set_ylabel("state [s]")
 
-    axes[2].plot(ot_vmax["t"] / t_year, ot_vmax["v"])
-    axes[2].set_ylabel("max v [m/s]")
-    axes[2].set_xlabel("time [yr]")
-    axes[2].set_yscale("log")
+    axes[2].plot(ot["t"] / t_year, ot["sigma"])
+    axes[2].set_ylabel("sigma [Pa]")
+
+    axes[3].plot(ot_vmax["t"] / t_year, ot_vmax["v"])
+    axes[3].set_ylabel("max v [m/s]")
+    axes[3].set_xlabel("time [yr]")
+    axes[3].set_yscale("log")
 
     plt.tight_layout()
     plt.show()
