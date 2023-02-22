@@ -83,6 +83,106 @@ def slip_profile(ox, warm_up=0, orientation="horizontal"):
     plt.tight_layout()
     plt.show()
 
+def slip_profile_new(ox, dip, warm_up=0, orientation="horizontal"):
+    """
+    Plot slip profile along the fault trace.
+
+    Parameters
+    ----------
+    ox : pandas DataFrame
+        DataFrame containing ox output. 
+        If fault is 0D or 1D --> ox=p.ox
+        If fault is 2D, the x or z coordinate has to be provided
+        --> for vertical cross-section: ox = p.ox[(p.ox["x"] == x_pos)] where x_pos is the x coordinate of the cross-section
+        --> for horizontal cross-section: ox = p.ox[(p.ox["z"] == z_pos)] where z_pos is the z coordinate of the cross-section
+        If there are multiple faults, the fault label has to be provided
+        --> ox[(ox["fault_label"] == 1)]
+        Example for slip profile of a vertical cross-section of Fault 1:
+        p.ox[(p.ox["fault_label"] == 1) & (p.ox["x"] == x_pos)]
+    dip : float
+        Dip angle in degrees
+    warm_up : float, optional
+        Time in seconds to disregard in the plot (default is 0)
+    orientation : str, optional
+        Plot/cross section orientation. Can be 'horizontal' (default) or 'vertical'
+
+    """
+    
+    # Check orientation parameter
+    if orientation not in ["horizontal", "vertical"]:
+        print("Error: orientation parameter must be either 'horizontal' or 'vertical'")
+        return
+    
+    # Determine coordinate to plot along
+    if orientation=="horizontal":
+        coord="x"
+    else:
+        coord="z"
+    
+    # Get unique coordinates and sort them
+    x_unique = ox[coord].unique()
+    sort_inds = np.argsort(x_unique)
+    x_unique = x_unique[sort_inds]
+    
+    # Get unique times and sort them
+    t_vals = np.sort(ox["t"].unique())
+    
+    # Check that warm-up time is not greater than simulation time
+    if warm_up > t_vals.max():
+        print("Warm-up time > simulation time!")
+        return
+    
+    # Determine index for warm-up time
+    ind_warmup = np.where(t_vals >= warm_up)[0][0]
+    
+    # Get the number of unique coordinates and number of time steps
+    Nx = len(x_unique)
+    Nt = len(t_vals) - 1
+    
+    # Define the slice and shape for the data
+    slice = np.s_[Nx * ind_warmup:Nx * Nt]
+    data_shape = (Nt - ind_warmup, Nx)
+    
+    # Get the data values and reshape them
+    x = ox[coord][slice].values.reshape(data_shape)[:, sort_inds]
+    slip = ox["slip"][slice].values.reshape(data_shape)[:, sort_inds]
+    v = ox["v"][slice].values.reshape(data_shape)[:, sort_inds]
+    
+    # Adjust slip values to start at zero
+    slip -= slip[0]
+    
+    # Adjust time values to start at zero
+    t = t_vals[ind_warmup:-1]
+    t -= t[0]
+
+    # Calculate downdip distance for vertical profile
+    if orientation=="vertical":
+        ddd = x / np.sin(np.deg2rad(dip))
+    
+    # Create figure and plot the slip profile
+    fig = plt.figure(figsize=figsize)
+
+    if orientation == "horizontal":
+        CS = plt.contourf(x, slip, np.log10(v), levels=200, cmap="magma")
+        plt.xlabel("position [m]")
+        plt.ylabel("slip [m]")
+        CB = plt.colorbar(CS, orientation="horizontal")
+        CB.ax.set_title("slip rate [m/s]")
+    elif orientation == "vertical":
+        ddd -= ddd.min()
+        CS = plt.contourf(slip, ddd * 1e-3, np.log10(v), levels=200, cmap="magma")
+        plt.ylabel("downdip distance [km]")
+        plt.xlabel("slip [m]")
+        plt.gca().invert_yaxis()
+        CB = plt.colorbar(CS, orientation="horizontal")
+        CB.ax.set_title("slip rate [m/s]")
+    else:
+        print("Keyword 'orientation=%s' not recognised" % orientation)
+        plt.close()
+        return
+
+    plt.tight_layout()
+    plt.show()
 
 def animation_slip(ox, warm_up=0, orientation="horizontal"):
 
