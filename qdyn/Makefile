@@ -11,17 +11,17 @@ EXEC_PATH = /home/crodriguezpiceda/buildqdyn/qdyn_faultlabel/
 
 # GNU, serial
 #Only MPI no openMP
-#F90 = mpif90
+F90 = mpif90
 #OPT = -O3 -Wall
 # For parallel runs with MPI+OpenMP:
 #F90 = mpif90
-#OPT = -O3 -Wall -fopenmp
+OPT = -O3 -Wall -fopenmp
 #OPT = -O2 -w
 #-- Intel Fortran --
-F90 = mpiifort
+#F90 = mpiifort
 # OPT = -O3 -ip -ipo
 # For parallel runs with OpenMP:
-OPT = -O3 -ip -ipo -parallel -qopenmp -par-threshold:50 -g -traceback
+# OPT = -O3 -ip -ipo -parallel -qopenmp -par-threshold:50 -g -traceback
 #-no-inline-factor
 #OPT = -O3 -pg -g
 #OPT = -O3
@@ -44,16 +44,16 @@ OPT = -O3 -ip -ipo -parallel -qopenmp -par-threshold:50 -g -traceback
 
 # 3. Set the compiler option that enables preprocessing in your compiler
 # ifort
-PREPROC = -fpp
+# PREPROC = -fpp
 # gfortran
-#PREPROC = -cpp
+PREPROC = -cpp
 #PG, KAUST server
 # CFLAGS = -B/usr/lib/x86_64-linux-gnu
 #CFLAGS = '' 
 
-test: F90 = mpiifort
-	OPT = -O3 -ip -ipo -parallel -qopenmp -par-threshold:50 -g -traceback
-	PREPROC = -fpp
+test: F90 = mpif90
+	OPT = -O3 -Wall -fopenmp
+	PREPROC = -cpp
 
 #== END USER SETTINGS =============================================
 

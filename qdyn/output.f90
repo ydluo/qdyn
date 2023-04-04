@@ -766,7 +766,8 @@ subroutine ot_write(pb)
 
     ! Write fault data (potency, potency rate and slip_dt)
     open(FID_FAULT, file=FILE_FAULT, status="old", position="append")
-    call write_fault_lines(FID_FAULT, pb%ot%fmt, pb%ot%fmt_fault, pb%objects_glob, pb%pot_fault, pb%pot_rate_fault, pb%slip_dt_fault, pb)
+    call write_fault_lines(FID_FAULT, pb%ot%fmt, pb%ot%fmt_fault, pb%objects_glob, &
+    pb%pot_fault, pb%pot_rate_fault, pb%slip_dt_fault, pb)
     close(FID_FAULT)
   endif
 
@@ -1251,7 +1252,7 @@ subroutine calc_potency_fault(pb)
   use constants, only: FID_SCREEN
 
   type(problem_type), intent(inout) :: pb
-  double precision, dimension(pb%mesh%nn) :: area, slip_dt, pot_dt, pot_rate_dt, index_label_min, index_label_max
+  double precision, dimension(pb%mesh%nn) :: area, slip_dt, pot_dt, pot_rate_dt
   double precision, dimension(pb%nfault) :: pot_fault, pot_rate_fault, slip_dt_fault
   double precision, dimension(1) :: buf_pot, buf_pot_rate, buf_slip_dt
   integer :: iw, ix, n, lbl
@@ -1283,7 +1284,7 @@ subroutine calc_potency_fault(pb)
   ! Step 4: sum potency, potency rate and delta slip per fault
   do n=1, pb%mesh%nn
     ! Check fault label
-    lbl = pb%mesh%fault_label(n)
+    lbl = INT(pb%mesh%fault_label(n))
     ! sum potency, potency rate and delta slip
     pot_fault(lbl) = pot_fault(lbl) + pot_dt(n)
     pot_rate_fault(lbl) = pot_rate_fault(lbl) + pot_rate_dt(n)
