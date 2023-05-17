@@ -17,11 +17,11 @@ QDYN handles the following geometries:
   - Fault bisecting an elastic slab of uniform half-thickness $H$, with uniform, steady displacement applied along the boundaries of the slab located at a distance $H$ from the fault.
   - Fault bisecting a low rigidity layer of uniform half-thickness $H$ embedded in a stiffer elastic medium.
   
-- Vertical, anti-plane, straight 1D fault in a 2D half space.
+- **1D fault with free surface**: for vertical, anti-plane faults embedded in a 2D half space, a free-surface can be efficiently simulated using the technique of mirror images.
 
-- 1.5D fault model (2.5D elastic medium) that accounts approximately for a finite fault size $W$ in the out-of-plane direction (normal to the strike direction $x$), assuming slip either tapers off to zero at the $W$-edge or steadily creeps beyond $W$. This represents for instance a map-view model of a vertical fault with finite seismogenic depth $W$. For more details and a derivation, see appendix A.2 of *Luo and Ampuero* ([2017a](http://dx.doi.org/10.1016/j.tecto.2017.11.006)). The computational cost of this reduced-dimensionality model is the same as that of 1D-fault simulations.
+- **1.5D fault** model (2.5D elastic medium) that accounts approximately for a finite fault size $W$ in the out-of-plane direction (normal to the strike direction $x$), assuming slip either tapers off to zero at the $W$-edge or steadily creeps beyond $W$. This represents for instance a map-view model of a vertical fault with finite seismogenic depth $W$. For more details and a derivation, see appendix A.2 of *Luo and Ampuero* ([2017a](http://dx.doi.org/10.1016/j.tecto.2017.11.006)). The computational cost of this reduced-dimensionality model is the same as that of 1D-fault simulations.
 
-- 2D fault embedded in a 3D elastic space or half-space. The fault surface has fixed strike, but possibly depth-dependent dip. The fault is infinite but friction is applied only over a finite area.
+- **2D fault** embedded in a 3D elastic space or half-space. The fault surface has fixed strike, but possibly depth-dependent dip. The fault is infinite but friction is applied only over a finite area.
 
   
 
@@ -33,11 +33,11 @@ On non-periodic, infinite faults embedded in a continuum elastic medium, frictio
 
 On periodic faults embedded in an unbounded elastic medium, the fault is loaded by slip prescribed uniformly on the fault portions beyond the frictional width $W$.
 
-On periodic faults embedded in a bounded elastic medium of half-thickness $H$, the fault is loaded by displacement prescribed uniformly along the boundaries of the medium located at a distance H from the fault.
+On periodic faults embedded in a bounded elastic medium of half-thickness $H$, the fault is loaded by displacement prescribed uniformly along the boundaries of the medium located at a distance $H$ from the fault.
 
-In all cases, the imposed slip or displacement usually has constant velocity. An additional oscillatory component is also possible.
+In all cases, the imposed slip or displacement has a time-constant velocity, but which can vary spatially. An additional time-oscillatory component is also possible (simulating e.g. tidal forcing).
 
-On the frictional portion of the fault, the shear strength equals the normal stress times the friction coefficient. Faults governed by rate-and-state friction are always slipping (although very slowly when locked during interseismic periods) and their shear stress is always equal to their frictional strength. 
+On the frictional portion of the fault, the frictional shear strength equals the normal stress times the friction coefficient. Faults are always slipping, although very slowly when locked during interseismic periods. 
 
 In the quasi-dynamic approximation adopted in QDYN, fault stresses are the sum of static elastic stresses induced by slip and a radiation damping stress. The latter approximates the effect of wave radiation: it represents exactly the stresses induced by waves radiated in the direction normal to the fault, but not the complete elastodynamic stresses.
 

@@ -288,6 +288,10 @@ QDYN offers various optional simulation features. Set the following parameters t
 |    `T`    | Temperature (K; only for `FEAT_TP = 1`)                      |
 
 
+## Building custom meshes
+
+For 2D faults embedded in 3D media, it is possible to construct non-planar and discontinuous fault meshes. As currently implemented in the QDYN code, a Fourier Transformation is applied in the along-strike direction of the mesh. This requires that the mesh be continuous, evenly spaced, and co-linear along this dimension, and that the number of mesh elements be an integer power of 2. These restrictions do not apply in the along-dip direction, allowing the user some freedom in creating non-planar mesh geometries. For instance, one could create a curved fault to simulate a subduction thrust geometry, or create multiple disjoint fault segments. Refer to the `examples/notebooks/3D_mesh_builder.ipynb` notebook to see an advanced example of how to manipulate the mesh in a consistent manner.
+
 
 ## Examples
 
