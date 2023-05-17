@@ -82,7 +82,7 @@ subroutine do_bsstep(pb)
   if (pb%i_rns_law == 3) then   ! SEISMIC: CNS model
     main_var = pb%tau
   else  ! SEISMIC: not CNS model (i.e. rate-and-state)
-    main_var = pb%v
+    main_var = pb%tau
   endif
 
   call pack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%slip, pb)
@@ -122,7 +122,7 @@ subroutine do_bsstep(pb)
 
     ! Call Runge-Kutta solver routine
     call rkf45_d( derivs_rk45, neqs, yt, pb%time, pb%tmax, &
-                  pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
+                  pb%acc, pb%abserr, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
 
     ! Basic error checking. See description of rkf45_d in ode_rk45.f90 for details
     select case (pb%rk45%iflag)
@@ -137,7 +137,8 @@ subroutine do_bsstep(pb)
       call log_screen("RK45 error [5]: solution vanished, relative error test is not possible")
       call stop_simulation(pb)
     case (6)
-      call log_screen("RK45 error [6]: requested accuracy could not be achieved")
+      write(FID_SCREEN, *) "RK45 error [6]: requested accuracy could not be achieved"
+      write(FID_SCREEN, *) "Consider adjusting the absolute tolerance"
       call stop_simulation(pb)
     case (8)
       call log_screen("RK45 error [8]: invalid input parameters")
@@ -148,7 +149,7 @@ subroutine do_bsstep(pb)
     ! Set-up Runge-Kutta solver
     pb%t_prev = pb%time
     ! Call Runge-Kutta solver routine
-    call rkf45_d2(derivs, yt, pb%time, pb%dt_max, pb%acc, 0d0, pb)
+    call rkf45_d2(derivs, yt, pb%time, pb%dt_max, pb%acc, pb%abserr, pb)
   else
     ! Unknown solver type
     write(msg, *) "Solver type", SOLVER_TYPE, "not recognised"
@@ -166,11 +167,7 @@ subroutine do_bsstep(pb)
 
   ! SEISMIC: retrieve the solution for tau in the case of the CNS model, else
   ! retreive the solution for slip velocity
-  if (pb%i_rns_law == 3) then
-    pb%tau = main_var
-  else
-    pb%v = main_var
-  endif
+  pb%tau = main_var
 
 end subroutine do_bsstep
 
@@ -180,7 +177,7 @@ end subroutine do_bsstep
 !
 subroutine update_field(pb)
 
-  use friction, only : friction_mu, dtheta_dt
+  use friction, only : compute_velocity_RSF, dtheta_dt
   use friction_cns, only : compute_velocity
   use my_mpi, only: max_allproc, is_MPI_parallel
   use diffusion_solver, only : update_PT_final
@@ -200,7 +197,7 @@ subroutine update_field(pb)
   if (pb%i_rns_law == 3) then
     pb%v = compute_velocity(pb%tau, pb%sigma-P, pb%theta, pb%theta2, pb)
   else
-    pb%tau = (pb%sigma-P) * friction_mu(pb%v,pb%theta,pb) + pb%coh
+    pb%v = compute_velocity_RSF(pb%tau, pb%sigma-P, pb%theta, pb)
   endif
 
   ! Update pb%vmaxglob (required for stopping routine)
@@ -301,7 +298,7 @@ subroutine init_rk45(pb)
   call pack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%slip, pb)
 
   call rkf45_d( derivs_rk45, pb%neqs*pb%mesh%nn, yt, pb%time, pb%time, &
-                pb%acc, 0d0, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
+                pb%acc, pb%abserr, pb%rk45%iflag, pb%rk45%work, pb%rk45%iwork)
 
   select case (pb%rk45%iflag)
   case (3)

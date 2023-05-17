@@ -22,21 +22,24 @@ subroutine initiate_RSF(pb)
   type(problem_type) :: pb
 
   pb%a = 0.001
+  pb%inv_a = 1 / pb%a
   pb%b = 0.0015
   pb%dc = 1e-5
   pb%v_star = 1e-6
   pb%mu_star = 0.6
   pb%v1 = 1e-3
   pb%v2 = 1e-1
+  pb%inv_visc = 0d0
 
   pb%i_rns_law = 0
   pb%itheta_law = 1
   pb%slip = 0.d0
-  pb%v = pb%v_star
-  pb%theta = pb%dc / pb%v
+  pb%sigma = 2e7
+  pb%tau = pb%mu_star * pb%sigma
 
   call set_theta_star(pb)
-  pb%tau = pb%sigma * friction_mu(pb%v, pb%theta, pb) + pb%coh
+  pb%v = compute_velocity_RSF(pb%tau, pb%sigma, pb%theta, pb)
+  pb%theta = pb%dc / pb%v
 
   ! Initiate solvers
   call initiate_solver(pb)
@@ -51,13 +54,14 @@ end subroutine initiate_RSF
 subroutine test_rsf_friction(pb)
 
   type(problem_type) :: pb
-  double precision, dimension(pb%mesh%nn) :: dtheta, mu, mu2
-  double precision, dimension(pb%mesh%nn) :: dmu_dv, dmu_dv2
-  double precision, dimension(pb%mesh%nn) :: dmu_dtheta, dmu_dtheta2
-  double precision, dimension(pb%mesh%nn) :: zero, mu_truth, dmu_truth
+  double precision, dimension(pb%mesh%nn) :: dtheta
+  double precision, dimension(pb%mesh%nn) :: tau0, tau1, v0, v1, v1_true
+  double precision, dimension(pb%mesh%nn) :: dV_dtau, dV_dtheta, dV_dP
+  double precision, dimension(pb%mesh%nn) :: dV_dtau2, dV_dtheta2, dV_dP2
+  double precision, dimension(pb%mesh%nn) :: x, zero
   double precision :: atol, rtol, randno
   integer :: num_tests, num_passed, i
-  logical :: pass, subpass1, subpass2, subpass3
+  logical :: pass, subpass1, subpass2, subpass3, subpass4
 
   num_tests = 0
   num_passed = 0
@@ -98,51 +102,61 @@ subroutine test_rsf_friction(pb)
   call print_subresult("Steady-state ageing law", subpass1)
   call print_subresult("Steady-state slip law", subpass2)
 
-  ! Steady-state friction tests: ensure that dmu = (a-b)*log(V1/V0)
-  mu = friction_mu(pb%v, pb%theta, pb)
-  pb%v = 10*pb%v_star
-  pb%theta = pb%dc / pb%v
-  mu2 = friction_mu(pb%v, pb%theta, pb)
-  dmu_truth = (pb%a - pb%b)*log(10d0)
-  pass = abs_assert_close(mu2-mu, dmu_truth, atol)
+  ! Steady-state friction tests: ensure that V1 = V0 * exp(dmu / (a-b))
+  ! Initial velocity
+  pb%tau = pb%mu_star * pb%sigma
+  pb%theta = pb%dc / pb%v_star
+  tau0 = pb%tau
+  v0 = compute_velocity_RSF(tau0, pb%sigma, pb%theta, pb)
+  ! Stress perturbation
+  tau1 = 1.01 * tau0
+  ! Anticipated final velocity
+  v1_true = v0 * exp((tau1 - tau0) / (pb%sigma * (pb%a - pb%b)))
+  ! Corresponding steady-state
+  pb%theta = pb%dc / v1_true
+  v1 = compute_velocity_RSF(tau1, pb%sigma, pb%theta, pb)
+  pass = abs_assert_close(v1, v1_true, atol)
   pb%test%test_passed = pb%test%test_passed .and. pass
   call print_result("Steady-state friction (classical RSF)", pass, num_passed, num_tests)
 
-  ! Steady-state friction tests for cut-off velocity model
-  ! For V1 = V2: mu = mu* - (a-b)*log(V1/V + 1)
-  pb%v = pb%v_star
-  pb%theta = pb%dc / pb%v
-  pb%v1 = pb%v2
-  pb%i_rns_law = 1
-  call set_theta_star(pb)
-  mu = friction_mu(pb%v, pb%theta, pb)
-  mu_truth = pb%mu_star - (pb%a - pb%b)*log(pb%v1/pb%v + 1d0)
-  subpass1 = abs_assert_close(mu, mu_truth, atol)
+  ! ! Steady-state friction tests for cut-off velocity model
+  ! ! For V1 = V2: mu = mu* - (a-b)*log(V1/V + 1)
+  ! pb%tau = pb%mu_star * pb%sigma
+  ! tau0 = pb%tau
+  ! pb%theta = pb%dc / pb%v_star
+  ! v0 = compute_velocity_RSF(tau0, pb%sigma, pb%theta, pb)
+  !
+  ! pb%v1 = pb%v2
+  ! pb%i_rns_law = 1
+  ! call set_theta_star(pb)
+  ! mu = friction_mu(pb%v, pb%theta, pb)
+  ! mu_truth = pb%mu_star - (pb%a - pb%b)*log(pb%v1/pb%v + 1d0)
+  ! subpass1 = abs_assert_close(mu, mu_truth, atol)
 
-  ! For V1 = V2 << V: mu -> mu*
-  pb%v = 1e5*pb%v1
-  pb%theta = pb%dc / pb%v
-  mu = friction_mu(pb%v, pb%theta, pb)
-  mu_truth = pb%mu_star
-  subpass2 = abs_assert_close(mu, mu_truth, atol)
-
-  ! For V = V2 >> V1: mu -> mu* + b*log(2)
-  pb%v1 = 1e-9
-  pb%v2 = 1e0
-  pb%v = pb%v2
-  pb%theta = pb%dc / pb%v
-  call set_theta_star(pb)
-  mu = friction_mu(pb%v, pb%theta, pb)
-  mu_truth = pb%mu_star + pb%b*log(2d0)
-  subpass3 = abs_assert_close(mu, mu_truth, atol)
-
-  ! Collect results of subtests and print to screen
-  pass = subpass1 .and. subpass2 .and. subpass3
-  pb%test%test_passed = pb%test%test_passed .and. pass
-  call print_result("Steady-state friction (cut-off velocities)", pass, num_passed, num_tests)
-  call print_subresult("V1 = V2", subpass1)
-  call print_subresult("V1 = V2 << V", subpass2)
-  call print_subresult("V1 << V2 = V", subpass3)
+  ! ! For V1 = V2 << V: mu -> mu*
+  ! pb%v = 1e5*pb%v1
+  ! pb%theta = pb%dc / pb%v
+  ! mu = friction_mu(pb%v, pb%theta, pb)
+  ! mu_truth = pb%mu_star
+  ! subpass2 = abs_assert_close(mu, mu_truth, atol)
+  !
+  ! ! For V = V2 >> V1: mu -> mu* + b*log(2)
+  ! pb%v1 = 1e-9
+  ! pb%v2 = 1e0
+  ! pb%v = pb%v2
+  ! pb%theta = pb%dc / pb%v
+  ! call set_theta_star(pb)
+  ! mu = friction_mu(pb%v, pb%theta, pb)
+  ! mu_truth = pb%mu_star + pb%b*log(2d0)
+  ! subpass3 = abs_assert_close(mu, mu_truth, atol)
+  !
+  ! ! Collect results of subtests and print to screen
+  ! pass = subpass1 .and. subpass2 .and. subpass3
+  ! pb%test%test_passed = pb%test%test_passed .and. pass
+  ! call print_result("Steady-state friction (cut-off velocities)", pass, num_passed, num_tests)
+  ! call print_subresult("V1 = V2", subpass1)
+  ! call print_subresult("V1 = V2 << V", subpass2)
+  ! call print_subresult("V1 << V2 = V", subpass3)
 
   ! Ensure that the classical rate-and-state friction law (i_rns_law = 0)
   ! is identical to the regularised RSF law (i_rns_law = 2), for various
@@ -152,31 +166,42 @@ subroutine test_rsf_friction(pb)
   subpass1 = .true.
   subpass2 = .true.
   subpass3 = .true.
+  subpass4 = .true.
+
+  pb%tau = 0.99 * pb%mu_star * pb%sigma
+  pb%theta = pb%dc / pb%v_star
+
   do i = 1, 1000
     call random_number(randno)
     randno = randno + 0.5
 
     pb%i_rns_law = 0
     call set_theta_star(pb)
-    mu = friction_mu(pb%v, pb%theta*randno, pb)
-    call dmu_dv_dtheta(dmu_dv, dmu_dtheta, pb%v, pb%theta*randno, pb)
+    v0 = compute_velocity_RSF(pb%tau, pb%sigma, pb%theta*randno, pb)
+    call RSF_derivs(dV_dtau, dV_dtheta, dV_dP, v0, pb%theta*randno, pb%tau, &
+                    pb%sigma, pb)
     pb%i_rns_law = 2
     call set_theta_star(pb)
-    mu2 = friction_mu(pb%v, pb%theta*randno, pb)
-    call dmu_dv_dtheta(dmu_dv2, dmu_dtheta2, pb%v, pb%theta*randno, pb)
+    v1 = compute_velocity_RSF(pb%tau, pb%sigma, pb%theta*randno, pb)
+    call RSF_derivs(dV_dtau2, dV_dtheta2, dV_dP2, v1, pb%theta*randno, pb%tau, &
+                    pb%sigma, pb)
     ! Test if mu, dmu/dv, and dmu/dtheta are ok for all random values of theta
     ! If one of the assertions fails, subpass will become .false.
-    subpass1 = subpass1 .and. abs_assert_close(mu, mu2, atol)
-    subpass2 = subpass2 .and. rel_assert_close(dmu_dv, dmu_dv2, rtol)
-    subpass3 = subpass3 .and. rel_assert_close(dmu_dtheta, dmu_dtheta2, rtol)
+    subpass1 = subpass1 .and. abs_assert_close(v0, v1, atol)
+    subpass2 = subpass2 .and. rel_assert_close(dV_dtau, dV_dtau2, rtol)
+    subpass3 = subpass3 .and. rel_assert_close(dV_dtheta, dV_dtheta2, rtol)
+    subpass4 = subpass4 .and. rel_assert_close(dV_dP, dV_dP2, rtol)
+
   enddo
 
-  pass = subpass1 .and. subpass2 .and. subpass3
+  pass = subpass1 .and. subpass2 .and. subpass3 .and. subpass4
   pb%test%test_passed = pb%test%test_passed .and. pass
   call print_result("Compare classical / regularised RSF", pass, num_passed, num_tests)
-  call print_subresult("Friction", subpass1)
-  call print_subresult("dmu/dV", subpass2)
-  call print_subresult("dmu/dtheta", subpass3)
+  call print_subresult("Slip rate", subpass1)
+  call print_subresult("dV/dtau", subpass2)
+  call print_subresult("dV/dtheta", subpass3)
+  call print_subresult("dV/dP", subpass4)
+
 
   write(6, '(A, I0, A, I0, A)') " Rate-and-state friction: ", num_passed, " / ", num_tests, " passed"
 

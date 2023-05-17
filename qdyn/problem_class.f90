@@ -125,7 +125,8 @@ module problem_class
    ! Friction properties
     double precision, dimension(:), allocatable ::  a, b, dc, v1, v2, &
                                                     mu_star, v_star, &
-                                                    theta_star, coh, v_pl
+                                                    theta_star, coh, v_pl, &
+                                                    inv_visc, inv_a
     integer :: itheta_law=1, i_rns_law=1, neqs=3
    ! Elastic properties
     double precision :: beta=0d0, smu=0d0, lam=0d0, D=0d0, H=0d0, zimpedance=0d0
@@ -134,6 +135,7 @@ module problem_class
    ! Time solver
     double precision :: t_prev=0d0, dt_try=0d0, dt_did=0d0, &
                         dt_next=0d0, dt_max=0d0, tmax, acc
+    double precision :: abserr=1e-7
     double precision, pointer :: time => null()
     integer, pointer :: ivmax => null()
     integer :: NSTOP, itstop=-1, it=0
