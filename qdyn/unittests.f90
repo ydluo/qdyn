@@ -47,7 +47,7 @@ subroutine init_tests(pb)
   call allocate_mesh(pb)
   call initiate_parameters(pb)
   call init_kernel( pb%lam, pb%smu, pb%mesh, pb%kernel, pb%D, pb%H, &
-                    pb%i_sigma_cpl, pb%finite, pb%test%test_mode)
+                    pb%features%stress_coupling, pb%finite, pb%test%test_mode)
 
   ! write(6,*) ""
   ! write(6,*) "Test suite initialised successfully"
@@ -253,7 +253,7 @@ subroutine kernel_export(pb)
   do i = 0, 3
     pb%finite = i
     call export_kernel( pb%lam, pb%smu, pb%mesh, pb%kernel, pb%D, pb%H, &
-                        pb%i_sigma_cpl, pb%finite)
+                        pb%features%stress_coupling, pb%finite)
   end do
 
   call test_kernel(pb)

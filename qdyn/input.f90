@@ -36,6 +36,7 @@ subroutine read_main(pb)
   if (pb%mesh%dim==1) read(FID_IN, *) pb%finite
   read(FID_IN, *) pb%itheta_law
   read(FID_IN, *) pb%i_rns_law
+  ! i_sigma_cpl is kept for backwards compatibility of old qdyn.in files
   read(FID_IN, *) pb%i_sigma_cpl
   ! SEISMIC: various simulation features can be turned on (1) or off (0)
   if (pb%i_rns_law == 3) then
