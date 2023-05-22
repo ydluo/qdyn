@@ -100,7 +100,7 @@ subroutine derivs(time,yt,dydt,pb)
 
     call RSF_derivs(dV_dtau, dV_dtheta, dV_dP, v, theta, tau, sigma, pb)
     ! SEISMIC: calculate time-derivative of state variable (theta)
-    call dtheta_dt(v, tau, sigma, theta, theta2, dth_dt, dth2_dt, pb)
+    call dtheta_dt(v, theta, dth_dt, pb)
   endif
 
   ! compute shear stress rate from elastic interactions, for 0D, 1D & 2D
