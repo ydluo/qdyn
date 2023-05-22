@@ -69,5 +69,5 @@ class TestStickSlip(AuxiliaryFunctions):
             "var2": result_var2,
         }
 
-        self.compare_results(mode)
+        self.compare_results(mode, cc=True)
         pass

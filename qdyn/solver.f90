@@ -78,12 +78,7 @@ subroutine do_bsstep(pb)
 
   neqs = pb%neqs * pb%mesh%nn
 
-  ! SEISMIC: in the case of the CNS model, solve for tau and not v
-  if (pb%i_rns_law == 3) then   ! SEISMIC: CNS model
-    main_var = pb%tau
-  else  ! SEISMIC: not CNS model (i.e. rate-and-state)
-    main_var = pb%tau
-  endif
+  main_var = pb%tau
 
   call pack(yt, pb%theta, main_var, pb%sigma, pb%theta2, pb%slip, pb)
   yt_prev = yt

@@ -919,6 +919,8 @@ class qdyn:
         result = root(root_func, x0, method="lm")
         tau = result["x"]
 
+        assert all(np.isfinite(tau)), "The friction could not be estimated"
+
         return tau
 
 
