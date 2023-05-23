@@ -32,7 +32,7 @@ subroutine initialize_output(pb)
   ! to start from the last time-step of a previous simulation ("restart"=1), then
   ! the output is appended to the existing output files from this previous simulation.
 
-  ! Possible bug?: when restarting a model, all the outputs display a repeated time-step.
+  ! CRP: Possible bug?: when restarting a model, all the outputs display a repeated time-step.
   ! This corresponds to the following snapshot time-step after the restart_time. For now,
   ! the duplicate lines are ignored when reading the outputs with the python wrapper.
   ! However, in the future the best would be to fix this issue from the fortran code
@@ -59,9 +59,7 @@ subroutine initialize_output(pb)
   ! overwrite time and slip if restart with time and slip of last simulation
   if(pb%restart==1) then
     pb%time = pb%time + pb%restart_time
-    !pb%slip = pb%slip + pb%restart_slip
     pb%slip = pb%slip + pb%mesh%restart_slip
-    !write(FID_SCREEN, *) 'restart_slip = ', pb%mesh%restart_slip
   endif
 
   ! If parallel: initialise (allocate) global quantities
@@ -521,25 +519,6 @@ subroutine ot_init(pb)
       write(FID_IASP, "(a)") "# 1=i, 2=t, 3=v, 4=fault_label"
       close(FID_IASP)
     endif
-
-    ! ! Fault output
-    ! if (pb%restart==0) then
-    !   open(FID_FAULT, file=FILE_FAULT, status="replace")
-    !   write(FID_FAULT, "(a)") "# fault values:"
-    !   write(FID_FAULT, "(a)", advance="no") "# t "
-    !   do i=1, pb%nfault
-    !     write(FID_FAULT, "(a, i0)", advance="no") " pot_", i
-    !   enddo
-    !   do i=1, pb%nfault
-    !     write(FID_FAULT, "(a, i0)", advance="no") " pot_rate_", i
-    !   enddo
-    !   do i=1, pb%nfault
-    !     write(FID_FAULT, "(a, i0)", advance="no") " slip_dt_", i
-    !   enddo
-
-    !   close(FID_FAULT)
-
-    ! endif
 
     ! Fault output (potency, potency rate and delta slip)
     if (pb%restart==0) then

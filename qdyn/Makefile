@@ -5,16 +5,16 @@
 EXEC_PATH = .
 #EXEC_PATH = $(HOME)/qdyn_svn/trunk/src/
 #EXEC_PATH = $(HOME)/bin/
-
+EXEC_PATH = "/home/crodriguezpiceda/buildqdyn/qdyn_faultlabel"
 # 2. Comment/uncomment/add/modify the lines corresponding to your compiler:
 
 # GNU, serial
 #Only MPI no openMP
 F90 = mpif90
-OPT = -O3 -Wall
+#OPT = -O3 -Wall
 # For parallel runs with MPI+OpenMP:
 #F90 = mpif90
-#OPT = -O3 -Wall -fopenmp
+OPT = -O3 -Wall -fopenmp
 #OPT = -O2 -w
 #-- Intel Fortran --
 # F90 = ifort
@@ -51,7 +51,7 @@ PREPROC = -cpp
 #CFLAGS = '' 
 
 test: F90 = mpif90
-	OPT = -O3 -Wall
+	OPT = -O3 -Wall -fopenmp
 	PREPROC = -cpp
 
 #== END USER SETTINGS =============================================

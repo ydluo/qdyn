@@ -103,7 +103,7 @@ class qdyn:
         set_dict["FEAT_STRESS_COUPL"] = 0	# Normal stress coupling
         set_dict["FEAT_TP"] = 0				# Thermal pressurisation
         set_dict["FEAT_LOCALISATION"] = 0	# Gouge zone localisation of strain (CNS only)
-        set_dict["FEAT_RESTART"] = 0        # Restart simulation from last snapshot of a previous simulation
+        set_dict["FEAT_RESTART"] = 0        # Restart simulation from last snapshot of a previous simulation (0= initial simulation, 1=restart simulation)
         set_dict["RESTART_TIME"] = 0        # Restart time of the simulation [s]
         set_dict["RESTART_SLIP"] = 0        # Restart slip of the simulation [m] 
 
@@ -337,6 +337,10 @@ class qdyn:
         # Populate mesh with values of restart slip
         mesh_dict["RESTART_SLIP"] = np.ones(N)*settings["RESTART_SLIP"]
 
+        # Raise error if FEAT_RESTART is neither 0 nor 1
+        if settings["FEAT_RESTART"] != 0 and settings["FEAT_RESTART"] != 1:
+            raise ValueError("FEAT_RESTART '%s' not recognised. Value should be 0 (not restart) or 1 (restart)" % (settings["FEAT_RESTART"]))
+
         self.mesh_dict.update(mesh_dict)
         self.mesh_rendered = True
 
@@ -547,7 +551,6 @@ class qdyn:
             # Check restart
             input_str += "%u%s restart\n" % (settings["FEAT_RESTART"], delimiter)
             input_str += "%.15g%s restart time\n" % (settings["RESTART_TIME"], delimiter)
-            #input_str += "%.15g%s restart slip\n" % (settings["RESTART_SLIP"], delimiter)
 
             # Number of faults
             input_str += "%.15g%s fault number\n" % (settings["N_FAULTS"], delimiter)
