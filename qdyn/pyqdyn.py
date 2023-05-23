@@ -51,6 +51,7 @@ class qdyn:
     qdyn_path = os.path.abspath(
         os.path.join(os.path.realpath(__file__), os.pardir)
     )
+    
     # Working directory can be kept empty, except for special cases
     work_dir = ""
     # Flag for using the bash environment in Windows 10

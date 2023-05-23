@@ -5,7 +5,6 @@
 EXEC_PATH = .
 #EXEC_PATH = $(HOME)/qdyn_svn/trunk/src/
 #EXEC_PATH = $(HOME)/bin/
-EXEC_PATH = "/home/crodriguezpiceda/buildqdyn/qdyn_faultlabel"
 # 2. Comment/uncomment/add/modify the lines corresponding to your compiler:
 
 # GNU, serial
