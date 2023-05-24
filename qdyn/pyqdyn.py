@@ -496,8 +496,8 @@ class qdyn:
         delimiter = "    "
 
         # Check if multiple processors have been assigned for 0D and 1D faults
-        if settings["MESHDIM"]!=2 and settings["NPROC"]!=1:
-            raise ValueError("Multiple processors are compatible only with simulation dimensionality=2") 
+        if (settings["MESHDIM"] != 2) and (settings["NPROC"] != 1):
+            raise ValueError('Parallel processing (settings["NPROC"] > 1) is compatible only with settings["MESHDIM"] == 2') 
 
         # Define chunk size for each processor
         nwLocal = (settings["NW"]//Nprocs)*np.ones(Nprocs, dtype=int)

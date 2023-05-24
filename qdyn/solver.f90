@@ -30,7 +30,9 @@ subroutine solve(pb)
 
   ! Before the first step, update field and write output (initial state)
   call update_field(pb)
-  call write_output(pb)
+  ! If the simulation is restarted, this first output is skipped to
+  ! prevent duplicates
+  if (pb%restart == 0) call write_output(pb)
 
   iktotal=0
   ! Time loop

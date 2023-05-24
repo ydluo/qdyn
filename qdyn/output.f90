@@ -195,11 +195,11 @@ subroutine screen_init_log(pb)
 
   ! Create log file
 
-  if (pb%restart==0) then
+  if (pb%restart == 0) then
     open(FID_SCREEN, file=FILE_SCREEN)
-  elseif (pb%restart==1) then
+  elseif (pb%restart == 1) then
   ! If restart with time of last simulation, append in existing log file
-    open(FID_SCREEN, file=FILE_SCREEN, status = "old", position="append")
+    open(FID_SCREEN, file=FILE_SCREEN, status="old", position="append")
   endif
 
   ! SEISMIC: skip calculating critical stiffness for CNS model
