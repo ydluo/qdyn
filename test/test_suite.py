@@ -180,8 +180,6 @@ os.remove(os.path.join(cwd, "qdyn.in"))
 for file in files:
     if file.startswith("output_"):
         os.remove(os.path.join(cwd, file))
-    if file in ("log", "fort.6"):
-        os.remove(os.path.join(cwd, file))
 
 # Exit with error code
 if pass_check:

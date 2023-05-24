@@ -25,7 +25,7 @@ from multiprocessing.sharedctypes import Value
 import os
 import pickle
 import re
-from subprocess import call
+import subprocess
 
 import numpy as np
 from scipy.optimize import root
@@ -211,6 +211,7 @@ class qdyn:
 
         set_dict["NPROC"] = 1				# Number of processors, default 1 = serial (no MPI)
         set_dict["MPI_PATH"] = "/usr/local/bin/mpirun"   # Path to MPI executable
+        set_dict["VERBOSE"] = 0
 
 
         self.set_dict = set_dict
@@ -486,7 +487,7 @@ class qdyn:
         if self.work_dir != "":
             if not os.path.isdir(self.work_dir):
                 print("Creating %s" % (self.work_dir))
-                call(["mkdir", self.work_dir])
+                subprocess.run(["mkdir", self.work_dir])
             print("Switching working directory to %s" % (self.work_dir))
             os.chdir(self.work_dir)
 
@@ -515,7 +516,8 @@ class qdyn:
         
         # If RSF: convert initial velocity to stress
         if (settings["FRICTION_MODEL"] == "RSF") and all(mesh["TAU"] < 0):
-            print("Stress field not set, converting V0 into tau...")
+            if self.set_dict["VERBOSE"] == 1:
+                print("Stress field not set, converting V0 into tau...")
             self.convert_velocity()
 
         # Loop over processor nodes
@@ -555,11 +557,9 @@ class qdyn:
                 input_str += "%u%s i_rns_law\n" % (3, delimiter)
 
             # Some more general settings
-            # Note that i_sigma_law is replaced by the feature stress_coupling, but is kept for compatibility
-            input_str += "%u%s i_sigma_law\n" % (settings["SIGMA_CPL"], delimiter)
 
             # Check restart
-            input_str += "%u%s restart\n" % (settings["FEAT_RESTART"], delimiter)
+            # TODO: call qdyn exec with restart flag if RESTART == 1
             input_str += "%.15g%s restart time\n" % (settings["RESTART_TIME"], delimiter)
 
             # Number of faults
@@ -652,6 +652,18 @@ class qdyn:
             # Replace drive with mounted partition
             qdyn_exec_bash = qdyn_exec_bash.replace("%s:" % (drive), "/mnt/%s" % (drive.lower()))
 
+        flags = []
+
+        if test is True:
+            self.set_dict["VERBOSE"] = 0
+
+        if self.set_dict["VERBOSE"] == 1:
+            flags.append("verbose")
+        if self.set_dict["FEAT_RESTART"] == 1:
+            flags.append("restart")
+        if unit is True:
+            flags.append("test")
+
         # If serial (NPROC = 1)
         if self.set_dict["NPROC"] == 1:
 
@@ -659,18 +671,7 @@ class qdyn:
             if self.W10_bash is True: cmd = ["bash", "-c", "\"%s\"" % (qdyn_exec_bash)]
             # If we're on Unix, simply call the qdyn executable directly
             else: cmd = [qdyn_exec]
-
-            # If unit testing is requested, append test argument
-            if unit:
-                cmd.append("test")
-            if not test:
-                # Run command
-                return call(cmd)
-            else:
-                # Run and suppress stdout
-                with open(os.devnull, "w") as output:
-                    call(cmd, stdout=output)
-
+            
         else: # MPI parallel
 
             MPI_path = self.set_dict["MPI_PATH"]
@@ -683,17 +684,13 @@ class qdyn:
             else:
                 cmd = [MPI_path, "-np", "%i" % (self.set_dict["NPROC"]), qdyn_exec]
 
-            # If unit testing is requested, append test argument
-            if unit:
-                cmd.append("test")
-            # Run command
-            if not test:
-                # Run command
-                call(cmd)
-            else:
-                # Run and suppress stdout
-                with open(os.devnull, "w") as output:
-                    call(cmd, stdout=output)
+        # Add command line flags
+        if len(flags) > 0:
+            cmd.append(*flags)
+
+        # Run QDYN
+        result = subprocess.run(cmd)
+        if unit: return result.returncode
 
         # If a suffix is requested, rename output files
         suffix = self.set_dict["SUFFIX"]
@@ -759,13 +756,17 @@ class qdyn:
 
                 filename_iot = "%s_%i" % (filename_ot, i)
 
-                self.ot[n] = read_csv(
+                df = read_csv(
                     filename_iot, header=None, skiprows=nheaders_ot,
                     names=quants_ot, delim_whitespace=True
                 )
 
+                # Sanitise output (check for near-infinite numbers, etc.)
+                df = df.apply(pd.to_numeric, errors="coerce")
+
                 # Discard duplicate rows from duplicate time-steps
-                self.ot[n] = self.ot[n].drop_duplicates(subset=["t"], keep="first") 
+                df = df.drop_duplicates(subset=["t"], keep="first") 
+                self.ot[n] = df
 
             # Check output directory
             if path_output!=None:

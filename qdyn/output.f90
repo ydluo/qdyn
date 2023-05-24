@@ -16,7 +16,7 @@ subroutine initialize_output(pb)
 
   use problem_class
   use my_mpi, only: is_MPI_master, is_MPI_parallel
-  use constants, only : PI, FID_SCREEN, FILE_SCREEN
+  use constants, only : PI, FID_LOG, FILE_LOG
   type (problem_type) :: pb
   integer :: nbase, nobj
 
@@ -187,7 +187,7 @@ end subroutine write_output
 subroutine screen_init_log(pb)
 
   use problem_class
-  use constants, only : PI, FID_SCREEN, FILE_SCREEN
+  use constants, only : PI, FID_LOG, FILE_LOG
 
   type (problem_type), intent(inout) :: pb
 
@@ -196,10 +196,10 @@ subroutine screen_init_log(pb)
   ! Create log file
 
   if (pb%restart == 0) then
-    open(FID_SCREEN, file=FILE_SCREEN)
+    open(FID_LOG, file=FILE_LOG)
   elseif (pb%restart == 1) then
   ! If restart with time of last simulation, append in existing log file
-    open(FID_SCREEN, file=FILE_SCREEN, status="old", position="append")
+    open(FID_LOG, file=FILE_LOG, status="old", position="append")
   endif
 
   ! SEISMIC: skip calculating critical stiffness for CNS model
@@ -208,23 +208,23 @@ subroutine screen_init_log(pb)
 
   if (pb%ot%ic<1) return
 
-    write(FID_SCREEN, *) 'Values at selected point of the fault:'
+    write(FID_LOG, *) 'Values at selected point of the fault:'
     K = pb%mesh%Lfault
     if (pb%mesh%dim == 1) then
       if (.not. pb%kernel%k2f%finite) K = pb%mesh%W
     endif
     K = PI*pb%smu/K
     if (pb%mesh%dim < 2) then
-      write(FID_SCREEN, *) 'K/Kc = ',K/(pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
-      write(FID_SCREEN, *) 'K/Kb = ',K/(pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
+      write(FID_LOG, *) 'K/Kc = ',K/(pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
+      write(FID_LOG, *) 'K/Kb = ',K/(pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
     end if
 
   endif
 
-  write(FID_SCREEN, *)
-  write(FID_SCREEN, *) '    it,  dt (secs), time (yrs), v_max (m/s), sigma_max (MPa)'
+  write(FID_LOG, *)
+  write(FID_LOG, *) '    it,  dt (secs), time (yrs), v_max (m/s), sigma_max (MPa)'
 
-  close(FID_SCREEN)
+  close(FID_LOG)
 
 
 
@@ -236,7 +236,7 @@ end subroutine screen_init_log
 !output one step to log file
 subroutine screen_write_log(pb)
 
-  use constants, only : YEAR, FID_SCREEN, FILE_SCREEN
+  use constants, only : YEAR, FID_LOG, FILE_LOG
   use problem_class
   use my_mpi, only : is_MPI_parallel, is_mpi_master, max_allproc
 
@@ -250,16 +250,16 @@ subroutine screen_write_log(pb)
   if (is_MPI_parallel()) then
     call max_allproc(sigma_max,sigma_max_glob)
     if (is_mpi_master()) then
-      open(FID_SCREEN, file=FILE_SCREEN, status="old", position="append")
-      write(FID_SCREEN, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,&
+      open(FID_LOG, file=FILE_LOG, status="old", position="append")
+      write(FID_LOG, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,&
                               pb%vmaxglob, sigma_max_glob/1.0D6
-      close(FID_SCREEN)
+      close(FID_LOG)
     endif
   else
-    open(FID_SCREEN, file=FILE_SCREEN, status="old", position="append")
-    write(FID_SCREEN, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,    &
+    open(FID_LOG, file=FILE_LOG, status="old", position="append")
+    write(FID_LOG, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,    &
                             pb%vmaxglob, sigma_max/1.0D6
-    close(FID_SCREEN)
+    close(FID_LOG)
   endif
   
 
@@ -271,7 +271,7 @@ end subroutine screen_write_log
 subroutine screen_init(pb)
 
   use problem_class
-  use constants, only : PI, FID_SCREEN
+  use constants, only : PI, FID_LOG
 
   type (problem_type), intent(inout) :: pb
 
@@ -283,21 +283,21 @@ subroutine screen_init(pb)
 
   if (pb%ot%ic<1) return
 
-    write(FID_SCREEN, *) 'Values at selected point of the fault:'
+    write(FID_LOG, *) 'Values at selected point of the fault:'
     K = pb%mesh%Lfault
     if (pb%mesh%dim == 1) then
       if (.not. pb%kernel%k2f%finite) K = pb%mesh%W
     endif
     K = PI*pb%smu/K
     if (pb%mesh%dim < 2) then
-      write(FID_SCREEN, *) 'K/Kc = ',K/(pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
-      write(FID_SCREEN, *) 'K/Kb = ',K/(pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
+      write(FID_LOG, *) 'K/Kc = ',K/(pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
+      write(FID_LOG, *) 'K/Kb = ',K/(pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
     end if
 
   endif
 
-  write(FID_SCREEN, *)
-  write(FID_SCREEN, *) '    it,  dt (secs), time (yrs), v_max (m/s), sigma_max (MPa)'
+  write(FID_LOG, *)
+  write(FID_LOG, *) '    it,  dt (secs), time (yrs), v_max (m/s), sigma_max (MPa)'
 
 end subroutine screen_init
 
@@ -307,7 +307,7 @@ end subroutine screen_init
 !output one step to screen
 subroutine screen_write(pb)
 
-  use constants, only : YEAR, FID_SCREEN
+  use constants, only : YEAR, FID_LOG
   use problem_class
   use my_mpi, only : is_MPI_parallel, is_mpi_master, max_allproc
 
@@ -318,10 +318,10 @@ subroutine screen_write(pb)
 
   if (is_MPI_parallel()) then
     call max_allproc(sigma_max,sigma_max_glob)
-    if (is_mpi_master()) write(FID_SCREEN, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,&
+    if (is_mpi_master()) write(FID_LOG, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,&
                               pb%vmaxglob, sigma_max_glob/1.0D6
   else
-    write(FID_SCREEN, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,    &
+    write(FID_LOG, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,    &
                             pb%vmaxglob, sigma_max/1.0D6
   endif
 
@@ -1228,7 +1228,7 @@ subroutine calc_potency_fault(pb)
 
   use problem_class
   use my_mpi, only: is_MPI_parallel, sum_allreduce, is_mpi_master
-  use constants, only: FID_SCREEN
+  use constants, only: FID_LOG
 
   type(problem_type), intent(inout) :: pb
   double precision, dimension(pb%mesh%nn) :: area, slip_dt, pot_dt, pot_rate_dt
@@ -1290,9 +1290,9 @@ subroutine calc_potency_fault(pb)
 
   ! debugging: print values of slip_dt, pot and pot_rate
   ! if (is_mpi_master()) then
-  !   write(FID_SCREEN, *) 'slip_dt_fault 1 = ', slip_dt_fault(1)
-  !   write(FID_SCREEN, *) 'pot_fault 1 = ', pot_fault(1)
-  !   write(FID_SCREEN, *) 'pot_rate_fault 1 = ', pot_rate_fault(1)
+  !   write(FID_LOG, *) 'slip_dt_fault 1 = ', slip_dt_fault(1)
+  !   write(FID_LOG, *) 'pot_fault 1 = ', pot_fault(1)
+  !   write(FID_LOG, *) 'pot_rate_fault 1 = ', pot_rate_fault(1)
   ! endif
 
   ! assign quantities to problem class variables
@@ -1323,7 +1323,7 @@ end subroutine get_ivmax
 subroutine init_pb_global(pb)
 
   use problem_class
-  use constants, only: FID_SCREEN
+  use constants, only: FID_LOG
 
   type(problem_type), intent(inout) :: pb
   integer :: n
@@ -1355,8 +1355,8 @@ subroutine init_pb_global(pb)
 
   ! If global quantities are already allocated, something is wrong!
   else
-    write(FID_SCREEN, *) "Error in output.f90::init_pb_global"
-    write(FID_SCREEN, *) "Global quantities are allocated while they shouldn't be"
+    write(FID_LOG, *) "Error in output.f90::init_pb_global"
+    write(FID_LOG, *) "Global quantities are allocated while they shouldn't be"
     stop "Terminating..."
   endif
 

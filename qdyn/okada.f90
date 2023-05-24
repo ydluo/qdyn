@@ -853,7 +853,9 @@ end subroutine compute_kernel
 
                     AL1,AL2,AW1,AW2,DISL1,DISL2,DISL3,    &              
 
-                    UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)  
+                    UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)
+
+      use logger, only : log_msg
 
 
       DOUBLE PRECISION ::  ALPHA,X,Y,Z,DEPTH,DIP,AL1,AL2,AW1,AW2,  &
@@ -926,7 +928,7 @@ end subroutine compute_kernel
 
 !-----                                                                  
 
-      IF(Z.GT.0.) WRITE(6,'('' ** POSITIVE Z WAS GIVEN IN SUB-DC3D'')') 
+      IF(Z.GT.0.) call log_msg("** POSITIVE Z WAS GIVEN IN SUB-DC3D")
 
       DO 111 I=1,12                                                     
 

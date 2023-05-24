@@ -1,6 +1,6 @@
 module mesh
 
-  use logger, only : log_screen
+  use logger, only : log_msg
 
   implicit none
   private
@@ -67,7 +67,7 @@ subroutine read_mesh_parameters(iin,m)
     end do
 
   case default
-    call log_screen("mesh dimension should be 0, 1 or 2")
+    call log_msg("mesh dimension should be 0, 1 or 2")
     stop
 
   end select
@@ -104,7 +104,7 @@ subroutine init_mesh(m)
 
   type(mesh_type), intent(inout) :: m
 
-  call log_screen("Initializing mesh...")
+  call log_msg("Initializing mesh...")
 
   m%nnglob = m%nn
 
@@ -122,7 +122,7 @@ subroutine init_mesh_0D(m)
 
   type(mesh_type), intent(inout) :: m
 
-  call log_screen("Spring-block System")
+  call log_msg("Spring-block System")
   allocate(m%x(m%nn), m%y(m%nn), m%z(m%nn), m%fault_label(m%nn), m%restart_slip(m%nn))
   allocate(m%dx(1), m%dw(1))
   m%nx = 1
@@ -147,7 +147,7 @@ subroutine init_mesh_1D(m)
 
   integer :: i
 
-  call log_screen("1D fault, uniform grid")
+  call log_msg("1D fault, uniform grid")
   allocate(m%dx(m%nn), m%dw(1))
   m%nx = m%nn
   m%nw = 1
@@ -192,7 +192,7 @@ subroutine init_mesh_2D(m)
   integer :: iproc, nwLocal, nnLocal, nwGlobal, nnGlobal, NPROCS
   integer, allocatable :: nwLocal_perproc(:), nwoffset_glob_perproc(:)
 
-  call log_screen("2D fault, uniform grid along-strike")
+  call log_msg("2D fault, uniform grid along-strike")
 
   ! Number of elements along-strike is the same for all procs (serial or parallel)
   m%nxglob = m%nx

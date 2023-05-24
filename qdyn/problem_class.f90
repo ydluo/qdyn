@@ -124,7 +124,7 @@ module problem_class
     ! Fault variables
     double precision, dimension(:), allocatable :: pot_fault, pot_rate_fault, slip_dt_fault
    ! Boundary conditions
-    integer :: i_sigma_cpl=0, finite=0
+    integer :: finite=0
    ! Friction properties
     double precision, dimension(:), allocatable ::  a, b, dc, v1, v2, &
                                                     mu_star, v_star, &
@@ -159,6 +159,9 @@ module problem_class
     integer :: DYN_FLAG,DYN_SKIP
     ! Flag for unit testing
     logical :: test_mode = .false.
+    ! Flags for verbosity and debugging
+    logical :: verbose = .false.
+    logical :: debug = .false.
 
     ! SEISMIC: added structures
     type (cns_type) :: cns_params

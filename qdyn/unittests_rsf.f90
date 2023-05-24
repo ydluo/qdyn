@@ -7,6 +7,7 @@ module unittests_rsf
   use friction
   use fault_stress, only : init_kernel
   use unittests_aux
+  use logger, only : log_msg
 
   implicit none
   private
@@ -44,7 +45,7 @@ subroutine initiate_RSF(pb)
   ! Initiate solvers
   call initiate_solver(pb)
 
-  write(6,*) " * RSF model set-up"
+  call log_msg(" * RSF model set-up")
 
 end subroutine initiate_RSF
 
@@ -62,6 +63,7 @@ subroutine test_rsf_friction(pb)
   double precision :: atol, rtol, randno
   integer :: num_tests, num_passed, i
   logical :: pass, subpass1, subpass2, subpass3, subpass4
+  character(255) :: msg
 
   num_tests = 0
   num_passed = 0
@@ -69,9 +71,9 @@ subroutine test_rsf_friction(pb)
   rtol = pb%acc
   zero = 0.d0
 
-  write(6,*) ""
-  write(6,*) "Testing rate-and-state friction..."
-  write(6,*) ""
+  call log_msg("")
+  call log_msg("Testing rate-and-state friction...")
+  call log_msg("")
 
   call initiate_RSF(pb)
 
@@ -203,7 +205,8 @@ subroutine test_rsf_friction(pb)
   call print_subresult("dV/dP", subpass4)
 
 
-  write(6, '(A, I0, A, I0, A)') " Rate-and-state friction: ", num_passed, " / ", num_tests, " passed"
+  write(msg, "(A, I0, A, I0, A)") " Rate-and-state friction: ", num_passed, " / ", num_tests, " passed"
+  call log_msg(msg)
 
 end subroutine test_rsf_friction
 

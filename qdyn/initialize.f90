@@ -14,7 +14,7 @@ subroutine init_all(pb)
   use mesh, only : init_mesh, mesh_get_size, read_mesh_nodes
   use constants, only : PI, SOLVER_TYPE
   use my_mpi, only: is_MPI_master
-  use logger, only : log_screen
+  use logger, only : log_msg
   use fault_stress, only : init_kernel
   use friction, only : set_theta_star, compute_velocity_RSF
   use friction_cns, only : compute_velocity, dphi_dt
@@ -71,7 +71,7 @@ subroutine init_all(pb)
 
   ! Log impedance
   write(msg, "(a, e15.3)") "Impedance = ", pb%zimpedance
-  call log_screen(msg)
+  call log_msg(msg)
   !---------------------- impedance ------------------
 
   !---------------------- ref_value ------------------
@@ -89,7 +89,7 @@ subroutine init_all(pb)
     allocate(pb%T(pb%mesh%nn))
     pb%T = 0d0
     call init_tp(pb)
-    call log_screen("Spectral mesh initiated")
+    call log_msg("Spectral mesh initiated")
   endif
 
   ! SEISMIC: the CNS model has the initial shear stress defined in the
@@ -118,7 +118,7 @@ subroutine init_all(pb)
     call init_rk45_2(pb)
   endif
 
-  call log_screen("Initialization completed")
+  call log_msg("Initialization completed")
 
   ! Info about threads
 !!$OMP PARALLEL PRIVATE(NTHREADS, TID)

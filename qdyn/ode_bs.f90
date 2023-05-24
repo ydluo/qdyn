@@ -1,7 +1,7 @@
 ! Bulirsch-Stoer ODE solver from Numerical Recipes
 module ode_bs
 
-  use logger, only : log_screen
+  use logger, only : log_msg
 
   implicit none
   private
@@ -77,7 +77,7 @@ contains
 !       if (xnew == x) then
         if (x+1.e10*h == x) then  !NOTE: different than original code (above). Why???
           write(msg, *) 'dt_did,t= ', h, x
-          call log_screen(msg)
+          call log_msg(msg)
           stop 'step size underflow in bsstep'
 !JPA: make it a safe MPI stop: all procs should stop if at least one has an error
         endif

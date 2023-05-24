@@ -7,6 +7,7 @@ module unittests
   use friction
   ! use friction_cns
   use fault_stress, only : init_kernel, export_kernel
+  use logger, only : log_msg
 
   use unittests_rsf
   ! use unittests_cns
@@ -28,10 +29,10 @@ subroutine init_tests(pb)
   pb%test%test_mode = .true.
   pb%test%test_passed = .true.
 
-  write(6,*) ""
-  write(6,*) "-----------------------------------------------------------------"
-  write(6,*) "Initiating QDYN unit test suite"
-  write(6,*) ""
+  call log_msg("")
+  call log_msg("-----------------------------------------------------------------")
+  call log_msg("Initiating QDYN unit test suite")
+  call log_msg("")
 
   allocate(pb%time)
 
@@ -49,9 +50,6 @@ subroutine init_tests(pb)
   call init_kernel( pb%lam, pb%smu, pb%mesh, pb%kernel, pb%D, pb%H, &
                     pb%features%stress_coupling, pb%finite, pb%test%test_mode)
 
-  ! write(6,*) ""
-  ! write(6,*) "Test suite initialised successfully"
-
   ! Test RSF
   call test_rsf_friction(pb)
 
@@ -64,9 +62,9 @@ subroutine init_tests(pb)
 
   ! Test MPI
 
-  write(6,*) ""
-  write(6,*) "Finalised QDYN unit test suite"
-  write(6,*) "-----------------------------------------------------------------"
+  call log_msg("")
+  call log_msg("Finalised QDYN unit test suite")
+  call log_msg("-----------------------------------------------------------------")
 
   if (pb%test%test_passed) then
     call exit(0)
@@ -84,7 +82,7 @@ subroutine test_kernel(pb)
 
   type(problem_type) :: pb
   integer :: i, n, num_passed
-  character(len=200) :: filename, dir
+  character(len=200) :: filename, dir, msg
   double precision :: kernel_n, e
   logical :: pass, all_pass
 
@@ -99,14 +97,14 @@ subroutine test_kernel(pb)
   pb%mesh%dim = 1
   pb%kernel%kind = pb%mesh%dim + 1
 
-  write(6,*) ""
-  write(6,*) "Testing kernels ..."
-  write(6,*) ""
+  call log_msg("")
+  call log_msg("Testing kernels ...")
+  call log_msg("")
 
   do i = 0, 3
     pb%finite = i
     call init_kernel( pb%lam, pb%smu, pb%mesh, pb%kernel, pb%D, pb%H, &
-                      pb%i_sigma_cpl, pb%finite, pb%test%test_mode)
+                      pb%features%stress_coupling, pb%finite, pb%test%test_mode)
 
     select case (pb%finite)
     case(0)
@@ -136,8 +134,9 @@ subroutine test_kernel(pb)
   end do
 
   pb%test%test_passed = pb%test%test_passed .and. all_pass
-  write(6, '(A, I0, A, I0, A)') " Kernel tests: ", num_passed, " / 4 passed"
-  write(6,*) ""
+  write(msg, "(A, I0, A, I0, A)") " Kernel tests: ", num_passed, " / 4 passed"
+  call log_msg(msg)
+  call log_msg("")
 
 end subroutine test_kernel
 
@@ -152,7 +151,7 @@ subroutine initiate_springblock(pb)
   pb%mesh%Lfault = 1
   pb%mesh%W = 1
 
-  write(6,*) " * Spring-block configuration initialised"
+  call log_msg(" * Spring-block configuration initialised")
 end subroutine initiate_springblock
 
 !===============================================================================
@@ -189,7 +188,7 @@ subroutine allocate_mesh(pb)
 
   allocate ( pb%dtau_dt(n), pb%slip(n), pb%theta_star(n) )
 
-  write(6,*) " * Mesh variables/parameters allocated"
+  call log_msg(" * Mesh variables/parameters allocated")
 end subroutine allocate_mesh
 
 !===============================================================================
@@ -206,7 +205,6 @@ subroutine initiate_parameters(pb)
   ! Simulation features
   pb%features%localisation = 0
   pb%features%stress_coupling = 0
-  pb%i_sigma_cpl = 0
   pb%features%tp = 0
   pb%neqs = 2
   pb%finite = 1
@@ -230,7 +228,7 @@ subroutine initiate_parameters(pb)
   pb%coh = 0.d0
   pb%time = 0.d0
 
-  write(6,*) " * Global parameters initialised"
+  call log_msg(" * Global parameters initialised")
 
 end subroutine initiate_parameters
 
@@ -241,7 +239,7 @@ subroutine kernel_export(pb)
   type(problem_type) :: pb
   integer :: i
 
-  write(6,*) 'Intializing kernel: ...'
+  call log_msg("Intializing kernel: ...")
 
   ! Allocate mesh variables/parameters
   call initiate_parameters(pb)

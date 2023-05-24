@@ -33,7 +33,6 @@ subroutine init_mpi()
   if (ier /= 0 ) stop 'Error initializing MPI'
 
   if (NPROCS<2) call MPI_FINALIZE(ier)
-  if (MY_RANK==0) write(6,*) 'Number of processors = ',NPROCS
 
 end subroutine init_mpi
 
