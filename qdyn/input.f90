@@ -42,7 +42,6 @@ subroutine read_main(pb)
   ! Read restart variable 
   read(FID_IN, *) pb%restart
   read(FID_IN, *) pb%restart_time
-  !read(FID_IN, *) pb%
 
   ! Read number of faults
   read(FID_IN, *) pb%nfault
@@ -251,12 +250,6 @@ subroutine read_main(pb)
   endif
   ! End reading TP model parameters
   ! </SEISMIC>
-  
-  ! CRP: Before: read_mesh_nodes was only called with 2D mesh
-  ! if (pb%mesh%dim == 2) then
-  !   call read_mesh_nodes(FID_IN, pb%mesh)
-  !   ! call ot_read_stations(pb%ot)
-  ! endif
 
   ! CRP: Instead, call read_mesh_nodes for all mesh types so the fault label can
   ! be written in the outputs for all fault dimensionalities

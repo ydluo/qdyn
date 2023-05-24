@@ -284,7 +284,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
   logical, intent(in) :: sigma_coupling
 
   double precision :: x_src, x_obs
-  double precision :: tau,sigma_n, y_src, z_src, dip_src, dw_src, y_obs, z_obs,dip_obs
+  double precision :: tau,sigma_n, y_src, z_src, dip_src, dw_src, y_obs, z_obs, dip_obs
   double precision, allocatable :: tmp(:), tmp_n(:)   ! for FFT
   integer :: i, j, ii, jj, n, nn, IRET, iproc, NPROCS
 
@@ -317,7 +317,7 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
       x_obs = m%x(jj)
       y_obs = m%y(jj)
       z_obs = m%z(jj)
-      dip_obs = m%dip(jj) 
+      dip_obs = m%dip(jj)
       do i=-m%nx+1,m%nx
         ! MvdE: the FFT will be applied along the x-coordinate, and so the x-coordinate
         ! of the observer should be as x = 0. The relative x-coordinate for the i-th
