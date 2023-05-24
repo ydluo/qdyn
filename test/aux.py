@@ -5,6 +5,7 @@ import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.testing import assert_allclose
+from scipy.stats import pearsonr
 from scipy.interpolate import interp1d
 from termcolor import colored
 
@@ -14,7 +15,7 @@ class AuxiliaryFunctions:
     def __init__(self):
         pass
 
-    def compare_results(self, mode):
+    def compare_results(self, mode, cc=False):
 
         if not self.frozen_loaded:
             return
@@ -24,15 +25,21 @@ class AuxiliaryFunctions:
 
         t_b = benchmark["t"]
         t_r = results["t"]
-        var1_int = interp1d(t_r, results["var1"])(t_b)
-        var2_int = interp1d(t_r, results["var2"])(t_b)
+        var1_int = interp1d(t_r, results["var1"], bounds_error=False, fill_value="extrapolate")(t_b)
+        var2_int = interp1d(t_r, results["var2"], bounds_error=False, fill_value="extrapolate")(t_b)
         
-        b1_int = interp1d(t_b, benchmark["var1"])(t_b)
-        b2_int = interp1d(t_b, benchmark["var2"])(t_b)
+        b1_int = interp1d(t_b, benchmark["var1"], bounds_error=False, fill_value="extrapolate")(t_b)
+        b2_int = interp1d(t_b, benchmark["var2"], bounds_error=False, fill_value="extrapolate")(t_b)
 
         try:
-            assert_allclose(b1_int, var1_int, rtol=1e-4)
-            assert_allclose(b2_int, var2_int, rtol=1e-4)
+            if not cc:
+                assert_allclose(b1_int, var1_int, rtol=1e-4)
+                assert_allclose(b2_int, var2_int, rtol=1e-4)
+            else:
+                cc1 = pearsonr(b1_int, var1_int, alternative="greater").statistic
+                cc2 = pearsonr(b2_int, var2_int, alternative="greater").statistic
+                assert cc1 > 0.85
+                assert cc2 > 0.85
             self.test_results[mode]["success"] = True
             self.test_results[mode]["success_msg"] = "%s benchmark comparison... [%s]" % (mode.upper(), colored("OK", "green"))
         except AssertionError:

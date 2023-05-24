@@ -16,7 +16,7 @@ subroutine init_all(pb)
   use my_mpi, only: is_MPI_master
   use logger, only : log_screen
   use fault_stress, only : init_kernel
-  use friction, only : set_theta_star, friction_mu
+  use friction, only : set_theta_star, compute_velocity_RSF
   use friction_cns, only : compute_velocity, dphi_dt
   use solver, only : init_rk45
   use diffusion_solver, only: init_tp
@@ -95,7 +95,7 @@ subroutine init_all(pb)
   ! SEISMIC: the CNS model has the initial shear stress defined in the
   ! input file, so we can skip the initial computation of friction
   if (pb%i_rns_law /= 3) then
-    pb%tau = (pb%sigma - pb%P) * friction_mu(pb%v,pb%theta,pb) + pb%coh
+    pb%v = compute_velocity_RSF(pb%tau, pb%sigma-pb%P, pb%theta, pb)
   endif
   if (pb%i_rns_law == 3) then
     pb%v = compute_velocity(pb%tau, pb%sigma-pb%P, pb%theta, pb%theta2, pb)

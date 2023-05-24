@@ -28,6 +28,7 @@ import re
 from subprocess import call
 
 import numpy as np
+from scipy.optimize import root
 import pandas as pd
 from pandas import read_csv
 
@@ -111,7 +112,7 @@ class qdyn:
         # Rate-and-state friction parameters
         set_dict["SET_DICT_RSF"] = {
             "RNS_LAW": 0,						# Type of rate-and-state friction law (0: original, 1: with cut-off velocities)
-            "THETA_LAW": 1,						# State evolution law (0: aging in no-healin approximation, 1: ageing law, 2: slip law)
+            "THETA_LAW": 1,						# State evolution law (0: aging in no-healing approximation, 1: ageing law, 2: slip law)
             "A": 0.0010,						# Direct effect parameter
             "B": 0.0011,						# Evolution effect parameter
             "DC": 1e-5,							# Characteristic slip distance
@@ -122,6 +123,8 @@ class qdyn:
             "CO": 0,							# Cohesion [Pa]
             "V_0": 1.01e-5,						# Initial slip velocity [m/s]
             "TH_0": 1.0,						# Initial state [s]
+            "TAU": -1.0,                        # Initial stress [Pa] (default -1 indicating it will be computed later)
+            "INV_VISC": 0.0,                    # Inverse viscosity [m/Pa.s]
         }
 
         # CNS microphysical model parameters
@@ -256,7 +259,7 @@ class qdyn:
             raise MeshError("Number of mesh elements needs to be set before rendering mesh, unless MESHDIM = 0 (spring-block)")
 
         mesh_params_general = ("IOT", "IASP", "V_PL", "SIGMA")
-        mesh_params_RSF = ("V_0", "TH_0", "A", "B", "DC", "V1", "V2", "MU_SS", "V_SS", "CO")
+        mesh_params_RSF = ("TAU", "V_0", "TH_0", "A", "B", "DC", "V1", "V2", "MU_SS", "V_SS", "CO", "INV_VISC")
         mesh_params_CNS = ("TAU", "PHI_INI", "A_TILDE", "MU_TILDE_STAR", "Y_GR_STAR", "H", "PHI_C", "PHI0", "THICKNESS")
         mesh_params_creep = ("A", "N", "M")
         mesh_params_localisation = ("LOCALISATION", "PHI_INI_BULK")
@@ -295,6 +298,7 @@ class qdyn:
                     mesh_dict[param_bulk] = np.ones(N)*settings["SET_DICT_LOCALISATION"][param][i]
 
         # Populate mesh with thermal pressurisation parameters
+        mesh_dict["P_A"] = np.zeros(N)
         if settings["FEAT_TP"] == 1:
             for param in mesh_params_TP:
                 mesh_dict[param] = np.ones(N)*settings["SET_DICT_TP"][param]
@@ -508,6 +512,11 @@ class qdyn:
 
         # Recalculate number of faults if necessary
         settings["N_FAULTS"] = len(np.unique(mesh["FAULT_LABEL"]))
+        
+        # If RSF: convert initial velocity to stress
+        if (settings["FRICTION_MODEL"] == "RSF") and all(mesh["TAU"] < 0):
+            print("Stress field not set, converting V0 into tau...")
+            self.convert_velocity()
 
         # Loop over processor nodes
         for iproc in range(Nprocs):
@@ -591,7 +600,7 @@ class qdyn:
                     input_str += "%.15g %.15g %.15g\n" % (mesh["THICKNESS"][iloc[i]], mesh["IOT"][iloc[i]], mesh["IASP"][iloc[i]])
             else: # RSF model
                 for i in range(nloc):
-                    input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n" % (mesh["SIGMA"][iloc[i]], mesh["V_0"][iloc[i]], mesh["TH_0"][iloc[i]], mesh["A"][iloc[i]], mesh["B"][iloc[i]], mesh["DC"][iloc[i]], mesh["V1"][iloc[i]], mesh["V2"][iloc[i]], mesh["MU_SS"][iloc[i]], mesh["V_SS"][iloc[i]], mesh["IOT"][iloc[i]], mesh["IASP"][iloc[i]], mesh["CO"][iloc[i]], mesh["V_PL"][iloc[i]])
+                    input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n" % (mesh["SIGMA"][iloc[i]], mesh["TAU"][iloc[i]], mesh["TH_0"][iloc[i]], mesh["A"][iloc[i]], mesh["B"][iloc[i]], mesh["DC"][iloc[i]], mesh["V1"][iloc[i]], mesh["V2"][iloc[i]], mesh["MU_SS"][iloc[i]], mesh["V_SS"][iloc[i]], mesh["IOT"][iloc[i]], mesh["IASP"][iloc[i]], mesh["CO"][iloc[i]], mesh["V_PL"][iloc[i]], mesh["INV_VISC"][iloc[i]])
 
             # Check if localisation is requested
             if settings["FEAT_LOCALISATION"] == 1:
@@ -943,6 +952,124 @@ class qdyn:
             pickle.dump(self.set_dict, f, pickle.HIGHEST_PROTOCOL)
         with gzip.GzipFile("mesh_dict.tar.gz", "w") as f:
             pickle.dump(self.mesh_dict, f, pickle.HIGHEST_PROTOCOL)
+
+    # For compatibility with the viscosity model, the initial state of the
+    # fault is expressed in terms of the shear stress (and not velocity).
+    # For rate-and-state friction, the initial velocity needs to be converted
+    # initial stress
+    def convert_velocity(self):
+
+        set_dict = self.set_dict["SET_DICT_RSF"]
+        mesh_dict = self.mesh_dict
+
+        # Step 1: load V0, theta0
+        v = mesh_dict["V_0"]
+        theta = mesh_dict["TH_0"]
+
+        # Step 2: select friction law
+        if set_dict["RNS_LAW"] == 0:
+            fric_law = self.friction_regular
+            v_law = self.v_regular
+        elif set_dict["RNS_LAW"] == 1:
+            fric_law = self.friction_cutoff
+            v_law = self.v_cutoff
+        elif set_dict["RNS_LAW"] == 2:
+            fric_law = self.friction_regularised
+            v_law = self.v_regularised
+        else:
+            print("Friction law %d not recognised" % set_dict["RNS_LAW"])
+            exit()
+
+        # Step 3: if viscosity == 0: use friction law directly
+        if all(mesh_dict["INV_VISC"] == 0):
+            tau = fric_law(v, theta) * (mesh_dict["SIGMA"] - mesh_dict["P_A"])
+
+        # Step 4: if viscosity > 0: solve for tau -> v0 = vfric + vvisc
+        else:
+            tau = self.solve_friction(v, theta, v_law)
+
+        # Step 5: store result in mesh_dict
+        self.mesh_dict["TAU"] = tau
+
+        return True
+
+    def friction_regular(self, v, theta):
+        mesh_dict = self.mesh_dict
+        mu_star = mesh_dict["MU_SS"]
+        v_star = mesh_dict["V_SS"]
+        a = mesh_dict["A"]
+        b = mesh_dict["B"]
+        Dc = mesh_dict["DC"]
+        return mu_star + a * np.log(v / v_star) + b * np.log(theta * v_star / Dc)
+
+    def v_regular(self, tau, theta):
+        mesh_dict = self.mesh_dict
+        mu = tau / (mesh_dict["SIGMA"] - mesh_dict["P_A"])
+        mu_star = mesh_dict["MU_SS"]
+        v_star = mesh_dict["V_SS"]
+        a = mesh_dict["A"]
+        b = mesh_dict["B"]
+        Dc = mesh_dict["DC"]
+        return v_star * np.exp((mu - mu_star - b * np.log(theta * v_star / Dc)) / a)
+
+    def friction_cutoff(self, v, theta):
+        mesh_dict = self.mesh_dict
+        mu_star = mesh_dict["V_SS"]
+        v1 = mesh_dict["V1"]
+        v2 = mesh_dict["V2"]
+        a = mesh_dict["A"]
+        b = mesh_dict["B"]
+        Dc = mesh_dict["DC"]
+        return mu_star - a * np.log(v1 / v + 1) + b * np.log(theta * v2 / Dc + 1)
+
+    def v_cutoff(self, tau, theta):
+        mesh_dict = self.mesh_dict
+        mu = tau / (mesh_dict["SIGMA"] - mesh_dict["P_A"])
+        mu_star = mesh_dict["V_SS"]
+        v1 = mesh_dict["V1"]
+        v2 = mesh_dict["V2"]
+        a = mesh_dict["A"]
+        b = mesh_dict["B"]
+        Dc = mesh_dict["DC"]
+        return v1 / (np.exp(-(mu - mu_star - b * np.log(theta * v2 / Dc + 1)) / a) - 1)
+
+    def friction_regularised(self, v, theta):
+        mesh_dict = self.mesh_dict
+        mu_star = mesh_dict["MU_SS"]
+        v_star = mesh_dict["V_SS"]
+        a = mesh_dict["A"]
+        b = mesh_dict["B"]
+        Dc = mesh_dict["DC"]
+
+        exp_term = np.exp((mu_star + b * np.log(theta * v_star / Dc)) / a)
+
+        return a * np.arcsinh(v * exp_term / (2 * v_star))
+
+    def v_regularised(self, tau, theta):
+        mesh_dict = self.mesh_dict
+        mu = tau / (mesh_dict["SIGMA"] - mesh_dict["P_A"])
+        mu_star = mesh_dict["MU_SS"]
+        v_star = mesh_dict["V_SS"]
+        a = mesh_dict["A"]
+        b = mesh_dict["B"]
+        Dc = mesh_dict["DC"]
+
+        exp_term = np.exp(-(mu_star + b * np.log(theta * v_star / Dc)) / a)
+
+        return 2 * v_star * np.sinh(mu / a) * exp_term
+
+    def solve_friction(self, v, theta, v_law):
+        inv_visc = self.mesh_dict["INV_VISC"]
+        x0 = 0.5 * (self.mesh_dict["SIGMA"] - self.mesh_dict["P_A"])
+
+        root_func = lambda x: v - v_law(x, theta) - x * inv_visc
+        result = root(root_func, x0, method="lm")
+        tau = result["x"]
+
+        assert all(np.isfinite(tau)), "The friction could not be estimated"
+
+        return tau
+
 
 
 

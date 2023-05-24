@@ -107,7 +107,7 @@ Users can chose to generate their input files through a Python wrapper, called `
 |      `W`      | Out-of-plane seismogenic width of the fault (m), only if `MESHDIM=1` and `FINITE=0`, following the "2.5D" approximation introduced in appendix A.2 of [Luo and Ampuero (2017)](http://dx.doi.org/10.1016/j.tecto.2017.11.006). **Note** that the approximation assumes that the grid size is `> W`. |      `50e3`      |
 |    `DIP_W`    | Fault dip angle (degree). This parameter is only used when `MESHDIM=2`. If depth-dependent, values must be given from deeper to shallower depth. |      `90`      |
 |  `Z_CORNER`   | Fault bottom depth (m; negative down)                        |      `0`      |
-| `SIGMA_COUPL` | Turn on or off normal stress coupling:<br />`0` = disabled<br />`1` = enabled<br />This parameter is **deprecated** for the Python wrapper, use `FEAT_STRESS_COUPL` instead (see below). |      `0`      |
+| `SIGMA_CPL` | Turn on or off normal stress coupling:<br />`0` = disabled<br />`1` = enabled<br />This parameter is **deprecated** for the Python wrapper, use `FEAT_STRESS_COUPL` instead (see below). |      `0`      |
 |    `APER`     | Amplitude of additional time-dependent oscillatory shear stress loading (Pa) |      `0`      |
 |    `TPER`     | Period of oscillatory loading (s)                            |      `0`      |
 
