@@ -13,7 +13,7 @@ module my_mpi
 
   public :: init_mpi, finalize_mpi, &
             my_mpi_tag, my_mpi_rank, my_mpi_NPROCS, is_mpi_parallel, &
-            is_mpi_master, gather_allv, gather_allvdouble, &
+            is_mpi_master, gather_allv, gather_allvi, gather_allvdouble, &
             gather_allvdouble_root, gather_allvi_root, gather_alli, &
             synchronize_all, sum_allreduce, max_allproc, min_allproc
 
@@ -131,6 +131,24 @@ subroutine gather_allvdouble(sendbuf, scounts, recvbufall, recvcountsall, recvof
                       recvoffsetall,MPI_DOUBLE_PRECISION,MPI_COMM_WORLD,ier)
 
 end subroutine gather_allvdouble
+
+!-------------------------------------------------------------------------------------------------
+!Gather all MPI to root processor=0
+subroutine gather_allvi(sendbuf, scounts, recvbufall, recvcountsall, recvoffsetall,recvcountstotal)
+
+  integer :: scounts, recvcountstotal
+  integer, dimension(scounts) :: sendbuf
+  integer, dimension(recvcountstotal) :: recvbufall
+  integer, dimension(0:NPROCS-1) :: recvcountsall, recvoffsetall
+
+  integer ier
+
+  !PG: sending the each processor data to the corresponding index in the recvbufall array.
+
+  call MPI_ALLGATHERV(sendbuf, scounts, MPI_INTEGER, recvbufall, recvcountsall,&
+                    recvoffsetall, MPI_INTEGER, MPI_COMM_WORLD, ier)
+
+end subroutine gather_allvi
 
 !-------------------------------------------------------------------------------------------------
 !Gather all MPI to root processor=0

@@ -42,13 +42,17 @@ subroutine read_main(pb)
 
   ! Read number of faults
   read(FID_IN, *) pb%nfault
+  ! Allocate potency (rate): 1 for each fault
+  allocate(pb%pot_fault(pb%nfault), pb%pot_rate_fault(pb%nfault))
+  pb%pot_fault = 0d0
+  pb%pot_rate_fault = 0d0
 
   ! SEISMIC: various simulation features can be turned on (1) or off (0)
   if (pb%i_rns_law == 3) then
     read(FID_IN, *) pb%cns_params%N_creep
   endif
   read(FID_IN, *) pb%features%stress_coupling, pb%features%tp, pb%features%localisation
-  read(FID_IN, *) pb%ot%ntout, pb%ox%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nwout, &
+  read(FID_IN, *) pb%ntout_log, pb%ot%ntout, pb%ox%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nwout, &
              pb%ox%nxout_dyn, pb%ox%nwout_dyn, pb%ox%i_ox_seq, pb%ox%i_ox_dyn
   read(FID_IN, *) pb%beta, pb%smu, pb%lam, pb%D, pb%H, pb%ot%v_th
   read(FID_IN, *) pb%Tper, pb%Aper

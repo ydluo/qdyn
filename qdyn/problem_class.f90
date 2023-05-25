@@ -11,8 +11,10 @@ module problem_class
 
   ! Placeholder for output quantities
   type optr
-    ! Vector quantities
+    ! Vector quantities (double)
     double precision, pointer :: v(:) => null()
+    ! Vector quantities (integer)
+    integer, pointer :: vi(:) => null()
     ! Scalar quantities (double)
     double precision, pointer :: s => null()
     ! Scalar quantities (integer)
@@ -25,7 +27,7 @@ module problem_class
     double precision, dimension(:), allocatable :: xsta, ysta, zsta, v_pre, v_pre2
     integer :: ic=-1, ntout=0, not=-1, not_vmax=-1, not_fault = -1
     integer, dimension(:), allocatable :: iasp, iot
-    character(len=16), dimension(:), allocatable :: fmt, fmt_vmax, fmt_fault
+    character(len=16), dimension(:), allocatable :: fmt, fmt_vmax
     type(optr), dimension(:), allocatable :: objects_ot, objects_vmax
   end type ot_type
 
@@ -107,7 +109,7 @@ module problem_class
     ! Containers for local and global quantities
     type(optr), dimension(:), allocatable :: objects_glob, objects_loc
     ! Number of objects in the containers
-    integer :: nobj=10
+    integer :: nobj=11
 
     ! Basic variables
     ! NOTE: if theta2 needs to be in output sequence, add here
@@ -121,8 +123,7 @@ module problem_class
                                   v_max(:) => null(), t_vmax(:) => null()
     ! Potency variables
     double precision, pointer :: pot => null(), pot_rate => null()
-    ! Fault variables
-    double precision, dimension(:), allocatable :: pot_fault, pot_rate_fault, slip_dt_fault
+    double precision, pointer :: pot_fault(:) => null(), pot_rate_fault(:) => null()
    ! Boundary conditions
     integer :: finite=0
    ! Friction properties
@@ -140,8 +141,9 @@ module problem_class
                         dt_next=0d0, dt_max=0d0, tmax, acc
     double precision :: abserr=1e-7
     double precision, pointer :: time => null()
-    integer, pointer :: ivmax => null()
-    integer :: NSTOP, itstop=-1, it=0
+    integer, pointer :: it => null(), ivmax => null()
+    integer :: ntout_log = 0
+    integer :: NSTOP, itstop=-1
     double precision :: vmaxglob
    ! For outputs
     type (ot_type) :: ot
@@ -157,11 +159,6 @@ module problem_class
    ! QSB
     double precision :: DYN_M,DYN_th_on,DYN_th_off
     integer :: DYN_FLAG,DYN_SKIP
-    ! Flag for unit testing
-    logical :: test_mode = .false.
-    ! Flags for verbosity and debugging
-    logical :: verbose = .false.
-    logical :: debug = .false.
 
     ! SEISMIC: added structures
     type (cns_type) :: cns_params
@@ -172,11 +169,10 @@ module problem_class
     type (test_type) :: test
 
     ! Restart
-    integer :: restart
     double precision :: restart_time
 
     ! Number of fault labels
-    integer :: nfault
+    integer :: nfault = 1
 
   end type problem_type
 

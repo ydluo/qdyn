@@ -27,7 +27,7 @@ set_dict = {
     "TMAX": 20,
     "DTTRY": 1e-6,
     "MESHDIM": 0,
-    "NTOUT": 10000,
+    "NTOUT_OX": 10000,
     "VS": 3000,
     "SIGMA": 5e6,
     "L": 1,

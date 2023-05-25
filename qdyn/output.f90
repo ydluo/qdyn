@@ -2,10 +2,12 @@ module output
 
 ! OUTPUT: This module manages outputs
 
+  use logger, only : log_msg
+
   implicit none
   private
 
-  public :: ot_read_stations, initialize_output, write_output
+  public :: ot_read_stations, initialize_output, write_output, log_write_header
 
 contains
 
@@ -16,7 +18,7 @@ subroutine initialize_output(pb)
 
   use problem_class
   use my_mpi, only: is_MPI_master, is_MPI_parallel
-  use constants, only : PI, FID_LOG, FILE_LOG
+  use constants, only : PI, RESTART
   type (problem_type) :: pb
   integer :: nbase, nobj
 
@@ -31,12 +33,6 @@ subroutine initialize_output(pb)
   ! are created from scratch/rewritten. Otherwise, if the simulation is intended
   ! to start from the last time-step of a previous simulation ("restart"=1), then
   ! the output is appended to the existing output files from this previous simulation.
-
-  ! CRP: Possible bug?: when restarting a model, all the outputs display a repeated time-step.
-  ! This corresponds to the following snapshot time-step after the restart_time. For now,
-  ! the duplicate lines are ignored when reading the outputs with the python wrapper.
-  ! However, in the future the best would be to fix this issue from the fortran code
-
 
   ! Number of objects in containers
   ! Base number
@@ -57,7 +53,7 @@ subroutine initialize_output(pb)
   allocate(pb%objects_loc(nobj))
 
   ! overwrite time and slip if restart with time and slip of last simulation
-  if(pb%restart==1) then
+  if(RESTART) then
     pb%time = pb%time + pb%restart_time
     pb%slip = pb%slip + pb%mesh%restart_slip
   endif
@@ -72,7 +68,7 @@ subroutine initialize_output(pb)
     pb%mesh%yglob => pb%mesh%y
     pb%mesh%zglob => pb%mesh%z
     pb%mesh%fault_label_glob => pb%mesh%fault_label
-    ! Mechanical quantitiesß
+    ! Mechanical quantities
     pb%v_glob => pb%v
     pb%theta_glob => pb%theta
     pb%tau_glob => pb%tau
@@ -93,12 +89,13 @@ subroutine initialize_output(pb)
 
   ! Assign global quantities (for output)
 
+  ! [integer scalar] step, index of max slip rate
+  pb%objects_glob(1)%i => pb%it
+  pb%objects_glob(2)%i => pb%ivmax
   ! [double scalar] time, potency, potency rate
   pb%objects_glob(1)%s => pb%time
   pb%objects_glob(2)%s => pb%pot
   pb%objects_glob(3)%s => pb%pot_rate
-  ! [integer] index of max slip rate
-  pb%objects_glob(1)%i => pb%ivmax
   ! [double vector] spatial coordinates
   pb%objects_glob(1)%v => pb%mesh%xglob
   pb%objects_glob(2)%v => pb%mesh%yglob
@@ -110,8 +107,10 @@ subroutine initialize_output(pb)
   pb%objects_glob(7)%v => pb%dtau_dt_glob
   pb%objects_glob(8)%v => pb%slip_glob
   pb%objects_glob(9)%v => pb%sigma_glob
+  pb%objects_glob(10)%v => pb%pot_fault
+  pb%objects_glob(11)%v => pb%pot_rate_fault
   ! [double vector] fault label
-  pb%objects_glob(10)%v => pb%mesh%fault_label_glob
+  pb%objects_glob(1)%vi => pb%mesh%fault_label_glob
 
   ! If thermal pressurisation is requested, add P and T
   if (pb%features%tp == 1) then
@@ -134,8 +133,6 @@ subroutine initialize_output(pb)
   pb%objects_loc(7)%v => pb%dtau_dt
   pb%objects_loc(8)%v => pb%slip
   pb%objects_loc(9)%v => pb%sigma
-  ! [double vector] fault label
-  pb%objects_loc(10)%v => pb%mesh%fault_label
 
   ! If thermal pressurisation is requested, add P and T
   if (pb%features%tp == 1) then
@@ -145,8 +142,6 @@ subroutine initialize_output(pb)
   endif
 
   ! Init ot, ox, screen
-  if (is_MPI_master()) call screen_init(pb)
-  if (is_MPI_master()) call screen_init_log(pb)
   call ot_init(pb)
   call ox_init(pb)
 
@@ -163,13 +158,9 @@ subroutine write_output(pb)
 
   last_call = (pb%it == pb%itstop)
 
-  ! Call to time_write could potentially be used for debugging?
-  ! call time_write(pb)
-
   ! Call a print to screen if requested
-  if (mod(pb%it, pb%ox%ntout) == 0 .or. last_call) then
-    call screen_write(pb)
-    call screen_write_log(pb)
+  if (mod(pb%it, pb%ntout_log) == 0 .or. last_call) then
+    call log_write(pb)
   endif
 
   ! Write time series if requested
@@ -183,165 +174,72 @@ subroutine write_output(pb)
 end subroutine write_output
 
 !=====================================================================
-!output initilized field to log file
-subroutine screen_init_log(pb)
+! Write log header
+subroutine log_write_header(pb)
 
   use problem_class
-  use constants, only : PI, FID_LOG, FILE_LOG
+  use constants, only : PI
+  use my_mpi, only : is_MPI_master
 
   type (problem_type), intent(inout) :: pb
-
   double precision :: K
+  character(255) :: msg
 
-  ! Create log file
-
-  if (pb%restart == 0) then
-    open(FID_LOG, file=FILE_LOG)
-  elseif (pb%restart == 1) then
-  ! If restart with time of last simulation, append in existing log file
-    open(FID_LOG, file=FILE_LOG, status="old", position="append")
-  endif
+  if (.not. is_MPI_master()) return
 
   ! SEISMIC: skip calculating critical stiffness for CNS model
   ! Is not very useful
-  if (pb%i_rns_law /= 3) then
+  if (pb%i_rns_law == 3) return
 
-  if (pb%ot%ic<1) return
+  ! TODO: what's this?
+  if (pb%ot%ic < 1) return
 
-    write(FID_LOG, *) 'Values at selected point of the fault:'
-    K = pb%mesh%Lfault
-    if (pb%mesh%dim == 1) then
-      if (.not. pb%kernel%k2f%finite) K = pb%mesh%W
-    endif
-    K = PI*pb%smu/K
-    if (pb%mesh%dim < 2) then
-      write(FID_LOG, *) 'K/Kc = ',K/(pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
-      write(FID_LOG, *) 'K/Kb = ',K/(pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
-    end if
+  call log_msg("Values at selected point of the fault:")
 
+  K = pb%mesh%Lfault
+  if (pb%mesh%dim == 1) then
+    if (.not. pb%kernel%k2f%finite) K = pb%mesh%W
   endif
 
-  write(FID_LOG, *)
-  write(FID_LOG, *) '    it,  dt (secs), time (yrs), v_max (m/s), sigma_max (MPa)'
+  K = PI*pb%smu/K
+  if (pb%mesh%dim < 2) then
+    write(msg, *) "K/Kc = ", K/(pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
+    call log_msg(msg)
+    write(msg, *) "K/Kb = ", K/(pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
+    call log_msg(msg)
+  end if
 
-  close(FID_LOG)
+  call log_msg("     it,   dt (sec), time (yrs), v_max (m/s), sigma_max (MPa)")
 
-
-
-end subroutine screen_init_log
-
+end subroutine log_write_header
 
 
 !=====================================================================
-!output one step to log file
-subroutine screen_write_log(pb)
+! Write to log
+subroutine log_write(pb)
 
-  use constants, only : YEAR, FID_LOG, FILE_LOG
+  use constants, only : YEAR
   use problem_class
   use my_mpi, only : is_MPI_parallel, is_mpi_master, max_allproc
 
   type (problem_type), intent(in) :: pb
   double precision :: sigma_max, sigma_max_glob
+  character(255) :: msg
 
-  character(len=100) :: tmp
-
+  ! Synchronise max sigma across nodes
   sigma_max = maxval(pb%sigma)
-
   if (is_MPI_parallel()) then
     call max_allproc(sigma_max,sigma_max_glob)
-    if (is_mpi_master()) then
-      open(FID_LOG, file=FILE_LOG, status="old", position="append")
-      write(FID_LOG, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,&
-                              pb%vmaxglob, sigma_max_glob/1.0D6
-      close(FID_LOG)
-    endif
   else
-    open(FID_LOG, file=FILE_LOG, status="old", position="append")
-    write(FID_LOG, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,    &
-                            pb%vmaxglob, sigma_max/1.0D6
-    close(FID_LOG)
-  endif
-  
-
-end subroutine screen_write_log
-
-
-!=====================================================================
-!output initilized field to screen
-subroutine screen_init(pb)
-
-  use problem_class
-  use constants, only : PI, FID_LOG
-
-  type (problem_type), intent(inout) :: pb
-
-  double precision :: K
-
-  ! SEISMIC: skip calculating critical stiffness for CNS model
-  ! Is not very useful
-  if (pb%i_rns_law /= 3) then
-
-  if (pb%ot%ic<1) return
-
-    write(FID_LOG, *) 'Values at selected point of the fault:'
-    K = pb%mesh%Lfault
-    if (pb%mesh%dim == 1) then
-      if (.not. pb%kernel%k2f%finite) K = pb%mesh%W
-    endif
-    K = PI*pb%smu/K
-    if (pb%mesh%dim < 2) then
-      write(FID_LOG, *) 'K/Kc = ',K/(pb%sigma(pb%ot%ic)*(pb%b(pb%ot%ic)-pb%a(pb%ot%ic))/pb%dc(pb%ot%ic))
-      write(FID_LOG, *) 'K/Kb = ',K/(pb%sigma(pb%ot%ic)*pb%b(pb%ot%ic)/pb%dc(pb%ot%ic))
-    end if
-
+    sigma_max_glob = sigma_max
   endif
 
-  write(FID_LOG, *)
-  write(FID_LOG, *) '    it,  dt (secs), time (yrs), v_max (m/s), sigma_max (MPa)'
+  ! Log message
+  write(msg, "(i7x,4(x,e11.3))")  &
+    pb%it, pb%dt_did, pb%time/YEAR, pb%vmaxglob, sigma_max_glob/1.0D6
+  call log_msg(msg)
 
-end subroutine screen_init
-
-
-
-!=====================================================================
-!output one step to screen
-subroutine screen_write(pb)
-
-  use constants, only : YEAR, FID_LOG
-  use problem_class
-  use my_mpi, only : is_MPI_parallel, is_mpi_master, max_allproc
-
-  type (problem_type), intent(in) :: pb
-  double precision :: sigma_max, sigma_max_glob
-
-  sigma_max = maxval(pb%sigma)
-
-  if (is_MPI_parallel()) then
-    call max_allproc(sigma_max,sigma_max_glob)
-    if (is_mpi_master()) write(FID_LOG, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,&
-                              pb%vmaxglob, sigma_max_glob/1.0D6
-  else
-    write(FID_LOG, '(i7,x,4(e11.3,x),i5)') pb%it, pb%dt_did, pb%time/YEAR,    &
-                            pb%vmaxglob, sigma_max/1.0D6
-  endif
-
-end subroutine screen_write
-
-
-!=====================================================================
-! write time of every step
-! potential application: debugging?
-subroutine time_write(pb)
-
-  use problem_class
-  use constants, only: FID_TIME
-  use my_mpi, only: is_mpi_master
-  type (problem_type), intent(inout) :: pb
-
-  if (is_mpi_master()) write(FID_TIME, *) pb%time, pb%dt_did
-
-end subroutine time_write
-
+end subroutine log_write
 
 !=====================================================================
 ! CRP: Is this subrutine used somewhere?
@@ -365,12 +263,12 @@ subroutine ot_read_stations(ot)
 end subroutine ot_read_stations
 
 !=====================================================================
-! write ot file header
+! Write ot file header
 subroutine ot_init(pb)
 
   use problem_class
   use constants, only:  BIN_OUTPUT, FID_IASP, FID_OT, FID_VMAX, FID_FAULT, &
-                        FILE_IASP, FILE_OT, FILE_VMAX, FILE_FAULT
+                        FILE_IASP, FILE_OT, FILE_VMAX, FILE_FAULT, RESTART
   use my_mpi, only: is_MPI_parallel, is_MPI_master, gather_allvi_root
   use mesh, only: mesh_get_size, nnLocal_perproc, nnoffset_glob_perproc
 
@@ -392,11 +290,9 @@ subroutine ot_init(pb)
   pb%ot%v_pre2 = 0.d0
 
   ! Number of ot output quantities
-  pb%ot%not = 10
+  pb%ot%not = 11
   ! Number of ot_vmax output quantities
-  pb%ot%not_vmax = 9
-  ! Number of ot_fault output quantities
-  pb%ot%not_fault = 3
+  pb%ot%not_vmax = 10
   ! If thermal pressurisation is requested, add 2 more
   if (pb%features%tp == 1) then
     pb%ot%not = pb%ot%not + 2
@@ -405,26 +301,26 @@ subroutine ot_init(pb)
   ! Allocate space in array of pointers
   allocate(pb%ot%fmt(pb%ot%not))
   allocate(pb%ot%fmt_vmax(pb%ot%not_vmax))
-  allocate(pb%ot%fmt_fault(pb%ot%not_fault))
 
   ! Default output format
   pb%ot%fmt = "(e15.7)"
+  ! Simulation step is an integer
+  pb%ot%fmt(1) = "(i15)"
   ! Time needs higher precision
-  pb%ot%fmt(1) = "(e24.14)"
-  ! TO DO: right format for fault label
-  !pb%ot%fmt(10) = "(e15.0)"
+  pb%ot%fmt(2) = "(e24.14)"
+  ! Fault label is an integer
+  pb%ot%fmt(pb%ot%not) = "(i15)"
 
   ! Default vmax output format
   pb%ot%fmt_vmax = "(e15.7)"
+  ! Simulation step is an integer
+  pb%ot%fmt_vmax(1) = "(i15)"
   ! Time needs higher precision
-  pb%ot%fmt_vmax(1) = "(e24.14)"
+  pb%ot%fmt_vmax(2) = "(e24.14)"
   ! vmax location is an integer
-  pb%ot%fmt_vmax(2) = "(i15)"
-  ! TO DO: right format for fault label in vmax
-  !pb%ot%fmt_vmax(9) = "(e15.0)"
-
-  ! Default fault output format
-  pb%ot%fmt_fault = "(e15.7)"
+  pb%ot%fmt_vmax(3) = "(i15)"
+  ! Fault label is an integer
+  pb%ot%fmt_vmax(pb%ot%not_vmax) = "(i15)"
 
   ! If parallel:
   if (is_MPI_parallel()) then
@@ -488,53 +384,53 @@ subroutine ot_init(pb)
       ! Write headers
       write(tmp, "(a, i0)") FILE_OT, pb%ot%iot(i) - 1
       iot_name = trim(tmp)
-      if (pb%restart==0) then
+      if (.not. RESTART) then
         open(id, file=iot_name, status="replace")
         write(id, "(a)") "# macroscopic values:"
-        write(id, "(a)") "# 1=t, 2=pot, 3=pot_rate"
+        write(id, "(a)") "# 1=step, 2=t, 3=pot, 4=pot_rate"
         write(id, "(a)") "# values at selected point:"
-        write(id, "(a)") "# 4=V, 5=theta, 6=tau, 7=dtau_dt, 8=slip, 9=sigma, 10=fault_label"
+        write(id, "(a)") "# 5=V, 6=theta, 7=tau, 8=dtau_dt, 9=slip, 10=sigma"
         if (pb%features%tp == 1) then
-          write(id, "(a)") "# 10=P, 11=T"
+          write(id, "(a)") "# 12=P, 13=T"
         endif
+        write(id, "(a)") "# last=fault_label"
+        close(id)
       endif 
-      close(id)
     enddo
 
     ! Vmax output
-    if (pb%restart==0) then
+    if (.not. RESTART) then
       open(FID_VMAX, file=FILE_VMAX, status="replace")
       write(FID_VMAX, "(a)") "# values at max(V) location:"
-      write(FID_VMAX, "(a)") "# 1=t, 2=ivmax, 3=v, 4=theta, 5=tau, 6=dtau_dt, 7=slip, 8=sigma 9=fault_label"
+      write(FID_VMAX, "(a)") "# 1=step, 2=t, 3=ivmax, 4=v, 5=theta, 6=tau, 7=dtau_dt, 8=slip, 9=sigma"
       if (pb%features%tp == 1) then
-        write(FID_VMAX, "(a)") "# 9=P, 10=T"
+        write(FID_VMAX, "(a)") "# 11=P, 12=T"
       endif
+      write(FID_VMAX, "(a)") "# last=fault_label"
+      close(FID_VMAX)
     endif
-    close(FID_VMAX)
 
     ! IASP output
-    if (pb%restart==0) then
+    if (.not. RESTART) then
       open(FID_IASP, file=FILE_IASP, status="replace")
       write(FID_IASP, "(a)") "# Seismicity record:"
       write(FID_IASP, "(a)") "# 1=i, 2=t, 3=v, 4=fault_label"
       close(FID_IASP)
     endif
 
-    ! Fault output (potency, potency rate and delta slip)
-    if (pb%restart==0) then
+    ! Fault output (potency, potency rate)
+    if (.not. RESTART) then
       open(FID_FAULT, file=FILE_FAULT, status="replace")
       write(FID_FAULT, "(a)") "# fault values:"
-      write(FID_FAULT, "(a)", advance="no") "# 1=t "
+      write(FID_FAULT, "(a)", advance="no") "# 1=step, 2=t "
 
       ! number of column for output
-      Ncols = 2
+      Ncols = 3
 
       do i=1, pb%nfault
         write(FID_FAULT, "(a, i0, a, i0)", advance="no") " ", Ncols, "=pot_", i
         Ncols = Ncols+1
         write(FID_FAULT, "(a, i0, a, i0)", advance="no") " ", Ncols, "=pot_rate_", i
-        Ncols = Ncols+1
-        write(FID_FAULT, "(a, i0, a, i0)", advance="no") " ", Ncols, "=slip_dt_", i
         Ncols = Ncols+1
       enddo
 
@@ -552,7 +448,7 @@ end subroutine ot_init
 subroutine ox_init(pb)
 
   use problem_class
-  use constants, only: FID_OX, FILE_OX, FID_OX_LAST, FILE_OX_LAST
+  use constants, only: FID_OX, FILE_OX, FID_OX_LAST, FILE_OX_LAST, RESTART
   use my_mpi, only : is_MPI_parallel, is_mpi_master
 
   type (problem_type), intent(inout) :: pb
@@ -599,7 +495,7 @@ subroutine ox_init(pb)
 
   ! Create ox file (if not split over multiple files)
   if (pb%ox%i_ox_seq == 0) then
-    if (pb%restart==0) then
+    if (.not. RESTART) then
       open(FID_OX, file=FILE_OX, status="replace")
       close(FID_OX)
     endif
@@ -664,11 +560,6 @@ subroutine ot_write(pb)
   character(len=100) :: tmp
   character(len=100), allocatable :: iot_name
 
-  ! Skip the first 4 elements of the pointer container
-  istart = 4
-  ! Size of the container
-  k = pb%nobj
-
   ! If parallel: do sync
   if (is_MPI_parallel()) then
     call pb_global(pb)
@@ -677,11 +568,10 @@ subroutine ot_write(pb)
   ! Get the maximum slip rate
   call get_ivmax(pb)
   ivmax = pb%ivmax
+
+  ! TODO: merge potency calculations
   !! Calculate potency (rate)
   call calc_potency(pb)
-
-  ! Potency faultf
-  call calc_potency_fault(pb)
 
   ! If this is master proc: write output
   if (is_MPI_master()) then
@@ -692,7 +582,7 @@ subroutine ot_write(pb)
     ! Loop over OT locations
     do iot=1,niot
       id = FID_OT + pb%ot%iot(iot) - 1
-      ! Write headers
+      ! Format file name
       write(tmp, "(a, i0)") FILE_OT, pb%ot%iot(iot) - 1
       iot_name = trim(tmp)
       ! Open OT file
@@ -703,20 +593,26 @@ subroutine ot_write(pb)
       close(id)
     enddo
 
+    ! Skip the first 3 elements of the pointer container (x/y/z)
+    istart = 4
+    ! Size of the container
+    k = pb%ot%not_vmax
+
     ! Write vmax data
     open(FID_VMAX, file=FILE_VMAX, status="old", access="append")
+    ! Write step
+    write(FID_VMAX, pb%ot%fmt_vmax(1), advance="no") pb%objects_glob(1)%i
     ! Write time
-    write(FID_VMAX, pb%ot%fmt_vmax(1), advance="no") pb%objects_glob(1)%s
+    write(FID_VMAX, pb%ot%fmt_vmax(2), advance="no") pb%objects_glob(1)%s
     ! Write index of vmax location
-    write(FID_VMAX, pb%ot%fmt_vmax(2), advance="no") pb%objects_glob(1)%i
+    write(FID_VMAX, pb%ot%fmt_vmax(3), advance="no") pb%objects_glob(2)%i
     ! Write vector data (at vmax location), except last one
     do i=istart,k-1
       ! Write quantity, do not advance to next line
-      ! NOTE: fmt and objects are not aligned
-      write(FID_VMAX, pb%ot%fmt_vmax(i-1), advance="no") pb%objects_glob(i)%v(ivmax)
+      write(FID_VMAX, pb%ot%fmt_vmax(i), advance="no") pb%objects_glob(i)%v(ivmax)
     enddo
     ! Write last ot output quantity, advance to next line
-    write(FID_VMAX, pb%ot%fmt_vmax(k-1)) pb%objects_glob(k)%v(ivmax)
+    write(FID_VMAX, pb%ot%fmt_vmax(k)) pb%objects_glob(1)%vi(ivmax)
     ! Close file
     close(FID_VMAX)
 
@@ -745,8 +641,7 @@ subroutine ot_write(pb)
 
     ! Write fault data (potency, potency rate and slip_dt)
     open(FID_FAULT, file=FILE_FAULT, status="old", position="append")
-    call write_fault_lines(FID_FAULT, pb%ot%fmt, pb%ot%fmt_fault, pb%objects_glob, &
-    pb%pot_fault, pb%pot_rate_fault, pb%slip_dt_fault, pb)
+    call write_fault_lines(FID_FAULT, pb%ot%fmt, pb%objects_glob, pb)
     close(FID_FAULT)
   endif
 
@@ -1039,52 +934,55 @@ subroutine write_ot_lines(unit, fmt, objects, iot, pb)
   character(len=16), dimension(pb%nobj) :: fmt
   type(optr), dimension(pb%nobj) :: objects
 
-  ! Skip the first 4 elements of the pointer container
+  ! Skip the first 3 elements of the pointer container (x/y/z)
   istart = 4
   ! Size of the container
-  k = pb%nobj
+  k = pb%ot%not
 
+  ! Write step
+  write(unit, fmt(1), advance="no") objects(1)%i
   ! Write time
-  write(unit, fmt(1), advance="no") objects(1)%s
+  write(unit, fmt(2), advance="no") objects(1)%s
   ! Write pot, pot_rate
-  write(unit, fmt(2), advance="no") objects(2)%s
-  write(unit, fmt(3), advance="no") objects(3)%s
-  ! Loop over all ot output quantities (except last one)
-  do i=istart,k-1
+  write(unit, fmt(3), advance="no") objects(2)%s
+  write(unit, fmt(4), advance="no") objects(3)%s
+  ! Loop over all ot output quantities
+  do i=istart,k-2
     ! Write ot output quantity, do not advance to next line
-    write(unit, fmt(i), advance="no") objects(i)%v(iot)
+    write(unit, fmt(i+1), advance="no") objects(i)%v(iot)
   enddo
-  ! Write last ot output quantity, advance to next line
-  write(unit, fmt(k)) objects(k)%v(iot)
+  ! Write fault ID, advance to next line
+  write(unit, fmt(k)) objects(1)%vi(iot)
 
 end subroutine write_ot_lines
 
 !=====================================================================
 ! Write fault data (potency, potency rate and delta slip) to file
-subroutine write_fault_lines(unit, fmt, fmt_fault, objects, pot_fault, pot_rate_fault, slip_dt_fault, pb)
+subroutine write_fault_lines(unit, fmt, objects, pb)
 
   use problem_class
   type (problem_type), intent(inout) :: pb
   integer :: i, unit
-  character(len=16), dimension(pb%nobj) :: fmt, fmt_fault
+  character(len=16), dimension(pb%nobj) :: fmt
   type(optr), dimension(pb%nobj) :: objects
-  double precision, dimension(pb%nfault) :: pot_fault, pot_rate_fault, slip_dt_fault
 
+  ! Write step
+  write(unit, fmt(1), advance="no") objects(1)%i
   ! Write time
-  write(unit, fmt(1), advance="no") objects(1)%s
+  write(unit, fmt(2), advance="no") objects(1)%s
 
   do i=1, pb%nfault
     ! Write pot_fault and pot_rate_fault (do not advance to next line)
-    write(unit, fmt_fault(1), advance="no") pot_fault(i)
-    write(unit, fmt_fault(2), advance="no") pot_rate_fault(i)
-    
-    if (i/=pb%nfault) then
-      ! Write slip_dt fault (do not advance to next line)
-      write(unit, fmt_fault(3), advance="no") slip_dt_fault(i)
+    write(unit, fmt(3), advance="no") objects(10)%v(i)
+
+    ! If we're at the last fault, write and advance to next line
+    if (i == pb%nfault) then
+      write(unit, fmt(4)) objects(11)%v(i)
+    ! Else do not advance
     else
-    ! Write slip_dt fault (advance to next line)
-      write(unit, fmt_fault(3)) slip_dt_fault(i)
+      write(unit, fmt(4), advance="no") objects(11)%v(i)
     endif
+
   enddo
 
 end subroutine write_fault_lines
@@ -1177,11 +1075,12 @@ subroutine calc_potency(pb)
 
   type(problem_type), intent(inout) :: pb
   double precision, dimension(pb%mesh%nn) :: area
+  double precision, dimension(pb%nfault) :: pot, pot_rate
   double precision, dimension(1) :: buf
-  integer :: iw, ix, n
+  integer :: iw, ix, n, lbl
 
-  pb%pot = 0d0
-  pb%pot_rate = 0d0
+  pot = 0d0
+  pot_rate = 0d0
   area = 0d0
 
   ! Step 1: define area vector
@@ -1193,115 +1092,35 @@ subroutine calc_potency(pb)
   end do
 
   ! Step 2: multiply [slip/v] * area and sum
-  pb%pot = sum(pb%slip * area)
-  pb%pot_rate = sum(pb%v * area)
-
-  ! Step 3: MPI sync (sum)
-  ! Note that the reduce is done in-place
-  if (is_MPI_parallel()) then
-    buf(1) = pb%pot
-    call sum_allreduce(buf, 1)
-    pb%pot = buf(1)
-
-    buf(1) = pb%pot_rate
-    call sum_allreduce(buf, 1)
-    pb%pot_rate = buf(1)
-  endif
-
-  ! Done
-
-end subroutine calc_potency
-
-!=====================================================================
-
-! Compute the potency (rate) for each fault, defined as:
-! 0d:  [pot/pot_rate] = [delta_slip/v] * L
-! 1d:  [pot/pot_rate] = sum([delta_slip/v] * dx)
-! 2d:  [pot/pot_rate] = sum([delta_slip/v] * dx * dw)
-! slip_dt is the difference of slip between two consecutive time-steps
-! labels is an array with the unique values of fault labels
-! n_labels is the frequency of fault labels in the mesh
-! returns 3 vectors with the potency, potency rate and slip_dt of the faults
-! (each element of the vectors corresponds to one fault)
-
-subroutine calc_potency_fault(pb)
-
-  use problem_class
-  use my_mpi, only: is_MPI_parallel, sum_allreduce, is_mpi_master
-  use constants, only: FID_LOG
-
-  type(problem_type), intent(inout) :: pb
-  double precision, dimension(pb%mesh%nn) :: area, slip_dt, pot_dt, pot_rate_dt
-  double precision, dimension(pb%nfault) :: pot_fault, pot_rate_fault, slip_dt_fault
-  double precision, dimension(1) :: buf_pot, buf_pot_rate, buf_slip_dt
-  integer :: iw, ix, n, lbl
-
-  pot_dt = 0d0
-  pot_rate_dt = 0d0
-  pot_fault = 0d0
-  pot_rate_fault = 0d0
-  slip_dt_fault = 0d0
-  area = 0d0
-
-  ! Step 1: define area vector
-  do iw=1, pb%mesh%nw
-    do ix=1, pb%mesh%nx
-      n = (iw - 1) * pb%mesh%nx + ix
-      area(n) = pb%mesh%dx(ix) * pb%mesh%dw(iw)
-    end do
-  end do
-
-  ! Step 2: Calculate vector of delta slip as dt*v
-  slip_dt = pb%dt_did * pb%v
-
-  ! Step 3: calculate potency and potency rate
-  ! potency = delta slip * area
-  ! potency rate = velocity * area 
-  pot_dt = slip_dt * area
-  pot_rate_dt = pb%v * area
-
-  ! Step 4: sum potency, potency rate and delta slip per fault
+  ! This is done for each fault separately
   do n=1, pb%mesh%nn
-    ! Check fault label
-    lbl = INT(pb%mesh%fault_label(n))
-    ! sum potency, potency rate and delta slip
-    pot_fault(lbl) = pot_fault(lbl) + pot_dt(n)
-    pot_rate_fault(lbl) = pot_rate_fault(lbl) + pot_rate_dt(n)
-    slip_dt_fault(lbl) = slip_dt_fault(lbl) + slip_dt(n)
+    lbl = pb%mesh%fault_label(n)
+    pot(lbl) = pot(lbl) + pb%slip(n) * area(n)
+    pot_rate(lbl) = pot_rate(lbl) + pb%v(n) * area(n)
   end do
 
-  ! reduce potency, potency rate and delta slip for MPI
-  do n=1, pb%nfault
+  ! Step 3: synchronise all faults across all nodes
+  do lbl=1, pb%nfault
     if (is_MPI_parallel()) then
-      buf_pot(1)=pot_fault(n)
-      call sum_allreduce(buf_pot(1), 1)
-      pot_fault(n) = buf_pot(1)
+      buf(1) = pot(lbl)
+      call sum_allreduce(buf(1), 1)
+      pot(n) = buf(1)
 
-      buf_pot_rate(1)=pot_rate_fault(n)
-      call sum_allreduce(buf_pot_rate(1), 1)
-      pot_rate_fault(n) = buf_pot_rate(1)
-
-      buf_slip_dt(1)=slip_dt_fault(n)
-      call sum_allreduce(buf_slip_dt(1), 1)
-      slip_dt_fault(n) = buf_slip_dt(1)
+      buf(1) = pot_rate(lbl)
+      call sum_allreduce(buf(1), 1)
+      pot_rate(lbl) = buf(1)
 
     endif
   enddo
 
-  ! debugging: print values of slip_dt, pot and pot_rate
-  ! if (is_mpi_master()) then
-  !   write(FID_LOG, *) 'slip_dt_fault 1 = ', slip_dt_fault(1)
-  !   write(FID_LOG, *) 'pot_fault 1 = ', pot_fault(1)
-  !   write(FID_LOG, *) 'pot_rate_fault 1 = ', pot_rate_fault(1)
-  ! endif
+  pb%pot = sum(pot)
+  pb%pot_fault = pot
+  pb%pot_rate = sum(pot_rate)
+  pb%pot_rate_fault = pot_rate
 
-  ! assign quantities to problem class variables
-  pb%pot_fault = pot_fault
-  pb%pot_rate_fault = pot_rate_fault
-  pb%slip_dt_fault = slip_dt_fault
   ! Done
 
-end subroutine calc_potency_fault
+end subroutine calc_potency
 
 !=====================================================================
 ! Get the location of the maximum slip rate
@@ -1309,7 +1128,6 @@ end subroutine calc_potency_fault
 subroutine get_ivmax(pb)
 
   use problem_class
-  use my_mpi, only: is_MPI_parallel
 
   type(problem_type), intent(inout) :: pb
 
@@ -1323,7 +1141,6 @@ end subroutine get_ivmax
 subroutine init_pb_global(pb)
 
   use problem_class
-  use constants, only: FID_LOG
 
   type(problem_type), intent(inout) :: pb
   integer :: n
@@ -1355,8 +1172,8 @@ subroutine init_pb_global(pb)
 
   ! If global quantities are already allocated, something is wrong!
   else
-    write(FID_LOG, *) "Error in output.f90::init_pb_global"
-    write(FID_LOG, *) "Global quantities are allocated while they shouldn't be"
+    call log_msg("Error in output.f90::init_pb_global")
+    call log_msg("Global quantities are allocated while they shouldn't be")
     stop "Terminating..."
   endif
 
@@ -1381,6 +1198,7 @@ subroutine pb_global(pb)
   ! Loop over proc-specific quantities
   ! Skip x, y, z
   do i=4,k
+
     ! Initialise to zero
     pb%objects_glob(i)%v = 0d0
     ! Call MPI gather

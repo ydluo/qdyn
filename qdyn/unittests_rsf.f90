@@ -59,7 +59,7 @@ subroutine test_rsf_friction(pb)
   double precision, dimension(pb%mesh%nn) :: tau0, tau1, v0, v1, v1_true
   double precision, dimension(pb%mesh%nn) :: dV_dtau, dV_dtheta, dV_dP
   double precision, dimension(pb%mesh%nn) :: dV_dtau2, dV_dtheta2, dV_dP2
-  double precision, dimension(pb%mesh%nn) :: x, zero
+  double precision, dimension(pb%mesh%nn) :: zero
   double precision :: atol, rtol, randno
   integer :: num_tests, num_passed, i
   logical :: pass, subpass1, subpass2, subpass3, subpass4

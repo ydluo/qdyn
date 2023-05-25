@@ -45,7 +45,7 @@ subroutine init_log()
   ! If the file exists but we are not restarting the
   ! simulation: wipe existing file
   elseif(file_exists .and. .not. RESTART) then
-    open(FID_LOG, file=FILE_LOG, status="old")
+    open(FID_LOG, file=FILE_LOG, status="replace")
   ! If the simulation is being restarted, append to existing log
   elseif(file_exists .and. RESTART) then
     open(FID_LOG, file=FILE_LOG, status="old", access="append")
@@ -77,7 +77,7 @@ subroutine log_msg(msg)
   ! Else append to log file
   else
     open(FID_LOG, file=FILE_LOG, status="old", access="append")
-    write(FID_LOG, *) msg
+    write(FID_LOG, *) trim(msg)
     close(FID_LOG)
   endif
   

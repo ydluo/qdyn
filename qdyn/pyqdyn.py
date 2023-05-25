@@ -189,10 +189,11 @@ class qdyn:
 
         # Output control parameters
         set_dict["V_TH"] = 1e-2				# Threshold velocity for seismic event
+        set_dict["NTOUT_LOG"] = 100 		# Temporal interval (number of time steps) for time series output
         set_dict["NTOUT_OT"] = 1			# Temporal interval (number of time steps) for time series output
-        set_dict["NTOUT"] = 1				# Temporal interval (number of time steps) for snapshot output
-        set_dict["NXOUT"] = 1				# Spatial interval (number of elements in x-direction) for snapshot output
-        set_dict["NWOUT"] = 1               # Spatial interval (number of elements in y-direction) for snapshot output
+        set_dict["NTOUT_OX"] = 1			# Temporal interval (number of time steps) for snapshot output
+        set_dict["NXOUT_OX"] = 1			# Spatial interval (number of elements in x-direction) for snapshot output
+        set_dict["NWOUT_OX"] = 1            # Spatial interval (number of elements in y-direction) for snapshot output
         set_dict["OX_SEQ"] = 0				# Type of snapshot outputs (0: all snapshots in single file, 1: one file per snapshot)
         set_dict["OX_DYN"] = 0				# Output specific snapshots of dynamic events defined by thresholds on peak slip velocity DYN_TH_ON and DYN_TH_OFF
         set_dict["NXOUT_DYN"] = 1			# Spatial interval (number of elements in x-direction) for dynamic snapshot outputs
@@ -572,7 +573,7 @@ class qdyn:
                     raise MeshError("The number of creep mechanisms was not set properly. This value should be determined in render_mesh()")
                 input_str += "%u%s N_creep\n" % (N_creep, delimiter)
             input_str += "%u %u %u%s stress_coupling, thermal press., localisation\n" % (settings["FEAT_STRESS_COUPL"], settings["FEAT_TP"], settings["FEAT_LOCALISATION"], delimiter)
-            input_str += "%u %u %u %u %u %u %u %u %u%s ntout_ot, ntout_ox, nt_coord, nxout, nwout, nxout_DYN, nwout_DYN, ox_seq, ox_DYN\n" % (settings["NTOUT_OT"], settings["NTOUT"], settings["IC"]+1, settings["NXOUT"], settings["NWOUT"], settings["NXOUT_DYN"], settings["NWOUT_DYN"], settings["OX_SEQ"], settings["OX_DYN"], delimiter)
+            input_str += "%u %u %u %u %u %u %u %u %u %u%s ntout_log, ntout_ot, ntout_ox, nt_coord, nxout, nwout, nxout_DYN, nwout_DYN, ox_seq, ox_DYN\n" % (settings["NTOUT_LOG"], settings["NTOUT_OT"], settings["NTOUT_OX"], settings["IC"]+1, settings["NXOUT_OX"], settings["NWOUT_OX"], settings["NXOUT_DYN"], settings["NWOUT_DYN"], settings["OX_SEQ"], settings["OX_DYN"], delimiter)
             input_str += "%.15g %.15g %.15g %.15g %.15g %.15g%s beta, smu, lambda, v_th\n" % (settings["VS"], settings["MU"], settings["LAM"], settings["D"], settings["HD"], settings["V_TH"], delimiter)
             input_str += "%.15g %.15g%s Tper, Aper\n" % (settings["TPER"], settings["APER"], delimiter)
             input_str += "%.15g %.15g %.15g %.15g%s dt_try, dtmax, tmax, accuracy\n" % (settings["DTTRY"] ,settings["DTMAX"] ,settings["TMAX"] ,settings["ACC"] , delimiter)
@@ -580,7 +581,6 @@ class qdyn:
             input_str += "%u %u%s DYN_FLAG, DYN_SKIP\n" % (settings["DYN_FLAG"], settings["DYN_SKIP"], delimiter)
             input_str += "%.15g %.15g %.15g%s M0, DYN_th_on, DYN_th_off\n" % (settings["DYN_M"], settings["DYN_TH_ON"], settings["DYN_TH_OFF"], delimiter)
             input_str += "%i %i%s FAULT_TYPE, SOLVER\n" % (settings["FAULT_TYPE"], settings["SOLVER"], delimiter)
-            
 
             # Loop over all fault segments that are hosted on this processor node
             for i in range(nwLocal[iproc]):
@@ -715,18 +715,20 @@ class qdyn:
 
         # Output file contents depends on the requested features
         ## Time series (ot)
-        nheaders_ot = 4
-        quants_ot = ("t", "potcy", "pot_rate", "v", "theta", "tau", "dtau_dt", "slip", "sigma", "fault_label")
+        nheaders_ot = 5
+        quants_ot = ("step", "t", "potcy", "pot_rate", "v", "theta", "tau", "dtau_dt", "slip", "sigma")
         if self.set_dict["FEAT_TP"] == 1:
             nheaders_ot += 1
             quants_ot += ("P", "T")
+        quants_ot += ("fault_label",)
 
         # Vmax
-        nheaders_vmax = 2
-        quants_vmax = ("t", "ivmax", "v", "theta", "tau", "dtau_dt", "slip", "sigma", "fault_label")
+        nheaders_vmax = 3
+        quants_vmax = ("step", "t", "ivmax", "v", "theta", "tau", "dtau_dt", "slip", "sigma")
         if self.set_dict["FEAT_TP"] == 1:
             nheaders_vmax += 1
             quants_vmax += ("P", "T")
+        quants_vmax += ("fault_label",)
 
         # Standard snapshots (ox)
         quants_ox = ("t", "x", "y", "z", "v", "theta", "tau", "tau_dot", "slip", "sigma", "fault_label")
@@ -735,7 +737,7 @@ class qdyn:
         
         # Fault time-series
         nheaders_fault = 2
-        quants_fault = ("t", "potcy_fault", "pot_rate_fault", "slip_dt_fault")
+        quants_fault = ("step", "t", "potcy_fault", "pot_rate_fault")
 
         # If time series data is requested
         if read_ot:
@@ -765,7 +767,7 @@ class qdyn:
                 df = df.apply(pd.to_numeric, errors="coerce")
 
                 # Discard duplicate rows from duplicate time-steps
-                df = df.drop_duplicates(subset=["t"], keep="first") 
+                df = df.drop_duplicates(subset=["step"], keep="first") 
                 self.ot[n] = df
 
             # Check output directory
@@ -777,7 +779,7 @@ class qdyn:
                 names=quants_vmax, delim_whitespace=True
             )
             # Discard duplicate rows from duplicate time-steps
-            self.ot_vmax = self.ot_vmax.drop_duplicates(subset=["t"], keep="first") 
+            self.ot_vmax = self.ot_vmax.drop_duplicates(subset=["step"], keep="first") 
 
         else:
             self.ot = None
@@ -909,16 +911,17 @@ class qdyn:
             if path_output!=None:
                 filename_fault = path_output + filename_fault 
 
-            # Number of columns with fault output (excluding time)
-            N_cols = 3 * N_faults
+            # Number of columns with fault output (excluding step/time)
+            stride = 2
+            N_cols = stride * N_faults
 
             # Counter of fault number for loop
             n = 0
             
             # Read the output file in groups of columns corresponding to each fault
-            for i in range(1,N_cols+1,3):
+            for i in range(2, N_cols + 2, stride):
                 # Column list for one fault (time, potency, potency rate and delta slip)
-                col_list = [0] + list(range(i, i+3))
+                col_list = [0, 1] + list(range(i, i + stride))
 
                 # Read output file
                 self.fault[n] = read_csv(
@@ -926,33 +929,10 @@ class qdyn:
                 names=quants_fault, delim_whitespace=True
                 )
                 # Discard duplicate rows from duplicate time-steps
-                self.fault[n] = self.fault[n].drop_duplicates(subset=["t"], keep="first")
+                self.fault[n] = self.fault[n].drop_duplicates(subset=["step"], keep="first")
                 n =+1
         return True
 
-
-
-    # Read other time series data, when they are available
-    def read_other_output(self, i):
-        cols = ("t", "v", "theta", "tau", "x", "sigma")
-        file_i = 10000+i+1
-        filename = "fort.%i" % file_i
-        suffix = self.set_dict["SUFFIX"]
-        if suffix != "":
-            filename = "%s_%s" % (filename, suffix)
-        data = read_csv(filename, header=2, names=cols, delim_whitespace=True)
-        return data
-
-    # Optionally, export dicts with all of the simulation settings. It is good
-    # practice to call this function before running each simulation, so that
-    # the simulation parameters are permanently stored (i.e. independent of any
-    # changes made to the script file)
-    def export_dicts(self):
-        print("Exporting settings/mesh dict...")
-        with gzip.GzipFile("set_dict.tar.gz", "w") as f:
-            pickle.dump(self.set_dict, f, pickle.HIGHEST_PROTOCOL)
-        with gzip.GzipFile("mesh_dict.tar.gz", "w") as f:
-            pickle.dump(self.mesh_dict, f, pickle.HIGHEST_PROTOCOL)
 
     # For compatibility with the viscosity model, the initial state of the
     # fault is expressed in terms of the shear stress (and not velocity).

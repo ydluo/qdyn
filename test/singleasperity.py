@@ -70,8 +70,8 @@ class TestSingleAsperity(AuxiliaryFunctions):
         set_dict["MESHDIM"] = 1
         set_dict["FINITE"] = 0
         set_dict["TMAX"] = 10*t_yr
-        set_dict["NTOUT"] = 1000
-        set_dict["NXOUT"] = 1
+        set_dict["NTOUT_OX"] = 1000
+        set_dict["NXOUT_OX"] = 1
         set_dict["V_PL"] = 1e-9
         set_dict["MU"] = 3e10
         set_dict["W"] = 50e3

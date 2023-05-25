@@ -21,6 +21,7 @@ contains
 subroutine solve(pb)
 
   use output, only : write_output
+  use constants, only : RESTART
   use my_mpi, only : is_MPI_parallel, finalize_mpi, synchronize_all
 
   type(problem_type), intent(inout)  :: pb
@@ -32,7 +33,7 @@ subroutine solve(pb)
   call update_field(pb)
   ! If the simulation is restarted, this first output is skipped to
   ! prevent duplicates
-  if (pb%restart == 0) call write_output(pb)
+  if (.not. RESTART) call write_output(pb)
 
   iktotal=0
   ! Time loop
@@ -67,7 +68,7 @@ subroutine do_bsstep(pb)
   use ode_bs
   use ode_rk45, only: rkf45_d
   use ode_rk45_2, only: rkf45_d2
-  use constants, only: FID_LOG, SOLVER_TYPE
+  use constants, only: SOLVER_TYPE
   use diffusion_solver, only: update_PT_final
 
   type(problem_type), intent(inout) :: pb
@@ -214,7 +215,6 @@ end subroutine update_field
 !
 subroutine check_stop(pb)
 
-  use constants, only: FID_LOG
   use my_mpi, only: is_MPI_parallel, is_mpi_master, finalize_mpi
 
   type(problem_type), intent(inout) :: pb
@@ -272,7 +272,6 @@ subroutine init_rk45(pb)
   use problem_class
   use derivs_all
   use ode_rk45, only: rkf45_d
-  use constants, only: FID_LOG
 
   type(problem_type), intent(inout) :: pb
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt

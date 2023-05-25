@@ -12,16 +12,16 @@ module mesh
     double precision, allocatable :: DIP_W(:) ! along-dip grid size and dip (adjustable), nw count
     ! Local mesh coordinates
     double precision, pointer :: x(:) => null(), y(:) => null(), z(:) => null()
-    double precision, pointer :: fault_label(:) => null()
     double precision, pointer :: restart_slip(:) => null()
+    integer, pointer :: fault_label(:) => null()
     ! Local dip, and along-strike and along-dip size of grid cells (nx*nw count)
     ! TODO: grid sizes should be constant in order for FFT to work!
     double precision, pointer :: dip(:) => null(), dx(:) => null(), dw(:) => null()
     ! Global mesh coordinates (nx*nwglobal count)
     double precision, pointer :: xglob(:) => null(), yglob(:) => null(), zglob(:) => null()
     double precision, pointer :: dipglob(:) => null(), dwglob(:) => null()
-    double precision, pointer :: fault_label_glob(:) => null()
     double precision, pointer :: restart_slip_glob(:) => null()
+    integer, pointer :: fault_label_glob(:) => null()
   end type mesh_type
 
   ! SEISMIC: discretisation of spectral domain for diffusion solver
@@ -185,7 +185,8 @@ end subroutine init_mesh_1D
 subroutine init_mesh_2D(m)
 
   use constants, only : PI
-  use my_mpi, only: is_MPI_parallel, my_mpi_NPROCS, gather_alli, gather_allvdouble, my_mpi_tag
+  use my_mpi, only: is_MPI_parallel, my_mpi_NPROCS, my_mpi_tag, &
+                    gather_alli, gather_allvdouble, gather_allvi
   use my_mpi, only: is_MPI_master
 
   type(mesh_type), intent(inout) :: m
@@ -257,7 +258,7 @@ subroutine init_mesh_2D(m)
     call gather_allvdouble(m%z,   nnLocal, m%zglob,   nnLocal_perproc, nnoffset_glob_perproc, nnGlobal)
     call gather_allvdouble(m%dip, nnLocal, m%dipglob, nnLocal_perproc, nnoffset_glob_perproc, nnGlobal)
     call gather_allvdouble(m%dw,  nwLocal, m%dwglob,  nwLocal_perproc, nwoffset_glob_perproc, nwGlobal)
-    call gather_allvdouble(m%fault_label,  nnLocal, m%fault_label_glob,  nnLocal_perproc, nnoffset_glob_perproc, nnGlobal)
+    call gather_allvi(m%fault_label,  nnLocal, m%fault_label_glob,  nnLocal_perproc, nnoffset_glob_perproc, nnGlobal)
     call gather_allvdouble(m%restart_slip,  nnLocal, m%restart_slip_glob,  nnLocal_perproc, nnoffset_glob_perproc, nnGlobal)
 
 endif

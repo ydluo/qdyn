@@ -21,7 +21,7 @@ subroutine init_all(pb)
   use solver, only : init_rk45
   use diffusion_solver, only: init_tp
   use ode_rk45_2, only : init_rk45_2
-  use output, only: initialize_output
+  use output, only: initialize_output, log_write_header
 !!$  use omp_lib
 
   type(problem_type), intent(inout) :: pb
@@ -31,9 +31,10 @@ subroutine init_all(pb)
 !  integer :: TID, NTHREADS
 
   ! Allocate scalar (pointer) quantities
-  allocate(pb%time, pb%ivmax)
+  allocate(pb%time, pb%it, pb%ivmax)
   allocate(pb%pot, pb%pot_rate)
   pb%time = 0d0
+  pb%it = 0
   pb%ivmax = 0
   pb%pot = 0d0
   pb%pot_rate = 0d0
@@ -106,7 +107,7 @@ subroutine init_all(pb)
   endif
 
   call init_kernel( pb%lam, pb%smu, pb%mesh, pb%kernel, pb%D, pb%H, &
-                    pb%features%stress_coupling, pb%finite, pb%test_mode)
+                    pb%features%stress_coupling, pb%finite, pb%test%test_mode)
 
   call initialize_output(pb)
 
@@ -119,6 +120,7 @@ subroutine init_all(pb)
   endif
 
   call log_msg("Initialization completed")
+  call log_write_header(pb)
 
   ! Info about threads
 !!$OMP PARALLEL PRIVATE(NTHREADS, TID)
