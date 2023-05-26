@@ -195,6 +195,7 @@ class qdyn:
         set_dict["NPROC"] = 1				# Number of processors, default 1 = serial (no MPI)
         set_dict["MPI_PATH"] = "mpiexec"     # Path to MPI executable. Default is set to just mpiexec, but this can be an absolute path
         set_dict["VERBOSE"] = 0
+        set_dict["DEBUG"] = 0
 
         self.set_dict = set_dict
 
@@ -632,6 +633,8 @@ class qdyn:
         if test is True:
             self.set_dict["VERBOSE"] = 0
 
+        if self.set_dict["DEBUG"] == 1:
+            flags.append("debug")
         if self.set_dict["VERBOSE"] == 1:
             flags.append("verbose")
         if self.set_dict["FEAT_RESTART"] == 1:
@@ -661,7 +664,7 @@ class qdyn:
 
         # Add command line flags
         if len(flags) > 0:
-            cmd.append(*flags)
+            cmd += flags
 
         # Run QDYN
         result = subprocess.run(cmd)
