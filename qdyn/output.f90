@@ -469,15 +469,24 @@ subroutine ox_init(pb)
   ! ---------------------------------------------------------------------------
   ! Prepare data structure and headers for ox, ox_dyn, and dyn output
 
-  ! Allocate space for dynamic output that needs to be carried over
+  ! Determine the number of objects
+  pb%ox%nox = 12
   pb%ox%nrup = 2
+  if (pb%features%tp == 1) then
+    pb%ox%nox = pb%ox%nox + 2
+  endif
+  ! Allocate space for dynamic output that needs to be carried over
   allocate(pb%ox%objects_rup(pb%ox%nrup))
   ! Allocate space for the output format
-  allocate(pb%ox%fmt(pb%nobj))
+  allocate(pb%ox%fmt(pb%ox%nox))
   ! Default output format
   pb%ox%fmt = "(e15.7)"
+  ! Simulation step is an integer
+  pb%ox%fmt(1) = "(i15)"
   ! Time needs higher precision
-  pb%ox%fmt(1) = "(e24.14)"
+  pb%ox%fmt(2) = "(e24.14)"
+  ! Fault label is an integer
+  pb%ox%fmt(pb%ox%nox) = "(i15)"
 
   ! Case 1: serial execution. All quantities are local
   if (.not. is_MPI_parallel()) then
@@ -508,9 +517,9 @@ subroutine ox_init(pb)
   endif
 
   ! Define headers
-  pb%ox%header = '# t x y z v theta tau tau_dot slip sigma fault_label'
+  pb%ox%header = '# step t x y z v theta tau tau_dot slip sigma fault_label'
   if (pb%features%tp == 1) then
-    pb%ox%header = '# t x y z v theta tau tau_dot slip sigma fault_label P T'
+    pb%ox%header = '# step t x y z v theta tau tau_dot slip sigma P T fault_label'
   endif
 
   ! If ox_dyn is requested
@@ -697,7 +706,7 @@ subroutine ox_write(pb)
 
   ! Should this proc write ox, ox_dyn, or QSB output?
   write_ox = (mod(pb%it, pb%ox%ntout) == 0 .or. last_call)
-  write_ox_last = (mod(pb%it, pb%ox%ntout) == 0 .or. last_call)
+  write_ox_last = last_call
   write_ox_dyn =  ((pb%ox%i_ox_dyn == 1) .and. dynamic) .and. .not. skip
   write_ox_seq = write_ox .and. (pb%ox%i_ox_seq == 1)
   write_QSB = ((pb%DYN_FLAG == 1) .and. dynamic) .and. .not. skip
@@ -710,7 +719,7 @@ subroutine ox_write(pb)
 
   ! Update write output only if this proc is MPI master
   write_ox = write_ox .and. MPI_master
-  write_ox = write_ox_last .and. MPI_master
+  write_ox_last = write_ox_last .and. MPI_master
   write_ox_dyn = write_ox_dyn .and. MPI_master
   write_ox_seq = write_ox_seq .and. MPI_master
   write_QSB = write_QSB .and. MPI_master
@@ -765,9 +774,8 @@ subroutine ox_write(pb)
   if (write_ox_last) then
     open(FID_OX_LAST, file=FILE_OX_LAST, status="replace")
     
-    ! Write ox data
-    call write_lastox_lines(FID_OX_LAST, pb%ox%fmt, pb%objects_glob, &
-                             pb%mesh%nx, pb%mesh%nw, pb)
+    ! Write ox data (in full resolution)
+    call write_ox_lines(FID_OX_LAST, pb%ox%fmt, pb%objects_glob, 1, 1, pb)
     close(FID_OX_LAST)
   
   endif
@@ -997,7 +1005,7 @@ subroutine write_ox_lines(unit, fmt, objects, nxout, nwout, pb)
   character(len=16), dimension(pb%nobj) :: fmt
   type(optr), dimension(pb%nobj) :: objects
 
-  k = pb%nobj
+  k = pb%ox%nox
 
   ! Number of nodes to loop over (either local or global)
   nx = pb%mesh%nxglob
@@ -1009,57 +1017,26 @@ subroutine write_ox_lines(unit, fmt, objects, nxout, nwout, pb)
   do iwout=1, nw, nwout
     do ixout=1, nx, nxout
       n = (iwout - 1) * nx + ixout
+      ! Write step
+      write(unit, fmt(1), advance="no") objects(1)%i
       ! Write time
-      write(unit, fmt(1), advance="no") objects(1)%s
-      ! Loop over all ox output quantities (except last one)
-      do iox=1,k-1
+      write(unit, fmt(2), advance="no") objects(1)%s
+      ! Loop over all ox output quantities
+      do iox=1,9
         ! Write ox output quantity, do not advance to next line
-        write(unit, fmt(iox), advance="no") objects(iox)%v(n)
+        write(unit, fmt(iox+2), advance="no") objects(iox)%v(n)
       enddo
-      ! Write last ox output quantity, advance to next line
-      write(unit, fmt(k)) objects(k)%v(n)
+      ! Add P/T if needed
+      if (pb%features%tp == 1) then
+        write(unit, fmt(iox+2+1), advance="no") objects(iox+1)%v(n)
+        write(unit, fmt(iox+2+2), advance="no") objects(iox+2)%v(n)
+      endif
+      ! Write fault number, advance to next line
+      write(unit, fmt(k)) objects(1)%vi(n)
     enddo
   enddo
 
 end subroutine write_ox_lines
-
-!=====================================================================
-! Write ox data to file (for last snapshot)
-! Unlike write_ox_lines, the output has the full resolution of the mesh
-
-subroutine write_lastox_lines(unit, fmt, objects, nxout, nwout, pb)
-
-  use problem_class
-  type (problem_type), intent(inout) :: pb
-  integer :: iox, iwout, ixout, k, n, nw, nwout, nx, nxout, unit
-  character(len=16), dimension(pb%nobj) :: fmt
-  type(optr), dimension(pb%nobj) :: objects
-
-  k = pb%nobj
-
-  ! Number of nodes to loop over (either local or global)
-  nx = pb%mesh%nxglob
-  nw = pb%mesh%nwglob
-
-  ! Write header
-  write(unit,'(a)') trim(pb%ox%header)
-  ! Loop over all ox elements
-  do iwout=1, nw
-    do ixout=1, nx
-      n = (iwout - 1) * nx + ixout
-      ! Write time
-      write(unit, fmt(1), advance="no") objects(1)%s
-      ! Loop over all ox output quantities (except last one)
-      do iox=1,k-1
-        ! Write ox output quantity, do not advance to next line
-        write(unit, fmt(iox), advance="no") objects(iox)%v(n)
-      enddo
-      ! Write last ox output quantity, advance to next line
-      write(unit, fmt(k)) objects(k)%v(n)
-    enddo
-  enddo
-
-end subroutine write_lastox_lines
 
 !=====================================================================
 

@@ -731,9 +731,10 @@ class qdyn:
         quants_vmax += ("fault_label",)
 
         # Standard snapshots (ox)
-        quants_ox = ("t", "x", "y", "z", "v", "theta", "tau", "tau_dot", "slip", "sigma", "fault_label")
+        quants_ox = ("step", "t", "x", "y", "z", "v", "theta", "tau", "tau_dot", "slip", "sigma")
         if self.set_dict["FEAT_TP"] == 1:
             quants_ox += ("P", "T")
+        quants_ox += ("fault_label",)
         
         # Fault time-series
         nheaders_fault = 2
