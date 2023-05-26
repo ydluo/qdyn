@@ -22,7 +22,8 @@ jobs:
     - name: Install dependencies
       run: |
         # conda env update --file environment.yml --name base
-        conda install --yes numpy scipy matplotlib pandas termcolor
+        # conda install --yes numpy scipy matplotlib pandas termcolor
+        pip install numpy scipy matplotlib pandas termcolor ipython
         pip install -e .
     - name: Install compiler
       run: sudo apt install -y gfortran libopenmpi-dev
