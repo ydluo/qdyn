@@ -17,6 +17,7 @@ jobs:
         python-version: 3.7
     - name: Install dependencies
       run: |
+        pip install --upgrade pip
         pip install numpy "scipy>=1.9.0" matplotlib pandas termcolor ipython
         pip install -e .
     - name: Install compiler
