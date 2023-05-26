@@ -47,6 +47,8 @@ def slip_profile(ox, warm_up=0, orientation="horizontal"):
 
     ind_warmup = np.where(t_vals >= warm_up)[0][0]
 
+    print(ind_warmup)
+
     Nx = len(x_unique)
     Nt = len(t_vals) - 1
 

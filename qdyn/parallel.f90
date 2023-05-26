@@ -27,12 +27,14 @@ subroutine init_mpi()
   integer :: ier
 
   call MPI_INIT(ier)
+  if (ier /= 0 ) stop "Error initializing MPI"
   call MPI_COMM_SIZE(MPI_COMM_WORLD, NPROCS, ier)
+  if (ier /= 0 ) stop "Error establishing # of MPI procs"
   call MPI_COMM_RANK(MPI_COMM_WORLD, MY_RANK, ier)
+  if (ier /= 0 ) stop "Error getting MPI rank"
 
-  if (ier /= 0 ) stop 'Error initializing MPI'
-
-  if (NPROCS<2) call MPI_FINALIZE(ier)
+  ! If mpiexec was called with -np 1, then switch to serial
+  if (NPROCS < 2) call MPI_FINALIZE(ier)
 
 end subroutine init_mpi
 

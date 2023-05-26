@@ -193,7 +193,7 @@ class qdyn:
         set_dict["DYN_M"] = 1e18			# Target seismic moment of dynamic event
 
         set_dict["NPROC"] = 1				# Number of processors, default 1 = serial (no MPI)
-        set_dict["MPI_PATH"] = "/usr/local/bin/mpirun"   # Path to MPI executable
+        set_dict["MPI_PATH"] = "mpiexec"     # Path to MPI executable. Default is set to just mpiexec, but this can be an absolute path
         set_dict["VERBOSE"] = 0
 
         self.set_dict = set_dict
@@ -476,7 +476,7 @@ class qdyn:
         assert not ((settings["MESHDIM"] != 2) and (settings["NPROC"] != 1)), 'Parallel processing (settings["NPROC"] > 1) is compatible only with settings["MESHDIM"] == 2'
 
         # Warn the user for legacy code
-        if ((settings["VERBOSE"] == 1) and hasattr(settings, "NTOUT")):
+        if ((settings["VERBOSE"] == 1) and ("NTOUT" in settings.keys())):
             print("Warning: the setting `NTOUT` has been deprecated. Specify `NTOUT_OT`, `NTOUT_OX`, or `NTOUT_LOG` instead")
 
         # Define chunk size for each processor
