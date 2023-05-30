@@ -19,7 +19,7 @@ subroutine read_main(pb)
   use output, only : ot_read_stations
   use logger, only : log_msg
   use my_mpi, only : my_mpi_tag, is_MPI_parallel
-  use constants, only : FAULT_TYPE, SOLVER_TYPE, FID_IN
+  use constants, only : FAULT_TYPE, SOLVER_TYPE, FID_IN, RESTART
 
   type(problem_type), intent(inout) :: pb
 
@@ -37,8 +37,9 @@ subroutine read_main(pb)
   read(FID_IN, *) pb%itheta_law
   read(FID_IN, *) pb%i_rns_law
 
-  ! Read restart time
-  read(FID_IN, *) pb%restart_time
+  ! Read restart time and step
+  allocate(pb%time, pb%it)
+  read(FID_IN, *) pb%time, pb%it
 
   ! Read number of faults
   read(FID_IN, *) pb%nfault
@@ -259,6 +260,13 @@ subroutine read_main(pb)
   ! CRP: Instead, call read_mesh_nodes for all mesh types so the fault label can
   ! be written in the outputs for all fault dimensionalities
   call read_mesh_nodes(FID_IN, pb%mesh)
+
+  ! Overwrite slip if restart with time and slip of last simulation
+  allocate(pb%slip(n))
+  pb%slip = 0d0
+  if(RESTART) then
+    pb%slip = pb%mesh%restart_slip
+  endif
 
   close(FID_IN)
   call log_msg("Input complete")

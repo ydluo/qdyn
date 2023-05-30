@@ -168,9 +168,6 @@ module problem_class
     type (rk45_2_type) :: rk45_2
     type (test_type) :: test
 
-    ! Restart
-    double precision :: restart_time
-
     ! Number of fault labels
     integer :: nfault = 1
 

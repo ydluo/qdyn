@@ -31,10 +31,8 @@ subroutine init_all(pb)
 !  integer :: TID, NTHREADS
 
   ! Allocate scalar (pointer) quantities
-  allocate(pb%time, pb%it, pb%ivmax)
+  allocate(pb%ivmax)
   allocate(pb%pot, pb%pot_rate)
-  pb%time = 0d0
-  pb%it = 0
   pb%ivmax = 0
   pb%pot = 0d0
   pb%pot_rate = 0d0
@@ -78,8 +76,7 @@ subroutine init_all(pb)
   !---------------------- ref_value ------------------
   n = mesh_get_size(pb%mesh)
   ! SEISMIC: initialise pb%tau in input.f90 to be compatible with CNS model
-  allocate ( pb%dtau_dt(n), pb%slip(n), pb%theta_star(n) )
-  pb%slip = 0d0
+  allocate ( pb%dtau_dt(n), pb%theta_star(n) )
   pb%dtau_dt = 0d0
   call set_theta_star(pb)
 

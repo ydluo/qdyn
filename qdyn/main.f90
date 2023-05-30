@@ -12,8 +12,8 @@ program main
   use my_mpi, only: init_mpi
   use derivs_all
   use unittests, only: init_tests, kernel_export
-  use logger, only : init_log, log_msg
-  use constants, only : DEBUG, RESTART, VERBOSE
+  use logger, only : init_log
+  use constants, only : DEBUG, RESTART, VERBOSE, FID_LOG
 
   type(problem_type), pointer :: pb
   integer :: i
@@ -54,6 +54,11 @@ program main
     endif
 
   enddo
+
+  ! If debugging: set verbose to false
+  if (VERBOSE .and. DEBUG) VERBOSE = .false.
+  ! If (still) verbose: change to stdout
+  if (VERBOSE) FID_LOG = 6
 
   call init_mpi()
   call init_log()
