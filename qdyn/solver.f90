@@ -4,12 +4,14 @@ module solver
 
   use problem_class, only : problem_type
   use utils, only : pack, unpack
-  use logger, only : log_msg
+  use logger, only : log_msg, log_debug
+  use constants, only : DEBUG
 
   implicit none
   private
 
   integer(kind=8), save :: iktotal
+  character(255) :: msg
 
   public  :: solve, init_rk45
 
@@ -26,8 +28,18 @@ subroutine solve(pb)
 
   type(problem_type), intent(inout)  :: pb
 
+  if (DEBUG) then
+    write(msg, *) "synchronize_all"
+    call log_debug(msg, pb%it)
+  endif
+
   ! Synchronise all processes
   if (is_MPI_parallel()) call synchronize_all()
+
+  if (DEBUG) then
+    write(msg, *) "update_field"
+    call log_debug(msg, pb%it)
+  endif
 
   ! Before the first step, update field and write output (initial state)
   call update_field(pb)
@@ -39,12 +51,36 @@ subroutine solve(pb)
   ! Time loop
   do while (pb%it /= pb%itstop)
     pb%it = pb%it + 1
+    
+    if (DEBUG) then
+      write(msg, *) "do_bsstep"
+      call log_debug(msg, pb%it)
+    endif
+
     ! Do one integration step
     call do_bsstep(pb)
+
+    if (DEBUG) then
+      write(msg, *) "update_field"
+      call log_debug(msg, pb%it)
+    endif
+
     ! Update field variables
     call update_field(pb)
+
+    if (DEBUG) then
+      write(msg, *) "check_stop"
+      call log_debug(msg, pb%it)
+    endif
+
     ! Check if we need to stop (set pb%itstop = pb%it)
     call check_stop(pb)
+
+    if (DEBUG) then
+      write(msg, *) "write_output"
+      call log_debug(msg, pb%it)
+    endif
+
     ! Write output (if needed)
     call write_output(pb)
   enddo
@@ -77,7 +113,6 @@ subroutine do_bsstep(pb)
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt_prev
   double precision, dimension(pb%mesh%nn) :: main_var
   integer :: ik, neqs
-  character(255) :: msg
 
   neqs = pb%neqs * pb%mesh%nn
 
@@ -220,7 +255,6 @@ subroutine check_stop(pb)
   type(problem_type), intent(inout) :: pb
 
   double precision, save :: vmax_old = 0d0, vmax_older = 0d0
-  character(255) :: msg
 
   if (pb%itstop>0) return
 

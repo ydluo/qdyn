@@ -7,23 +7,9 @@ This wrapper can be imported and called from a different Python script file to
 do the heavy lifting regarding the generation and population of the mesh,
 writing of the qdyn input file, and reading of the qdyn output files. See the
 examples directory for usage.
-
-As opposed to the MATLAB wrapper, this Python wrapper heavily uses dictionaries
-to contain the input parameters. These parameters are set to default values,
-but should be overridden in the calling script file.
-Like in the MATLAB wrapper, all parameters are capitalised.
-
-TODO:
-- Rendering of 2D mesh for 3D simulations is not tested
-
 """
 
-from __future__ import print_function
-
-import gzip
-from multiprocessing.sharedctypes import Value
 import os
-import pickle
 import re
 import subprocess
 
@@ -35,11 +21,8 @@ from pandas import read_csv
 
 # import antigravity	# xkcd.com/353/
 
-__version__ = "2.4.0"
+__version__ = "3.0.0"
 
-
-class MeshError(Exception):
-    pass
 
 class qdyn:
 
@@ -90,7 +73,6 @@ class qdyn:
         set_dict["L"] = 1					# Length of the fault if MESHDIM = 1. Stiffness is MU/L if MESHDIM = 0
         set_dict["W"] = 50e3	       		# Distance between load point and fault if MESHDIM = 1 and FINITE = 0
         set_dict["SIGMA"] = 50e6            # Normal stress [Pa]
-        set_dict["SIGMA_CPL"] = 0			# Normal stress coupling (only for dipping faults)
         set_dict["VS"] = 3000				# Shear wave speed [m/s]. If VS = 0 radiation damping is off
         set_dict["MU"] = 30e9				# Shear modulus [Pa]
         set_dict["LAM"] = 30e9				# Elastic modulus for 3D simulations [Pa]
@@ -99,13 +81,13 @@ class qdyn:
         set_dict["DIP_W"] = 90				# Fault dip in 3D
         set_dict["Z_CORNER"] = 0			# 3D (Base of the fault)
         set_dict["FAULT_LABEL"] = 1         # Label of the fault (int) 
-        set_dict["N_FAULTS"] = 1            # Number of faults (int)
+        set_dict["N_FAULTS"] = -1           # Number of faults (int); this should be set automatically
 
         # Optional simulation features
         set_dict["FEAT_STRESS_COUPL"] = 0	# Normal stress coupling
         set_dict["FEAT_TP"] = 0				# Thermal pressurisation
         set_dict["FEAT_LOCALISATION"] = 0	# Gouge zone localisation of strain (CNS only)
-        set_dict["FEAT_RESTART"] = 0        # Restart simulation from last snapshot of a previous simulation (0= initial simulation, 1=restart simulation)
+        set_dict["FEAT_RESTART"] = 0        # Restart simulation from last snapshot of a previous simulation (0 = new simulation, 1 = restart simulation)
         set_dict["RESTART_TIME"] = 0        # Restart time of the simulation [s]
         set_dict["RESTART_SLIP"] = 0        # Restart slip of the simulation [m] 
 
@@ -190,8 +172,8 @@ class qdyn:
         # Output control parameters
         set_dict["V_TH"] = 1e-2				# Threshold velocity for seismic event
         set_dict["NTOUT_LOG"] = 100 		# Temporal interval (number of time steps) for time series output
-        set_dict["NTOUT_OT"] = 1			# Temporal interval (number of time steps) for time series output
-        set_dict["NTOUT_OX"] = 1			# Temporal interval (number of time steps) for snapshot output
+        set_dict["NTOUT_OT"] = 10			# Temporal interval (number of time steps) for time series output
+        set_dict["NTOUT_OX"] = 1000			# Temporal interval (number of time steps) for snapshot output
         set_dict["NXOUT_OX"] = 1			# Spatial interval (number of elements in x-direction) for snapshot output
         set_dict["NWOUT_OX"] = 1            # Spatial interval (number of elements in y-direction) for snapshot output
         set_dict["OX_SEQ"] = 0				# Type of snapshot outputs (0: all snapshots in single file, 1: one file per snapshot)
@@ -211,9 +193,9 @@ class qdyn:
         set_dict["DYN_M"] = 1e18			# Target seismic moment of dynamic event
 
         set_dict["NPROC"] = 1				# Number of processors, default 1 = serial (no MPI)
-        set_dict["MPI_PATH"] = "/usr/local/bin/mpirun"   # Path to MPI executable
+        set_dict["MPI_PATH"] = "mpiexec"     # Path to MPI executable. Default is set to just mpiexec, but this can be an absolute path
         set_dict["VERBOSE"] = 0
-
+        set_dict["DEBUG"] = 0
 
         self.set_dict = set_dict
 
@@ -257,8 +239,7 @@ class qdyn:
             N = self.set_dict["NX"] * self.set_dict["NW"]
             self.set_dict["N"] = N
 
-        if N < 1:
-            raise MeshError("Number of mesh elements needs to be set before rendering mesh, unless MESHDIM = 0 (spring-block)")
+        assert N >= 1, "Number of mesh elements needs to be set before rendering mesh, unless MESHDIM = 0 (spring-block)"
 
         mesh_params_general = ("IOT", "IASP", "V_PL", "SIGMA")
         mesh_params_RSF = ("TAU", "V_0", "TH_0", "A", "B", "DC", "V1", "V2", "MU_SS", "V_SS", "CO", "INV_VISC")
@@ -319,11 +300,8 @@ class qdyn:
             mesh_dict["Y"] = np.ones(N)*settings["W"]
 
         if dim == 2:
-
-            # print("Warning: 2D faults currently require constant dip angle")
             # Generate a default mesh with constant dip angle
             # This can be modified with compute_mesh_coords
-
             dw = settings["W"] / settings["NW"]
             theta = settings["DIP_W"] * np.pi / 180.0
             mesh_dict["DIP_W"] = np.ones(N) * settings["DIP_W"]
@@ -336,21 +314,20 @@ class qdyn:
             mesh_dict["Z"] = settings["Z_CORNER"] + mesh_dict["Y"]*np.tan(theta)
         
         # Populate mesh with fault labels
-        mesh_dict["FAULT_LABEL"] = np.ones(N)*settings["FAULT_LABEL"]
+        mesh_dict["FAULT_LABEL"] = np.ones(N) * settings["FAULT_LABEL"]
 
-        # Recalculate number of faults if necessary
+        # Calculate number of faults
         mesh_dict["N_FAULTS"] = len(np.unique(settings["FAULT_LABEL"]))
 
         # Populate mesh with values of restart slip
-        mesh_dict["RESTART_SLIP"] = np.ones(N)*settings["RESTART_SLIP"]
+        mesh_dict["RESTART_SLIP"] = np.ones(N) * settings["RESTART_SLIP"]
 
         # Raise error if FEAT_RESTART is neither 0 nor 1
-        if settings["FEAT_RESTART"] != 0 and settings["FEAT_RESTART"] != 1:
+        if not settings["FEAT_RESTART"] in (0, 1):
             raise ValueError("FEAT_RESTART '%s' not recognised. Value should be 0 (not restart) or 1 (restart)" % (settings["FEAT_RESTART"]))
 
         self.mesh_dict.update(mesh_dict)
         self.mesh_rendered = True
-
 
         return True
 
@@ -406,8 +383,8 @@ class qdyn:
             # Numeric types to check against
             scalar_types = (
                 int, float, 
-                np.int, np.int16, np.int32, np.int64, 
-                np.float, np.float32, np.float64
+                np.int16, np.int32, np.int64, 
+                np.float32, np.float64
             )
 
             # Loop over scalar types to check against type(x)
@@ -420,8 +397,7 @@ class qdyn:
                 x = np.ones(Nw, dtype=float) * x
 
             # Check that the length of the vector equals Nw
-            if len(x) != Nw:
-                raise MeshError(f"The input vector `{name}` needs to be of length `NW` or be a scalar")
+            assert len(x) == Nw, f"The input vector `{name}` needs to be of length `NW` or be a scalar"
             
             return x
 
@@ -480,8 +456,8 @@ class qdyn:
 
     def write_input(self):
 
-        if self.mesh_rendered == False:
-            raise MeshError("The mesh has not yet been rendered. Call render_mesh() before write_input()")
+        # The mesh should not have been rendered at this point
+        assert self.mesh_rendered, "The mesh has not yet been rendered. Call render_mesh() before write_input()"
 
         # Optionally, output can be created to an external working directory
         # This is still experimental...
@@ -498,11 +474,14 @@ class qdyn:
         delimiter = "    "
 
         # Check if multiple processors have been assigned for 0D and 1D faults
-        if (settings["MESHDIM"] != 2) and (settings["NPROC"] != 1):
-            raise ValueError('Parallel processing (settings["NPROC"] > 1) is compatible only with settings["MESHDIM"] == 2') 
+        assert not ((settings["MESHDIM"] != 2) and (settings["NPROC"] != 1)), 'Parallel processing (settings["NPROC"] > 1) is compatible only with settings["MESHDIM"] == 2'
+
+        # Warn the user for legacy code
+        if ((settings["VERBOSE"] == 1) and ("NTOUT" in settings.keys())):
+            print("Warning: the setting `NTOUT` has been deprecated. Specify `NTOUT_OT`, `NTOUT_OX`, or `NTOUT_LOG` instead")
 
         # Define chunk size for each processor
-        nwLocal = (settings["NW"]//Nprocs)*np.ones(Nprocs, dtype=int)
+        nwLocal = (settings["NW"] // Nprocs) * np.ones(Nprocs, dtype=int)
         nwLocal[Nprocs-1] += settings["NW"] % Nprocs
         nnLocal = 0
 
@@ -532,7 +511,6 @@ class qdyn:
             # Start building the contents of our QDYN input file (input_str)
             input_str = ""
             input_str += "%u%s meshdim\n" % (settings["MESHDIM"], delimiter)
-            
 
             # Input specific to 3D faults
             if settings["MESHDIM"] == 2:
@@ -559,8 +537,7 @@ class qdyn:
 
             # Some more general settings
 
-            # Check restart
-            # TODO: call qdyn exec with restart flag if RESTART == 1
+            # Add restart time
             input_str += "%.15g%s restart time\n" % (settings["RESTART_TIME"], delimiter)
 
             # Number of faults
@@ -569,9 +546,9 @@ class qdyn:
             # If the CNS model is used, define the number of creep mechanisms
             if settings["FRICTION_MODEL"] == "CNS":
                 # Raise an error when the default value has not been overwritten
-                if N_creep == -1:
-                    raise MeshError("The number of creep mechanisms was not set properly. This value should be determined in render_mesh()")
+                assert not (N_creep == -1), "The number of creep mechanisms was not set properly. This value should be determined in render_mesh()"
                 input_str += "%u%s N_creep\n" % (N_creep, delimiter)
+
             input_str += "%u %u %u%s stress_coupling, thermal press., localisation\n" % (settings["FEAT_STRESS_COUPL"], settings["FEAT_TP"], settings["FEAT_LOCALISATION"], delimiter)
             input_str += "%u %u %u %u %u %u %u %u %u %u%s ntout_log, ntout_ot, ntout_ox, nt_coord, nxout, nwout, nxout_DYN, nwout_DYN, ox_seq, ox_DYN\n" % (settings["NTOUT_LOG"], settings["NTOUT_OT"], settings["NTOUT_OX"], settings["IC"]+1, settings["NXOUT_OX"], settings["NWOUT_OX"], settings["NXOUT_DYN"], settings["NWOUT_DYN"], settings["OX_SEQ"], settings["OX_DYN"], delimiter)
             input_str += "%.15g %.15g %.15g %.15g %.15g %.15g%s beta, smu, lambda, v_th\n" % (settings["VS"], settings["MU"], settings["LAM"], settings["D"], settings["HD"], settings["V_TH"], delimiter)
@@ -637,8 +614,7 @@ class qdyn:
     # Run QDYN
     def run(self, test=False, unit=False):
 
-        if not self.qdyn_input_written and unit is False:
-            raise AssertionError("Input file has not yet been written. First call write_input() to render QDyn input file")
+        assert self.qdyn_input_written or unit, "Input file has not yet been written. First call write_input() to render QDyn input file"
 
         # Executable file (including path)
         qdyn_exec = os.path.join(self.qdyn_path, "qdyn")
@@ -657,6 +633,8 @@ class qdyn:
         if test is True:
             self.set_dict["VERBOSE"] = 0
 
+        if self.set_dict["DEBUG"] == 1:
+            flags.append("debug")
         if self.set_dict["VERBOSE"] == 1:
             flags.append("verbose")
         if self.set_dict["FEAT_RESTART"] == 1:
@@ -686,7 +664,7 @@ class qdyn:
 
         # Add command line flags
         if len(flags) > 0:
-            cmd.append(*flags)
+            cmd += flags
 
         # Run QDYN
         result = subprocess.run(cmd)

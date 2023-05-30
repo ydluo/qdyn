@@ -2,10 +2,13 @@ module output
 
 ! OUTPUT: This module manages outputs
 
-  use logger, only : log_msg
+  use logger, only : log_msg, log_debug
+  use constants, only : DEBUG
 
   implicit none
   private
+
+  character(255) :: msg
 
   public :: ot_read_stations, initialize_output, write_output, log_write_header
 
@@ -158,14 +161,29 @@ subroutine write_output(pb)
 
   last_call = (pb%it == pb%itstop)
 
+  if (DEBUG) then
+    write(msg, *) "log_write"
+    call log_debug(msg, pb%it)
+  endif
+
   ! Call a print to screen if requested
   if (mod(pb%it, pb%ntout_log) == 0 .or. last_call) then
     call log_write(pb)
   endif
 
+  if (DEBUG) then
+    write(msg, *) "ot_write"
+    call log_debug(msg, pb%it)
+  endif
+
   ! Write time series if requested
   if (mod(pb%it, pb%ot%ntout) == 0 .or. last_call) then
     call ot_write(pb)
+  endif
+
+  if (DEBUG) then
+    write(msg, *) "ox_write"
+    call log_debug(msg, pb%it)
   endif
 
   ! ox_write has its own internal checks for which output to write
@@ -571,12 +589,26 @@ subroutine ot_write(pb)
 
   ! If parallel: do sync
   if (is_MPI_parallel()) then
+    if (DEBUG) then
+      write(msg, *) "pb_global"
+      call log_debug(msg, pb%it)
+    endif
     call pb_global(pb)
+  endif
+
+  if (DEBUG) then
+    write(msg, *) "get_ivmax"
+    call log_debug(msg, pb%it)
   endif
 
   ! Get the maximum slip rate
   call get_ivmax(pb)
   ivmax = pb%ivmax
+
+  if (DEBUG) then
+    write(msg, *) "calc_potency"
+    call log_debug(msg, pb%it)
+  endif
 
   ! TODO: merge potency calculations
   !! Calculate potency (rate)
@@ -587,6 +619,11 @@ subroutine ot_write(pb)
 
     ! Number of OT locations
     niot = size(pb%ot%iot)
+
+    if (DEBUG) then
+      write(msg, *) "write ot"
+      call log_debug(msg, pb%it)
+    endif
 
     ! Loop over OT locations
     do iot=1,niot
@@ -607,6 +644,11 @@ subroutine ot_write(pb)
     ! Size of the container
     k = pb%ot%not_vmax
 
+    if (DEBUG) then
+      write(msg, *) "write vmax"
+      call log_debug(msg, pb%it)
+    endif
+
     ! Write vmax data
     open(FID_VMAX, file=FILE_VMAX, status="old", access="append")
     ! Write step
@@ -624,6 +666,11 @@ subroutine ot_write(pb)
     write(FID_VMAX, pb%ot%fmt_vmax(k)) pb%objects_glob(1)%vi(ivmax)
     ! Close file
     close(FID_VMAX)
+
+    if (DEBUG) then
+      write(msg, *) "write IASP"
+      call log_debug(msg, pb%it)
+    endif
 
     ! IASP output slip velocity maxima at selected nodes
     niasp = size(pb%ot%iasp)
@@ -647,6 +694,11 @@ subroutine ot_write(pb)
     ! Update v0, v1
     pb%ot%v_pre2 = pb%ot%v_pre
     pb%ot%v_pre = pb%v_glob
+
+    if (DEBUG) then
+      write(msg, *) "write fault data"
+      call log_debug(msg, pb%it)
+    endif
 
     ! Write fault data (potency, potency rate and slip_dt)
     open(FID_FAULT, file=FILE_FAULT, status="old", position="append")
@@ -1176,8 +1228,14 @@ subroutine pb_global(pb)
   ! Skip x, y, z
   do i=4,k
 
+    ! Skip fault potency (rate)
+    ! TODO: replace this hardcoded stuff with something
+    ! more elegant...
+    if (i == 10 .or. i == 11) cycle
+
     ! Initialise to zero
     pb%objects_glob(i)%v = 0d0
+
     ! Call MPI gather
     call gather_allvdouble_root(  pb%objects_loc(i)%v, nnLocal, &
                                   pb%objects_glob(i)%v, nnLocal_perproc, &

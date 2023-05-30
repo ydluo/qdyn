@@ -15,7 +15,7 @@ output_ot_*
 output_ox*
 output_vmax
 output_fault
-log
+log*
 
 # Simulation products
 *.in
