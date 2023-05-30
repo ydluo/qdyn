@@ -4,12 +4,14 @@ module solver
 
   use problem_class, only : problem_type
   use utils, only : pack, unpack
-  use logger, only : log_screen
+  use logger, only : log_msg, log_debug
+  use constants, only : DEBUG
 
   implicit none
   private
 
   integer(kind=8), save :: iktotal
+  character(255) :: msg
 
   public  :: solve, init_rk45
 
@@ -21,27 +23,64 @@ contains
 subroutine solve(pb)
 
   use output, only : write_output
+  use constants, only : RESTART
   use my_mpi, only : is_MPI_parallel, finalize_mpi, synchronize_all
 
   type(problem_type), intent(inout)  :: pb
 
+  if (DEBUG) then
+    write(msg, *) "synchronize_all"
+    call log_debug(msg, pb%it)
+  endif
+
   ! Synchronise all processes
   if (is_MPI_parallel()) call synchronize_all()
 
+  if (DEBUG) then
+    write(msg, *) "update_field"
+    call log_debug(msg, pb%it)
+  endif
+
   ! Before the first step, update field and write output (initial state)
   call update_field(pb)
-  call write_output(pb)
+  ! If the simulation is restarted, this first output is skipped to
+  ! prevent duplicates
+  if (.not. RESTART) call write_output(pb)
 
   iktotal=0
   ! Time loop
   do while (pb%it /= pb%itstop)
     pb%it = pb%it + 1
+    
+    if (DEBUG) then
+      write(msg, *) "do_bsstep"
+      call log_debug(msg, pb%it)
+    endif
+
     ! Do one integration step
     call do_bsstep(pb)
+
+    if (DEBUG) then
+      write(msg, *) "update_field"
+      call log_debug(msg, pb%it)
+    endif
+
     ! Update field variables
     call update_field(pb)
+
+    if (DEBUG) then
+      write(msg, *) "check_stop"
+      call log_debug(msg, pb%it)
+    endif
+
     ! Check if we need to stop (set pb%itstop = pb%it)
     call check_stop(pb)
+
+    if (DEBUG) then
+      write(msg, *) "write_output"
+      call log_debug(msg, pb%it)
+    endif
+
     ! Write output (if needed)
     call write_output(pb)
   enddo
@@ -65,7 +104,7 @@ subroutine do_bsstep(pb)
   use ode_bs
   use ode_rk45, only: rkf45_d
   use ode_rk45_2, only: rkf45_d2
-  use constants, only: FID_SCREEN, SOLVER_TYPE
+  use constants, only: SOLVER_TYPE
   use diffusion_solver, only: update_PT_final
 
   type(problem_type), intent(inout) :: pb
@@ -74,7 +113,6 @@ subroutine do_bsstep(pb)
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt_prev
   double precision, dimension(pb%mesh%nn) :: main_var
   integer :: ik, neqs
-  character(255) :: msg
 
   neqs = pb%neqs * pb%mesh%nn
 
@@ -87,8 +125,8 @@ subroutine do_bsstep(pb)
   ! the (2) Runge-Kutta-Fehlberg method
   if (SOLVER_TYPE == 0) then
     ! Default value of SOLVER_TYPE has not been altered
-    call log_screen("The default solver type (0) has not been altered, and no solver was picked")
-    call log_screen("Check the input script and define a solver type > 0")
+    call log_msg("The default solver type (0) has not been altered, and no solver was picked")
+    call log_msg("Check the input script and define a solver type > 0")
     stop
 
   elseif (SOLVER_TYPE == 1) then
@@ -122,21 +160,21 @@ subroutine do_bsstep(pb)
     ! Basic error checking. See description of rkf45_d in ode_rk45.f90 for details
     select case (pb%rk45%iflag)
     case (3)
-      call log_screen("RK45 error [3]: relative error tolerance too small")
+      call log_msg("RK45 error [3]: relative error tolerance too small")
       call stop_simulation(pb)
     case (4)
-      ! write(FID_SCREEN, *) "RK45 warning [4]: integration took more than 3000 derivative evaluations"
+      ! call log_msg("RK45 warning [4]: integration took more than 3000 derivative evaluations")
       yt = yt_prev
       goto 100
     case (5)
-      call log_screen("RK45 error [5]: solution vanished, relative error test is not possible")
+      call log_msg("RK45 error [5]: solution vanished, relative error test is not possible")
       call stop_simulation(pb)
     case (6)
-      write(FID_SCREEN, *) "RK45 error [6]: requested accuracy could not be achieved"
-      write(FID_SCREEN, *) "Consider adjusting the absolute tolerance"
+      call log_msg("RK45 error [6]: requested accuracy could not be achieved")
+      call log_msg("Consider adjusting the absolute tolerance")
       call stop_simulation(pb)
     case (8)
-      call log_screen("RK45 error [8]: invalid input parameters")
+      call log_msg("RK45 error [8]: invalid input parameters")
       call stop_simulation(pb)
     end select
 
@@ -148,7 +186,7 @@ subroutine do_bsstep(pb)
   else
     ! Unknown solver type
     write(msg, *) "Solver type", SOLVER_TYPE, "not recognised"
-    call log_screen(msg)
+    call log_msg(msg)
     stop
   endif
 
@@ -212,13 +250,11 @@ end subroutine update_field
 !
 subroutine check_stop(pb)
 
-  use constants, only: FID_SCREEN
   use my_mpi, only: is_MPI_parallel, is_mpi_master, finalize_mpi
 
   type(problem_type), intent(inout) :: pb
 
   double precision, save :: vmax_old = 0d0, vmax_older = 0d0
-  character(255) :: msg
 
   if (pb%itstop>0) return
 
@@ -230,7 +266,7 @@ subroutine check_stop(pb)
 
    ! STOP soon after end of slip localization
     case (1)
-      call log_screen("Stop criterion 1 (end of slip localization) is deprecated")
+      call log_msg("Stop criterion 1 (end of slip localization) is deprecated")
       stop "Terminating..."
 
    ! STOP 10 ox snapshots after maximum slip rate
@@ -246,7 +282,7 @@ subroutine check_stop(pb)
 
     case default
       write(msg, *) "Stop criterion ", pb%NSTOP, " not implemented"
-      call log_screen(msg)
+      call log_msg(msg)
       stop "Terminating..."
 
   end select
@@ -270,14 +306,13 @@ subroutine init_rk45(pb)
   use problem_class
   use derivs_all
   use ode_rk45, only: rkf45_d
-  use constants, only: FID_SCREEN
 
   type(problem_type), intent(inout) :: pb
   double precision, dimension(pb%neqs*pb%mesh%nn) :: yt
   double precision, dimension(pb%mesh%nn) :: main_var
   integer :: nwork
 
-  call log_screen("Initialising RK45 solver")
+  call log_msg("Initialising RK45 solver")
 
   nwork = 3 + 6*pb%neqs*pb%mesh%nn
   pb%rk45%iflag = -1
@@ -297,22 +332,22 @@ subroutine init_rk45(pb)
 
   select case (pb%rk45%iflag)
   case (3)
-    call log_screen("RK45 error [3]: relative error tolerance too small")
+    call log_msg("RK45 error [3]: relative error tolerance too small")
     stop
   case (4)
-    ! call log_screen("RK45 warning [4]: integration took more than 3000 derivative evaluations")
+    ! call log_msg("RK45 warning [4]: integration took more than 3000 derivative evaluations")
   case (5)
-    call log_screen("RK45 error [5]: solution vanished, relative error test is not possible")
+    call log_msg("RK45 error [5]: solution vanished, relative error test is not possible")
     stop
   case (6)
-    call log_screen("RK45 error [6]: requested accuracy could not be achieved")
+    call log_msg("RK45 error [6]: requested accuracy could not be achieved")
     stop
   case (8)
-    call log_screen("RK45 error [8]: invalid input parameters")
+    call log_msg("RK45 error [8]: invalid input parameters")
     stop
   end select
 
-call log_screen("Finished initialising RK45 solver")
+call log_msg("Finished initialising RK45 solver")
 
 end subroutine init_rk45
 

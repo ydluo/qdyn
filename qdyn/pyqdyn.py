@@ -1,4 +1,3 @@
-
 """
                     .: PyQDYN: Python wrapper for QDYN :.
 
@@ -8,25 +7,11 @@ This wrapper can be imported and called from a different Python script file to
 do the heavy lifting regarding the generation and population of the mesh,
 writing of the qdyn input file, and reading of the qdyn output files. See the
 examples directory for usage.
-
-As opposed to the MATLAB wrapper, this Python wrapper heavily uses dictionaries
-to contain the input parameters. These parameters are set to default values,
-but should be overridden in the calling script file.
-Like in the MATLAB wrapper, all parameters are capitalised.
-
-TODO:
-- Rendering of 2D mesh for 3D simulations is not tested
-
 """
 
-from __future__ import print_function
-
-import gzip
-from multiprocessing.sharedctypes import Value
 import os
-import pickle
 import re
-from subprocess import call
+import subprocess
 
 import numpy as np
 from scipy.optimize import root
@@ -36,11 +21,8 @@ from pandas import read_csv
 
 # import antigravity	# xkcd.com/353/
 
-__version__ = "2.4.0"
+__version__ = "3.0.0"
 
-
-class MeshError(Exception):
-    pass
 
 class qdyn:
 
@@ -53,6 +35,7 @@ class qdyn:
     qdyn_path = os.path.abspath(
         os.path.join(os.path.realpath(__file__), os.pardir)
     )
+    
     # Working directory can be kept empty, except for special cases
     work_dir = ""
     # Flag for using the bash environment in Windows 10
@@ -90,19 +73,23 @@ class qdyn:
         set_dict["L"] = 1					# Length of the fault if MESHDIM = 1. Stiffness is MU/L if MESHDIM = 0
         set_dict["W"] = 50e3	       		# Distance between load point and fault if MESHDIM = 1 and FINITE = 0
         set_dict["SIGMA"] = 50e6            # Normal stress [Pa]
-        set_dict["SIGMA_CPL"] = 0			# Normal stress coupling (only for dipping faults)
         set_dict["VS"] = 3000				# Shear wave speed [m/s]. If VS = 0 radiation damping is off
         set_dict["MU"] = 30e9				# Shear modulus [Pa]
         set_dict["LAM"] = 30e9				# Elastic modulus for 3D simulations [Pa]
         set_dict["TPER"] = 31536000			# Period of additional time-dependent oscillatory shear stress loading [s]
         set_dict["APER"] = 0				# Amplitude of additional time-dependent oscillatory shear stress loading [Pa]
         set_dict["DIP_W"] = 90				# Fault dip in 3D
-        set_dict["Z_CORNER"] = 0			# 3D
+        set_dict["Z_CORNER"] = 0			# 3D (Base of the fault)
+        set_dict["FAULT_LABEL"] = 1         # Label of the fault (int) 
+        set_dict["N_FAULTS"] = -1           # Number of faults (int); this should be set automatically
 
         # Optional simulation features
         set_dict["FEAT_STRESS_COUPL"] = 0	# Normal stress coupling
         set_dict["FEAT_TP"] = 0				# Thermal pressurisation
         set_dict["FEAT_LOCALISATION"] = 0	# Gouge zone localisation of strain (CNS only)
+        set_dict["RESTART_STEP"] = 0        # Restart step of the simulation [-]
+        set_dict["RESTART_TIME"] = 0        # Restart time of the simulation [s]
+        set_dict["RESTART_SLIP"] = 0        # Restart slip of the simulation [m] 
 
         # Rate-and-state friction parameters
         set_dict["SET_DICT_RSF"] = {
@@ -184,10 +171,11 @@ class qdyn:
 
         # Output control parameters
         set_dict["V_TH"] = 1e-2				# Threshold velocity for seismic event
-        set_dict["NTOUT_OT"] = 1			# Temporal interval (number of time steps) for time series output
-        set_dict["NTOUT"] = 1				# Temporal interval (number of time steps) for snapshot output
-        set_dict["NXOUT"] = 1				# Spatial interval (number of elements in x-direction) for snapshot output
-        set_dict["NWOUT"] = 1               # Spatial interval (number of elements in y-direction) for snapshot output
+        set_dict["NTOUT_LOG"] = 100 		# Temporal interval (number of time steps) for time series output
+        set_dict["NTOUT_OT"] = 10			# Temporal interval (number of time steps) for time series output
+        set_dict["NTOUT_OX"] = 1000			# Temporal interval (number of time steps) for snapshot output
+        set_dict["NXOUT_OX"] = 1			# Spatial interval (number of elements in x-direction) for snapshot output
+        set_dict["NWOUT_OX"] = 1            # Spatial interval (number of elements in y-direction) for snapshot output
         set_dict["OX_SEQ"] = 0				# Type of snapshot outputs (0: all snapshots in single file, 1: one file per snapshot)
         set_dict["OX_DYN"] = 0				# Output specific snapshots of dynamic events defined by thresholds on peak slip velocity DYN_TH_ON and DYN_TH_OFF
         set_dict["NXOUT_DYN"] = 1			# Spatial interval (number of elements in x-direction) for dynamic snapshot outputs
@@ -205,7 +193,9 @@ class qdyn:
         set_dict["DYN_M"] = 1e18			# Target seismic moment of dynamic event
 
         set_dict["NPROC"] = 1				# Number of processors, default 1 = serial (no MPI)
-        set_dict["MPI_PATH"] = "/usr/local/bin/mpirun"   # Path to MPI executable
+        set_dict["MPI_PATH"] = "mpiexec"     # Path to MPI executable. Default is set to just mpiexec, but this can be an absolute path
+        set_dict["VERBOSE"] = 0
+        set_dict["DEBUG"] = 0
 
         self.set_dict = set_dict
 
@@ -249,8 +239,7 @@ class qdyn:
             N = self.set_dict["NX"] * self.set_dict["NW"]
             self.set_dict["N"] = N
 
-        if N < 1:
-            raise MeshError("Number of mesh elements needs to be set before rendering mesh, unless MESHDIM = 0 (spring-block)")
+        assert N >= 1, "Number of mesh elements needs to be set before rendering mesh, unless MESHDIM = 0 (spring-block)"
 
         mesh_params_general = ("IOT", "IASP", "V_PL", "SIGMA")
         mesh_params_RSF = ("TAU", "V_0", "TH_0", "A", "B", "DC", "V1", "V2", "MU_SS", "V_SS", "CO", "INV_VISC")
@@ -311,11 +300,8 @@ class qdyn:
             mesh_dict["Y"] = np.ones(N)*settings["W"]
 
         if dim == 2:
-
-            # print("Warning: 2D faults currently require constant dip angle")
             # Generate a default mesh with constant dip angle
             # This can be modified with compute_mesh_coords
-
             dw = settings["W"] / settings["NW"]
             theta = settings["DIP_W"] * np.pi / 180.0
             mesh_dict["DIP_W"] = np.ones(N) * settings["DIP_W"]
@@ -326,6 +312,15 @@ class qdyn:
             mesh_dict["X"] = X.ravel()
             mesh_dict["Y"] = Y.ravel()
             mesh_dict["Z"] = settings["Z_CORNER"] + mesh_dict["Y"]*np.tan(theta)
+        
+        # Populate mesh with fault labels
+        mesh_dict["FAULT_LABEL"] = np.ones(N) * settings["FAULT_LABEL"]
+
+        # Calculate number of faults
+        mesh_dict["N_FAULTS"] = len(np.unique(settings["FAULT_LABEL"]))
+
+        # Populate mesh with values of restart slip
+        mesh_dict["RESTART_SLIP"] = np.ones(N) * settings["RESTART_SLIP"]
 
         self.mesh_dict.update(mesh_dict)
         self.mesh_rendered = True
@@ -384,8 +379,8 @@ class qdyn:
             # Numeric types to check against
             scalar_types = (
                 int, float, 
-                np.int, np.int16, np.int32, np.int64, 
-                np.float, np.float32, np.float64
+                np.int16, np.int32, np.int64, 
+                np.float32, np.float64
             )
 
             # Loop over scalar types to check against type(x)
@@ -398,8 +393,7 @@ class qdyn:
                 x = np.ones(Nw, dtype=float) * x
 
             # Check that the length of the vector equals Nw
-            if len(x) != Nw:
-                raise MeshError(f"The input vector `{name}` needs to be of length `NW` or be a scalar")
+            assert len(x) == Nw, f"The input vector `{name}` needs to be of length `NW` or be a scalar"
             
             return x
 
@@ -458,15 +452,15 @@ class qdyn:
 
     def write_input(self):
 
-        if self.mesh_rendered == False:
-            raise MeshError("The mesh has not yet been rendered. Call render_mesh() before write_input()")
+        # The mesh should not have been rendered at this point
+        assert self.mesh_rendered, "The mesh has not yet been rendered. Call render_mesh() before write_input()"
 
         # Optionally, output can be created to an external working directory
         # This is still experimental...
         if self.work_dir != "":
             if not os.path.isdir(self.work_dir):
                 print("Creating %s" % (self.work_dir))
-                call(["mkdir", self.work_dir])
+                subprocess.run(["mkdir", self.work_dir])
             print("Switching working directory to %s" % (self.work_dir))
             os.chdir(self.work_dir)
 
@@ -475,8 +469,15 @@ class qdyn:
         Nprocs = settings["NPROC"]
         delimiter = "    "
 
+        # Check if multiple processors have been assigned for 0D and 1D faults
+        assert not ((settings["MESHDIM"] != 2) and (settings["NPROC"] != 1)), 'Parallel processing (settings["NPROC"] > 1) is compatible only with settings["MESHDIM"] == 2'
+
+        # Warn the user for legacy code
+        if ((settings["VERBOSE"] == 1) and ("NTOUT" in settings.keys())):
+            print("Warning: the setting `NTOUT` has been deprecated. Specify `NTOUT_OT`, `NTOUT_OX`, or `NTOUT_LOG` instead")
+
         # Define chunk size for each processor
-        nwLocal = (settings["NW"]//Nprocs)*np.ones(Nprocs, dtype=int)
+        nwLocal = (settings["NW"] // Nprocs) * np.ones(Nprocs, dtype=int)
         nwLocal[Nprocs-1] += settings["NW"] % Nprocs
         nnLocal = 0
 
@@ -486,9 +487,13 @@ class qdyn:
         # Number of creep mechanisms
         N_creep = settings["SET_DICT_CNS"]["N_CREEP"]
 
+        # Recalculate number of faults if necessary
+        settings["N_FAULTS"] = len(np.unique(mesh["FAULT_LABEL"]))
+        
         # If RSF: convert initial velocity to stress
         if (settings["FRICTION_MODEL"] == "RSF") and all(mesh["TAU"] < 0):
-            print("Stress field not set, converting V0 into tau...")
+            if self.set_dict["VERBOSE"] == 1:
+                print("Stress field not set, converting V0 into tau...")
             self.convert_velocity()
 
         # Loop over processor nodes
@@ -527,16 +532,21 @@ class qdyn:
                 input_str += "%u%s i_rns_law\n" % (3, delimiter)
 
             # Some more general settings
-            # Note that i_sigma_law is replaced by the feature stress_coupling, but is kept for compatibility
-            input_str += "%u%s i_sigma_law\n" % (settings["SIGMA_CPL"], delimiter)
+
+            # Add restart time
+            input_str += "%.15g %u%s restart time step\n" % (settings["RESTART_TIME"], settings["RESTART_STEP"], delimiter)
+
+            # Number of faults
+            input_str += "%.15g%s fault number\n" % (settings["N_FAULTS"], delimiter)
+
             # If the CNS model is used, define the number of creep mechanisms
             if settings["FRICTION_MODEL"] == "CNS":
                 # Raise an error when the default value has not been overwritten
-                if N_creep == -1:
-                    raise MeshError("The number of creep mechanisms was not set properly. This value should be determined in render_mesh()")
+                assert not (N_creep == -1), "The number of creep mechanisms was not set properly. This value should be determined in render_mesh()"
                 input_str += "%u%s N_creep\n" % (N_creep, delimiter)
+
             input_str += "%u %u %u%s stress_coupling, thermal press., localisation\n" % (settings["FEAT_STRESS_COUPL"], settings["FEAT_TP"], settings["FEAT_LOCALISATION"], delimiter)
-            input_str += "%u %u %u %u %u %u %u %u %u%s ntout_ot, ntout_ox, nt_coord, nxout, nwout, nxout_DYN, nwout_DYN, ox_seq, ox_DYN\n" % (settings["NTOUT_OT"], settings["NTOUT"], settings["IC"]+1, settings["NXOUT"], settings["NWOUT"], settings["NXOUT_DYN"], settings["NWOUT_DYN"], settings["OX_SEQ"], settings["OX_DYN"], delimiter)
+            input_str += "%u %u %u %u %u %u %u %u %u %u%s ntout_log, ntout_ot, ntout_ox, nt_coord, nxout, nwout, nxout_DYN, nwout_DYN, ox_seq, ox_DYN\n" % (settings["NTOUT_LOG"], settings["NTOUT_OT"], settings["NTOUT_OX"], settings["IC"]+1, settings["NXOUT_OX"], settings["NWOUT_OX"], settings["NXOUT_DYN"], settings["NWOUT_DYN"], settings["OX_SEQ"], settings["OX_DYN"], delimiter)
             input_str += "%.15g %.15g %.15g %.15g %.15g %.15g%s beta, smu, lambda, v_th\n" % (settings["VS"], settings["MU"], settings["LAM"], settings["D"], settings["HD"], settings["V_TH"], delimiter)
             input_str += "%.15g %.15g%s Tper, Aper\n" % (settings["TPER"], settings["APER"], delimiter)
             input_str += "%.15g %.15g %.15g %.15g%s dt_try, dtmax, tmax, accuracy\n" % (settings["DTTRY"] ,settings["DTMAX"] ,settings["TMAX"] ,settings["ACC"] , delimiter)
@@ -583,9 +593,9 @@ class qdyn:
                 for i in range(nloc):
                     input_str += "%.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g %.15g\n" % (mesh["RHOC"][iloc[i]], mesh["BETA"][iloc[i]], mesh["ETA"][iloc[i]], mesh["HALFW"][iloc[i]], mesh["K_T"][iloc[i]], mesh["K_P"][iloc[i]], mesh["LAM"][iloc[i]], mesh["P_A"][iloc[i]], mesh["T_A"][iloc[i]], mesh["DILAT_FACTOR"][iloc[i]])
 
-            # Add mesh grid location information
+            # Add mesh grid location information + restart_slip values
             for i in range(nloc):
-                input_str += "%.15g %.15g %.15g %.15g\n" % (mesh["X"][iloc[i]], mesh["Y"][iloc[i]], mesh["Z"][iloc[i]], mesh["DIP_W"][iloc[i]])
+                input_str += "%.15g %.15g %.15g %.15g %.15g %.15g\n" % (mesh["X"][iloc[i]], mesh["Y"][iloc[i]], mesh["Z"][iloc[i]], mesh["DIP_W"][iloc[i]], mesh["FAULT_LABEL"][iloc[i]], mesh["RESTART_SLIP"][iloc[i]])
 
             nnLocal += settings["NX"]*nwLocal[iproc]
 
@@ -598,10 +608,9 @@ class qdyn:
         return True
 
     # Run QDYN
-    def run(self, test=False, unit=False):
+    def run(self, test=False, unit=False, restart=False):
 
-        if not self.qdyn_input_written and unit is False:
-            raise AssertionError("Input file has not yet been written. First call write_input() to render QDyn input file")
+        assert self.qdyn_input_written or unit, "Input file has not yet been written. First call write_input() to render QDyn input file"
 
         # Executable file (including path)
         qdyn_exec = os.path.join(self.qdyn_path, "qdyn")
@@ -615,6 +624,47 @@ class qdyn:
             # Replace drive with mounted partition
             qdyn_exec_bash = qdyn_exec_bash.replace("%s:" % (drive), "/mnt/%s" % (drive.lower()))
 
+        if restart:
+
+            if self.__dict__.get("ox_last") is None:
+                self.read_output(read_ot=False, read_ox=False, read_ox_dyn=False, read_ox_last=True)
+            
+            assert self.mesh_rendered, "The mesh has not yet been rendered"
+
+            self.mesh_dict["TAU"] = self.ox_last["tau"].values
+            self.mesh_dict["SIGMA"] = self.ox_last["sigma"].values
+            if self.set_dict["FRICTION_MODEL"] == "RSF":
+                self.mesh_dict["TH_0"] = self.ox_last["theta"].values
+            elif self.set_dict["FRICTION_MODEL"] == "CNS":
+                self.mesh_dict["PHI_INI"] = self.ox_last["theta"].values
+            
+            if self.set_dict["FEAT_TP"] == 1:
+                self.mesh_dict["P_A"] = self.ox_last["P"].values
+                self.mesh_dict["T_A"] = self.ox_last["T"].values
+
+            self.mesh_dict["RESTART_SLIP"] = self.ox_last["slip"].values
+            self.set_dict["RESTART_TIME"] = self.ox_last["t"].iloc[0]
+            self.set_dict["RESTART_STEP"] = self.ox_last["step"].iloc[0]
+
+            if self.set_dict["VERBOSE"] == 1:
+                print("Rewriting input file for simulation restart")
+
+            self.write_input()
+
+        flags = []
+
+        if test is True:
+            self.set_dict["VERBOSE"] = 0
+
+        if self.set_dict["DEBUG"] == 1:
+            flags.append("debug")
+        if self.set_dict["VERBOSE"] == 1:
+            flags.append("verbose")
+        if restart:
+            flags.append("restart")
+        if unit is True:
+            flags.append("test")
+
         # If serial (NPROC = 1)
         if self.set_dict["NPROC"] == 1:
 
@@ -622,18 +672,7 @@ class qdyn:
             if self.W10_bash is True: cmd = ["bash", "-c", "\"%s\"" % (qdyn_exec_bash)]
             # If we're on Unix, simply call the qdyn executable directly
             else: cmd = [qdyn_exec]
-
-            # If unit testing is requested, append test argument
-            if unit:
-                cmd.append("test")
-            if not test:
-                # Run command
-                return call(cmd)
-            else:
-                # Run and suppress stdout
-                with open(os.devnull, "w") as output:
-                    call(cmd, stdout=output)
-
+            
         else: # MPI parallel
 
             MPI_path = self.set_dict["MPI_PATH"]
@@ -646,17 +685,13 @@ class qdyn:
             else:
                 cmd = [MPI_path, "-np", "%i" % (self.set_dict["NPROC"]), qdyn_exec]
 
-            # If unit testing is requested, append test argument
-            if unit:
-                cmd.append("test")
-            # Run command
-            if not test:
-                # Run command
-                call(cmd)
-            else:
-                # Run and suppress stdout
-                with open(os.devnull, "w") as output:
-                    call(cmd, stdout=output)
+        # Add command line flags
+        if len(flags) > 0:
+            cmd += flags
+
+        # Run QDYN
+        result = subprocess.run(cmd)
+        if unit: return result.returncode
 
         # If a suffix is requested, rename output files
         suffix = self.set_dict["SUFFIX"]
@@ -668,29 +703,40 @@ class qdyn:
 
 
     # Read QDYN output data
-    def read_output(self, mirror=False, read_ot=True, filename_ot="output_ot",
+    # This modified function allows to retrieve the outputs from a folder other than the one of the python script
+    # It can also read the output of the last snapshot
+
+    def read_output(self, mirror=False, path_output=None, read_ot=True, filename_ot="output_ot",
                     filename_vmax="output_vmax", read_ox=True,
-                    filename_ox="output_ox", read_ox_dyn=False,):
+                    filename_ox="output_ox", read_ox_dyn=False, filename_ox_last="output_ox_last", read_ox_last=False,
+                    filename_fault="output_fault", read_fault=False):
 
         # Output file contents depends on the requested features
-        # Time series (ot)
-        nheaders_ot = 4
-        quants_ot = ("t", "potcy", "pot_rate", "v", "theta", "tau", "dtau_dt", "slip", "sigma")
+        ## Time series (ot)
+        nheaders_ot = 5
+        quants_ot = ("step", "t", "potcy", "pot_rate", "v", "theta", "tau", "dtau_dt", "slip", "sigma")
         if self.set_dict["FEAT_TP"] == 1:
             nheaders_ot += 1
             quants_ot += ("P", "T")
+        quants_ot += ("fault_label",)
 
         # Vmax
-        nheaders_vmax = 2
-        quants_vmax = ("t", "ivmax", "v", "theta", "tau", "dtau_dt", "slip", "sigma")
+        nheaders_vmax = 3
+        quants_vmax = ("step", "t", "ivmax", "v", "theta", "tau", "dtau_dt", "slip", "sigma")
         if self.set_dict["FEAT_TP"] == 1:
             nheaders_vmax += 1
             quants_vmax += ("P", "T")
+        quants_vmax += ("fault_label",)
 
         # Standard snapshots (ox)
-        quants_ox = ("t", "x", "y", "z", "v", "theta", "tau", "tau_dot", "slip", "sigma")
+        quants_ox = ("step", "t", "x", "y", "z", "v", "theta", "tau", "tau_dot", "slip", "sigma")
         if self.set_dict["FEAT_TP"] == 1:
             quants_ox += ("P", "T")
+        quants_ox += ("fault_label",)
+        
+        # Fault time-series
+        nheaders_fault = 2
+        quants_fault = ("step", "t", "potcy_fault", "pot_rate_fault")
 
         # If time series data is requested
         if read_ot:
@@ -704,25 +750,49 @@ class qdyn:
             self.ot = [None] * N_iot
 
             for n, i in enumerate(iot):
+
+                # Check output directory
+                if path_output!=None:
+                    filename_ot = path_output + filename_ot
+
                 filename_iot = "%s_%i" % (filename_ot, i)
-                self.ot[n] = read_csv(
+
+                df = read_csv(
                     filename_iot, header=None, skiprows=nheaders_ot,
                     names=quants_ot, delim_whitespace=True
                 )
+
+                # Sanitise output (check for near-infinite numbers, etc.)
+                df = df.apply(pd.to_numeric, errors="coerce")
+
+                # Discard duplicate rows from duplicate time-steps
+                df = df.drop_duplicates(subset=["step"], keep="first") 
+                self.ot[n] = df
+
+            # Check output directory
+            if path_output!=None:
+                filename_vmax = path_output + filename_vmax
 
             self.ot_vmax = read_csv(
                 filename_vmax, header=None, skiprows=nheaders_vmax,
                 names=quants_vmax, delim_whitespace=True
             )
+            # Discard duplicate rows from duplicate time-steps
+            self.ot_vmax = self.ot_vmax.drop_duplicates(subset=["step"], keep="first") 
 
         else:
             self.ot = None
             self.ot_vmax = None
             self.N_iot = 0
 
+        ## Standard snapshots
         if read_ox:
 
             # Read snapshot output
+            # Check output directory
+            if path_output!= None:
+                filename_ox= path_output + filename_ox
+
             data_ox = read_csv(filename_ox, header=None, names=quants_ox, delim_whitespace=True, comment="#")
 
             # Store snapshot data in self.ox
@@ -730,6 +800,9 @@ class qdyn:
 
             # Sanitise output (check for near-infinite numbers, etc.)
             self.ox = self.ox.apply(pd.to_numeric, errors="coerce")
+
+            # Discard duplicate rows from duplicate time-steps
+            self.ox = self.ox.drop_duplicates(subset=["t", "x", "y", "z"], keep="first") 
 
             # If free surface was generated manually (i.e. without FINITE = 2 or 3),
             # take only half data set (symmetric around first element)
@@ -739,11 +812,42 @@ class qdyn:
         else:
             self.ox = None
 
+        ## Last snapshot
+        if read_ox_last == True:
+
+            # Read snapshot output
+            # Check output directory
+            if path_output!= None:
+                filename_ox_last = path_output + filename_ox_last
+
+            data_ox_last = read_csv(filename_ox_last, header=None, names=quants_ox, delim_whitespace=True, comment="#")
+
+            # Store snapshot data in self.ox
+            self.ox_last = data_ox_last
+
+            # Sanitise output (check for near-infinite numbers, etc.)
+            self.ox_last = self.ox_last.apply(pd.to_numeric, errors="coerce")
+
+            # If free surface was generated manually (i.e. without FINITE = 2 or 3),
+            # take only half data set (symmetric around first element)
+            if mirror == True:
+                data_ox_last = data_ox_last.loc[(data_ox_last["x"] > 0)]
+                self.ox_last = data_ox_last
+        else:
+            self.ox_last = None
+
+        ## Dynamic snapshot
         if read_ox_dyn == True:
 
-            ox_dyn_files_pre = np.array([file for file in os.listdir(".") if file.startswith("output_dyn_pre")])
-            ox_dyn_files_post = np.array([file for file in os.listdir(".") if file.startswith("output_dyn_post")])
-            ox_dyn_files_rup = np.array([file for file in os.listdir(".") if file.startswith("output_dyn_max")])
+            # Check directory
+            if path_output != None:
+                ox_dyn_files_pre = np.array([file for file in os.listdir(path_output) if file.startswith("output_dyn_pre")])
+                ox_dyn_files_post = np.array([file for file in os.listdir(path_output) if file.startswith("output_dyn_post")])
+                ox_dyn_files_rup = np.array([file for file in os.listdir(path_output) if file.startswith("output_dyn_max")])
+            else:                
+                ox_dyn_files_pre = np.array([file for file in os.listdir(".") if file.startswith("output_dyn_pre")])
+                ox_dyn_files_post = np.array([file for file in os.listdir(".") if file.startswith("output_dyn_post")])
+                ox_dyn_files_rup = np.array([file for file in os.listdir(".") if file.startswith("output_dyn_max")])
 
             # Read snapshot output
             data_ox_dyn_pre = [None] * len(ox_dyn_files_pre)
@@ -760,6 +864,9 @@ class qdyn:
                 )
                 # Sanitise output (check for near-infinite numbers, etc.)
                 data_ox_dyn_pre[i] = data_ox_dyn_pre[i].apply(pd.to_numeric, errors="coerce")
+            
+                # Discard duplicate rows from duplicate time-steps
+                data_ox_dyn_pre[i] = data_ox_dyn_pre[i].drop_duplicates(subset=["t", "x", "y", "z"], keep="first")
 
                 # Read pre-rupture file
                 data_ox_dyn_post[i] = read_csv(
@@ -769,6 +876,9 @@ class qdyn:
                 # Sanitise output (check for near-infinite numbers, etc.)
                 data_ox_dyn_post[i] = data_ox_dyn_post[i].apply(pd.to_numeric, errors="coerce")
 
+                # Discard duplicate rows from duplicate time-steps
+                data_ox_dyn_post[i] = data_ox_dyn_post[i].drop_duplicates(subset=["t", "x", "y", "z"], keep="first")
+
                 # Rupture stats file
                 data_ox_dyn_rup[i] = read_csv(
                     ox_dyn_files_rup[i], header=None, names=quants_rup,
@@ -777,34 +887,51 @@ class qdyn:
                 # Sanitise output (check for near-infinite numbers, etc.)
                 data_ox_dyn_rup[i] = data_ox_dyn_rup[i].apply(pd.to_numeric, errors="coerce")
 
+                # Discard duplicate rows from duplicate time-steps
+                data_ox_dyn_rup[i] = data_ox_dyn_rup[i].drop_duplicates(subset=["t", "x", "y", "z"], keep="first") 
+
             # Store snapshot data in self.ox
             self.ox_dyn_pre = data_ox_dyn_pre
             self.ox_dyn_post = data_ox_dyn_post
             self.ox_dyn_rup = data_ox_dyn_rup
 
+
+        # If fault data is requested
+
+        if read_fault:
+            
+            # Number of faults
+            N_faults = self.set_dict["N_FAULTS"]
+
+            # List where each element is a DataFrame with the output of one fault
+            self.fault = [None] * N_faults
+
+            # Check output directory
+            if path_output!=None:
+                filename_fault = path_output + filename_fault 
+
+            # Number of columns with fault output (excluding step/time)
+            stride = 2
+            N_cols = stride * N_faults
+
+            # Counter of fault number for loop
+            n = 0
+            
+            # Read the output file in groups of columns corresponding to each fault
+            for i in range(2, N_cols + 2, stride):
+                # Column list for one fault (time, potency, potency rate and delta slip)
+                col_list = [0, 1] + list(range(i, i + stride))
+
+                # Read output file
+                self.fault[n] = read_csv(
+                filename_fault, header=None, skiprows=nheaders_fault, usecols=col_list,
+                names=quants_fault, delim_whitespace=True
+                )
+                # Discard duplicate rows from duplicate time-steps
+                self.fault[n] = self.fault[n].drop_duplicates(subset=["step"], keep="first")
+                n =+1
         return True
 
-    # Read other time series data, when they are available
-    def read_other_output(self, i):
-        cols = ("t", "v", "theta", "tau", "x", "sigma")
-        file_i = 10000+i+1
-        filename = "fort.%i" % file_i
-        suffix = self.set_dict["SUFFIX"]
-        if suffix != "":
-            filename = "%s_%s" % (filename, suffix)
-        data = read_csv(filename, header=2, names=cols, delim_whitespace=True)
-        return data
-
-    # Optionally, export dicts with all of the simulation settings. It is good
-    # practice to call this function before running each simulation, so that
-    # the simulation parameters are permanently stored (i.e. independent of any
-    # changes made to the script file)
-    def export_dicts(self):
-        print("Exporting settings/mesh dict...")
-        with gzip.GzipFile("set_dict.tar.gz", "w") as f:
-            pickle.dump(self.set_dict, f, pickle.HIGHEST_PROTOCOL)
-        with gzip.GzipFile("mesh_dict.tar.gz", "w") as f:
-            pickle.dump(self.mesh_dict, f, pickle.HIGHEST_PROTOCOL)
 
     # For compatibility with the viscosity model, the initial state of the
     # fault is expressed in terms of the shear stress (and not velocity).
@@ -922,10 +1049,4 @@ class qdyn:
         assert all(np.isfinite(tau)), "The friction could not be estimated"
 
         return tau
-
-
-
-
-
-
 

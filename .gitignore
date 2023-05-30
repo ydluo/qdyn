@@ -12,8 +12,10 @@ qdyn/qdyn
 fort.*
 output_iasp
 output_ot_*
-output_ox
+output_ox*
 output_vmax
+output_fault
+log*
 
 # Simulation products
 *.in

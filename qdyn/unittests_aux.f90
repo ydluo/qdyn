@@ -3,6 +3,7 @@ module unittests_aux
   use problem_class, only : problem_type
   use constants, only : SOLVER_TYPE
   use solver, only : init_rk45
+  use logger, only : log_msg
 
   implicit none
   public
@@ -54,16 +55,19 @@ end function rel_assert_close
 !===============================================================================
 subroutine print_result(test, pass, num_passed, num_tests)
   character(*) :: test
+  character(255) :: msg
   logical :: pass
   integer :: num_passed, num_tests
 
   num_tests = num_tests + 1
 
   if (pass .eqv. .true.) then
-    write(6,*) " * ", test, " =>"//achar(27)//"[32m passed"//achar(27)//"[0m"
+    write(msg, *) " * ", test, " =>"//achar(27)//"[32m passed"//achar(27)//"[0m"
+    call log_msg(msg)
     num_passed = num_passed + 1
   else
-    write(6,*) " * ", test, " =>"//achar(27)//"[31m FAILED"//achar(27)//"[0m"
+    write(msg, *) " * ", test, " =>"//achar(27)//"[31m FAILED"//achar(27)//"[0m"
+    call log_msg(msg)
   endif
 
 end subroutine print_result
@@ -73,12 +77,15 @@ end subroutine print_result
 !===============================================================================
 subroutine print_subresult(test, pass)
   character(*) :: test
+  character(255) :: msg
   logical :: pass
 
   if (pass .eqv. .true.) then
-    write(6,*) "    - ", test, " =>"//achar(27)//"[32m passed"//achar(27)//"[0m"
+    write(msg, *) "    - ", test, " =>"//achar(27)//"[32m passed"//achar(27)//"[0m"
+    call log_msg(msg)
   else
-    write(6,*) "    - ", test, " =>"//achar(27)//"[31m FAILED"//achar(27)//"[0m"
+    write(msg, *) "    - ", test, " =>"//achar(27)//"[31m FAILED"//achar(27)//"[0m"
+    call log_msg(msg)
   endif
 
 end subroutine print_subresult
@@ -102,7 +109,7 @@ subroutine initiate_solver(pb)
     call init_rk45(pb)
   endif
 
-  write(6,*) " * ODE solver (re)initialised"
+  call log_msg(" * ODE solver (re)initialised")
 
 end subroutine initiate_solver
 

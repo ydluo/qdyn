@@ -1,4 +1,4 @@
-!define problem
+!define problemmesh_type
 
 module problem_class
 
@@ -11,8 +11,10 @@ module problem_class
 
   ! Placeholder for output quantities
   type optr
-    ! Vector quantities
+    ! Vector quantities (double)
     double precision, pointer :: v(:) => null()
+    ! Vector quantities (integer)
+    integer, pointer :: vi(:) => null()
     ! Scalar quantities (double)
     double precision, pointer :: s => null()
     ! Scalar quantities (integer)
@@ -23,7 +25,7 @@ module problem_class
   type ot_type
     double precision :: v_th
     double precision, dimension(:), allocatable :: xsta, ysta, zsta, v_pre, v_pre2
-    integer :: ic=-1, ntout=0, not=-1, not_vmax=-1
+    integer :: ic=-1, ntout=0, not=-1, not_vmax=-1, not_fault = -1
     integer, dimension(:), allocatable :: iasp, iot
     character(len=16), dimension(:), allocatable :: fmt, fmt_vmax
     type(optr), dimension(:), allocatable :: objects_ot, objects_vmax
@@ -31,9 +33,9 @@ module problem_class
 
  ! snapshot outputs: at every fault point, but only at few selected times
   type ox_type
-    integer :: ntout=0, nrup=-1
+    integer :: ntout=0, nrup=-1, nox=-1
     integer :: count, dyn_count, dyn_stat, i_ox_dyn, i_ox_seq, seq_count
-    integer :: nwout, nwout_dyn, nxout, nxout_dyn
+    integer :: nwout, nwout_dyn, nwout_last, nxout, nxout_dyn, nx_outlast
     double precision :: pot_pre
     character(len=256) :: header
     character(len=16), dimension(:), allocatable :: fmt
@@ -107,7 +109,7 @@ module problem_class
     ! Containers for local and global quantities
     type(optr), dimension(:), allocatable :: objects_glob, objects_loc
     ! Number of objects in the containers
-    integer :: nobj=9
+    integer :: nobj=11
 
     ! Basic variables
     ! NOTE: if theta2 needs to be in output sequence, add here
@@ -119,9 +121,11 @@ module problem_class
     double precision, dimension(:), allocatable :: theta2, alpha
     double precision, pointer ::  tau_max(:) => null(), t_rup(:) => null(), &
                                   v_max(:) => null(), t_vmax(:) => null()
+    ! Potency variables
     double precision, pointer :: pot => null(), pot_rate => null()
+    double precision, pointer :: pot_fault(:) => null(), pot_rate_fault(:) => null()
    ! Boundary conditions
-    integer :: i_sigma_cpl=0, finite=0
+    integer :: finite=0
    ! Friction properties
     double precision, dimension(:), allocatable ::  a, b, dc, v1, v2, &
                                                     mu_star, v_star, &
@@ -137,8 +141,9 @@ module problem_class
                         dt_next=0d0, dt_max=0d0, tmax, acc
     double precision :: abserr=1e-7
     double precision, pointer :: time => null()
-    integer, pointer :: ivmax => null()
-    integer :: NSTOP, itstop=-1, it=0
+    integer, pointer :: it => null(), ivmax => null()
+    integer :: ntout_log = 0
+    integer :: NSTOP, itstop=-1
     double precision :: vmaxglob
    ! For outputs
     type (ot_type) :: ot
@@ -154,8 +159,6 @@ module problem_class
    ! QSB
     double precision :: DYN_M,DYN_th_on,DYN_th_off
     integer :: DYN_FLAG,DYN_SKIP
-    ! Flag for unit testing
-    logical :: test_mode = .false.
 
     ! SEISMIC: added structures
     type (cns_type) :: cns_params
@@ -164,6 +167,10 @@ module problem_class
     type (rk45_type) :: rk45
     type (rk45_2_type) :: rk45_2
     type (test_type) :: test
+
+    ! Number of fault labels
+    integer :: nfault = 1
+
   end type problem_type
 
 end module problem_class

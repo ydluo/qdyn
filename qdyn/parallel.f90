@@ -13,7 +13,7 @@ module my_mpi
 
   public :: init_mpi, finalize_mpi, &
             my_mpi_tag, my_mpi_rank, my_mpi_NPROCS, is_mpi_parallel, &
-            is_mpi_master, gather_allv, gather_allvdouble, &
+            is_mpi_master, gather_allv, gather_allvi, gather_allvdouble, &
             gather_allvdouble_root, gather_allvi_root, gather_alli, &
             synchronize_all, sum_allreduce, max_allproc, min_allproc
 
@@ -27,13 +27,14 @@ subroutine init_mpi()
   integer :: ier
 
   call MPI_INIT(ier)
+  if (ier /= 0 ) stop "Error initializing MPI"
   call MPI_COMM_SIZE(MPI_COMM_WORLD, NPROCS, ier)
+  if (ier /= 0 ) stop "Error establishing # of MPI procs"
   call MPI_COMM_RANK(MPI_COMM_WORLD, MY_RANK, ier)
+  if (ier /= 0 ) stop "Error getting MPI rank"
 
-  if (ier /= 0 ) stop 'Error initializing MPI'
-
-  if (NPROCS<2) call MPI_FINALIZE(ier)
-  if (MY_RANK==0) write(6,*) 'Number of processors = ',NPROCS
+  ! If mpiexec was called with -np 1, then switch to serial
+  if (NPROCS < 2) call MPI_FINALIZE(ier)
 
 end subroutine init_mpi
 
@@ -132,6 +133,24 @@ subroutine gather_allvdouble(sendbuf, scounts, recvbufall, recvcountsall, recvof
                       recvoffsetall,MPI_DOUBLE_PRECISION,MPI_COMM_WORLD,ier)
 
 end subroutine gather_allvdouble
+
+!-------------------------------------------------------------------------------------------------
+!Gather all MPI to root processor=0
+subroutine gather_allvi(sendbuf, scounts, recvbufall, recvcountsall, recvoffsetall,recvcountstotal)
+
+  integer :: scounts, recvcountstotal
+  integer, dimension(scounts) :: sendbuf
+  integer, dimension(recvcountstotal) :: recvbufall
+  integer, dimension(0:NPROCS-1) :: recvcountsall, recvoffsetall
+
+  integer ier
+
+  !PG: sending the each processor data to the corresponding index in the recvbufall array.
+
+  call MPI_ALLGATHERV(sendbuf, scounts, MPI_INTEGER, recvbufall, recvcountsall,&
+                    recvoffsetall, MPI_INTEGER, MPI_COMM_WORLD, ier)
+
+end subroutine gather_allvi
 
 !-------------------------------------------------------------------------------------------------
 !Gather all MPI to root processor=0

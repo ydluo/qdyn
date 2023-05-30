@@ -17,42 +17,53 @@ subroutine read_main(pb)
   use problem_class
   use mesh, only : read_mesh_parameters, read_mesh_nodes, mesh_get_size
   use output, only : ot_read_stations
-  use logger, only : log_screen
+  use logger, only : log_msg
   use my_mpi, only : my_mpi_tag, is_MPI_parallel
-  use constants, only : FAULT_TYPE, SOLVER_TYPE, FID_IN, FID_SCREEN
+  use constants, only : FAULT_TYPE, SOLVER_TYPE, FID_IN, RESTART
 
   type(problem_type), intent(inout) :: pb
 
   double precision, dimension(:), allocatable :: read_buf
   integer :: i, j, n, N_cols, N_creep
 
-  call log_screen("Start reading input...")
+  call log_msg("Start reading input...")
 
   open(unit=FID_IN, file='qdyn'//trim(my_mpi_tag())//'.in', action='read')
 
   call read_mesh_parameters(FID_IN, pb%mesh)
-  call log_screen("   Mesh input complete")
+  call log_msg("   Mesh input complete")
 
   if (pb%mesh%dim==1) read(FID_IN, *) pb%finite
   read(FID_IN, *) pb%itheta_law
   read(FID_IN, *) pb%i_rns_law
-  read(FID_IN, *) pb%i_sigma_cpl
+
+  ! Read restart time and step
+  allocate(pb%time, pb%it)
+  read(FID_IN, *) pb%time, pb%it
+
+  ! Read number of faults
+  read(FID_IN, *) pb%nfault
+  ! Allocate potency (rate): 1 for each fault
+  allocate(pb%pot_fault(pb%nfault), pb%pot_rate_fault(pb%nfault))
+  pb%pot_fault = 0d0
+  pb%pot_rate_fault = 0d0
+
   ! SEISMIC: various simulation features can be turned on (1) or off (0)
   if (pb%i_rns_law == 3) then
     read(FID_IN, *) pb%cns_params%N_creep
   endif
   read(FID_IN, *) pb%features%stress_coupling, pb%features%tp, pb%features%localisation
-  read(FID_IN, *) pb%ot%ntout, pb%ox%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nwout, &
+  read(FID_IN, *) pb%ntout_log, pb%ot%ntout, pb%ox%ntout, pb%ot%ic, pb%ox%nxout, pb%ox%nwout, &
              pb%ox%nxout_dyn, pb%ox%nwout_dyn, pb%ox%i_ox_seq, pb%ox%i_ox_dyn
   read(FID_IN, *) pb%beta, pb%smu, pb%lam, pb%D, pb%H, pb%ot%v_th
   read(FID_IN, *) pb%Tper, pb%Aper
   read(FID_IN, *) pb%dt_try, pb%dt_max,pb%tmax, pb%acc
   read(FID_IN, *) pb%NSTOP
-  read(FID_IN, *) pb%DYN_FLAG,pb%DYN_SKIP
-  read(FID_IN, *) pb%DYN_M,pb%DYN_th_on,pb%DYN_th_off
+  read(FID_IN, *) pb%DYN_FLAG, pb%DYN_SKIP
+  read(FID_IN, *) pb%DYN_M, pb%DYN_th_on, pb%DYN_th_off
   read(FID_IN, *) FAULT_TYPE, SOLVER_TYPE
 
-  call log_screen("  Flags input complete")
+  call log_msg("  Flags input complete")
 
   n = mesh_get_size(pb%mesh) ! number of nodes in this processor
   allocate ( pb%tau(n), pb%sigma(n), pb%v(n), pb%theta(n),  &
@@ -172,7 +183,7 @@ subroutine read_main(pb)
   if (pb%features%localisation == 1) then
     ! Raise an error if the CNS model is not selected
     if (pb%i_rns_law /= 3) then
-      call log_screen("Localisation of shear strain is compatible only with the CNS model (i_rns_law = 3)")
+      call log_msg("Localisation of shear strain is compatible only with the CNS model (i_rns_law = 3)")
       stop
     endif
 
@@ -246,15 +257,20 @@ subroutine read_main(pb)
   ! End reading TP model parameters
   ! </SEISMIC>
 
-  if (pb%mesh%dim == 2) then
-    call read_mesh_nodes(FID_IN, pb%mesh)
-    ! call ot_read_stations(pb%ot)
+  ! CRP: Instead, call read_mesh_nodes for all mesh types so the fault label can
+  ! be written in the outputs for all fault dimensionalities
+  call read_mesh_nodes(FID_IN, pb%mesh)
+
+  ! Overwrite slip if restart with time and slip of last simulation
+  allocate(pb%slip(n))
+  pb%slip = 0d0
+  if(RESTART) then
+    pb%slip = pb%mesh%restart_slip
   endif
 
   close(FID_IN)
-  call log_screen("Input complete")
+  call log_msg("Input complete")
 
 end subroutine read_main
-
 
 end module input

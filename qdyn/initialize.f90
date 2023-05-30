@@ -11,17 +11,17 @@ contains
 subroutine init_all(pb)
 
   use problem_class
-  use mesh, only : init_mesh, mesh_get_size
+  use mesh, only : init_mesh, mesh_get_size, read_mesh_nodes
   use constants, only : PI, SOLVER_TYPE
   use my_mpi, only: is_MPI_master
-  use logger, only : log_screen
+  use logger, only : log_msg
   use fault_stress, only : init_kernel
   use friction, only : set_theta_star, compute_velocity_RSF
   use friction_cns, only : compute_velocity, dphi_dt
   use solver, only : init_rk45
   use diffusion_solver, only: init_tp
   use ode_rk45_2, only : init_rk45_2
-  use output, only: initialize_output
+  use output, only: initialize_output, log_write_header
 !!$  use omp_lib
 
   type(problem_type), intent(inout) :: pb
@@ -31,9 +31,8 @@ subroutine init_all(pb)
 !  integer :: TID, NTHREADS
 
   ! Allocate scalar (pointer) quantities
-  allocate(pb%time, pb%ivmax)
+  allocate(pb%ivmax)
   allocate(pb%pot, pb%pot_rate)
-  pb%time = 0d0
   pb%ivmax = 0
   pb%pot = 0d0
   pb%pot_rate = 0d0
@@ -71,14 +70,13 @@ subroutine init_all(pb)
 
   ! Log impedance
   write(msg, "(a, e15.3)") "Impedance = ", pb%zimpedance
-  call log_screen(msg)
+  call log_msg(msg)
   !---------------------- impedance ------------------
 
   !---------------------- ref_value ------------------
   n = mesh_get_size(pb%mesh)
   ! SEISMIC: initialise pb%tau in input.f90 to be compatible with CNS model
-  allocate ( pb%dtau_dt(n), pb%slip(n), pb%theta_star(n) )
-  pb%slip = 0d0
+  allocate ( pb%dtau_dt(n), pb%theta_star(n) )
   pb%dtau_dt = 0d0
   call set_theta_star(pb)
 
@@ -89,7 +87,7 @@ subroutine init_all(pb)
     allocate(pb%T(pb%mesh%nn))
     pb%T = 0d0
     call init_tp(pb)
-    call log_screen("Spectral mesh initiated")
+    call log_msg("Spectral mesh initiated")
   endif
 
   ! SEISMIC: the CNS model has the initial shear stress defined in the
@@ -106,7 +104,7 @@ subroutine init_all(pb)
   endif
 
   call init_kernel( pb%lam, pb%smu, pb%mesh, pb%kernel, pb%D, pb%H, &
-                    pb%features%stress_coupling, pb%finite, pb%test_mode)
+                    pb%features%stress_coupling, pb%finite, pb%test%test_mode)
 
   call initialize_output(pb)
 
@@ -118,7 +116,8 @@ subroutine init_all(pb)
     call init_rk45_2(pb)
   endif
 
-  call log_screen("Initialization completed")
+  call log_msg("Initialization completed")
+  call log_write_header(pb)
 
   ! Info about threads
 !!$OMP PARALLEL PRIVATE(NTHREADS, TID)

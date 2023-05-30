@@ -59,8 +59,8 @@ class TestTseRice(AuxiliaryFunctions):
         set_dict["MESHDIM"] = 1
         set_dict["FINITE"] = 3
         set_dict["TMAX"] = 500*t_yr
-        set_dict["NTOUT"] = 1000
-        set_dict["NXOUT"] = int(np.power(2, 3))
+        set_dict["NTOUT_OX"] = 1000
+        set_dict["NXOUT_OX"] = int(np.power(2, 3))
         set_dict["V_PL"] = 35e-3 / t_yr
         set_dict["MU"] = 3e10
         set_dict["SIGMA"] = 1e8

@@ -31,6 +31,7 @@
 program kernel
 
   use okada, only : compute_kernel
+  use logger, only : log_msg
 
   integer, parameter :: iin =15, iout_s=16, iout_n=17
 
@@ -38,6 +39,7 @@ program kernel
   double precision :: mu, lam, tau, sigma
   integer :: FAULT_TYPE
   integer :: iret, i,j,di, mode, nn, nw, nx
+  character(100) :: msg
 
 ! read inputs
   open(unit=iin,FILE= 'kernel.in') 
@@ -48,16 +50,16 @@ program kernel
 
   select case (mode)
   case(1) 
-    write(6,*) 'Calculate Okada kernel for general mesh'
+    call log_msg("Calculate Okada kernel for general mesh")
     read(iin,*) nn
     di = 1
   case(2)
-    write(6,*) 'Calculate Okada kernel for constant strike and DX'
+    call log_msg("Calculate Okada kernel for constant strike and DX")
     read(iin,*) nx,nw
     nn = nw*nx
     di = nx
   case default
-    write(6,*) 'input mode should be 1 (general mesh) or 2 (fixed strike and dx)'
+    call log_msg("Input mode should be 1 (general mesh) or 2 (fixed strike and dx)")
   end select
 
   allocate(x(nn),y(nn),z(nn),dip(nn),xx(nn),ww(nn))
@@ -76,7 +78,8 @@ program kernel
     call compute_kernel(lam,mu,x(j),y(j),z(j), dip(j),xx(j),ww(j), &
                         x(i),y(i),z(i), dip(i), iret,tau,sigma,FAULT_TYPE)
     if (iret /= 0) then
-      write(6,*) 'WARNING : Kernel singular, set value to 0, (i,j)=',i,j
+      write(msg, *) "WARNING : Kernel singular, set value to 0, (i,j)=", i, j
+      call log_msg(msg)
       tau = 0d0
       sigma = 0d0
     endif
@@ -88,6 +91,6 @@ program kernel
   close(iout_s)
   close(iout_n)
 
-  write(6,*) 'Kernel calculation completed and stored in kernel.*.out'
+  call log_msg("Kernel calculation completed and stored in kernel.*.out")
   
 end program kernel

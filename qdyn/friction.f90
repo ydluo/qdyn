@@ -11,7 +11,7 @@ module friction
   !   All friction properties can be spatially non-uniform
 
   use problem_class, only : problem_type
-  use logger, only : log_screen
+  use logger, only : log_msg
 
   implicit none
   private
@@ -140,11 +140,11 @@ subroutine RSF_derivs(dV_dtau, dV_dtheta, dV_dP, v, theta, tau, sigma, pb)
     dV_dtheta = - v * pb%b / (pb%a * theta)
 
   case(3) ! SEISMIC: CNS model
-    call log_screen("friction.f90::dmu_dv_dtheta is deprecated for the CNS model")
+    call log_msg("friction.f90::dmu_dv_dtheta is deprecated for the CNS model")
     stop
 
   case default
-    call log_screen("dmu_dv_dtheta: unkown friction law type")
+    call log_msg("dmu_dv_dtheta: unkown friction law type")
     stop
   end select
 
