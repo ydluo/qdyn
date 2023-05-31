@@ -39,7 +39,7 @@ subroutine derivs(time,yt,dydt,pb)
   double precision, dimension(pb%mesh%nn) :: main_var, dmain_var, slip, dslip
   double precision, dimension(pb%mesh%nn) :: dsigma_dt, dtau_dt, dth_dt, dth2_dt
   double precision, dimension(pb%mesh%nn) :: dV_dtau, dV_dtheta
-  double precision, dimension(pb%mesh%nn) :: tau_y, dP_dt, dV_dP
+  double precision, dimension(pb%mesh%nn) :: tau_y, dP_dt, dV_dsigma
   double precision, dimension(pb%mesh%nn) :: dummy1, dummy2
   double precision :: dtau_per, dt
 
@@ -51,7 +51,7 @@ subroutine derivs(time,yt,dydt,pb)
   dtau_dt = 0d0
   dsigma_dt = 0d0
   dP_dt = 0d0
-  dV_dP = 0d0
+  dV_dsigma = 0d0
   dummy1 = 0d0
   dummy2 = 1d0
   tau_y = 0d0
@@ -90,7 +90,7 @@ subroutine derivs(time,yt,dydt,pb)
     ! The subroutine below calculates the slip velocity, time-derivatives of
     ! the porosity (theta), and partial derivatives required for radiation
     ! damping. These operations are combined into one subroutine for efficiency
-    call CNS_derivs(v, dth_dt, dth2_dt, dV_dtau, dV_dtheta, dV_dP, tau, &
+    call CNS_derivs(v, dth_dt, dth2_dt, dV_dtau, dV_dtheta, dV_dsigma, tau, &
                     sigma, theta, theta2, pb)
   else
     ! SEISMIC: for the classical rate-and-state model formulation, the slip
@@ -98,7 +98,7 @@ subroutine derivs(time,yt,dydt,pb)
     tau = main_var
     v = compute_velocity_RSF(tau, sigma, theta, pb)
 
-    call RSF_derivs(dV_dtau, dV_dtheta, dV_dP, v, theta, tau, sigma, pb)
+    call RSF_derivs(dV_dtau, dV_dtheta, dV_dsigma, v, theta, tau, sigma, pb)
     ! SEISMIC: calculate time-derivative of state variable (theta)
     call dtheta_dt(v, theta, dth_dt, pb)
   endif
@@ -122,20 +122,20 @@ subroutine derivs(time,yt,dydt,pb)
   ! respectively. For the CNS model, these variables contain the partials of
   ! velocity to shear stress (dV/dtau) and velocity to porosity (dV/dtheta),
   ! respectively. For compatibility, the names of these variables are not
-  ! changed.
-  ! An additional component is added When thermal pressurisation is requested,
-  ! to include the change in pressure (and effective normal stress). This
-  ! component is initiated as zero, but updated when TP is requested
+  ! changed. An additional component comes from the change in (effective)
+  ! normal stress
 
    ! SEISMIC: the total dtau_dt results from the slip deficit and
    ! periodic loading, which is stored in dydt(2::pb%neqs)
    ! Damping is included from rewriting the following expression:
-   ! dtau/dt = k(Vlp - Vs) - eta*(dV/dtau * dtau/dt + dV/dtheta * dtheta/dt)
+   ! dtau/dt = k(Vlp - Vs) - eta*(dV/dtau * dtau/dt + dV/dsigma * dsigma/dt
+   !                              + dV/dtheta * dtheta/dt)
    ! Rearrangement gives:
-   ! dtau/dt = ( k[Vlp - Vs] - eta*dV/dtheta * dtheta/dt)/(1 + eta*dV/dtau)
+   ! dtau/dt = ( k[Vlp - Vs] - eta*(dV/dtheta * dtheta/dt + dV/dsigma * dsigma/dt))
+   !           / (1 + eta*dV/dtau)
    ! See [VdE], Section 3.2
    dmain_var =  (dtau_dt + dtau_per - pb%zimpedance * &
-                (dV_dtheta * dth_dt + dV_dP * dP_dt)) / &
+                (dV_dtheta * dth_dt + dV_dsigma * (dsigma_dt - dP_dt))) / &
                 (1 + pb%zimpedance * dV_dtau)
 
    call pack(dydt, dth_dt, dmain_var, dsigma_dt, dth2_dt, dslip, pb)
