@@ -21,7 +21,7 @@ subroutine initialize_output(pb)
 
   use problem_class
   use my_mpi, only: is_MPI_master, is_MPI_parallel
-  use constants, only : PI, RESTART
+  use constants, only : PI
   type (problem_type) :: pb
   integer :: nbase, nobj
 
@@ -30,12 +30,7 @@ subroutine initialize_output(pb)
   ! submodules (time series, snapshots, etc). Then, for each output type, the
   ! indices pointing to the appropriate quantities are stored in a list. When
   ! a particular output is requested, the corresponding submodule calls for the
-  ! appropiate quantity stored in the list. The time value that is output in
-  ! each time-step depends on the flag "restart" that was set in the input file.
-  ! If the simulation starts at 0s ("restart" = 0), then all the output files
-  ! are created from scratch/rewritten. Otherwise, if the simulation is intended
-  ! to start from the last time-step of a previous simulation ("restart"=1), then
-  ! the output is appended to the existing output files from this previous simulation.
+  ! appropiate quantity stored in the list.
 
   ! Number of objects in containers
   ! Base number
@@ -54,12 +49,6 @@ subroutine initialize_output(pb)
   ! Allocate containers
   allocate(pb%objects_glob(nobj))
   allocate(pb%objects_loc(nobj))
-
-  ! overwrite time and slip if restart with time and slip of last simulation
-  if(RESTART) then
-    pb%time = pb%time + pb%restart_time
-    pb%slip = pb%slip + pb%mesh%restart_slip
-  endif
 
   ! If parallel: initialise (allocate) global quantities
   if (is_MPI_parallel()) then

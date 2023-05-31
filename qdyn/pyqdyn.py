@@ -87,7 +87,7 @@ class qdyn:
         set_dict["FEAT_STRESS_COUPL"] = 0	# Normal stress coupling
         set_dict["FEAT_TP"] = 0				# Thermal pressurisation
         set_dict["FEAT_LOCALISATION"] = 0	# Gouge zone localisation of strain (CNS only)
-        set_dict["FEAT_RESTART"] = 0        # Restart simulation from last snapshot of a previous simulation (0 = new simulation, 1 = restart simulation)
+        set_dict["RESTART_STEP"] = 0        # Restart step of the simulation [-]
         set_dict["RESTART_TIME"] = 0        # Restart time of the simulation [s]
         set_dict["RESTART_SLIP"] = 0        # Restart slip of the simulation [m] 
 
@@ -322,10 +322,6 @@ class qdyn:
         # Populate mesh with values of restart slip
         mesh_dict["RESTART_SLIP"] = np.ones(N) * settings["RESTART_SLIP"]
 
-        # Raise error if FEAT_RESTART is neither 0 nor 1
-        if not settings["FEAT_RESTART"] in (0, 1):
-            raise ValueError("FEAT_RESTART '%s' not recognised. Value should be 0 (not restart) or 1 (restart)" % (settings["FEAT_RESTART"]))
-
         self.mesh_dict.update(mesh_dict)
         self.mesh_rendered = True
 
@@ -538,7 +534,7 @@ class qdyn:
             # Some more general settings
 
             # Add restart time
-            input_str += "%.15g%s restart time\n" % (settings["RESTART_TIME"], delimiter)
+            input_str += "%.15g %u%s restart time step\n" % (settings["RESTART_TIME"], settings["RESTART_STEP"], delimiter)
 
             # Number of faults
             input_str += "%.15g%s fault number\n" % (settings["N_FAULTS"], delimiter)
@@ -612,7 +608,7 @@ class qdyn:
         return True
 
     # Run QDYN
-    def run(self, test=False, unit=False):
+    def run(self, test=False, unit=False, restart=False):
 
         assert self.qdyn_input_written or unit, "Input file has not yet been written. First call write_input() to render QDyn input file"
 
@@ -628,6 +624,33 @@ class qdyn:
             # Replace drive with mounted partition
             qdyn_exec_bash = qdyn_exec_bash.replace("%s:" % (drive), "/mnt/%s" % (drive.lower()))
 
+        if restart:
+
+            if self.__dict__.get("ox_last") is None:
+                self.read_output(read_ot=False, read_ox=False, read_ox_dyn=False, read_ox_last=True)
+            
+            assert self.mesh_rendered, "The mesh has not yet been rendered"
+
+            self.mesh_dict["TAU"] = self.ox_last["tau"].values
+            self.mesh_dict["SIGMA"] = self.ox_last["sigma"].values
+            if self.set_dict["FRICTION_MODEL"] == "RSF":
+                self.mesh_dict["TH_0"] = self.ox_last["theta"].values
+            elif self.set_dict["FRICTION_MODEL"] == "CNS":
+                self.mesh_dict["PHI_INI"] = self.ox_last["theta"].values
+            
+            if self.set_dict["FEAT_TP"] == 1:
+                self.mesh_dict["P_A"] = self.ox_last["P"].values
+                self.mesh_dict["T_A"] = self.ox_last["T"].values
+
+            self.mesh_dict["RESTART_SLIP"] = self.ox_last["slip"].values
+            self.set_dict["RESTART_TIME"] = self.ox_last["t"].iloc[0]
+            self.set_dict["RESTART_STEP"] = self.ox_last["step"].iloc[0]
+
+            if self.set_dict["VERBOSE"] == 1:
+                print("Rewriting input file for simulation restart")
+
+            self.write_input()
+
         flags = []
 
         if test is True:
@@ -637,7 +660,7 @@ class qdyn:
             flags.append("debug")
         if self.set_dict["VERBOSE"] == 1:
             flags.append("verbose")
-        if self.set_dict["FEAT_RESTART"] == 1:
+        if restart:
             flags.append("restart")
         if unit is True:
             flags.append("test")
@@ -682,9 +705,6 @@ class qdyn:
     # Read QDYN output data
     # This modified function allows to retrieve the outputs from a folder other than the one of the python script
     # It can also read the output of the last snapshot
-    # CRP: When restarting a model, some of the time-steps appear duplicated in the output files. These time-steps correspond
-    # to the 1st snapshot after restarting the simulation. For now, the workaround is to discard the duplicated rows when
-    # reading the output files with the wrapper
 
     def read_output(self, mirror=False, path_output=None, read_ot=True, filename_ot="output_ot",
                     filename_vmax="output_vmax", read_ox=True,
@@ -1029,15 +1049,4 @@ class qdyn:
         assert all(np.isfinite(tau)), "The friction could not be estimated"
 
         return tau
-
-
-
-
-    # Return time of last snapshot of a simulation
-    #  (used when restarting a simulation from a previous model)
-    def restart_time(self):
-        with open("output_ox_last", "r") as file:
-            line = file.readlines()
-            last_time = float(line[2].split()[0])
-        return last_time
 

@@ -59,8 +59,6 @@ logical :: VERBOSE = .false.
 
 ! Input unit
 integer, parameter :: FID_IN = 15
-! Additional input unit (output_ox_last) if restarting model
-! integer, parameter :: FID_IN_LAST = 16
 
 ! Output units
 integer :: FID_LOG = 10000
