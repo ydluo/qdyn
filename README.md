@@ -118,7 +118,7 @@ Rupture complexity promoted by damaged fault zones in earthquake cycle models.
 AGU Fall Meeting 2017, abstract T41C-0632.  
 Poster [PDF](https://www.essoar.org/doi/abs/10.1002/essoar.10500080.1), doi:[10.1002/essoar.10500080.1](https://dx.doi.org/10.1002/essoar.10500080.1)
 
-## For rate-and-state friction simulations including viscosity
+### For rate-and-state friction simulations including viscosity
 
 Beall, A., van den Ende, M. P. A., Ampuero, J. P., Capitanio, F. A., Fagereng, A. (2022).
 Linking Earthquake Magnitude‐Frequency Statistics and Stress in Visco‐Frictional Fault Zone Models.
