@@ -115,11 +115,11 @@ subroutine dtheta_dt(v, theta, dth_dt, pb)
 end subroutine dtheta_dt
 
 !--------------------------------------------------------------------------------------
-subroutine RSF_derivs(dV_dtau, dV_dtheta, dV_dP, v, theta, tau, sigma, pb)
+subroutine RSF_derivs(dV_dtau, dV_dtheta, dV_dsigma, v, theta, tau, sigma, pb)
 
   type(problem_type), intent(in) :: pb
   double precision, dimension(pb%mesh%nn), intent(in) :: v, theta, tau, sigma
-  double precision, dimension(pb%mesh%nn) :: dV_dtau, dV_dtheta, dV_dP
+  double precision, dimension(pb%mesh%nn) :: dV_dtau, dV_dtheta, dV_dsigma
   double precision, dimension(pb%mesh%nn) :: dummy
 
   select case (pb%i_rns_law)
@@ -148,8 +148,8 @@ subroutine RSF_derivs(dV_dtau, dV_dtheta, dV_dP, v, theta, tau, sigma, pb)
     stop
   end select
 
-  ! Acceleration due to fluid pressure changes
-  dV_dP = dV_dtau * tau / sigma
+  ! Acceleration due to (effective) stress changes
+  dV_dsigma = -dV_dtau * tau / sigma
 
   ! Viscous creep is state-independent, so it only contributes to dV_dtau
   dV_dtau = dV_dtau + pb%inv_visc
