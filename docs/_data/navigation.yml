@@ -47,13 +47,21 @@
     - name: Examples
       anchor: examples
 
-- name: 5. Optimizing performance
+- name: 5. Advanced features
+  link: advanced_features.html
+  subitems:
+    - name: Simulation restarts
+      anchor: simulation-restarts
+    - name: Complex geometries
+      anchor: complex-geometries
+
+- name: 6. Optimizing performance
   link: optimizing_performance.html
 
 # - name: Coupling with SPECFEM3D
 #   link: #
 
-- name: 6. Tutorials
+- name: 7. Tutorials
   link: tutorials.html
   sublinks:
     - name: RSF spring-block
@@ -67,8 +75,8 @@
     - name: Double asperity
       link: tutorial_double_asperity_python.html
 
-- name: 7. Developer notes
+- name: 8. Developer notes
   link: developer_notes.html
 
-- name: 8. Citing QDYN
+- name: 9. Citing QDYN
   link: cite.html

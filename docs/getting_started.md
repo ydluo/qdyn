@@ -14,11 +14,11 @@ title: Getting started
 
 - Python 3+. The Python wrapper relies on [NumPy](http://www.numpy.org/)/[SciPy](https://scipy.org/) and [Pandas](https://pandas.pydata.org/). The Python test suite (optional but recommended for developers) additionally requires [matplotlib](https://matplotlib.org/) and [termcolor](https://pypi.org/project/termcolor/). These dependencies are conveniently acquired through [`pip`](https://pypi.org/project/pip/):<br />
   ```
-  pip install numpy scipy pandas matplotlib termcolor
+  pip install numpy "scipy>=1.9.0" matplotlib pandas termcolor ipython
   ```
   or through [Anaconda](https://www.anaconda.com/):<br />
   ```
-  conda create -n QDYN numpy scipy matplotlib pandas termcolor
+  conda create -n QDYN numpy "scipy>=1.9.0" matplotlib pandas termcolor ipython
   conda activate QDYN
   ```
 
@@ -31,12 +31,10 @@ title: Getting started
 QDYN is hosted on [GitHub](https://github.com/ydluo/qdyn). To download for the first time the stable version of QDYN, execute the following git command:
 
 ```
-git clone https://github.com/ydluo/qdyn qdyn-read-only
+git clone git@github.com:ydluo/qdyn.git
 ```
 
-This creates a directory  `qdyn-read-only` which contains the whole QDYN package. You can create a directory with a different name. The code contained by the `master` branch (default) is tested and stable, but other development branches may be available. Consult the GitHub repository for the availability of
-development code.
-
+This creates a directory `qdyn` which contains the whole QDYN package. You can create a directory with a different name. The code contained by the `master` branch (default) is tested and stable, but other development branches may be available. Consult the GitHub repository for the availability of development code.
 
 
 ## Installing QDYN

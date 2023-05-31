@@ -28,10 +28,10 @@ QDYN implements adaptive time stepping, shared-memory parallelization, and can d
 - Heterogeneous frictional properties
 - Slow and fast, aseismic and seismic slip transients
 - Dynamic weakening (thermal pressurization)
-- Non-planar faults (currently limited to variable dip, rectangular elements)
+- Multiple and non-planar faults (rectangular elements)
 - 3D, 2D and 1D (spring-block)
 - Tectonic and transient loads
-- Normal stress coupling
+- Normal stress coupling (free surface effects and fault interactions)
 - Faults surrounded by damaged zones
 - Python wrapper and graphic output display utilities
 - Parallelized for shared memory systems (OpenMP)
@@ -51,7 +51,7 @@ Before submitting an issue please make sure that:
 
 When submitting a new issue, please include all information needed to reproduce your problem: input files, operating system, compiler, QDYN version (git hash).
 
-**Note** to MATLAB users: support for MATLAB was discontinued since version `2.4.0`. Prior versions that include (partial) MATLAB support can be accessed from the [release page](https://github.com/ydluo/qdyn/releases).
+**Note** to MATLAB users: support for MATLAB was discontinued since version `3.0.0`. Prior versions that include (partial) MATLAB support can be accessed from the [release page](https://github.com/ydluo/qdyn/releases).
 
 ## Acknowledgements
 

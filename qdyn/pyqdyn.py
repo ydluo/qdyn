@@ -103,7 +103,6 @@ class qdyn:
             "MU_SS": 0.6,						# Reference steady-state friction
             "V_SS": 1e-6,						# Reference steady-state slip velocity [m/s]
             "CO": 0,							# Cohesion [Pa]
-            "V_0": 1.01e-5,						# Initial slip velocity [m/s]
             "TH_0": 1.0,						# Initial state [s]
             "TAU": -1.0,                        # Initial stress [Pa] (default -1 indicating it will be computed later)
             "INV_VISC": 0.0,                    # Inverse viscosity [m/Pa.s]
@@ -171,7 +170,7 @@ class qdyn:
 
         # Output control parameters
         set_dict["V_TH"] = 1e-2				# Threshold velocity for seismic event
-        set_dict["NTOUT_LOG"] = 100 		# Temporal interval (number of time steps) for time series output
+        set_dict["NTOUT_LOG"] = 10          # Temporal interval (number of time steps) for time series output
         set_dict["NTOUT_OT"] = 10			# Temporal interval (number of time steps) for time series output
         set_dict["NTOUT_OX"] = 1000			# Temporal interval (number of time steps) for snapshot output
         set_dict["NXOUT_OX"] = 1			# Spatial interval (number of elements in x-direction) for snapshot output
@@ -224,31 +223,58 @@ class qdyn:
         # Determine number of creep mechanisms
         A = np.array(settings["SET_DICT_CNS"]["A"])
         N_creep = len(A)
-        self.set_dict["SET_DICT_CNS"]["N_CREEP"] = N_creep
+        settings["SET_DICT_CNS"]["N_CREEP"] = N_creep
 
         if dim == 0:
             N = 1
-            self.set_dict["N"] = N
-            self.set_dict["NW"] = N
+            settings["N"] = N
+            settings["NW"] = N
 
         if dim == 1:
-            N = self.set_dict["N"]
-            self.set_dict["NW"] = N
+            N = settings["N"]
+            settings["NW"] = N
 
         if dim == 2:
-            N = self.set_dict["NX"] * self.set_dict["NW"]
-            self.set_dict["N"] = N
+            N = settings["NX"] * settings["NW"]
+            settings["N"] = N
 
         assert N >= 1, "Number of mesh elements needs to be set before rendering mesh, unless MESHDIM = 0 (spring-block)"
 
-        mesh_params_general = ("IOT", "IASP", "V_PL", "SIGMA")
-        mesh_params_RSF = ("TAU", "V_0", "TH_0", "A", "B", "DC", "V1", "V2", "MU_SS", "V_SS", "CO", "INV_VISC")
-        mesh_params_CNS = ("TAU", "PHI_INI", "A_TILDE", "MU_TILDE_STAR", "Y_GR_STAR", "H", "PHI_C", "PHI0", "THICKNESS")
+        # NOTE: even though TAU is a common parameter independent 
+        # of the friction law, it is included in the friction-law 
+        # specific dictionaries for compatibility reasons
+        mesh_params_general = ("IOT", "IASP", "V_PL", "SIGMA", "TAU")
+        mesh_params_RSF = ("TH_0", "A", "B", "DC", "V1", "V2", "MU_SS", "V_SS", "CO", "INV_VISC")
+        mesh_params_CNS = ("PHI_INI", "A_TILDE", "MU_TILDE_STAR", "Y_GR_STAR", "H", "PHI_C", "PHI0", "THICKNESS")
         mesh_params_creep = ("A", "N", "M")
         mesh_params_localisation = ("LOCALISATION", "PHI_INI_BULK")
         mesh_params_TP = ("RHOC", "BETA", "ETA", "HALFW", "K_T", "K_P", "LAM", "P_A", "T_A", "DILAT_FACTOR")
 
         mesh_dict = {}
+
+        # Check if the shear stress was set directly to
+        # the main settings dictionary. If not: check
+        # the friction law dictionaries
+        if settings.get("TAU") is None:
+            # If RSF is used
+            if settings["FRICTION_MODEL"] == "RSF":
+                # Add initial velocity as a parameter
+                mesh_params_RSF += ("V_0",)
+                # Check if the RSF dictionary has TAU specified
+                if settings["SET_DICT_RSF"].get("TAU") is None:
+                    # If not, check if V_0 is specified (backward compatibility)
+                    assert settings["SET_DICT_RSF"].get("V_0") is not None, "Either V_0 or TAU needs to be specified"
+                    # Set TAU to -1 to indicate that it needs to be computed later
+                    settings["TAU"] = -1
+                else:
+                    settings["TAU"] = settings["SET_DICT_RSF"]["TAU"]
+            
+            # If CNS is used
+            if settings["FRICTION_MODEL"] == "CNS":
+                assert settings["SET_DICT_CNS"].get("TAU"), "TAU has not been specified"
+                # Copy TAU from the CNS dictionary
+                settings["TAU"] = settings["SET_DICT_CNS"]["TAU"]
+            
 
         # Populate mesh with general settings
         for param in mesh_params_general:
@@ -608,7 +634,7 @@ class qdyn:
         return True
 
     # Run QDYN
-    def run(self, test=False, unit=False, restart=False):
+    def run(self, run=True, test=False, unit=False, restart=False):
 
         assert self.qdyn_input_written or unit, "Input file has not yet been written. First call write_input() to render QDyn input file"
 
@@ -689,6 +715,12 @@ class qdyn:
         if len(flags) > 0:
             cmd += flags
 
+        
+        # Sometimes it is convenient to launch run(restart=True) without calling
+        # the executable (for instance on a cluster)
+        if not run:
+            return None
+        
         # Run QDYN
         result = subprocess.run(cmd)
         if unit: return result.returncode

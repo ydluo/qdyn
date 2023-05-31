@@ -14,13 +14,13 @@ The core of QDYN is a Fortran code. While the format of its input and output fil
 
 ### Note to MATLAB users
 
-Support for MATLAB was discontinued since version `2.4.0`. Prior versions that include (partial) MATLAB support can be accessed from the [release page](https://github.com/ydluo/qdyn/releases).
+Support for MATLAB was discontinued since version `3.0.0`. Prior versions that include (partial) MATLAB support can be accessed from the [release page](https://github.com/ydluo/qdyn/releases).
 
 ### Python wrapper
 
 Users can chose to generate their input files through a Python wrapper, called `pyqdyn.py`. The Python wrapper relies heavily on dictionary objects for both the simulation parameters and the generated mesh. A basic operation workflow looks as follows:
 
-1. After importing the `pyqdyn.py` module, instantiate QDYN as: `p = qdyn()`
+1. After importing the `pyqdyn.py` module (`from qdyn import qdyn`), instantiate QDYN as: `p = qdyn()`
 
 2. Create a dictionary with simulation parameters to override the default values, for example:
 
@@ -107,7 +107,6 @@ Users can chose to generate their input files through a Python wrapper, called `
 |      `W`      | Out-of-plane seismogenic width of the fault (m), only if `MESHDIM=1` and `FINITE=0`, following the "2.5D" approximation introduced in appendix A.2 of [Luo and Ampuero (2017)](http://dx.doi.org/10.1016/j.tecto.2017.11.006). **Note** that the approximation assumes that the grid size is `> W`. |      `50e3`      |
 |    `DIP_W`    | Fault dip angle (degree). This parameter is only used when `MESHDIM=2`. If depth-dependent, values must be given from deeper to shallower depth. |      `90`      |
 |  `Z_CORNER`   | Fault bottom depth (m; negative down)                        |      `0`      |
-| `SIGMA_CPL` | Turn on or off normal stress coupling:<br />`0` = disabled<br />`1` = enabled<br />This parameter is **deprecated** for the Python wrapper, use `FEAT_STRESS_COUPL` instead (see below). |      `0`      |
 |    `APER`     | Amplitude of additional time-dependent oscillatory shear stress loading (Pa) |      `0`      |
 |    `TPER`     | Period of oscillatory loading (s)                            |      `0`      |
 
@@ -139,6 +138,7 @@ QDYN offers various optional simulation features. Set the following parameters t
 |    `V1`     | Cut-off velocity of direct effect ($V_1$; m/s)               |    `0.01`     |
 |    `V2`     | Cut-off velocity of evolution effect ($V_2$; m/s) which controls the transition from velocity-weakening to -strengthening when `A < B`. `V2` should be `<= V1`. |    `1e-7`     |
 | `THETA_LAW` | Type of evolution law for the state variable:<br />`0` = ageing law under the "no-healing" approximation<br />`1` = ageing law<br />`2` = slip law |      `1`      |
+| `INV_VISC`  | Inverse of viscosity, multiplied by the viscous layer thickness [m/(Pa.s)]. Set to `0` to turn off viscosity |   `0`    |
 
 ***Chen-Niemeijer-Spiers* (CNS) model parameters (only available via the Python wrapper):**
 
@@ -180,10 +180,9 @@ QDYN offers various optional simulation features. Set the following parameters t
 
 | Parameter | Description                                                  |
 | :-------: | ------------------------------------------------------------ |
+|   `TAU`   | Initial shear stress (Pa)                    |
 |  `SIGMA`  | Initial effective normal stress (Pa). Remains constant unless `FEAT_STRESS_CPL = 1` or `FEAT_TP = 1` |
-|   `V_0`   | RSF only: initial slip velocity (m/s)                        |
 |  `TH_0`   | RSF only: initial state (s)                                  |
-|   `TAU`   | CNS model only: initial shear stress (Pa)                    |
 | `PHI_INI` | CNS model only: initial gouge porosity (-)                   |
 
 **Discretization and accuracy parameters:**
@@ -196,7 +195,7 @@ QDYN offers various optional simulation features. Set the following parameters t
 |   `NX`    | Number of fault elements along strike if `MESHDIM=2`. It must be a power of 2 if FFT is used along strike (`FFT_TYPE=1` in `constants.f90`) |      `1`      |
 |   `NW`    | Number of fault elements along dip if `MESHDIM=2`. It must be a power of 2 if FFT is used along dip (`FFT_TYPE=2` in `constants.f90`) |     `-1`      |
 | `NPROC`  | Number of processors if running in parallel and with MPI (only implemented for `MESHDIM=2` and `FFT_TYPE=1`) |      `1`      |
-| `MPI_PATH`  | Full path to the MPI binary (`which mpirun`). For WSL, this path is likely `/usr/bin/mpirun` |      `/usr/local/bin/mpirun`      |
+| `MPI_PATH`  | Full path to the MPI binary (`which mpiexec`). For WSL, this path is likely `/usr/bin/mpirun` |      `mpiexec`      |
 |   `DW`    | Along-dip length (m) of each element, from deep to shallow   |      `1`      |
 |  `TMAX`   | Threshold for stopping criterion:<br />Final simulation time (s) when `NSTOP=0`<br />Slip velocity threshold (m/s) when `NSTOP=3` |               |
 |  `NSTOP`  | Stopping criterion:<br />`0` = Stop at `t = TMAX`<br />`1` = Stop at end of slip localization phase (**deprecated**)<br />`2` = Stop soon after first slip rate peak<br />`3` = Stop when slip velocity exceeds `TMAX` (m/s) |      `0`      |
@@ -209,10 +208,11 @@ QDYN offers various optional simulation features. Set the following parameters t
 |  Parameter   | Description                                                  | Default value |
 | :----------: | ------------------------------------------------------------ | :-----------: |
 |   `OX_SEQ`   | Type of snapshot outputs:<br />`0` = All snapshots in a single output file (`output_ox`)<br />`1`  = One output file per snapshot (`output_ox_1`, `output_ox_2`, ...) |      `0`      |
-|   `NWOUT`    | Spatial interval for snapshot output (in number of elements along-dip) |      `1`      |
-|   `NXOUT`    | Spatial interval for snapshot output (in number of elements along-strike) |      `1`      |
-|   `NTOUT`    | Temporal interval (in number of time steps) for snapshot output |      `1`      |
-|  `NTOUT_OT`  | Temporal interval (in number of time steps) for time series output |      `1`      |
+|   `NWOUT_OX`    | Spatial interval for snapshot output (in number of elements along-dip) |      `1`      |
+|   `NXOUT_OX`    | Spatial interval for snapshot output (in number of elements along-strike) |      `1`      |
+|   `NTOUT_OX`    | Temporal interval (in number of time steps) for snapshot output |      `1000`      |
+|  `NTOUT_OT`  | Temporal interval (in number of time steps) for time series output |      `10`      |
+|  `NTOUT_LOG`  | Temporal interval (in number of time steps) for log output |      `10`      |
 |   `OX_DYN`   | Output specific snapshots of dynamic events defined by thresholds on peak slip velocity `DYN_TH_ON` and `DYN_TH_OFF` (see below):<br />`0` = Disable<br />`1` = Enable outputs for event `i`: event start = `fort.19998+3i`; event end = `fort.19999+3i`; rupture time = `fort.20000+3i` |      `0`      |
 | `NWOUT_DYN`  | Spatial interval (in number of elements along-dip) for dynamic snapshot output |      `1`      |
 | `NXOUT_DYN`  | Spatial interval (in number of elements along-strike) for dynamic snapshot output |      `1`      |
@@ -222,6 +222,8 @@ QDYN offers various optional simulation features. Set the following parameters t
 |    `IOT`     | Indices of elements for additional time series output. This is a vector of length $N$ (with $N$ being the number of fault elements) with default values set to zero. To enable time series output for element `i`, set `set_dict["IOT"][i] = 1` (Python). Each element has a separate output file named `output_ot_xxxx`, where `xxxx` is the index that corresponds with `i` (starting at 0). For instance, if `IOT = [0, 0, 1, 1]`, the output of elements `i = 2` and `i = 3` are in files `output_ot_2` and `output_ot_3`, respectively. |      `0`      |
 |    `V_TH`    | Velocity threshold (m/s) to output peak slip velocities. |      `0.01`      |
 |    `IASP`    | Vector (of length = number of elements) indicating on which elements to output peak slip velocities. If `IASP(i)=1`, the following information about all velocity maxima at element `i` that exceed the threshold `V_TH` are output in file `output_iasp`: location (index), time, peak slip velocity. If `IASP(i)=0`, element `i` is ignored in the `output_iasp` output file. |      `0`      |
+|    `VERBOSE`    | Whether or not printing messages to screen (`= 1`) |      `0`      |
+|    `DEBUG`    | Enable extensive logging for debugging (`= 1`) |      `0`      |
 
 **Parameters for integration with dynamic code:**
 
@@ -242,6 +244,7 @@ QDYN offers various optional simulation features. Set the following parameters t
 
 |     Key      | Description                                                  |
 | :----------: | ------------------------------------------------------------ |
+|   `step`     | Simulation step                                              |
 |     `t`      | Simulation time (s)                                          |
 |   `potcy`    | Seismic potency (m$^3$)                                      |
 |  `pot_rate`  | Seismic potency rate (m$^3$/s)                               |
@@ -253,12 +256,14 @@ QDYN offers various optional simulation features. Set the following parameters t
 |   `sigma`    | Effective normal stress (Pa). If `FEAT_TP = 1`, it is total normal stress |
 |     `P`      | Fluid pressure (Pa; only for `FEAT_TP = 1`)                  |
 |     `T`      | Temperature (K; only for `FEAT_TP = 1`)                      |
+|     `fault_label`      | Fault label (in case of multiple faults)                      |
 
 
 **Time-series output at `Vmax`** (`output_vmax`)
 
 |     Key      | Description                                                  |
 | :----------: | ------------------------------------------------------------ |
+|   `step`     | Simulation step                                              |
 |     `t`      | Simulation time (s)                                          |
 |   `ivmax`    | Location index of maximum slip rate                          |
 |     `v`      | Slip rate (m/s)                                              |
@@ -269,11 +274,13 @@ QDYN offers various optional simulation features. Set the following parameters t
 |   `sigma`    | Effective normal stress (Pa). If `FEAT_TP = 1`, it is total normal stress |
 |     `P`      | Fluid pressure (Pa; only for `FEAT_TP = 1`)                  |
 |     `T`      | Temperature (K; only for `FEAT_TP = 1`)                      |
+|     `fault_label`      | Fault label (in case of multiple faults)                      |
 
 **Snapshot output** (`output_ox`, `output_ox_dyn`)
 
 |   Key     | Description                                                  |
 | :-------: | ------------------------------------------------------------ |
+|  `step`   | Simulation step                                              |
 |    `t`    | Simulation time (t)                                          |
 |    `x`    | Fault x-coordinates (m)                                      |
 |    `y`    | Fault y-coordinates (m)                                      |
@@ -286,11 +293,18 @@ QDYN offers various optional simulation features. Set the following parameters t
 |  `sigma`  | Effective normal stress (Pa). If `FEAT_TP = 1`, it is total normal stress |
 |    `P`    | Fluid pressure (Pa; only for `FEAT_TP = 1`)                  |
 |    `T`    | Temperature (K; only for `FEAT_TP = 1`)                      |
+|     `fault_label`      | Fault label (in case of multiple faults)                      |
 
+**Fault-specific output** (`output_fault`)
 
-## Building custom meshes
+In the case multiple faults are simulated (identified by `fault_label`), the seismic potency (and rate) specific to each fault are written to `output_fault`.
 
-For 2D faults embedded in 3D media, it is possible to construct non-planar and discontinuous fault meshes. As currently implemented in the QDYN code, a Fourier Transformation is applied in the along-strike direction of the mesh. This requires that the mesh be continuous, evenly spaced, and co-linear along this dimension, and that the number of mesh elements be an integer power of 2. These restrictions do not apply in the along-dip direction, allowing the user some freedom in creating non-planar mesh geometries. For instance, one could create a curved fault to simulate a subduction thrust geometry, or create multiple disjoint fault segments. Refer to the `examples/notebooks/3D_mesh_builder.ipynb` notebook to see an advanced example of how to manipulate the mesh in a consistent manner.
+|   Key     | Description                                                  |
+| :-------: | ------------------------------------------------------------ |
+|  `step`   | Simulation step                                              |
+|    `t`    | Simulation time (t)                                          |
+|    `potcy_fault_i`    | Seismic potency for fault `i` (m$^3$)                             |
+|    `pot_rate_fault_i`    | Seismic potency rate for fault `i` (m$^3$/s)                             |
 
 
 ## Examples

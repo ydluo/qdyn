@@ -27,7 +27,7 @@ The following items are under active development and will be included in the sta
 - Surface deformation to compare with GPS data
 - Slip-dependent friction law
 - 3D kernel for faults in infinite media
-- Variable strike
+- Variable strike (including free surface)
 - Layered media: EDKS (Luis Rivera), Relax (Sylvain Barbot)
 - Heterogeneous media: import kernel from Relax, Pylith, or SPECFEM3D?
 - Triangular mesh elements: e.g. Meade ([2007](https://doi.org/10.1016/j.cageo.2006.12.003)), Gimbutas et al. ([2012](https://doi.org/10.1785/0120120127)), Pan et al. ([2014](https://doi.org/10.1785/0120140161)), Nikkhoo & Walter ([2015](https://doi.org/10.1093/gji/ggv035))
