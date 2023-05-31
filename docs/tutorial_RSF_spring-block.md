@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Import QDYN wrapper
-from qdyn.pyqdyn import qdyn
+from qdyn import qdyn
 ```
 
 The simulation parameters are accessible after instantiation of the QDYN class as a Python dictionary object. We first define a number of global simulation parameters:
@@ -31,7 +31,7 @@ set_dict = p.set_dict
 # Global simulation parameters
 set_dict["MESHDIM"] = 0        # Simulation dimensionality (spring-block)
 set_dict["TMAX"] = 300         # Maximum simulation time [s]
-set_dict["NTOUT"] = 100        # Save output every N steps
+set_dict["NTOUT_OT"] = 1       # Save output every N steps
 set_dict["V_PL"] = 1e-5        # Load-point velocity [m/s]
 set_dict["MU"] = 2e9           # Shear modulus [Pa]
 set_dict["SIGMA"] = 5e6        # Effective normal stress [Pa]
