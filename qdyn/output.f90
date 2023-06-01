@@ -1171,9 +1171,19 @@ subroutine init_pb_global(pb)
     ! Base quantities
     allocate( pb%v_glob(n), pb%theta_glob(n), pb%tau_glob(n), &
               pb%dtau_dt_glob(n), pb%slip_glob(n), pb%sigma_glob(n))
+
+    pb%v_glob = 0d0
+    pb%theta_glob = 0d0
+    pb%tau_glob = 0d0
+    pb%dtau_dt_glob = 0d0
+    pb%slip_glob = 0d0
+    pb%sigma_glob = 0d0
+
     ! If thermal pressurisation is requested, allocate P and T
     if (pb%features%tp == 1) then
       allocate(pb%P_glob(n), pb%T_glob(n))
+      pb%P_glob = 0d0
+      pb%T_glob = 0d0
     endif
 
     ! Allocate rupture max stats
