@@ -69,6 +69,7 @@ class TestTseRice(AuxiliaryFunctions):
         set_dict["V_TH"] = 1e-2
         set_dict["SOLVER"] = 2
         set_dict["FRICTION_MODEL"] = "RSF"
+        set_dict["TAU"] = None
 
         # Setting some RSF parameters
         set_dict["SET_DICT_RSF"]["RNS_LAW"] = 0

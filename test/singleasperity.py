@@ -80,6 +80,7 @@ class TestSingleAsperity(AuxiliaryFunctions):
         set_dict["DTTRY"] = 100
         set_dict["V_TH"] = 1e-2
         set_dict["SOLVER"] = 1
+        set_dict["TAU"] = None
 
         # Setting some RSF parameters
         set_dict["SET_DICT_RSF"]["A"] = 0.9e-2
