@@ -178,6 +178,11 @@ subroutine write_output(pb)
   ! ox_write has its own internal checks for which output to write
   call ox_write(pb)
 
+  if (DEBUG) then
+    write(msg, *) "end write_output"
+    call log_debug(msg, pb%it)
+  endif
+
 end subroutine write_output
 
 !=====================================================================
@@ -768,12 +773,22 @@ subroutine ox_write(pb)
   ! Does the output unit need to be closed?
   close_unit = last_call
 
+  if (DEBUG) then
+    write(msg, *) "pb_global"
+    call log_debug(msg, pb%it)
+  endif
+
   ! End checks
   !---------------------------------------------------------------------------
   ! Perform an MPI global gather
 
   if (call_gather) then
     call pb_global(pb)
+  endif
+
+  if (DEBUG) then
+    write(msg, *) "get_ivmax"
+    call log_debug(msg, pb%it)
   endif
 
   ! Get the maximum slip rate
@@ -796,6 +811,11 @@ subroutine ox_write(pb)
       open(FID_OX, file=FILE_OX, status="old", position="append")
     endif
 
+    if (DEBUG) then
+      write(msg, *) "write_ox_lines (ox)"
+      call log_debug(msg, pb%it)
+    endif
+
     ! Write ox data
     call write_ox_lines(FID_OX, pb%ox%fmt, pb%objects_glob, &
                         pb%ox%nxout, pb%ox%nwout, pb)
@@ -814,6 +834,11 @@ subroutine ox_write(pb)
   
   if (write_ox_last) then
     open(FID_OX_LAST, file=FILE_OX_LAST, status="replace")
+
+    if (DEBUG) then
+      write(msg, *) "write_ox_lines (last)"
+      call log_debug(msg, pb%it)
+    endif
     
     ! Write ox data (in full resolution)
     call write_ox_lines(FID_OX_LAST, pb%ox%fmt, pb%objects_glob, 1, 1, pb)
@@ -846,6 +871,12 @@ subroutine ox_write(pb)
       write(tmp, "(a, i0)") FILE_OX_DYN_PRE, pb%ox%dyn_count
       file_name = trim(tmp)
       open(unit, file=file_name, status="replace")
+
+      if (DEBUG) then
+        write(msg, *) "write_ox_lines (dyn; rising)"
+        call log_debug(msg, pb%it)
+      endif
+
       call write_ox_lines(unit, pb%ox%fmt, pb%objects_glob, &
                           pb%ox%nxout_dyn, pb%ox%nwout_dyn, pb)
       ! Close output unit
@@ -863,6 +894,12 @@ subroutine ox_write(pb)
         file_name = trim(tmp)
         ! Write ox data
         open(unit, file=file_name, status="replace")
+
+        if (DEBUG) then
+          write(msg, *) "write_ox_lines (dyn; falling)"
+          call log_debug(msg, pb%it)
+        endif
+
         call write_ox_lines(unit, pb%ox%fmt, pb%objects_glob, &
                             pb%ox%nxout_dyn, pb%ox%nwout_dyn, pb)
         ! Close output unit
@@ -970,6 +1007,11 @@ subroutine ox_write(pb)
   !---------------------------------------------------------------------------
 
   ! All done
+
+  if (DEBUG) then
+    write(msg, *) "end write_ox"
+    call log_debug(msg, pb%it)
+  endif
 
 end subroutine ox_write
 
@@ -1122,7 +1164,7 @@ subroutine calc_potency(pb)
     if (is_MPI_parallel()) then
       buf(1) = pot(lbl)
       call sum_allreduce(buf(1), 1)
-      pot(n) = buf(1)
+      pot(lbl) = buf(1)
 
       buf(1) = pot_rate(lbl)
       call sum_allreduce(buf(1), 1)

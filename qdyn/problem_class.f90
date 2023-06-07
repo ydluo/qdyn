@@ -144,7 +144,7 @@ module problem_class
     integer, pointer :: it => null(), ivmax => null()
     integer :: ntout_log = 0
     integer :: NSTOP, itstop=-1
-    double precision :: vmaxglob
+    double precision :: vmaxglob=0d0
    ! For outputs
     type (ot_type) :: ot
     type (ox_type) :: ox

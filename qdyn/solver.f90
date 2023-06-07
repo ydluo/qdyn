@@ -86,7 +86,13 @@ subroutine solve(pb)
   enddo
 
   ! Finalise MPI
-  if (is_MPI_parallel()) call finalize_mpi()
+  if (is_MPI_parallel()) then
+    if (DEBUG) then
+      write(msg, *) "finalize_mpi"
+      call log_debug(msg, pb%it)
+    endif
+    call finalize_mpi()
+  endif
 
 end subroutine solve
 
