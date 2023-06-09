@@ -95,7 +95,7 @@ end subroutine log_msg
 ! Add a log entry
 subroutine log_debug(msg, step)
 
-  use constants, only : FID_LOG, FILE_LOG, VERBOSE, DEBUG
+  use constants, only : FID_LOG, FILE_LOG
   use my_mpi, only : is_mpi_master
 
   character(255) :: msg
