@@ -175,6 +175,12 @@ subroutine write_output(pb)
     call log_debug(msg, pb%it)
   endif
 
+  ! CRP: debugging
+  if (DEBUG) then
+    write(msg, *) "last_call", last_call
+    call log_debug(msg, pb%it)
+  endif
+
   ! ox_write has its own internal checks for which output to write
   call ox_write(pb)
 
@@ -752,7 +758,9 @@ subroutine ox_write(pb)
 
   ! Should this proc write ox, ox_dyn, or QSB output?
   write_ox = (mod(pb%it, pb%ox%ntout) == 0 .or. last_call)
-  write_ox_last = last_call
+  !write_ox_last = last_call
+  ! CRP: trying to debug empty write_ox_last
+  write_ox_last = (mod(pb%it, pb%ox%ntout) == 0 .or. last_call)
   write_ox_dyn =  ((pb%ox%i_ox_dyn == 1) .and. dynamic) .and. .not. skip
   write_ox_seq = write_ox .and. (pb%ox%i_ox_seq == 1)
   write_QSB = ((pb%DYN_FLAG == 1) .and. dynamic) .and. .not. skip
