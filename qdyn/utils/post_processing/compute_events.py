@@ -4,7 +4,7 @@ import os
 import sys
 import pickle
 
-def compute_events(set_dict, mesh_dict, ot, ot_fault, ot_vmax, vmax=0.01,tmin=1,tmax=None, save_output=True):
+def compute_events(set_dict, mesh_dict, ot, ot_fault, ot_vmax, vmax=0.01,tmin=0,tmax=None, save_output=True):
 
     """
     Script to compute seismic events
@@ -25,9 +25,12 @@ def compute_events(set_dict, mesh_dict, ot, ot_fault, ot_vmax, vmax=0.01,tmin=1,
     save_output = boolean to save output dictionary as a binary "events.pkl" that can be open with python (default=True)
 
     Preparation:
-    The following variables should be created prior to calling the function (see example Notebook on how to create them)
-    - "p.mesh_dict" and "p.set_dict"
-    - outputs: "p.fault", "p.ot" and "p.ot_vmax"
+    - The following variables should be created prior to calling the function (see example Notebook on how to create them)
+        - set dict and mesh_dict: "p.set_dict" and "p.mesh_dict"
+        - outputs ot, ot_fault, ot_vmax: "p.fault", "p.ot" and "p.ot_vmax"
+    - vmax: velocity threshold to define seismic events
+    - t_min and t_max: min and max time of simulation to consider seismic events
+    - save_output: save the output dictionary as a pkl binary file
 
     Returns:
     - Dictionary "model_dict" storing the following DataFrames:
