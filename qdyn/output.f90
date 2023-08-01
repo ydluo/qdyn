@@ -503,8 +503,13 @@ subroutine ox_init(pb)
   pb%ox%fmt(1) = "(i15)"
   ! Time needs higher precision
   pb%ox%fmt(2) = "(e24.14)"
+  ! Theta may require even higher precision
+  pb%ox%fmt(7) = "(e26.16)"
+  ! tau and sigma
+  pb%ox%fmt(8) = "(e20.12)"
+  pb%ox%fmt(11) = "(e20.12)"
   ! Fault label is an integer
-  pb%ox%fmt(pb%ox%nox) = "(i15)"
+  pb%ox%fmt(pb%ox%nox)= "(i15)" 
 
   ! Case 1: serial execution. All quantities are local
   if (.not. is_MPI_parallel()) then
