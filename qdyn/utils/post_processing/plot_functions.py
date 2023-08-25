@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import animation, rc
 from IPython.display import HTML
+import matplotlib.cm as cm
 
 
 t_day = 3600 * 24.0
@@ -280,3 +281,93 @@ def animation_slip(ox, warm_up=0, orientation="horizontal"):
     rc("animation", html="html5")
     plt.close()
     return anim
+
+def plot_snapshot_3d(ox, set_dict, t_snapshot=0, prop="v", fault_labels = [1], scaling="Normalize"):
+    
+    """
+    Plot a 3D snapshot.
+
+    Parameters:
+        ox (DataFrame): p.ox containing the snapshots.
+        set_dict (dict): p.set_dict containing settings and properties.
+        t_snapshot (float): The time value (s) for the desired snapshot (default is 0s).
+        prop (str): The property to visualize (default is "v").
+        fault_labels (list): A list of fault labels to filter the data (default is [1]).
+        scaling (str): The scaling method for the colormap (default is "Normalize").
+
+    Raises:
+        ValueError: If an invalid list of fault labels or scaling option is provided.
+
+    Returns:
+        None: This function displays the 3D plot using Matplotlib.
+        
+    Note:
+        It is possible to plot dsigma (sigma_0 - sigma) even if it's not originally included
+        in the ox DataFrame, since the calculation is internally handled by this function.
+
+    Example:
+        To plot a 3D snapshot of fault label 2 with property "dsigma" using a normalized colormap:
+        >>> plot_snapshot_3d(p.ox, p.set_dict, t_snapshot=1.0, fault_labels=[2], prop="dsigma", scaling="Normalize")
+    """
+    
+    # Handle errors
+    unique_labels = np.unique(ox["fault_label"])
+    if not all(label in unique_labels for label in fault_labels):
+        raise ValueError("Invalid list of fault labels")
+                              
+    # Index of elements of snapshot
+    inds = (ox["t"] == t_snapshot) & (ox["fault_label"].isin(fault_labels))
+
+    # filter snapshot
+    mesh_snapshot = ox[inds]
+
+    # Draw canvas
+    plt.close("all")
+    fig, ax = plt.subplots(figsize=(7, 6), constrained_layout=True, subplot_kw={"projection": "3d"})
+
+    cmap = cm.magma
+
+    # Decorate axes
+    ax.set_xlabel("x [km]")
+    ax.set_ylabel("y [km]")
+    ax.set_zlabel("depth [km]")
+    ax.set_title("t =" + str(t_snapshot/t_year) + " yr\n" + "fault " + str(fault_labels), pad = 20)
+
+    # Set initial viewing angle
+    ax.set_aspect("equal")
+    ax.view_init(elev=51, azim=-60)
+
+    # Select quantities to plot
+    x = mesh_snapshot["x"]
+    y = mesh_snapshot["y"]
+    z = mesh_snapshot["z"]
+    if prop == "dsigma":
+        sigma_0 = set_dict["SIGMA"]
+        col = sigma_0 - mesh_snapshot["sigma"]
+    elif prop == "v":
+        col = np.log10(mesh_snapshot[prop])
+    else:
+        col = mesh_snapshot[prop]
+
+        
+    # Colour scale normalisation
+    if prop == "dsigma":
+        cmap = cm.bwr
+    else:
+        cmap = cm.magma
+    
+    if scaling == "Normalize":
+        norm = cm.colors.Normalize(col.min(), col.max())
+    else: 
+        raise ValueError("Invalid colormap scaling option. Choose from: Normalized")
+
+    # Plot snapshot
+    sc = ax.scatter(x, y, z,
+                    c=col, norm=norm, cmap=cmap, s=10)
+    # colorbar
+    cbar = fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, shrink=0.5)
+    cbar.set_label(str(prop), rotation=90, labelpad=20)
+    if prop == "v":
+        cbar.set_label("logv", rotation=90, labelpad=20)
+    
+    return fig
