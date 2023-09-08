@@ -308,7 +308,7 @@ def timestep_profile(ox, dip, warm_up=0, orientation="horizontal", figsize=figsi
     return fig
 
 # CRP: Experimental!
-def timestep_profile_all(ox, dip, val, sigma_0=None, warm_up=0, orientation="horizontal", figsize=figsize)
+def timestep_profile_all(ox, dip, val, sigma_0=None, warm_up=0, orientation="horizontal", figsize=figsize):
     
     """
     Plot timestep profile along the fault trace with a value from a col of ox as contouring.
@@ -480,7 +480,7 @@ def timestep_profile_all(ox, dip, val, sigma_0=None, warm_up=0, orientation="hor
             CB = plt.colorbar(plt.cm.ScalarMappable(cmap=vcmap, norm=vnorm), orientation="horizontal", extend='both', ticks=ticks, pad=0.2)
             CB.ax.set_title("log v [m/s]")
         elif val=="dsigma":
-            CS = ax.contourf(timestep, x, dsigma/1e6, levels=200, cmap=vcmap, norm=vnorm)
+            CS = plt.contourf(timestep, x, dsigma/1e6, levels=200, cmap=vcmap, norm=vnorm)
             CB = plt.colorbar(CS, orientation="horizontal", pad=0.2)
             CB.ax.set_title("dsigma [MPa]")
         elif val=="sigma":
