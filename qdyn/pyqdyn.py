@@ -768,7 +768,9 @@ class qdyn:
         
         # Fault time-series
         nheaders_fault = 2
-        quants_fault = ("step", "t", "potcy_fault", "pot_rate_fault")
+        # quants_fault = ("step", "t", "potcy_fault", "pot_rate_fault")
+        # CRP: include vmax_fault and i_vmaxfault
+        quants_fault = ("step", "t", "potcy_fault", "pot_rate_fault", "vmax_fault", "ivmax_fault")
 
         # If time series data is requested
         if read_ot:
@@ -943,7 +945,9 @@ class qdyn:
                 filename_fault = path_output + filename_fault 
 
             # Number of columns with fault output (excluding step/time)
-            stride = 2
+            # stride = 2
+            # CRP: include vmax_fault and i_vmaxfault
+            stride = 4
             N_cols = stride * N_faults
 
             # Counter of fault number for loop
@@ -951,7 +955,7 @@ class qdyn:
             
             # Read the output file in groups of columns corresponding to each fault
             for i in range(2, N_cols + 2, stride):
-                # Column list for one fault (time, potency, potency rate and delta slip)
+                # Column list for one fault (time, potency, potency rate, vmax_fault and ivmax_fault)
                 col_list = [0, 1] + list(range(i, i + stride))
 
                 # Read output file

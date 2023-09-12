@@ -109,7 +109,10 @@ module problem_class
     ! Containers for local and global quantities
     type(optr), dimension(:), allocatable :: objects_glob, objects_loc
     ! Number of objects in the containers
-    integer :: nobj=11
+    ! integer :: nobj=11
+    ! CRP: considering also vmax_fault 
+    ! (nobj should be max number of objects to use in containers of output.f90)
+    integer :: nobj=12
 
     ! Basic variables
     ! NOTE: if theta2 needs to be in output sequence, add here
@@ -117,6 +120,10 @@ module problem_class
                                   sigma(:) => null(), slip(:) => null(), &
                                   v(:) => null(), theta(:) => null(), &
                                   P(:) => null(), T(:) => null()
+    ! CRP: quantities related to vmax_fault
+    integer, pointer :: ivmax_fault(:) => null()
+    double precision, pointer ::  vmax_fault(:) => null()
+
     double precision, dimension(:), allocatable :: dtheta_dt, dtheta2_dt
     double precision, dimension(:), allocatable :: theta2, alpha
     double precision, pointer ::  tau_max(:) => null(), t_rup(:) => null(), &
@@ -155,6 +162,10 @@ module problem_class
                                   P_glob(:) => null(), T_glob(:) => null()
     double precision, pointer ::  tau_max_glob(:) => null(), t_rup_glob(:) => null(), &
                                   v_max_glob(:) => null(), t_vmax_glob(:) => null()
+    ! CRP: quantities related to vmax_fault
+    ! integer, pointer :: ivmax_fault_glob(:) => null()
+    ! double precision, pointer ::  vmax_fault_glob(:) => null()
+
     logical :: allocated_glob = .false.
    ! QSB
     double precision :: DYN_M,DYN_th_on,DYN_th_off

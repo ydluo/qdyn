@@ -48,6 +48,11 @@ subroutine read_main(pb)
   pb%pot_fault = 0d0
   pb%pot_rate_fault = 0d0
 
+  ! CRP: allocate ivmax_fault and vmax_fault
+  allocate(pb%ivmax_fault(pb%nfault), pb%vmax_fault(pb%nfault))
+  pb%ivmax_fault = 0
+  pb%vmax_fault = 0d0
+
   ! SEISMIC: various simulation features can be turned on (1) or off (0)
   if (pb%i_rns_law == 3) then
     read(FID_IN, *) pb%cns_params%N_creep

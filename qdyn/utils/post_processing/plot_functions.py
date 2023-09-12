@@ -748,3 +748,22 @@ def plot_snapshot_3d(ox, set_dict, t_snapshot=0, prop="v", fault_labels = [1], s
         cbar.set_label("logv", rotation=90, labelpad=20)
     
     return fig
+
+def plot_vmax_fault(fault):
+    """
+    Plot time series of vmax for each fault
+    """
+    
+    fig,ax= plt.subplots(ncols=1, nrows=2, figsize=figsize, squeeze=False)
+    
+    labels_fault = [str(i) for i in np.arange(1,len(fault)+1)]
+
+    for i in np.arange(0,len(p.fault)):
+        ax[i,0].plot(fault[i]["t"]/t_year, fault[i]["vmax_fault"])
+        ax[i,0].set_xlabel("time (yr)")
+        ax[i,0].set_ylabel("v (m/s)")
+        ax[i,0].set_title("Fault "+labels_fault[i])
+    
+    fig.tight_layout()
+
+    return fig
