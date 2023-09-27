@@ -609,8 +609,8 @@ subroutine ot_write(pb)
   character(len=100), allocatable :: iot_name
 
   ! CRP: to extract ivmax_fault and vmax_fault
-  integer, dimension(pb%nfault) :: ivmax_fault
-  double precision, dimension(pb%nfault) :: vmax_fault
+  ! integer, dimension(pb%nfault) :: ivmax_fault
+  ! double precision, dimension(pb%nfault) :: vmax_fault
 
   ! If parallel: do sync
   if (is_MPI_parallel()) then

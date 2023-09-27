@@ -2,20 +2,19 @@
 
 # 1. Modify the path to the executable file only if you really need to place it elsewhere.
 #    If you change it, when you call qdyn.m you must set the input EXEC_PATH as set here
-# EXEC_PATH = .
+EXEC_PATH = .
 #EXEC_PATH = $(HOME)/qdyn_svn/trunk/src/
 #EXEC_PATH = $(HOME)/bin/
-EXEC_PATH = /work/e820/e820/cpiceda/build_qdyn/qdyn_github_test/
+EXEC_PATH = /home/crodriguezpiceda/buildqdyn/qdyn_test/
 # 2. Comment/uncomment/add/modify the lines corresponding to your compiler:
 
 # GNU, serial
 #Only MPI no openMP
-# F90 = mpif90
-F90 = ftn
+F90 = mpif90
 #OPT = -O3 -Wall
 # For parallel runs with MPI+OpenMP:
 #F90 = mpif90
-OPT = -O3 -Wall -fopenmp -fallow-argument-mismatch -g -fcheck=all -fbounds-check
+OPT = -O3 -Wall -fopenmp
 #OPT = -O2 -w
 #-- Intel Fortran --
 # F90 = mpiifort
@@ -44,15 +43,15 @@ OPT = -O3 -Wall -fopenmp -fallow-argument-mismatch -g -fcheck=all -fbounds-check
 
 # 3. Set the compiler option that enables preprocessing in your compiler
 # ifort
-# PREPROC = -fpp
-# gfortran
 PREPROC = -cpp
+# gfortran
+# PREPROC = -cpp
 #PG, KAUST server
 # CFLAGS = -B/usr/lib/x86_64-linux-gnu
 #CFLAGS = '' 
 
-test: F90 = ftn
-	OPT = -O3 -Wall -fopenmp -fallow-argument-mismatch -g -fcheck=all -fbounds-check
+test: F90 = mpif90
+	OPT = -O3 -Wall -fopenmp
 	PREPROC = -cpp
 
 #== END USER SETTINGS =============================================

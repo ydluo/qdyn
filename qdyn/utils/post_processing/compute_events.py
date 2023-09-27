@@ -16,7 +16,7 @@ def compute_events(set_dict, mesh_dict, ot_fault, vmax=0.01,tmin=0,tmax=None, sa
 
     Example Usage
     -------------
-    from extract_events import compute_events
+    from compute_events import compute_events
     $ compute_events(p.set_dict, p.mesh_dict, p.fault, vmax=0.01,tmin=0,tmax=None, save_output=True)
 
 

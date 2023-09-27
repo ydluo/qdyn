@@ -106,6 +106,9 @@ def nucleation_point(mesh_dict, events_dict, save_output=True):
         ## assign Mw to DataFrame df_np_f
         df_np_f["Mw"] = model_dict["ev"][fault_label]["Mw"]
         
+        ## assign Mw to DataFrame df_np_f
+        df_np_f["fault_label"] = model_dict["ev"][fault_label]["fault_label"]
+
         # save nucleation points to dictionary
         model_dict["np"][fault_label] = df_np_f
         
@@ -152,7 +155,7 @@ def nucleation_point(mesh_dict, events_dict, save_output=True):
         df_count_np_f.index.name = "i_np"
         
         # create a column with count_np in the DataFrame with coordinates
-        print(df_count_np_f)
+        # print(df_count_np_f)
         coords["count_np"] = pd.Series(dtype=float)
         coords.loc[coords["fault_label"] == fault_label, "count_np"] = df_count_np_f["count_np"]
         
