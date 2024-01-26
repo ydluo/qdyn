@@ -23,15 +23,19 @@ def timeseries(ot, ot_vmax,tmin=None,tmax=None):
         tmax=ot['t'].max()
 
     # check if tmin and t max are bounded correctly
-    if tmin<ot['t'].min():
-       print('tmin is smaller than min t of simulation')
-       return()
-    elif tmax>ot['t'].max():
-        print('tmax is larger than max t of simulation')
-        return()
+    if (tmin!=None) & ((tmax!=None)):
+        if tmin<ot['t'].min():
+            print('tmin is smaller than min t of simulation')
+            return()
+        elif tmax>ot['t'].max():
+            print('tmax is larger than max t of simulation')
+            return()
     
-    ot_sample = ot[(ot['t']>=tmin) & (ot['t']<=tmax)]
-    ot_vmax_sample = ot_vmax[(ot_vmax['t']>=tmin) & (ot_vmax['t']<=tmax)]
+        ot_sample = ot[(ot['t']>=tmin) & (ot['t']<=tmax)]
+        ot_vmax_sample = ot_vmax[(ot_vmax['t']>=tmin) & (ot_vmax['t']<=tmax)]
+    else:
+        ot_sample = ot
+        ot_vmax_sample = ot_vmax
 
     fig, axes = plt.subplots(nrows=4, ncols=1, figsize=figsize)
 
