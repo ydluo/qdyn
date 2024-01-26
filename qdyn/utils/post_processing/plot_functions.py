@@ -788,3 +788,53 @@ def plot_vmax_fault(fault):
     fig.tight_layout()
 
     return fig
+
+
+def plot_frict_prop_1d(mesh_dict):
+    """
+    Plot 1D depth profile of A-B, A/B and SIGMA in the middle of the fault
+    Works for a 2D fault
+    If working with multiple faults, make sure to have filtered the mesh accordingly
+    """
+
+
+    # Find the middle point of x
+    mid_pt = np.unique(mesh_dict['X'])[len(np.unique(mesh_dict['X'])) // 2]
+    idx_mid = (mesh_dict['X']==mid_pt)
+
+    # set arrays with quantities
+    aminusb = mesh_dict["A"]-mesh_dict["B"]
+    aob = mesh_dict["A"]/mesh_dict["B"]
+    sigma = mesh_dict["SIGMA"]
+    z = mesh_dict["Z"]
+
+    fig, ax = plt.subplots(1, 3, sharey='row', figsize=[6, 6])
+    fig.subplots_adjust(hspace=0.03)
+
+    # A-B
+    ax[0].grid(True)
+    ax[0].set(title='A-B', xlim=[-0.01, 0.005], ylabel='Meters')
+    for tick in ax[0].get_xticklabels():
+        tick.set_rotation(40)
+    ax[0].plot(aminusb[idx_mid],
+            z[idx_mid],
+            color='k', lw=1.5)
+
+    #A/B
+    ax[1].set(title='A / B', xlim=[0.3, 1.9])
+    ax[1].grid(True)
+    ax[1].plot(aob[idx_mid],
+            z[idx_mid],
+            color='k', lw=1.5)
+
+    # sigma
+    ax[2].set(title='Normal stress', xlabel='MPa')
+    ax[2].grid(True)
+    ax[2].plot(sigma[idx_mid],
+            z[idx_mid],
+            color='k')
+    ax[2].set_xlim(-5e6, 60e6)
+
+    fig.tight_layout()
+
+    return fig
