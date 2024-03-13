@@ -768,8 +768,6 @@ class qdyn:
         
         # Fault time-series
         nheaders_fault = 2
-        # quants_fault = ("step", "t", "potcy_fault", "pot_rate_fault")
-        # CRP: include vmax_fault and i_vmaxfault
         quants_fault = ("step", "t", "potcy_fault", "pot_rate_fault", "vmax_fault", "ivmax_fault")
 
         # If time series data is requested
@@ -939,7 +937,6 @@ class qdyn:
 
             # List where each element is a DataFrame with the output of one fault
             self.fault = [None] * N_faults
-            print(self.fault)
 
             # Check output directory
             if path_output!=None:
@@ -953,19 +950,10 @@ class qdyn:
             n = 0
             
             # Read the output file in groups of columns corresponding to each fault
-            # for i in range(2, N_cols + 2, stride):
-            # CRP: include ivmax_fault and vmax_fault
             for i in range(2, N_cols + 2, stride):
                 # Column list for one fault (time, potency, potency rate, vmax_fault and ivmax_fault)
                 col_list = [0, 1] + list(range(i, i + stride))
             
-                # print(col_list)
-                # print("n " + str(n))
-                # test = read_csv(
-                # filename_fault, header=None, skiprows=nheaders_fault,
-                # names=quants_fault, delim_whitespace=True
-                # )
-                # print(test)
                 # Read output file
                 self.fault[n] = read_csv(
                 filename_fault, header=None, skiprows=nheaders_fault, usecols=col_list,

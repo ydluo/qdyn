@@ -109,8 +109,6 @@ module problem_class
     ! Containers for local and global quantities
     type(optr), dimension(:), allocatable :: objects_glob, objects_loc
     ! Number of objects in the containers
-    ! integer :: nobj=11
-    ! CRP: considering also vmax_fault 
     ! (nobj should be max number of objects to use in containers of output.f90)
     integer :: nobj=12
 
@@ -162,9 +160,6 @@ module problem_class
                                   P_glob(:) => null(), T_glob(:) => null()
     double precision, pointer ::  tau_max_glob(:) => null(), t_rup_glob(:) => null(), &
                                   v_max_glob(:) => null(), t_vmax_glob(:) => null()
-    ! CRP: quantities related to vmax_fault
-    ! integer, pointer :: ivmax_fault_glob(:) => null()
-    ! double precision, pointer ::  vmax_fault_glob(:) => null()
 
     logical :: allocated_glob = .false.
    ! QSB
