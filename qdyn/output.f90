@@ -492,7 +492,7 @@ subroutine ox_init(pb)
   ! Allocate space for the output format
   allocate(pb%ox%fmt(pb%ox%nox))
   ! Default output format
-  pb%ox%fmt = "(e15.7)"
+  pb%ox%fmt = "(e20.12)"
   ! Simulation step is an integer
   pb%ox%fmt(1) = "(i15)"
   ! Time needs higher precision
