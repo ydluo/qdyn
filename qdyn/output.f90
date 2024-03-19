@@ -507,7 +507,7 @@ subroutine ox_init(pb)
   ! Time needs higher precision
   pb%ox%fmt(2) = "(e24.14)"
   ! Theta may require even higher precision
-  pb%ox%fmt(7) = "(e26.16)"
+  pb%ox%fmt(7) = "(e20.12)"
   ! tau and sigma
   pb%ox%fmt(8) = "(e20.12)"
   pb%ox%fmt(11) = "(e20.12)"
@@ -1291,74 +1291,6 @@ subroutine get_ivmax_fault(pb)
     call log_debug(msg, pb%it)
   endif
 
-  ! ! Loop through all elements in the mesh per core
-  ! do n = 1, pb%mesh%nn
-  !   lbl = pb%mesh%fault_label(n) !fault label
-  !   ! compare v with vmax_fault
-
-  !   if (pb%v(n)>vmax_fault(lbl)) then
-  !     ivmax_fault(lbl) = (n) !save index
-  !     vmax_fault(lbl) = pb%v(n) !save velocity
-  !   end if
-  ! end do
-  
-  ! if (DEBUG) then
-  !   write(msg, *) "ivmax_fault=", ivmax_fault
-  !   call log_debug(msg, pb%it)
-  !   write(msg, *) "vmax_fault=", vmax_fault
-  !   call log_debug(msg, pb%it)
-  ! endif
-
-
-  ! ! Synchronise all faults across all nodes
-  ! do lbl=1, pb%nfault
-  !   if (is_MPI_parallel()) then
-  !     buf(1) = ivmax_fault(lbl)
-  !     call sum_allreduce(buf(1), 1)
-  !     ivmax_fault(lbl) = int(buf(1))
-
-  !     buf(1) = vmax_fault(lbl)
-  !     call sum_allreduce(buf(1), 1)
-  !     vmax_fault(lbl) = buf(1)
-  !   endif
-  ! enddo
-
-  ! if (DEBUG) then
-  !   write(msg, *) " after sync ivmax_fault=", ivmax_fault
-  !   call log_debug(msg, pb%it)
-  !   write(msg, *) "after sync vmax_fault=", vmax_fault
-  !   call log_debug(msg, pb%it)
-  !   write(msg, *) " after sync pb%ivmax_fault=", pb%ivmax_fault
-  !   call log_debug(msg, pb%it)
-  !   write(msg, *) "after sync pb%vmax_fault=", pb%vmax_fault
-  !   call log_debug(msg, pb%it)
-  ! endif
-
-  ! ! Store the final vmax_fault array in pb%vmax_fault
-  ! pb%vmax_fault = vmax_fault
-  ! ! do lbl = 1, pb%nfault
-  ! !   pb%vmax_fault(lbl) = vmax_fault(lbl)
-  ! ! end do
-
-  ! if (DEBUG) then
-  !   write(msg, *) "after storing vmax_fault=", pb%vmax_fault
-  !   call log_debug(msg, pb%it)
-  ! endif
-
-  ! ! Store the final ivmax_fault array in pb%ivmax_fault
-  ! pb%ivmax_fault = ivmax_fault
-  ! ! do lbl = 1, pb%nfault
-  ! !   pb%ivmax_fault(lbl) = ivmax_fault(lbl)
-  ! ! end do
-
-
-  ! if (DEBUG) then
-  !   write(msg, *) " after storing ivmax_fault=", pb%ivmax_fault
-  !   call log_debug(msg, pb%it)
-  ! endif
-
-
-
 end subroutine get_ivmax_fault
 
 
@@ -1436,11 +1368,9 @@ subroutine pb_global(pb)
   ! Skip x, y, z
   do i=4,k
 
-    ! Skip fault potency (rate)
+    ! Skip fault potency (rate) and vmax_fault
     ! TODO: replace this hardcoded stuff with something
     ! more elegant...
-    ! if (i == 10 .or. i == 11) cycle
-    ! CRP: skip also vmax_fault?
     if (i == 10 .or. i == 11 .or. i == 12) cycle
 
     ! Initialise to zero
