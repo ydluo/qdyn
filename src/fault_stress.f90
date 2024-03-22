@@ -360,6 +360,11 @@ subroutine init_kernel_3D_fft(k,lambda,mu,m,sigma_coupling)
 end subroutine init_kernel_3D_fft
 
 ! -----------------------------------------------
+! Kernel for rectangular dislocations (uniform slip) inside an unbounded elastic medium
+! Based on derivation and original implementation by
+! Gallovič, F. (2008). Heterogeneous Coulomb stress perturbation during earthquake cycles in a 3D rate-and-state fault model, Geophys. Res. Lett., 35, L21306, doi:10.1029/2008GL035614.
+! Supplemntary material: https://geo.mff.cuni.cz/~gallovic/abst/articl10kernel.pdf
+! We further assume the fault is strike-slip, planar and vertical: dip and strike are constant.
 
 subroutine init_kernel_3D_fft2d(k,lambda,mu,m)
 
