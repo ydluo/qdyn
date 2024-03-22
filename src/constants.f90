@@ -11,9 +11,15 @@ module constants
 logical, parameter :: BIN_OUTPUT = .false.
 
 ! set usage of FFT in 3D
-!   0 : no FFT
-!   1 : FFT along-strike
-!   2 : FFT along-strike and along-dip, only works for vertical faults
+! The options differ in the symmetries assumed. 
+! With certain symmetries, certain parts of the computation of stresses (K*v) are expressed as a convolution, 
+! which are evaluated using the Fast Fourier Transform (FFT). This is more computationally efficient 
+! (fewer operations and less memory usage) than doing a matrix-vector multiplication.
+!   0 : no FFT, half-space, the fault is straight along the strike direction (strike is constant), dip can change with depth
+!               (this could be extended to both strike and dip changing arbitrarily, but this is not implemented yet)
+!   1 : same as 1 but with FFT along-strike
+!   2 : FFT along-strike and along-dip, full-space, the fault is strike-slip, planar and vertical (strike and dip are constant), 
+!       only works for vertical faults
 integer, parameter :: FFT_TYPE = 1
 
 ! Adding real precision and type for MPI runs.
