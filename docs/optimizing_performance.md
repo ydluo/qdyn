@@ -7,7 +7,7 @@ title: Optimizing performance
 
 ## Running simulations outside the wrapper
 
-To run simulations outside the MATLAB/Python environment, e.g. when computing on an HPC cluster: run first the wrapper only to generate the input file `qdyn.in`, then run the `qdyn` executable outside the wrapper.
+To run simulations outside the Python environment, e.g. when computing on an HPC cluster: run first the wrapper only to generate the input file `qdyn.in`, then run the `qdyn` executable outside the wrapper.
 
 ## Managing parallel computing
 
@@ -23,4 +23,4 @@ This command allows QDYN to run on 8 threads, which will roughly speed up calcul
 
 ### MPI
 
-For 3D simulations with `MESHDIM=2`, QDYN can run in parallel in distributed memory clusters with MPI. The number of processors must be set in the variable `NPROCS`.
+For 3D simulations with `MESHDIM=2`, QDYN can run in parallel in distributed memory clusters with MPI. The number of processors must be set in the variable `NPROC`.

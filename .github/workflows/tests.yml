@@ -1,0 +1,36 @@
+name: Test QDYN
+
+on: [push]
+
+jobs:
+  test-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 3
+      fail-fast: true
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install numpy "scipy>=1.9.0" matplotlib pandas termcolor ipython
+        pip install -e .
+    - name: Install compiler
+      run: sudo apt install -y gfortran libopenmpi-dev
+    - name: Copy mymakedepend
+      run: cp ./qdyn/utils/devel_tools/mymakedepend.perl ./qdyn
+    - name: Compile FORTRAN code
+      working-directory: ./qdyn
+      run: |
+        chmod +x mymakedepend.perl
+        ./mymakedepend.perl
+        make clean && make test
+    - name: Run test suite
+      working-directory: ./test
+      run: python test_suite.py
+        

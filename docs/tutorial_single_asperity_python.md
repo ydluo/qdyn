@@ -15,31 +15,9 @@ In this tutorial, we simulate slip on a fault with a single velocity-weakening a
 import matplotlib.pyplot as plt
 import numpy as np
 
-import os
-import sys
-
-# Add QDYN source directory to PATH
-# Go up in the directory tree
-upup = [os.pardir]*2
-qdyn_dir = os.path.join(*upup)
-# Get QDYN src directory
-src_dir = os.path.abspath(
-    os.path.join(
-        os.path.join(os.path.abspath(""), qdyn_dir), "src")
-)
-# Append src directory to Python path
-sys.path.append(src_dir)
-# Get QDYN plotting library directory
-plot_dir = os.path.abspath(
-    os.path.join(
-        os.path.join(os.path.abspath(""), qdyn_dir), "utils", "post_processing")
-)
-# Append plotting library directory to Python path
-sys.path.append(plot_dir)
-
 # Import QDYN wrapper and plotting library
-from pyqdyn import qdyn
-import plot_functions as qdyn_plot
+from qdyn import qdyn
+from qdyn import plot_functions as qdyn_plot
 ```
 
 To prepare a simulation, the global simulation and mesh parameters will have to be specified. This is done in three steps: 
@@ -57,7 +35,7 @@ p = qdyn()
 # Predefine parameters
 t_yr = 3600 * 24 * 365.0    # seconds per year
 Lasp = 7                    # Length of asperity / nucleation length
-L = 5                       # Length of fault / nucleation length
+L = 5                       # Length of fault / asperity length
 ab_ratio = 0.8              # a/b of asperity
 cab_ratio = 1 - ab_ratio
 resolution = 7              # Mesh resolution / process zone width
@@ -70,8 +48,10 @@ set_dict = p.set_dict
 set_dict["MESHDIM"] = 1        # Simulation dimensionality (1D fault in 2D medium)
 set_dict["FINITE"] = 0         # Periodic fault
 set_dict["TMAX"] = 15*t_yr     # Maximum simulation time [s]
-set_dict["NTOUT"] = 100        # Save output every N steps
-set_dict["NXOUT"] = 2          # Snapshot resolution (every N elements)
+set_dict["NTOUT_LOG"] = 1000   # Save output every N steps
+set_dict["NTOUT_OT"] = 10      # Save output every N steps
+set_dict["NTOUT_OX"] = 100     # Save output every N steps
+set_dict["NXOUT_OX"] = 2       # Snapshot resolution (every N elements)
 set_dict["V_PL"] = 1e-9        # Plate velocity
 set_dict["MU"] = 3e10          # Shear modulus
 set_dict["W"] = 50e3           # Loading distance [m]
@@ -114,6 +94,8 @@ p.render_mesh()
 """ Step 3: override default mesh values """
 # Distribute direct effect a over mesh according to some arbitrary function
 p.mesh_dict["A"] = set_dict["SET_DICT_RSF"]["B"] * (1 + cab_ratio*(1 - 2*np.exp(-(2*x/Lasp)**6)))
+
+p.set_dict["VERBOSE"] = 0  # Set to 1 if you want log messages on screen
 
 # Write input to qdyn.in
 p.write_input()

@@ -15,23 +15,8 @@ In this tutorial, we'll run a series of spring-block (1D fault) simulations with
 import matplotlib.pyplot as plt
 import numpy as np
 
-import os
-import sys
-
-# Add QDYN source directory to PATH
-# Go up in the directory tree
-upup = [os.pardir]*2
-qdyn_dir = os.path.join(*upup)
-# Get QDYN src directory
-src_dir = os.path.abspath(
-    os.path.join(
-        os.path.join(os.path.abspath(""), qdyn_dir), "src")
-)
-# Append src directory to Python path
-sys.path.append(src_dir)
-
 # Import QDYN wrapper
-from pyqdyn import qdyn
+from qdyn import qdyn
 ```
 
 The simulation parameters are accessible after instantiation of the QDYN class as a Python dictionary object. We first define a number of global simulation parameters:
@@ -46,7 +31,7 @@ set_dict = p.set_dict
 # Global simulation parameters
 set_dict["MESHDIM"] = 0        # Simulation dimensionality (spring-block)
 set_dict["TMAX"] = 300         # Maximum simulation time [s]
-set_dict["NTOUT"] = 100        # Save output every N steps
+set_dict["NTOUT_OT"] = 1       # Save output every N steps
 set_dict["V_PL"] = 1e-5        # Load-point velocity [m/s]
 set_dict["MU"] = 2e9           # Shear modulus [Pa]
 set_dict["SIGMA"] = 5e6        # Effective normal stress [Pa]

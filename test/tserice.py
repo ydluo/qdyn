@@ -59,16 +59,17 @@ class TestTseRice(AuxiliaryFunctions):
         set_dict["MESHDIM"] = 1
         set_dict["FINITE"] = 3
         set_dict["TMAX"] = 500*t_yr
-        set_dict["NTOUT"] = 1000
-        set_dict["NXOUT"] = int(np.power(2, 3))
+        set_dict["NTOUT_OX"] = 1000
+        set_dict["NXOUT_OX"] = int(np.power(2, 3))
         set_dict["V_PL"] = 35e-3 / t_yr
         set_dict["MU"] = 3e10
         set_dict["SIGMA"] = 1e8
         set_dict["ACC"] = 1e-7
         set_dict["DTTRY"] = 100
         set_dict["V_TH"] = 1e-2
-        set_dict["SOLVER"] = 1
+        set_dict["SOLVER"] = 2
         set_dict["FRICTION_MODEL"] = "RSF"
+        set_dict["TAU"] = None
 
         # Setting some RSF parameters
         set_dict["SET_DICT_RSF"]["RNS_LAW"] = 0
@@ -106,7 +107,7 @@ class TestTseRice(AuxiliaryFunctions):
             "var2": result_var2,
         }
 
-        self.compare_results("RSF")
+        self.compare_results("RSF", cc=True)
         pass
 
 

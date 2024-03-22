@@ -1,10 +1,10 @@
 # ignore objects and archives, anywhere in the tree.
 
 mymakedepend.perl
-!utils/devel_tools/mymakedepend.perl
+!qdyn/utils/devel_tools/mymakedepend.perl
 
 # Fortran compiled files
-qdyn
+qdyn/qdyn
 *.mod
 *.o
 
@@ -12,8 +12,10 @@ qdyn
 fort.*
 output_iasp
 output_ot_*
-output_ox
+output_ox*
 output_vmax
+output_fault
+log*
 
 # Simulation products
 *.in
@@ -28,9 +30,17 @@ _site/
 __pycache__/
 .ipynb_checkpoints/
 *.pyc
+*.egg-info/
 
 # PyCharm files
 .idea/
 
 # Atom files
 .atom-build.json
+
+# VS Code
+.vscode/
+
+# others
+._.DS_Store
+.DS_Store

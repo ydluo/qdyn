@@ -62,6 +62,7 @@ class TestVstep(AuxiliaryFunctions):
         # Loop over all velocity steps
         for i, V in enumerate(Vs):
             # Set load-point velocity
+            set_dict["TAU"] = None
             set_dict["V_PL"] = V
             # Set initial values from previous step
             set_dict[dict_name][state_ini] = state_final

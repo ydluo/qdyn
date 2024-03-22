@@ -15,31 +15,9 @@ In this tutorial, we'll consider a fault with two asperities, one of size $f L_a
 import matplotlib.pyplot as plt
 import numpy as np
 
-import os
-import sys
-
-# Add QDYN source directory to PATH
-# Go up in the directory tree
-upup = [os.pardir]*2
-qdyn_dir = os.path.join(*upup)
-# Get QDYN src directory
-src_dir = os.path.abspath(
-    os.path.join(
-        os.path.join(os.path.abspath(""), qdyn_dir), "src")
-)
-# Append src directory to Python path
-sys.path.append(src_dir)
-# Get QDYN plotting library directory
-plot_dir = os.path.abspath(
-    os.path.join(
-        os.path.join(os.path.abspath(""), qdyn_dir), "utils", "post_processing")
-)
-# Append plotting library directory to Python path
-sys.path.append(plot_dir)
-
 # Import QDYN wrapper and plotting library
-from pyqdyn import qdyn
-import plot_functions as qdyn_plot
+from qdyn import qdyn
+from qdyn import plot_functions as qdyn_plot
 ```
 
 To preprare a simulation, the global simulation and mesh parameters will have to be specified. This is done in three steps: 
@@ -70,8 +48,8 @@ set_dict = p.set_dict
 set_dict["MESHDIM"] = 1        # Simulation dimensionality (1D fault in 2D medium)
 set_dict["FINITE"] = 1         # Finite fault
 set_dict["TMAX"] = 25*t_yr     # Maximum simulation time [s]
-set_dict["NTOUT"] = 100        # Save output every N steps
-set_dict["NXOUT"] = 2          # Snapshot resolution (every N elements)
+set_dict["NTOUT_OX"] = 100     # Save output every N steps
+set_dict["NXOUT_OX"] = 2       # Snapshot resolution (every N elements)
 set_dict["V_PL"] = 1e-9        # Plate velocity
 set_dict["MU"] = 3e10          # Shear modulus
 set_dict["SIGMA"] = 1e8        # Effective normal stress [Pa]

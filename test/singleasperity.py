@@ -70,8 +70,8 @@ class TestSingleAsperity(AuxiliaryFunctions):
         set_dict["MESHDIM"] = 1
         set_dict["FINITE"] = 0
         set_dict["TMAX"] = 10*t_yr
-        set_dict["NTOUT"] = 1000
-        set_dict["NXOUT"] = 1
+        set_dict["NTOUT_OX"] = 1000
+        set_dict["NXOUT_OX"] = 1
         set_dict["V_PL"] = 1e-9
         set_dict["MU"] = 3e10
         set_dict["W"] = 50e3
@@ -80,6 +80,7 @@ class TestSingleAsperity(AuxiliaryFunctions):
         set_dict["DTTRY"] = 100
         set_dict["V_TH"] = 1e-2
         set_dict["SOLVER"] = 1
+        set_dict["TAU"] = None
 
         # Setting some RSF parameters
         set_dict["SET_DICT_RSF"]["A"] = 0.9e-2
@@ -146,7 +147,7 @@ class TestSingleAsperity(AuxiliaryFunctions):
             "var2": result_var2,
         }
 
-        self.compare_results(mode)
+        self.compare_results(mode, cc=True)
         pass
 
 

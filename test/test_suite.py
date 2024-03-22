@@ -1,22 +1,12 @@
 # Importing some required modules
 import os
-import sys
 from time import time
 from termcolor import colored
 import warnings
 warnings.filterwarnings("ignore")
-# Go up in the directory tree
-upup = [os.pardir]*2
-qdyn_dir = os.path.join(*upup)
-# Get QDYN src directory
-src_dir = os.path.abspath(
-    os.path.join(
-        os.path.join(__file__, qdyn_dir), "src")
-)
-# Append src directory to Python path
-sys.path.append(src_dir)
+
 # Import QDYN wrapper
-from pyqdyn import qdyn
+from qdyn.pyqdyn import qdyn
 from vstep import TestVstep
 from stickslip import TestStickSlip
 from singleasperity import TestSingleAsperity
@@ -37,7 +27,8 @@ set_dict = {
     "TMAX": 20,
     "DTTRY": 1e-6,
     "MESHDIM": 0,
-    "NTOUT": 10000,
+    "NTOUT_OT": 1,
+    "NTOUT_OX": 10000,
     "VS": 3000,
     "SIGMA": 5e6,
     "L": 1,

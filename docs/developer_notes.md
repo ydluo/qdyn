@@ -12,7 +12,7 @@ The QDYN team welcomes contributions from the community, which is facilitated by
 - Push the commits to your forked repository
 - Create a pull request to merge your code with that in the QDYN repository
 
-When the pull request is made, [Travis CI](https://travis-ci.com/) will assess the validity of the code by compiling the code and running the testing suite. The core developers will ensure that the pull request will be merged with the appropriate branch (e.g. `release/2.3.4`).
+When the pull request is made, a GitHub Actions workflow will be triggered to assess the validity of the code by compiling the code and running the testing suite. The core developers will ensure that the pull request will be merged with the appropriate branch (e.g. `release/2.3.4`).
 
 For large modifications or new features, please contact the QDYN team or [open an issue](https://github.com/ydluo/qdyn/issues) on GitHub to discuss the implementation strategy.
 
@@ -27,7 +27,7 @@ The following items are under active development and will be included in the sta
 - Surface deformation to compare with GPS data
 - Slip-dependent friction law
 - 3D kernel for faults in infinite media
-- Variable strike
+- Variable strike (including free surface)
 - Layered media: EDKS (Luis Rivera), Relax (Sylvain Barbot)
 - Heterogeneous media: import kernel from Relax, Pylith, or SPECFEM3D?
 - Triangular mesh elements: e.g. Meade ([2007](https://doi.org/10.1016/j.cageo.2006.12.003)), Gimbutas et al. ([2012](https://doi.org/10.1785/0120120127)), Pan et al. ([2014](https://doi.org/10.1785/0120140161)), Nikkhoo & Walter ([2015](https://doi.org/10.1093/gji/ggv035))

@@ -1,0 +1,30 @@
+derivs_all.o: diffusion_solver.o fault_stress.o friction.o friction_cns.o \
+	problem_class.o utils.o
+diffusion_solver.o: constants.o mesh.o problem_class.o
+fault_stress.o: constants.o fftsg.o logger.o mesh.o okada.o parallel.o
+friction.o: logger.o problem_class.o
+friction_cns.o: constants.o problem_class.o
+initialize.o: constants.o diffusion_solver.o fault_stress.o friction.o \
+	friction_cns.o logger.o mesh.o ode_rk45_2.o output.o parallel.o \
+	problem_class.o solver.o
+input.o: constants.o logger.o mesh.o output.o parallel.o problem_class.o
+logger.o: constants.o parallel.o
+main.o: constants.o derivs_all.o initialize.o input.o logger.o parallel.o \
+	problem_class.o solver.o unittests.o
+mesh.o: constants.o logger.o parallel.o
+ode_bs.o: derivs_all.o logger.o parallel.o problem_class.o
+ode_rk45.o: derivs_all.o parallel.o
+ode_rk45_2.o: problem_class.o
+okada.o: constants.o logger.o
+output.o: constants.o mesh.o parallel.o problem_class.o
+parallel.o: constants.o
+problem_class.o: fault_stress.o mesh.o
+solver.o: constants.o derivs_all.o diffusion_solver.o friction.o \
+	friction_cns.o logger.o ode_bs.o ode_rk45.o ode_rk45_2.o output.o \
+	parallel.o problem_class.o utils.o
+unittests.o: constants.o fault_stress.o friction.o logger.o mesh.o \
+	problem_class.o solver.o unittests_aux.o unittests_rsf.o
+unittests_aux.o: constants.o problem_class.o solver.o
+unittests_rsf.o: constants.o fault_stress.o friction.o logger.o mesh.o \
+	problem_class.o solver.o unittests_aux.o
+utils.o: problem_class.o

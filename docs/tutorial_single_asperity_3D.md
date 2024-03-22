@@ -15,23 +15,8 @@ In this tutorial, we simulate slip on a 2D fault (within a 3D medium) with a sin
 import matplotlib.pyplot as plt
 import numpy as np
 
-import os
-import sys
-
-# Add QDYN source directory to PATH
-# Go up in the directory tree
-upup = [os.pardir]*2
-qdyn_dir = os.path.join(*upup)
-# Get QDYN src directory
-src_dir = os.path.abspath(
-    os.path.join(
-        os.path.join(os.path.abspath(""), qdyn_dir), "src")
-)
-# Append src directory to Python path
-sys.path.append(src_dir)
-
 # Import QDYN wrapper and plotting library
-from pyqdyn import qdyn
+from qdyn import qdyn
 ```
 
 To prepare a simulation, the global simulation and mesh parameters will have to be specified. This is done in three steps: 
@@ -57,12 +42,13 @@ set_dict = p.set_dict
 
 """ Step 1: Define simulation/mesh parameters """
 # Global simulation parameters
-set_dict["MESHDIM"] = 2        # Simulation dimensionality (1D fault in 2D medium)
+set_dict["MESHDIM"] = 2        # Simulation dimensionality (2D fault in 3D medium)
 set_dict["FAULT_TYPE"] = 2     # Thrust fault
 set_dict["TMAX"] = 5*t_yr      # Maximum simulation time [s]
-set_dict["NTOUT"] = 100        # Save output every N steps
-set_dict["NXOUT"] = 2          # Snapshot resolution along-strike (every N elements)
-set_dict["NWOUT"] = 2          # Snapshot resolution along-dip (every N elements)
+set_dict["NTOUT_OT"] = 10      # Save output every N steps
+set_dict["NTOUT_OX"] = 100     # Save output every N steps
+set_dict["NXOUT_OX"] = 2       # Snapshot resolution along-strike (every N elements)
+set_dict["NWOUT_OX"] = 2       # Snapshot resolution along-dip (every N elements)
 set_dict["V_PL"] = 1e-9        # Plate velocity
 set_dict["MU"] = 3e10          # Shear modulus
 set_dict["SIGMA"] = 1e7        # Effective normal stress [Pa]

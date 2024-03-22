@@ -32,6 +32,7 @@ class TestStickSlip(AuxiliaryFunctions):
         set_dict["TMAX"] = 1e4
         set_dict["MU"] = 2e10
         set_dict["L"] = 1e1
+        set_dict["TAU"] = None
 
         if mode == "CNS":
             set_dict["FRICTION_MODEL"] = "CNS"
@@ -69,5 +70,5 @@ class TestStickSlip(AuxiliaryFunctions):
             "var2": result_var2,
         }
 
-        self.compare_results(mode)
+        self.compare_results(mode, cc=True)
         pass
