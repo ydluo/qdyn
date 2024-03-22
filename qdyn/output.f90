@@ -101,8 +101,12 @@ subroutine initialize_output(pb)
   pb%objects_glob(9)%v => pb%sigma_glob
   pb%objects_glob(10)%v => pb%pot_fault
   pb%objects_glob(11)%v => pb%pot_rate_fault
+  ! CRP: [double vector] quantity related to vmax of each fault
+  pb%objects_glob(12)%v => pb%vmax_fault
   ! [double vector] fault label
   pb%objects_glob(1)%vi => pb%mesh%fault_label_glob
+  ! CRP: [double vector] quantity related to ivmax of each fault
+  pb%objects_glob(2)%vi => pb%ivmax_fault
 
   ! If thermal pressurisation is requested, add P and T
   if (pb%features%tp == 1) then
@@ -302,7 +306,7 @@ subroutine ot_init(pb)
   pb%ot%v_pre2 = 0.d0
 
   ! Number of ot output quantities
-  pb%ot%not = 11
+  pb%ot%not = 12
   ! Number of ot_vmax output quantities
   pb%ot%not_vmax = 10
   ! If thermal pressurisation is requested, add 2 more
@@ -437,12 +441,17 @@ subroutine ot_init(pb)
       write(FID_FAULT, "(a)", advance="no") "# 1=step, 2=t "
 
       ! number of column for output
-      Ncols = 3
+      Ncols = 5
 
       do i=1, pb%nfault
         write(FID_FAULT, "(a, i0, a, i0)", advance="no") " ", Ncols, "=pot_", i
         Ncols = Ncols+1
         write(FID_FAULT, "(a, i0, a, i0)", advance="no") " ", Ncols, "=pot_rate_", i
+        Ncols = Ncols+1
+        !CRP: write headers for ivmax_fault and vmax_fault
+        write(FID_FAULT, "(a, i0, a, i0)", advance="no") " ", Ncols, "=vmax_", i
+        Ncols = Ncols+1
+        write(FID_FAULT, "(a, i0, a, i0)", advance="no") " ", Ncols, "=ivmax_", i
         Ncols = Ncols+1
       enddo
 
@@ -497,8 +506,13 @@ subroutine ox_init(pb)
   pb%ox%fmt(1) = "(i15)"
   ! Time needs higher precision
   pb%ox%fmt(2) = "(e24.14)"
+  ! Theta may require even higher precision
+  pb%ox%fmt(7) = "(e20.12)"
+  ! tau and sigma
+  pb%ox%fmt(8) = "(e20.12)"
+  pb%ox%fmt(11) = "(e20.12)"
   ! Fault label is an integer
-  pb%ox%fmt(pb%ox%nox) = "(i15)"
+  pb%ox%fmt(pb%ox%nox) = "(i15)" 
 
   ! Case 1: serial execution. All quantities are local
   if (.not. is_MPI_parallel()) then
@@ -581,6 +595,7 @@ subroutine ot_write(pb)
   character(len=100) :: tmp
   character(len=100), allocatable :: iot_name
 
+
   ! If parallel: do sync
   if (is_MPI_parallel()) then
     if (DEBUG) then
@@ -607,6 +622,12 @@ subroutine ot_write(pb)
   ! TODO: merge potency calculations
   !! Calculate potency (rate)
   call calc_potency(pb)
+
+  ! Get the maximum slip rate per fault and its corresponding index
+  call get_ivmax_fault(pb)
+  ! ivmax_fault = pb%ivmax_fault_glob
+  ! vmax_fault = pb%vmax_fault_glob
+
 
   ! If this is master proc: write output
   if (is_MPI_master()) then
@@ -752,7 +773,9 @@ subroutine ox_write(pb)
 
   ! Should this proc write ox, ox_dyn, or QSB output?
   write_ox = (mod(pb%it, pb%ox%ntout) == 0 .or. last_call)
-  write_ox_last = last_call
+  !write_ox_last = last_call
+  ! CRP: trying to debug empty write_ox_last
+  write_ox_last = (mod(pb%it, pb%ox%ntout) == 0 .or. last_call)
   write_ox_dyn =  ((pb%ox%i_ox_dyn == 1) .and. dynamic) .and. .not. skip
   write_ox_seq = write_ox .and. (pb%ox%i_ox_seq == 1)
   write_QSB = ((pb%DYN_FLAG == 1) .and. dynamic) .and. .not. skip
@@ -1038,7 +1061,7 @@ subroutine write_ot_lines(unit, fmt, objects, iot, pb)
   write(unit, fmt(3), advance="no") objects(2)%s
   write(unit, fmt(4), advance="no") objects(3)%s
   ! Loop over all ot output quantities
-  do i=istart,k-2
+  do i=istart,k-3
     ! Write ot output quantity, do not advance to next line
     write(unit, fmt(i+1), advance="no") objects(i)%v(iot)
   enddo
@@ -1057,21 +1080,23 @@ subroutine write_fault_lines(unit, fmt, objects, pb)
   character(len=16), dimension(pb%nobj) :: fmt
   type(optr), dimension(pb%nobj) :: objects
 
+
   ! Write step
   write(unit, fmt(1), advance="no") objects(1)%i
   ! Write time
   write(unit, fmt(2), advance="no") objects(1)%s
 
   do i=1, pb%nfault
-    ! Write pot_fault and pot_rate_fault (do not advance to next line)
-    write(unit, fmt(3), advance="no") objects(10)%v(i)
-
-    ! If we're at the last fault, write and advance to next line
+    ! CRP: Write pot_fault, pot_rate_fault, ivmax_fault and vmax_fault (do not advance to next line)
+    write(unit, fmt(3), advance="no") objects(10)%v(i) !pot_fault
+    write(unit, fmt(4), advance="no") objects(11)%v(i) !pot_rate_fault
+    write(unit, "(e15.7)", advance="no") objects(12)%v(i) !vmax_fault
+    ! If we're at the last fault, write vmax_fault and advance to next line
     if (i == pb%nfault) then
-      write(unit, fmt(4)) objects(11)%v(i)
+      write(unit, "(i15)") objects(2)%vi(i) !ivmax_fault
     ! Else do not advance
     else
-      write(unit, fmt(4), advance="no") objects(11)%v(i)
+      write(unit, "(i15)", advance="no") objects(2)%vi(i)
     endif
 
   enddo
@@ -1196,6 +1221,80 @@ subroutine get_ivmax(pb)
 end subroutine get_ivmax
 
 !=====================================================================
+
+! CRP: Get the location of the maximum slip rate in each fault
+
+subroutine get_ivmax_fault(pb)
+
+  use problem_class
+  ! use my_mpi, only: is_MPI_parallel, sum_allreduce
+
+  type(problem_type), intent(inout) :: pb
+
+  integer, dimension(pb%nfault) :: ivmax_fault
+  double precision, dimension(pb%nfault) :: vmax_fault
+  ! double precision, dimension(1) :: buf
+  integer :: n, lbl, mesh_size, i_max_v
+  double precision :: max_v
+
+  ! Initialize ivmax_fault and vmax_fault to 0 for all faults
+  ivmax_fault = 0
+  vmax_fault = 0d0 
+  
+  ! mesh size
+  mesh_size=size(pb%v_glob)
+
+  do lbl =1, pb%nfault
+    max_v = 0d0
+    i_max_v = 0
+
+    do n=1, mesh_size
+      if (pb%mesh%fault_label_glob(n) == lbl) then
+        if (pb%v_glob(n) > max_v) then
+          max_v = pb%v_glob(n)
+          i_max_v = n 
+        end if
+      end if
+    end do
+
+    vmax_fault(lbl) = max_v
+    ivmax_fault(lbl) = i_max_v
+
+  end do
+
+
+  if (DEBUG) then
+    write(msg, *) "ivmax_fault=", ivmax_fault
+    call log_debug(msg, pb%it)
+    write(msg, *) "vmax_fault=", vmax_fault
+    call log_debug(msg, pb%it)
+    write(msg, *) "size pb%ivmax_fault=", size(pb%ivmax_fault)
+    call log_debug(msg, pb%it)
+    write(msg, *) "size pb%vmax_fault=", size(pb%vmax_fault)
+    call log_debug(msg, pb%it)
+  endif
+
+  ! Store the final vmax_fault array in pb%vmax_fault
+  pb%vmax_fault = vmax_fault
+
+  if (DEBUG) then
+    write(msg, *) " after storing pb%vmax_fault=", pb%vmax_fault
+    call log_debug(msg, pb%it)
+  endif
+
+
+    ! Store the final ivmax_fault array in pb%ivmax_fault
+  pb%ivmax_fault = ivmax_fault
+
+  if (DEBUG) then
+    write(msg, *) " after storing pb%ivmax_fault=", pb%ivmax_fault
+    call log_debug(msg, pb%it)
+  endif
+
+end subroutine get_ivmax_fault
+
+
+!=====================================================================
 ! Initiate MPI global gather
 
 subroutine init_pb_global(pb)
@@ -1269,10 +1368,10 @@ subroutine pb_global(pb)
   ! Skip x, y, z
   do i=4,k
 
-    ! Skip fault potency (rate)
+    ! Skip fault potency (rate) and vmax_fault
     ! TODO: replace this hardcoded stuff with something
     ! more elegant...
-    if (i == 10 .or. i == 11) cycle
+    if (i == 10 .or. i == 11 .or. i == 12) cycle
 
     ! Initialise to zero
     pb%objects_glob(i)%v = 0d0

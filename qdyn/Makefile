@@ -5,6 +5,7 @@
 EXEC_PATH = .
 #EXEC_PATH = $(HOME)/qdyn_svn/trunk/src/
 #EXEC_PATH = $(HOME)/bin/
+
 # 2. Comment/uncomment/add/modify the lines corresponding to your compiler:
 
 # GNU, serial
@@ -16,10 +17,10 @@ OPT = -O3 -Wall
 # OPT = -O3 -Wall -fopenmp
 #OPT = -O2 -w
 #-- Intel Fortran --
-# F90 = ifort
+# F90 = mpiifort
 # OPT = -O3 -ip -ipo
 # For parallel runs with OpenMP:
-#OPT = -O3 -ip -ipo -parallel -openmp -par-threshold:50
+# OPT = -O3 -ip -ipo -parallel -qopenmp -par-threshold:50
 #-no-inline-factor
 #OPT = -O3 -pg -g
 #OPT = -O3
@@ -42,9 +43,9 @@ OPT = -O3 -Wall
 
 # 3. Set the compiler option that enables preprocessing in your compiler
 # ifort
-# PREPROC = -fpp
-# gfortran
 PREPROC = -cpp
+# gfortran
+# PREPROC = -cpp
 #PG, KAUST server
 # CFLAGS = -B/usr/lib/x86_64-linux-gnu
 #CFLAGS = '' 
